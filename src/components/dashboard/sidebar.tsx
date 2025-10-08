@@ -57,15 +57,18 @@ export default function Sidebar() {
       <Link
         href={item.href}
         className={cn(
-          'flex items-center gap-4 rounded-lg px-4 py-2 text-sidebar-foreground transition-all',
+          'flex items-center gap-4 rounded-lg px-4 py-2 transition-all',
           {
-            'bg-sidebar-accent text-sidebar-accent-foreground font-semibold': isActive,
-            'text-sidebar-icon-muted hover:bg-sidebar-accent/50 hover:text-white': !isActive,
+            'bg-sidebar-accent font-semibold': isActive,
+            'hover:bg-sidebar-accent/50': !isActive,
           }
         )}
       >
-        <item.icon className="h-5 w-5 shrink-0" />
-        <span className={cn('truncate', !isActive && 'text-white')}>{item.label}</span>
+        <item.icon className={cn(
+            "h-5 w-5 shrink-0",
+            isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-icon-muted'
+          )} />
+        <span className="truncate text-sidebar-foreground">{item.label}</span>
       </Link>
     );
   };
@@ -97,10 +100,10 @@ export default function Sidebar() {
             ))}
             <form action={logout}>
               <button className={cn(
-                'flex w-full items-center gap-4 rounded-lg px-4 py-2 text-sidebar-icon-muted transition-all',
-                'hover:bg-sidebar-accent/50 hover:text-white'
+                'flex w-full items-center gap-4 rounded-lg px-4 py-2 transition-all',
+                'hover:bg-sidebar-accent/50'
               )}>
-                <LogOut className="h-5 w-5 shrink-0" />
+                <LogOut className="h-5 w-5 shrink-0 text-sidebar-icon-muted" />
                 <span className="text-white">Log out</span>
               </button>
             </form>
