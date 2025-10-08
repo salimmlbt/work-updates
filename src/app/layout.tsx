@@ -14,7 +14,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -35,7 +35,7 @@ export default function RootLayout({
     };
   }, []);
 
-  const showNav = isAuthenticated && pathname !== '/login';
+  const showNav = isAuthenticated && pathname !== '/login' && !pathname.startsWith('/dashboard');
 
   if (isAuthenticated === null) {
       return (
@@ -54,7 +54,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
       </head>
-      <body className={cn("min-h-screen bg-background font-body font-sans antialiased")}>
+      <body className={cn("min-h-screen bg-background font-sans antialiased")}>
         <div className="flex min-h-screen w-full bg-background">
           {showNav && (
             <Sidebar 
@@ -64,9 +64,8 @@ export default function RootLayout({
           )}
           <div className={cn(
               "flex flex-1 flex-col transition-all duration-300",
-              showNav && (isSidebarCollapsed ? "ml-20" : "ml-64")
-            )}>
-            {showNav && <Header />}
+              showNav && (isSidebarCollapsed ? "md:ml-20" : "md:ml-64")
+            )}>            {showNav && <Header />}
             <main className="flex-1 overflow-y-auto">
               {children}
             </main>

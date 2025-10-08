@@ -10,15 +10,13 @@ export default async function ProjectsPage() {
 
   const projectsPromise = supabase
     .from('projects')
-    .select('*, owner:profiles(*), client:clients(*)');
+    .select('*, owner:profiles!owner_id(*)');
 
   const profilesPromise = supabase.from('profiles').select('*');
-  const clientsPromise = supabase.from('clients').select('*');
 
-  const [{ data: projects, error }, { data: profiles }, { data: clients }] = await Promise.all([
+  const [{ data: projects, error }, { data: profiles }] = await Promise.all([
     projectsPromise,
     profilesPromise,
-    clientsPromise
   ]);
 
   if (error) {
@@ -34,7 +32,7 @@ export default async function ProjectsPage() {
       initialProjects={projectsWithOwnerAndClient as any} 
       currentUser={user} 
       profiles={profiles as Profile[] ?? []}
-      clients={clients as Client[] ?? []}
+      clients={[]}
     />
   );
 }
