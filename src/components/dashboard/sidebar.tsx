@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -53,20 +54,21 @@ export default function Sidebar() {
   const NavLink = ({ item }: { item: typeof navItems[0] }) => {
     const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
     return (
-    <Link
-      href={item.href}
-      className={cn(
-        'flex items-center gap-4 rounded-lg px-4 py-2 text-sidebar-foreground transition-all',
-        {
-          'bg-sidebar-accent text-sidebar-accent-foreground font-semibold': isActive,
-          'hover:bg-sidebar-accent/50 text-white': !isActive,
-        }
-      )}
-    >
-      <item.icon className={cn('h-5 w-5 shrink-0', !isActive && 'text-sidebar-icon-muted')} />
-      <span className={cn('truncate')}>{item.label}</span>
-    </Link>
-  )};
+      <Link
+        href={item.href}
+        className={cn(
+          'flex items-center gap-4 rounded-lg px-4 py-2 text-sidebar-foreground transition-all',
+          {
+            'bg-sidebar-accent text-sidebar-accent-foreground font-semibold': isActive,
+            'text-sidebar-icon-muted hover:bg-sidebar-accent/50 hover:text-white': !isActive,
+          }
+        )}
+      >
+        <item.icon className="h-5 w-5 shrink-0" />
+        <span className={cn('truncate', !isActive && 'text-white')}>{item.label}</span>
+      </Link>
+    );
+  };
 
   return (
     <div
@@ -95,11 +97,11 @@ export default function Sidebar() {
             ))}
             <form action={logout}>
               <button className={cn(
-                'flex w-full items-center gap-4 rounded-lg px-4 py-2 text-sidebar-foreground transition-all',
-                'hover:bg-sidebar-accent/50'
+                'flex w-full items-center gap-4 rounded-lg px-4 py-2 text-sidebar-icon-muted transition-all',
+                'hover:bg-sidebar-accent/50 hover:text-white'
               )}>
-                <LogOut className="h-5 w-5 shrink-0 text-sidebar-icon-muted" />
-                <span>Log out</span>
+                <LogOut className="h-5 w-5 shrink-0" />
+                <span className="text-white">Log out</span>
               </button>
             </form>
           </nav>
