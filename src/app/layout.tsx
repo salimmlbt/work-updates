@@ -14,7 +14,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(true);
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -57,14 +56,11 @@ export default function RootLayout({
       <body className={cn("min-h-screen bg-background font-body font-sans antialiased")}>
         <div className="flex min-h-screen w-full bg-background">
           {showNav && (
-            <Sidebar 
-              isCollapsed={isSidebarCollapsed} 
-              setCollapsed={setSidebarCollapsed} 
-            />
+            <Sidebar />
           )}
           <div className={cn(
               "flex flex-1 flex-col transition-all duration-300",
-              showNav && (isSidebarCollapsed ? "ml-20" : "ml-64")
+              showNav && "ml-64"
             )}>
             {showNav && <Header />}
             <main className="flex-1 overflow-y-auto">
