@@ -8,34 +8,31 @@ import { createServerClient } from '@/lib/supabase/server'
 export async function addProject(formData: FormData) {
   const supabase = createServerClient()
   
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'You must be logged in to create a project.' }
-
   const rawFormData = {
     name: formData.get('name') as string,
-    client_id: null,
+    client_id: formData.get('client_id') as string | null,
     start_date: formData.get('start_date') as string | null,
     due_date: formData.get('due_date') as string | null,
     status: formData.get('status') as string,
     priority: formData.get('priority') as string,
-    members: (formData.get('members') as string).split(','),
+    members: (formData.get('members') as string).split(',').filter(Boolean),
   }
 
   if (!rawFormData.name) {
     return { error: 'Project name is required.' }
   }
 
-  // 1. Insert the project
   const { data: project, error: projectError } = await supabase
     .from('projects')
     .insert({
       name: rawFormData.name,
-      owner_id: user.id,
-      client_id: rawFormData.client_id,
+      owner_id: null,
+      client_id: rawFormData.client_id === 'no-client' ? null : rawFormData.client_id,
       start_date: rawFormData.start_date ? new Date(rawFormData.start_date).toISOString() : null,
       due_date: rawFormData.due_date ? new Date(rawFormData.due_date).toISOString() : null,
       status: rawFormData.status,
       priority: rawFormData.priority,
+      members: rawFormData.members,
     })
     .select()
     .single()
@@ -43,26 +40,6 @@ export async function addProject(formData: FormData) {
   if (projectError) {
     console.error('Error creating project:', projectError)
     return { error: projectError.message }
-  }
-
-  // 2. Insert members into the project_members table
-  if (rawFormData.members && rawFormData.members.length > 0) {
-    const membersToInsert = rawFormData.members.map(memberId => ({
-      project_id: project.id,
-      user_id: memberId,
-    }))
-
-    const { error: membersError } = await supabase
-      .from('project_members')
-      .insert(membersToInsert)
-
-    if (membersError) {
-      // If adding members fails, we should probably roll back the project creation
-      // For now, we'll just log it and return the error.
-      console.error('Error adding project members:', membersError)
-      await supabase.from('projects').delete().eq('id', project.id); // Rollback
-      return { error: `Failed to add members: ${membersError.message}` }
-    }
   }
 
   revalidatePath('/dashboard')
