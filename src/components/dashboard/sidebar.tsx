@@ -59,7 +59,7 @@ export default function Sidebar() {
         'flex items-center gap-4 rounded-lg px-4 py-2 text-sidebar-foreground transition-all',
         {
           'bg-sidebar-accent text-sidebar-accent-foreground font-semibold': isActive,
-          'hover:bg-sidebar-accent/50': !isActive,
+          'hover:bg-sidebar-accent/50 text-white': !isActive,
         }
       )}
     >
@@ -76,7 +76,7 @@ export default function Sidebar() {
     >
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-20 items-center px-6 border-b border-sidebar-border">
-          <Link href="/dashboard" className="flex items-center gap-3 font-semibold text-primary">
+          <Link href="/dashboard" className="flex items-center gap-3 font-semibold">
             <Logo className="h-7 w-7 text-sidebar-foreground" />
             <span className={cn('text-xl font-bold text-sidebar-foreground')}>Work Updates</span>
           </Link>
