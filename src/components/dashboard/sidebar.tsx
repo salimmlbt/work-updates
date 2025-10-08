@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Logo,
+  WorkUpdatesIcon,
   DashboardIcon,
   ProjectsIcon,
   TasksIcon,
@@ -69,19 +69,17 @@ export default function Sidebar({ isCollapsed, setCollapsed }: SidebarProps) {
         <Link
           href={item.href}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all relative',
+            'flex items-center gap-3 rounded-md px-3 py-2 text-sidebar-foreground transition-all relative',
             {
               'bg-sidebar-accent text-sidebar-accent-foreground font-semibold': pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard'),
-              'hover:bg-sidebar-accent/50': !(pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')),
+              'text-sidebar-icon-unselected hover:bg-sidebar-accent/50': !(pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')),
               'justify-center': isCollapsed,
             }
           )}
         >
-          {pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard') && <div className="absolute left-0 top-0 bottom-0 w-1 bg-sidebar-primary rounded-r-md"></div>}
-          
             <span className="flex items-center gap-3">
               <item.icon className="h-5 w-5 shrink-0" />
-              <span className={cn('truncate', { 'sr-only': isCollapsed })}>{item.label}</span>
+              <span className={cn('truncate text-sidebar-foreground', { 'sr-only': isCollapsed })}>{item.label}</span>
             </span>
           
         </Link>
@@ -96,77 +94,103 @@ export default function Sidebar({ isCollapsed, setCollapsed }: SidebarProps) {
 
   return (
     <TooltipProvider>
-      <div
-        className={cn(
-          'hidden bg-sidebar text-sidebar-foreground md:fixed md:inset-y-0 md:left-0 md:flex md:flex-col transition-all duration-300 z-40',
-          { 'w-64': !isCollapsed, 'w-20': isCollapsed }
-        )}
-        onMouseEnter={() => setCollapsed(false)}
-        onMouseLeave={() => setCollapsed(true)}
-      >
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-16 items-center px-4 lg:px-6">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
-              <Logo className="h-7 w-7" />
-              <span className={cn('text-lg text-foreground', { 'sr-only': isCollapsed })}>TaskFlow</span>
-            </Link>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-            <nav className={cn('grid items-start gap-1 px-2 text-sm font-medium lg:px-4')}>
-              {navItems.map((item) => (
-                <NavLink key={item.href} item={item} />
-              ))}
-            </nav>
-          </div>
-          <div className="mt-auto p-2 lg:p-4">
-            <nav className="grid items-start gap-1 text-sm font-medium">
-              {bottomNavItems.map((item) => (
-                 <NavLink key={item.href} item={item} />
-              ))}
-               <Tooltip>
-                <TooltipTrigger asChild>
+      <div className="fixed left-0 top-0 z-20 h-full">
+        <div
+          className={cn(
+            'relative h-screen bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out transform',
+            {
+              'w-52 translate-x-0': !isCollapsed,
+              'w-0 -translate-x-full': isCollapsed,
+            }
+          )}
+        >
+          <div className="absolute right-0 top-0 h-full w-full flex flex-col">
+            <div className="flex h-16 items-center px-4 lg:px-6">
+              <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
+                <WorkUpdatesIcon className="h-6 w-6" />
+                <span className="text-lg text-sidebar-foreground whitespace-nowrap">Work Updates</span>
+              </Link>
+            </div>
+
+            <div className="flex-1 overflow-auto py-2">
+              <nav className="grid items-start gap-1 px-0 text-sm font-medium lg:px-4">
+                {navItems.map((item) => (
+                  <NavLink key={item.href} item={item} />
+                ))}
+              </nav>
+            </div>
+
+            <div className="mt-auto p-2 lg:p-4">
+              <nav className="grid items-start gap-1 text-sm font-medium">
+                {bottomNavItems.map((item) => (
+                  <NavLink key={item.href} item={item} />
+                ))}
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <form action={logout}>
-                        <button className={cn(
-                            'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all',
-                            'hover:bg-sidebar-accent/50',
-                            { 'justify-center': isCollapsed }
-                        )}>
-                            <LogOut className="h-5 w-5 shrink-0" />
-                            <span className={cn({ 'sr-only': isCollapsed })}>Log out</span>
-                        </button>
+                      <button
+                        className={cn(
+                          'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all',
+                          'hover:bg-sidebar-accent/50'
+                        )}
+                      >
+                        <LogOut className="h-5 w-5 shrink-0" />
+                        <span>Log out</span>
+                      </button>
                     </form>
-                </TooltipTrigger>
-                {isCollapsed && (
+                  </TooltipTrigger>
+                  {isCollapsed && (
                     <TooltipContent side="right">
-                    <p>Log out</p>
+                      <p>Log out</p>
                     </TooltipContent>
-                )}
+                  )}
                 </Tooltip>
-            </nav>
-            <div className="mt-4 border-t border-sidebar-border pt-4">
-               <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className={cn("flex items-center gap-3 px-3", { "justify-center": isCollapsed })}>
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={user?.user_metadata.avatar_url} alt={user?.user_metadata.full_name} />
-                      <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className={cn("flex flex-col", { "sr-only": isCollapsed })}>
-                      <span className="text-sm font-medium text-foreground">{user?.user_metadata.full_name}</span>
-                      <span className="text-xs text-sidebar-foreground">{user?.email}</span>
+              </nav>
+
+              <div className="mt-4 border-t border-sidebar-border pt-4">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-3 px-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={user?.user_metadata.avatar_url} alt={user?.user_metadata.full_name} />
+                        <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-sidebar-foreground">{user?.user_metadata.full_name}</span>
+                        <span className="text-xs text-sidebar-foreground">{user?.email}</span>
+                      </div>
                     </div>
-                  </div>
-                </TooltipTrigger>
-                {isCollapsed && (
-                  <TooltipContent side="right">
-                    <p>{user?.user_metadata.full_name}</p>
-                    <p>{user?.email}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
+                  </TooltipTrigger>
+                  {isCollapsed && (
+                    <TooltipContent side="right">
+                      <p>{user?.user_metadata.full_name}</p>
+                      <p>{user?.email}</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </div>
             </div>
           </div>
         </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "fixed top-1/2 h-10 w-10 -translate-y-1/2 z-30 bg-background hover:bg-background rounded-full transition-all duration-300 ease-in-out shadow-md",
+            {
+              "left-48 -translate-x-1/2 opacity-0 group-hover:opacity-100": !isCollapsed,
+              "left-2 opacity-100": isCollapsed,
+            }
+          )}
+          onClick={() => setCollapsed(!isCollapsed)}
+        >
+          {isCollapsed ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+          )}
+        </Button>
       </div>
     </TooltipProvider>
   );
