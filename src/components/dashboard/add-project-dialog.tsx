@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition } from 'react'
@@ -21,6 +22,9 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,6 +53,7 @@ const projectSchema = z.object({
   priority: z.string().min(1, 'Priority is required'),
   start_date: z.date().optional(),
   due_date: z.date().optional(),
+  client_id: z.string().nullable().optional(),
 })
 
 type ProjectFormData = z.infer<typeof projectSchema>
@@ -101,9 +106,10 @@ export function AddProjectDialog({
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
-      members: currentUser ? [currentUser.id] : [],
+      members: [],
       priority: 'None',
       status: 'New',
+      client_id: null,
     },
   })
 
@@ -118,6 +124,7 @@ export function AddProjectDialog({
       formData.append('priority', data.priority)
       if (data.start_date) formData.append('start_date', data.start_date.toISOString())
       if (data.due_date) formData.append('due_date', data.due_date.toISOString())
+      if (data.client_id) formData.append('client_id', data.client_id)
       
       const result = await addProject(formData)
 
@@ -155,6 +162,12 @@ export function AddProjectDialog({
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-4xl p-0 gap-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-2xl font-bold">Create new project</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to create a new project.
+            </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-[2fr_1fr] min-h-[500px]">
               <div className="flex flex-col">
@@ -297,6 +310,28 @@ export function AddProjectDialog({
                           />
                         </PopoverContent>
                       </Popover>
+                    )}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Client</Label>
+                  <Controller
+                    name="client_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
+                          <SelectValue placeholder="Select a client" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no-client">No Client</SelectItem>
+                          {clients.map(client => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   />
                 </div>
