@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -66,6 +66,9 @@ export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, sele
       <DialogContent className="max-w-2xl p-0 gap-0">
         <DialogHeader className="p-6">
           <DialogTitle className="text-2xl font-bold">Add people</DialogTitle>
+          <DialogDescription>
+            Search for people to add to your project.
+          </DialogDescription>
           <div className="relative pt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
@@ -109,7 +112,6 @@ export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, sele
                         <Checkbox 
                             checked={tempSelected.includes(profile.id)}
                             onCheckedChange={(checked) => handleSelect(!!checked, profile.id)}
-                            disabled={currentUser?.id === profile.id}
                         />
                     </div>
                 ))}

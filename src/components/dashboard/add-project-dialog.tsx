@@ -48,7 +48,7 @@ import { getInitials } from '@/lib/utils'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
-  members: z.array(z.string()).min(1, 'At least one member is required'),
+  members: z.array(z.string()),
   status: z.string().min(1, 'Status is required'),
   priority: z.string().min(1, 'Priority is required'),
   start_date: z.date().optional(),
