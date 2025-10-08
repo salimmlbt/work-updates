@@ -50,21 +50,23 @@ export default function Sidebar() {
     fetchUser();
   }, []);
 
-  const NavLink = ({ item }: { item: typeof navItems[0] }) => (
+  const NavLink = ({ item }: { item: typeof navItems[0] }) => {
+    const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
+    return (
     <Link
       href={item.href}
       className={cn(
         'flex items-center gap-4 rounded-lg px-4 py-2 text-sidebar-foreground transition-all',
         {
-          'bg-sidebar-accent text-sidebar-accent-foreground font-semibold': pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard'),
-          'hover:bg-sidebar-accent/50': !(pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')),
+          'bg-sidebar-accent text-sidebar-accent-foreground font-semibold': isActive,
+          'hover:bg-sidebar-accent/50': !isActive,
         }
       )}
     >
-      <item.icon className="h-5 w-5 shrink-0" />
+      <item.icon className={cn('h-5 w-5 shrink-0', !isActive && 'text-sidebar-icon-muted')} />
       <span className={cn('truncate')}>{item.label}</span>
     </Link>
-  );
+  )};
 
   return (
     <div
@@ -96,7 +98,7 @@ export default function Sidebar() {
                 'flex w-full items-center gap-4 rounded-lg px-4 py-2 text-sidebar-foreground transition-all',
                 'hover:bg-sidebar-accent/50'
               )}>
-                <LogOut className="h-5 w-5 shrink-0" />
+                <LogOut className="h-5 w-5 shrink-0 text-sidebar-icon-muted" />
                 <span>Log out</span>
               </button>
             </form>
