@@ -7,11 +7,12 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, cn } from '@/lib/utils';
-import type { Project, Profile, Client } from '@/lib/types';
+import type { Project, Profile, Client, ProjectType } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { FilterIcon } from '@/components/icons';
 import { AddProjectDialog } from '@/components/dashboard/add-project-dialog';
+import { CreateTypeDialog } from './create-type-dialog';
 
 type ProjectWithOwner = Project & {
     owner: {
@@ -30,16 +31,19 @@ interface ProjectsClientProps {
   currentUser: User | null;
   profiles: Profile[];
   clients: Client[];
+  initialProjectTypes: ProjectType[];
 }
 
 const ProjectSidebar = ({ 
     activeView, 
     setActiveView,
-    projectTypes 
+    projectTypes,
+    onAddTypeClick
 }: { 
     activeView: string, 
     setActiveView: (view: string) => void,
-    projectTypes: {name: string, count: number}[]
+    projectTypes: {name: string, count: number}[],
+    onAddTypeClick: () => void
 }) => {
     return (
         <aside className="md:col-span-1">
@@ -81,32 +85,42 @@ const ProjectSidebar = ({
                 <Button
                     variant="ghost"
                     className="mt-2 text-muted-foreground inline-flex items-center p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
-                    onClick={() => { /* Add Type functionality here */ }}
+                    onClick={onAddTypeClick}
                 >
-                    <Plus className="mr-2 h-4 w-4" /> Create folder
+                    <Plus className="mr-2 h-4 w-4" /> Create type
                 </Button>
             </nav>
         </aside>
     )
 }
 
-export default function ProjectsClient({ initialProjects, currentUser, profiles, clients }: ProjectsClientProps) {
+export default function ProjectsClient({ initialProjects, currentUser, profiles, clients, initialProjectTypes }: ProjectsClientProps) {
   const [projects, setProjects] = useState(initialProjects);
   const [isAddProjectOpen, setAddProjectOpen] = useState(false);
   const [activeView, setActiveView] = useState('general');
   const [view, setView] = useState('table');
   const [activeProjectsOpen, setActiveProjectsOpen] = useState(true);
   const [closedProjectsOpen, setClosedProjectsOpen] = useState(true);
+  const [projectTypes, setProjectTypes] = useState(initialProjectTypes);
+  const [isCreateTypeOpen, setCreateTypeOpen] = useState(false);
   
-  const projectTypes = useMemo(() => {
+  const projectTypeCounts = useMemo(() => {
     const types = new Map<string, number>();
     projects.forEach(p => {
         if (p.type) {
             types.set(p.type, (types.get(p.type) || 0) + 1);
         }
     });
+    
+    // Ensure all created types are present, even with 0 count
+    projectTypes.forEach(pt => {
+        if (!types.has(pt.name)) {
+            types.set(pt.name, 0);
+        }
+    });
+
     return Array.from(types).map(([name, count]) => ({name, count}));
-  }, [projects]);
+  }, [projects, projectTypes]);
 
   const filteredProjects = useMemo(() => {
     if (activeView === 'general') {
@@ -128,13 +142,16 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   }
 
   const handleProjectAdded = (newProject: Project) => {
-    // This is a simplified version. We might need to refetch to get owner/client data
     const newProjectWithOwner = {
       ...newProject,
       owner: profiles.find(p => p.id === newProject.owner_id) || null,
       client: clients.find(c => c.id === newProject.client_id) || null,
     };
     setProjects(prev => [newProjectWithOwner as ProjectWithOwner, ...prev]);
+  }
+  
+  const handleTypeCreated = (newType: ProjectType) => {
+      setProjectTypes(prev => [...prev, newType]);
   }
 
   return (
@@ -171,7 +188,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         </div>
       </header>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start flex-1">
-        <ProjectSidebar activeView={activeView} setActiveView={setActiveView} projectTypes={projectTypes} />
+        <ProjectSidebar activeView={activeView} setActiveView={setActiveView} projectTypes={projectTypeCounts} onAddTypeClick={() => setCreateTypeOpen(true)} />
         <main className="md:col-span-3">
           <div className="mb-8">
             <button onClick={() => setActiveProjectsOpen(!activeProjectsOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
@@ -308,9 +325,13 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
           profiles={profiles}
           currentUser={currentUser}
           onProjectAdded={handleProjectAdded}
+          projectTypes={projectTypes}
+        />
+        <CreateTypeDialog 
+            isOpen={isCreateTypeOpen}
+            setIsOpen={setCreateTypeOpen}
+            onTypeCreated={handleTypeCreated}
         />
     </div>
   );
 }
-
-    

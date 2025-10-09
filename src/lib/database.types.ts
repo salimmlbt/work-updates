@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -101,6 +102,24 @@ export type Database = {
             referencedColumns: ["id"]
           }
         ]
+      }
+      project_types: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

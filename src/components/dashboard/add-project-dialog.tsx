@@ -40,12 +40,11 @@ import { Calendar } from '@/components/ui/calendar'
 import { useToast } from '@/hooks/use-toast'
 import { addProject } from '@/app/actions'
 import { cn } from '@/lib/utils'
-import type { Client, Profile, Project } from '@/lib/types'
+import type { Client, Profile, Project, ProjectType } from '@/lib/types'
 import { AddPeopleDialog } from './add-people-dialog'
 import type { User } from '@supabase/supabase-js'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { getInitials } from '@/lib/utils'
-import { predefinedTasks } from '@/lib/predefined-tasks'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -67,6 +66,7 @@ interface AddProjectDialogProps {
   profiles: Profile[]
   currentUser: User | null
   onProjectAdded: (newProject: Project) => void
+  projectTypes: ProjectType[]
 }
 
 const priorityOptions = [
@@ -92,6 +92,7 @@ export function AddProjectDialog({
   profiles,
   currentUser,
   onProjectAdded,
+  projectTypes
 }: AddProjectDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
@@ -283,9 +284,9 @@ export function AddProjectDialog({
                           <SelectValue placeholder="Select project type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {predefinedTasks.map(task => (
-                            <SelectItem key={task} value={task}>
-                              {task}
+                          {projectTypes.map(type => (
+                            <SelectItem key={type.id} value={type.name}>
+                              {type.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

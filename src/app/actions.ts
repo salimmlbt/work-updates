@@ -394,3 +394,13 @@ export async function updateUserTeam(userId: string, teamId: string) {
   revalidatePath('/teams')
   return { success: true }
 }
+
+export async function createProjectType(name: string) {
+    const supabase = createServerClient();
+    const { data, error } = await supabase.from('project_types').insert({ name }).select().single();
+    if (error) {
+        return { error: error.message };
+    }
+    revalidatePath('/projects');
+    return { data };
+}

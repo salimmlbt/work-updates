@@ -1,3 +1,4 @@
+
 import type { Database as DB } from './database.types';
 
 export type Database = DB;
@@ -11,6 +12,7 @@ export type Profile = DB['public']['Tables']['profiles']['Row'] & {
 export type Role = DB['public']['Tables']['roles']['Row'];
 export type Team = DB['public']['Tables']['teams']['Row'];
 export type Client = DB['public']['Tables']['clients']['Row'];
+export type ProjectType = DB['public']['Tables']['project_types']['Row'];
 
 export type TaskWithAssignee = Task & {
   profiles: DB['public']['Tables']['profiles']['Row'] | null;

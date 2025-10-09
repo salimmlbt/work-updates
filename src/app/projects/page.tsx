@@ -1,7 +1,7 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import ProjectsClient from './projects-client';
-import type { Profile, Client, Project } from '@/lib/types';
+import type { Profile, Client, Project, ProjectType } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 
 type ProjectWithOwner = Project & {
@@ -24,6 +24,7 @@ export default async function ProjectsPage() {
     const { data: projectsData } = await supabase.from('projects').select('*, owner:profiles(*), client:clients(*)');
     const { data: profiles } = await supabase.from('profiles').select('*');
     const { data: clients } = await supabase.from('clients').select('*');
+    const { data: projectTypes } = await supabase.from('project_types').select('*');
 
     return (
         <ProjectsClient 
@@ -31,6 +32,7 @@ export default async function ProjectsPage() {
             currentUser={user} 
             profiles={profiles as Profile[] ?? []}
             clients={clients as Client[] ?? []}
+            initialProjectTypes={projectTypes as ProjectType[] ?? []}
         />
     );
 }
