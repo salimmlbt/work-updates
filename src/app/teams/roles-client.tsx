@@ -10,9 +10,9 @@ import {
 } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Plus, ChevronDown, MoreVertical, Pencil, Copy, Trash2 } from 'lucide-react'
+import { Plus, ChevronDown, MoreVertical, Pencil, Copy, Trash2, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -62,29 +62,47 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
 
+    const [modifiedPermissions, setModifiedPermissions] = useState<Record<string, PermissionLevel> | null>(null);
+
     const currentRole = roles.find(r => r.name === selectedRole);
+
+    useEffect(() => {
+        setModifiedPermissions(null);
+    }, [selectedRole]);
     
     const currentPermissions = currentRole?.name === 'Falaq Admin'
         ? permissionsList.reduce((acc, p) => ({ ...acc, [p.id]: "Editor" as PermissionLevel }), {})
         : currentRole?.permissions || permissionsList.reduce((acc, p) => ({ ...acc, [p.id]: "Editor" as PermissionLevel }), {});
 
-    const handlePermissionChange = (permissionId: string, level: PermissionLevel) => {
-        if (selectedRole === 'Falaq Admin' || !currentRole || currentRole.name === 'Falaq Admin') return;
+    const displayPermissions = modifiedPermissions || currentPermissions;
 
-        const newPermissions = { ...currentPermissions, [permissionId]: level };
-        
+    const handlePermissionChange = (permissionId: string, level: PermissionLevel) => {
+        if (selectedRole === 'Falaq Admin' || !currentRole) return;
+        const newPermissions = { ...displayPermissions, [permissionId]: level };
+        setModifiedPermissions(newPermissions);
+    }
+    
+    const handleSaveChanges = () => {
+        if (!currentRole || !modifiedPermissions || currentRole.name === 'Falaq Admin') return;
+
         startTransition(async () => {
-            const { error } = await updateRole(currentRole.id, currentRole.name, newPermissions);
+            const { error } = await updateRole(currentRole.id, currentRole.name, modifiedPermissions);
             if (error) {
                 toast({ title: "Error updating permissions", description: error, variant: "destructive" });
             } else {
                  setRoles(prev => prev.map(role => 
                     role.id === currentRole.id
-                        ? { ...role, permissions: newPermissions }
+                        ? { ...role, permissions: modifiedPermissions }
                         : role
                 ));
+                setModifiedPermissions(null);
+                toast({ title: "Permissions saved", description: "Changes have been saved successfully." });
             }
         });
+    }
+
+    const handleCancelChanges = () => {
+        setModifiedPermissions(null);
     }
 
     const handleCreateRole = () => {
@@ -257,9 +275,9 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                                     <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
                                     <div className="flex gap-2">
                                         <Select
-                                            value={currentPermissions[permission.id]}
+                                            value={displayPermissions[permission.id]}
                                             onValueChange={(value: PermissionLevel) => handlePermissionChange(permission.id, value)}
-                                            disabled={selectedRole === 'Falaq Admin' || isPending}
+                                            disabled={selectedRole === 'Falaq Admin'}
                                         >
                                             <SelectTrigger className="w-[120px]">
                                                 <SelectValue placeholder="Select level" />
@@ -274,6 +292,15 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                                 </div>
                             ))}
                         </div>
+                        {modifiedPermissions && selectedRole !== 'Falaq Admin' && (
+                            <div className="mt-6 flex justify-end gap-2">
+                                <Button variant="ghost" onClick={handleCancelChanges} disabled={isPending}>Cancel</Button>
+                                <Button onClick={handleSaveChanges} disabled={isPending}>
+                                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
