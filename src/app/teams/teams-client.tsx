@@ -291,8 +291,8 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 
 	return (
 		<>
-			<div className="grid grid-cols-1 md:grid-cols-6 gap-8 items-start">
-				<aside className="md:col-span-1">
+			<div className="flex flex-col md:flex-row gap-8">
+				<aside className="w-full md:w-64">
 					<h2 className="text-lg font-bold mb-4">Teams</h2>
 					<div className="space-y-1">
 						<div
@@ -362,7 +362,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 					</div>
 				</aside>
 
-				<main className="md:col-span-5">
+				<main className="flex-1">
                     <div className="mb-8">
                         <button onClick={() => setActiveUsersOpen(!activeUsersOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
                             <ChevronDown className={cn("w-5 h-5 transition-transform", !activeUsersOpen && "-rotate-90")} />
@@ -487,6 +487,5 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 		</>
 	);
 }
-
     
     

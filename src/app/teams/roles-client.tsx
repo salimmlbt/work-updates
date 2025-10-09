@@ -169,8 +169,8 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
 
     return (
     <>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-8">
-            <aside className="md:col-span-1">
+        <div className="flex flex-col md:flex-row gap-8">
+            <aside className="w-full md:w-64">
                 <div className="space-y-4">
                     <div>
                         <h3 className="text-lg font-semibold mb-4">Role</h3>
@@ -244,7 +244,7 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                     </div>
                 </div>
             </aside>
-            <main className="md:col-span-5">
+            <main className="flex-1">
                 <div className="space-y-6">
                     <div>
                         <Button variant="ghost" className="text-lg font-semibold p-0 mb-4 hover:bg-transparent">
