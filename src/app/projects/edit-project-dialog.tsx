@@ -43,8 +43,6 @@ import { cn } from '@/lib/utils'
 import type { Client, Profile, Project, ProjectType } from '@/lib/types'
 import { AddPeopleDialog } from '@/components/dashboard/add-people-dialog'
 import type { User } from '@supabase/supabase-js'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { getInitials } from '@/lib/utils'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -196,29 +194,23 @@ export function EditProjectDialog({
 
                   <div className="space-y-2">
                     <Label className="text-sm text-muted-foreground">Members {selectedMembers.length}</Label>
-                    <div className="flex items-center gap-2">
-                         <div className="flex -space-x-2">
-                           {selectedMembers.slice(0, 3).map(id => {
-                            const profile = profiles.find(p => p.id === id);
-                            if (!profile) return null;
-                            return (
-                                <Avatar key={id} className="h-8 w-8 border-2 border-background">
-                                    <AvatarImage src={profile.avatar_url ?? undefined} />
-                                    <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                                </Avatar>
-                            )
-                           })}
-                         </div>
-                         {selectedMembers.length > 3 && (
-                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
-                                +{selectedMembers.length-3}
-                            </div>
-                         )}
-                      <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={() => setAddPeopleOpen(true)}>
+                    <div className="text-sm">
+                      {selectedMembers.length > 0 ? (
+                          selectedMembers.map(id => {
+                          const profile = profiles.find(p => p.id === id);
+                          return profile?.full_name || 'Unknown User';
+                          }).join(', ')
+                      ) : 'No members selected'}
+                    </div>
+                     <Button 
+                        type="button" 
+                        variant="ghost" 
+                        className="text-muted-foreground inline-flex items-center p-0 h-auto hover:bg-transparent hover:text-primary focus:ring-0 focus:ring-offset-0"
+                        onClick={() => setAddPeopleOpen(true)}
+                      >
                         <Plus className="h-4 w-4 mr-1" />
                         Add people
                       </Button>
-                    </div>
                     {errors.members && <p className="text-sm text-destructive">{errors.members.message}</p>}
                   </div>
                 </div>
