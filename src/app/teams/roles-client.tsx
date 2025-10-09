@@ -13,7 +13,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Plus, ChevronDown, MoreVertical, Pencil, Copy, Trash2, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, useTransition, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -277,10 +277,12 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                             <ChevronDown className="mr-2 h-5 w-5" />
                             Permissions
                         </Button>
-                        <div className="space-y-2">
+                        <div className="space-y-0">
                             {permissionsList.map((permission) => (
-                                <div key={permission.id} className="flex justify-between items-center py-2">
-                                    <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
+                                <div key={permission.id} className="flex items-center py-2">
+                                    <div className="flex-1">
+                                        <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
+                                    </div>
                                     <div className="flex gap-2">
                                          {permissionLevels.map((level) => (
                                             <Button
@@ -317,9 +319,10 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
             </main>
         </div>
         <Dialog open={isCreateRoleOpen} onOpenChange={setCreateRoleOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Create role</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold">Create role</DialogTitle>
+                    <DialogDescription>Enter a name for the new role.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                     <Label htmlFor="create-role-name" className="sr-only">Role name</Label>
@@ -334,14 +337,18 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                     <DialogClose asChild>
                         <Button variant="ghost">Cancel</Button>
                     </DialogClose>
-                    <Button onClick={handleCreateRole} disabled={isPending}>Create role</Button>
+                    <Button onClick={handleCreateRole} disabled={isPending || !newRoleName.trim()}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Create role
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
         <Dialog open={isRenameRoleOpen} onOpenChange={setRenameRoleOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Rename role</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold">Rename role</DialogTitle>
+                    <DialogDescription>Enter a new name for the role.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                     <Label htmlFor="rename-role-name" className="sr-only">Role name</Label>
@@ -356,7 +363,10 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                     <DialogClose asChild>
                         <Button variant="ghost">Cancel</Button>
                     </DialogClose>
-                    <Button onClick={handleRenameRole} disabled={isPending}>Save changes</Button>
+                    <Button onClick={handleRenameRole} disabled={isPending || !newRoleName.trim() || newRoleName.trim() === roleToEdit?.name}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save changes
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

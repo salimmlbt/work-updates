@@ -39,9 +39,13 @@ export default async function TeamsPage() {
     });
   }
   
-  const { data: roles } = await supabase.from('roles').select('*');
-  const { data: profiles } = await supabase.from('profiles').select('*, teams:profile_teams(teams(*))');
-  const { data: teams } = await supabase.from('teams').select('*');
+  const { data: rolesData } = await supabase.from('roles').select('*');
+  const { data: profilesData } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))');
+  const { data: teamsData } = await supabase.from('teams').select('*');
+
+  const roles = rolesData as Role[] ?? [];
+  const profiles = profilesData as Profile[] ?? [];
+  const teams = teamsData as Team[] ?? [];
 
   const permissionsList = [
     { id: 'dashboard', label: 'Can the "{ROLE_NAME}" Access Dashboard?' },
@@ -93,13 +97,13 @@ export default async function TeamsPage() {
         </TabsContent>
         <TabsContent value="teams" className="mt-6">
           <TeamsClient 
-            initialUsers={profiles as Profile[] ?? []} 
-            initialRoles={roles as Role[] ?? []} 
-            initialTeams={teams as Team[] ?? []}
+            initialUsers={profiles} 
+            initialRoles={roles} 
+            initialTeams={teams}
           />
         </TabsContent>
         <TabsContent value="roles" className="mt-6">
-          <RolesClient initialRoles={roles as Role[] ?? []} permissionsList={permissionsList} />
+          <RolesClient initialRoles={roles} permissionsList={permissionsList} />
         </TabsContent>
       </Tabs>
     </div>
