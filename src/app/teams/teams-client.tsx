@@ -220,10 +220,10 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                 ) : (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-start text-left font-normal" disabled={isPending || user.is_archived}>
-                          <div className="flex flex-col items-start">
+                        <Button variant="ghost" className="w-full justify-start text-left font-normal h-auto min-h-10" disabled={isPending || user.is_archived}>
+                          <div className="flex flex-wrap gap-1">
                             {user.teams.length > 0 
-                              ? user.teams.map(t => t.name).join(', ')
+                              ? user.teams.map(t => <Badge key={t.id} variant="secondary">{t.name}</Badge>)
                               : <span className="text-muted-foreground">No team</span>
                             }
                           </div>
@@ -288,10 +288,12 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                       <UserCog className="mr-2 h-4 w-4" />
                                       Edit User
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Archive
-                                  </DropdownMenuItem>
+                                   {!user.isAdmin && (
+                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Archive
+                                    </DropdownMenuItem>
+                                  )}
                                 </>
                               ) : (
                                 <>
@@ -524,3 +526,5 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 		</>
 	);
 }
+
+    
