@@ -75,6 +75,8 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
         : currentRole?.permissions || permissionsList.reduce((acc, p) => ({ ...acc, [p.id]: "Editor" as PermissionLevel }), {});
 
     const displayPermissions = modifiedPermissions || currentPermissions;
+    
+    const permissionLevels: PermissionLevel[] = ["Restricted", "Viewer", "Editor"];
 
     const handlePermissionChange = (permissionId: string, level: PermissionLevel) => {
         if (selectedRole === 'Falaq Admin' || !currentRole) return;
@@ -274,20 +276,23 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                                 <div key={permission.id} className="flex justify-between items-center p-4 border rounded-lg">
                                     <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
                                     <div className="flex gap-2">
-                                        <Select
-                                            value={displayPermissions[permission.id]}
-                                            onValueChange={(value: PermissionLevel) => handlePermissionChange(permission.id, value)}
-                                            disabled={selectedRole === 'Falaq Admin'}
-                                        >
-                                            <SelectTrigger className="w-[120px]">
-                                                <SelectValue placeholder="Select level" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Restricted">Restricted</SelectItem>
-                                                <SelectItem value="Viewer">Viewer</SelectItem>
-                                                <SelectItem value="Editor">Editor</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                         {permissionLevels.map((level) => (
+                                            <Button
+                                                key={level}
+                                                variant={displayPermissions[permission.id] === level ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => handlePermissionChange(permission.id, level)}
+                                                disabled={selectedRole === 'Falaq Admin'}
+                                                className={cn(
+                                                    "w-24",
+                                                    displayPermissions[permission.id] === level
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'bg-transparent text-foreground'
+                                                )}
+                                            >
+                                                {level}
+                                            </Button>
+                                        ))}
                                     </div>
                                 </div>
                             ))}
