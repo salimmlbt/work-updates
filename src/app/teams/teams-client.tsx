@@ -278,10 +278,12 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                       <UserCog className="mr-2 h-4 w-4" />
                                       Edit User
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Archive
-                                  </DropdownMenuItem>
+                                  {!user.isAdmin && (
+                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Archive
+                                    </DropdownMenuItem>
+                                  )}
                                 </>
                               ) : (
                                 <>
