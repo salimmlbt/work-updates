@@ -50,6 +50,70 @@ export async function addProject(formData: FormData) {
   return { data: project }
 }
 
+export async function updateProject(projectId: string, formData: FormData) {
+    const supabase = createServerClient()
+    
+    const rawFormData = {
+        name: formData.get('name') as string,
+        client_id: formData.get('client_id') as string | null,
+        start_date: formData.get('start_date') as string | null,
+        due_date: formData.get('due_date') as string | null,
+        status: formData.get('status') as string,
+        priority: formData.get('priority') as string,
+        members: (formData.get('members') as string).split(',').filter(Boolean),
+        type: formData.get('type') as string | null,
+    }
+
+    if (!rawFormData.name) {
+        return { error: 'Project name is required.' }
+    }
+
+    const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .update({
+            name: rawFormData.name,
+            client_id: rawFormData.client_id === 'no-client' ? null : rawFormData.client_id,
+            start_date: rawFormData.start_date ? new Date(rawFormData.start_date).toISOString() : null,
+            due_date: rawFormData.due_date ? new Date(rawFormData.due_date).toISOString() : null,
+            status: rawFormData.status,
+            priority: rawFormData.priority,
+            members: rawFormData.members,
+            type: rawFormData.type,
+        })
+        .eq('id', projectId)
+        .select()
+        .single()
+
+    if (projectError) {
+        console.error('Error updating project:', projectError)
+        return { error: projectError.message }
+    }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/projects')
+    return { data: project }
+}
+
+export async function deleteProject(projectId: string) {
+    const supabase = createServerClient()
+
+    // First, delete associated tasks
+    const { error: tasksError } = await supabase.from('tasks').delete().eq('project_id', projectId);
+    if (tasksError) {
+        return { error: `Failed to delete project tasks: ${tasksError.message}` };
+    }
+
+    // Then, delete the project
+    const { error: projectError } = await supabase.from('projects').delete().eq('id', projectId);
+    if (projectError) {
+        return { error: `Failed to delete project: ${projectError.message}` };
+    }
+
+    revalidatePath('/dashboard');
+    revalidatePath('/projects');
+    return { success: true };
+}
+
 export async function addTask(formData: FormData) {
   const supabase = createServerClient()
   

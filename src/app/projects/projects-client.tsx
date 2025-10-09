@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,19 @@ import { FilterIcon } from '@/components/icons';
 import { AddProjectDialog } from '@/components/dashboard/add-project-dialog';
 import { CreateTypeDialog } from './create-type-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from '@/hooks/use-toast';
+import { deleteProject } from '@/app/actions';
+import { EditProjectDialog } from './edit-project-dialog';
 
 type ProjectWithOwner = Project & {
     owner: {
@@ -105,6 +118,13 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [projectTypes, setProjectTypes] = useState(initialProjectTypes);
   const [isCreateTypeOpen, setCreateTypeOpen] = useState(false);
   
+  const [projectToEdit, setProjectToEdit] = useState<ProjectWithOwner | null>(null);
+  const [isEditProjectOpen, setEditProjectOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectWithOwner | null>(null);
+  const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+
   const projectTypeCounts = useMemo(() => {
     const types = new Map<string, number>();
     projects.forEach(p => {
@@ -113,7 +133,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         }
     });
     
-    // Ensure all created types are present, even with 0 count
     projectTypes.forEach(pt => {
         if (!types.has(pt.name)) {
             types.set(pt.name, 0);
@@ -150,9 +169,44 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     };
     setProjects(prev => [newProjectWithOwner as ProjectWithOwner, ...prev]);
   }
+
+  const handleProjectUpdated = (updatedProject: Project) => {
+    const updatedProjectWithOwner = {
+        ...updatedProject,
+        owner: profiles.find(p => p.id === updatedProject.owner_id) || null,
+        client: clients.find(c => c.id === updatedProject.client_id) || null,
+    };
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProjectWithOwner as ProjectWithOwner : p));
+  }
   
   const handleTypeCreated = (newType: ProjectType) => {
       setProjectTypes(prev => [...prev, newType]);
+  }
+
+  const handleEditClick = (project: ProjectWithOwner) => {
+    setProjectToEdit(project);
+    setEditProjectOpen(true);
+  }
+
+  const handleDeleteClick = (project: ProjectWithOwner) => {
+    setProjectToDelete(project);
+    setDeleteAlertOpen(true);
+  }
+
+  const handleDeleteProject = () => {
+    if (!projectToDelete) return;
+
+    startTransition(async () => {
+        const result = await deleteProject(projectToDelete.id);
+        if (result.error) {
+            toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
+        } else {
+            toast({ title: "Project deleted", description: `Project "${projectToDelete.name}" has been deleted.` });
+            setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+        }
+        setDeleteAlertOpen(false);
+        setProjectToDelete(null);
+    });
   }
 
   return (
@@ -253,11 +307,11 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
-                                        <DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditClick(project)}>
                                             <Pencil className="mr-2 h-4 w-4" />
                                             Edit
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete
                                         </DropdownMenuItem>
@@ -342,11 +396,11 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
-                                        <DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditClick(project)}>
                                             <Pencil className="mr-2 h-4 w-4" />
                                             Edit
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete
                                         </DropdownMenuItem>
@@ -372,11 +426,44 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
           onProjectAdded={handleProjectAdded}
           projectTypes={projectTypes}
         />
+        {projectToEdit && (
+            <EditProjectDialog
+                isOpen={isEditProjectOpen}
+                setIsOpen={setEditProjectOpen}
+                project={projectToEdit}
+                clients={clients}
+                profiles={profiles}
+                currentUser={currentUser}
+                onProjectUpdated={handleProjectUpdated}
+                projectTypes={projectTypes}
+            />
+        )}
         <CreateTypeDialog 
             isOpen={isCreateTypeOpen}
             setIsOpen={setCreateTypeOpen}
             onTypeCreated={handleTypeCreated}
         />
+        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the project
+                        "{projectToDelete?.name}" and all associated data.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setProjectToDelete(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleDeleteProject}
+                        className={cn(buttonVariants({ variant: "destructive" }))}
+                        disabled={isPending}
+                    >
+                       {isPending ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
