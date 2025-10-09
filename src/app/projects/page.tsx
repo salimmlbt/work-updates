@@ -1,7 +1,4 @@
 
-'use client'
-
-import { useState } from 'react';
 import { createServerClient } from '@/lib/supabase/server';
 import ProjectsClient from './projects-client';
 import ProjectTypes from './project-types';
@@ -61,7 +58,7 @@ const ProjectSidebar = ({ activeView, setActiveView }: { activeView: string, set
 }
 
 
-export default function ProjectsPage({ initialProjects, currentUser, profiles, clients }: ProjectsPageProps) {
+export default function ProjectsPage({ initialProjects = [], currentUser, profiles, clients }: ProjectsPageProps) {
   const [activeView, setActiveView] = useState('general');
 
   return (
@@ -85,4 +82,3 @@ export default function ProjectsPage({ initialProjects, currentUser, profiles, c
     </div>
   );
 }
-
