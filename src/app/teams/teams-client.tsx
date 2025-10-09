@@ -142,14 +142,14 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
           const result = await updateUserStatus(user.id, status);
           if (result.error) {
               toast({
-                  title: `Error ${status === 'Active' ? 'unarchiving' : 'archiving'} user`,
+                  title: `Error ${status === 'Active' ? 'restoring' : 'archiving'} user`,
                   description: result.error,
                   variant: 'destructive',
               });
           } else {
               toast({
-                  title: `User ${status === 'Active' ? 'Unarchived' : 'Archived'}`,
-                  description: `${user.full_name} has been ${status === 'Active' ? 'unarchived' : 'archived'}.`,
+                  title: `User ${status === 'Active' ? 'Restored' : 'Archived'}`,
+                  description: `${user.full_name} has been ${status === 'Active' ? 'restored' : 'archived'}.`,
               });
               setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status } : u));
               setArchiveAlertOpen(false);
@@ -255,19 +255,21 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                               </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
-                              <DropdownMenuItem>
-                                  <UserCog className="mr-2 h-4 w-4" />
-                                  User settings
-                              </DropdownMenuItem>
                               {user.status === 'Active' ? (
-                                <DropdownMenuItem className="text-amber-600 focus:text-amber-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
-                                    <Archive className="mr-2 h-4 w-4" />
-                                    Archive
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuItem>
+                                      <UserCog className="mr-2 h-4 w-4" />
+                                      User settings
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Archive
+                                  </DropdownMenuItem>
+                                </>
                               ) : (
                                 <DropdownMenuItem onClick={() => handleUpdateUserStatus(user, 'Active')}>
                                     <Archive className="mr-2 h-4 w-4" />
-                                    Unarchive
+                                    Restore User
                                 </DropdownMenuItem>
                               )}
                           </DropdownMenuContent>
