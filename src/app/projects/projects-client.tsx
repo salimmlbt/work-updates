@@ -44,7 +44,6 @@ const ProjectSidebar = ({
 }) => {
     return (
         <aside className="md:col-span-1">
-            <h2 className="text-lg font-bold mb-4">Projects</h2>
             <nav className="space-y-1">
                 <div
                     key="general"
@@ -79,6 +78,13 @@ const ProjectSidebar = ({
                        {type}
                     </div>
                 ))}
+                <Button
+                    variant="ghost"
+                    className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
+                    onClick={() => { /* Add Type functionality here */ }}
+                >
+                    <Plus className="mr-2 h-4 w-4" /> Add Type
+                </Button>
             </nav>
         </aside>
     )
