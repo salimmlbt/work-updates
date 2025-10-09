@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder } from 'lucide-react';
+import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { FilterIcon } from '@/components/icons';
 import { AddProjectDialog } from '@/components/dashboard/add-project-dialog';
 import { CreateTypeDialog } from './create-type-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type ProjectWithOwner = Project & {
     owner: {
@@ -208,11 +209,12 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                       <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
                       <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
                       <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {activeProjects.map(project => (
-                      <tr key={project.id} className="border-b hover:bg-muted/50">
+                      <tr key={project.id} className="border-b hover:bg-muted/50 group">
                         <td className="px-4 py-3 font-medium">{project.name}</td>
                         <td className="px-4 py-3">{project.status ?? "New"}</td>
                         <td className="px-4 py-3">
@@ -242,10 +244,31 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                             )}
                           </div>
                         </td>
+                        <td className="px-4 py-3">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </td>
                       </tr>
                     ))}
                     <tr>
-                      <td colSpan={6} className="px-4 pt-4">
+                      <td colSpan={7} className="px-4 pt-4">
                           <Button variant="ghost" className="text-muted-foreground" onClick={() => setAddProjectOpen(true)}>
                               <Plus className="h-4 w-4 mr-2" />
                               Add project
@@ -275,11 +298,12 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                       <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
                       <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
                       <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {closedProjects.map(project => (
-                      <tr key={project.id} className="border-b hover:bg-muted/50">
+                      <tr key={project.id} className="border-b hover:bg-muted/50 group">
                         <td className="px-4 py-3 font-medium">{project.name}</td>
                         <td className="px-4 py-3">{project.status ?? "New"}</td>
                         <td className="px-4 py-3">
@@ -308,6 +332,27 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                               </div>
                             )}
                           </div>
+                        </td>
+                        <td className="px-4 py-3">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </td>
                       </tr>
                     ))}
