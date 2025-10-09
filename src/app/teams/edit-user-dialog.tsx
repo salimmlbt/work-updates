@@ -20,10 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Pencil, User } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile } from '@/lib/types'
 import { updateUser } from './actions'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
 
 interface EditUserDialogProps {
   isOpen: boolean
@@ -42,9 +44,13 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     teamId: user.team_id || '',
     password: '',
     confirmPassword: '',
+    avatar: null as File | null,
   });
   const [isFormValid, setIsFormValid] = useState(false);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user.avatar_url);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
   useEffect(() => {
     const { name, roleId, teamId, password, confirmPassword } = formState;
@@ -63,8 +69,10 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
         teamId: user.team_id || '',
         password: '',
         confirmPassword: '',
+        avatar: null,
     });
-  }, [user]);
+    setAvatarPreview(user.avatar_url);
+  }, [user, isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -73,6 +81,26 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
 
   const handleSelectChange = (name: 'roleId' | 'teamId') => (value: string) => {
     setFormState(prevState => ({ ...prevState, [name]: value }));
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCrop(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    if (e.target) {
+      e.target.value = '';
+    }
+  };
+
+  const onCropComplete = (croppedImage: File) => {
+    setFormState(prevState => ({ ...prevState, avatar: croppedImage }));
+    setAvatarPreview(URL.createObjectURL(croppedImage));
+    setImageToCrop(null);
   };
 
   const handleUpdateUser = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -86,91 +114,130 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     if (formState.password) {
       formData.append('password', formState.password);
     }
+    if (formState.avatar) {
+      formData.append('avatar', formState.avatar);
+    }
 
     startTransition(async () => {
       const { data, error } = await updateUser(user.id, formData);
       if (error) {
-        toast({ title: "Error updating user", description: error, variant: "destructive" });
+        toast({ title: "Error updating user", description: error.message, variant: "destructive" });
       } else if (data) {
         onUserUpdated(data);
         toast({ title: "User updated", description: "The user's profile has been updated." });
+        setIsOpen(false);
       }
     });
   };
 
   return (
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Edit User</DialogTitle>
-            <DialogDescription>
-              Update the user's profile information.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleUpdateUser}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" name="name" placeholder="Enter full name" value={formState.name} onChange={handleInputChange} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                   <Input id="email" name="email" type="email" value={user.email || ''} disabled />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+      <>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">Edit User</DialogTitle>
+              <DialogDescription>
+                Update the user's profile information.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateUser}>
+                <div className="space-y-4 py-4">
+                  <div className="flex justify-center">
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          ref={fileInputRef}
+                          onChange={handleAvatarChange}
+                        />
+                        <Avatar
+                          className="h-24 w-24 cursor-pointer"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <AvatarImage src={avatarPreview ?? undefined} />
+                          <AvatarFallback>
+                            <User className="h-12 w-12 text-muted-foreground" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <button
+                          type="button"
+                          className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles.map(role => (
-                          <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input id="name" name="name" placeholder="Enter full name" value={formState.name} onChange={handleInputChange} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="team">Team</Label>
-                    <Select name="teamId" onValueChange={handleSelectChange('teamId')} value={formState.teamId} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a team" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teams.map(team => (
-                          <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" name="email" type="email" value={user.email || ''} disabled />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roles.map(role => (
+                            <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="team">Team</Label>
+                      <Select name="teamId" onValueChange={handleSelectChange('teamId')} value={formState.teamId} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a team" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teams.map(team => (
+                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">New Password (optional)</Label>
+                    <Input id="password" name="password" type="password" placeholder="Enter new password" value={formState.password} onChange={handleInputChange} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm new password" value={formState.confirmPassword} onChange={handleInputChange} />
+                    {formState.password && formState.confirmPassword && formState.password !== formState.confirmPassword && (
+                      <p className="text-sm text-destructive">Passwords do not match.</p>
+                    )}
                   </div>
                 </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="password">New Password (optional)</Label>
-                  <Input id="password" name="password" type="password" placeholder="Enter new password" value={formState.password} onChange={handleInputChange} />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm new password" value={formState.confirmPassword} onChange={handleInputChange} />
-                   {formState.password && formState.confirmPassword && formState.password !== formState.confirmPassword && (
-                    <p className="text-sm text-destructive">Passwords do not match.</p>
-                   )}
-                </div>
-              </div>
-              <DialogFooter className="justify-end sm:justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isPending || !isFormValid}
-                >
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Changes
-                </Button>
-              </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+                <DialogFooter className="justify-end sm:justify-end gap-2">
+                  <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={isPending || !isFormValid}
+                  >
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+        <ImageCropperDialog
+          isOpen={!!imageToCrop}
+          image={imageToCrop}
+          onClose={() => setImageToCrop(null)}
+          onCropComplete={onCropComplete}
+        />
+      </>
   )
 }

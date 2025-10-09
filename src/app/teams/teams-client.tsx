@@ -274,7 +274,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                           <DropdownMenuContent>
                               {!user.is_archived ? (
                                 <>
-                                  <DropdownMenuItem onClick={() => handleEditUserClick(user)}>
+                                  <DropdownMenuItem onClick={() => handleEditUserClick(user as Profile)}>
                                       <UserCog className="mr-2 h-4 w-4" />
                                       Edit User
                                   </DropdownMenuItem>
@@ -285,7 +285,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                 </>
                               ) : (
                                 <>
-                                  <DropdownMenuItem onClick={() => handleUpdateUserArchived(user, false)}>
+                                  <DropdownMenuItem onClick={() => handleUpdateUserArchived(user as Profile, false)}>
                                       <Archive className="mr-2 h-4 w-4" />
                                       Restore User
                                   </DropdownMenuItem>
@@ -382,7 +382,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                         <button onClick={() => setActiveUsersOpen(!activeUsersOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
                             <ChevronDown className={cn("w-5 h-5 transition-transform", !activeUsersOpen && "-rotate-90")} />
                             Active users
-                            <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeUsers.length + (adminUser ? 1 : 0)}</span>
+                            <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeUsers.length + (adminUser && !adminUser.is_archived ? 1 : 0)}</span>
                         </button>
 
                         {activeUsersOpen && (
@@ -418,7 +418,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                         <button onClick={() => setArchivedUsersOpen(!archivedUsersOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
                             <ChevronDown className={cn("w-5 h-5 transition-transform", !archivedUsersOpen && "-rotate-90")} />
                             Archived users
-                            <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{archivedUsers.length}</span>
+                            <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{archivedUsers.length + (adminUser && adminUser.is_archived ? 1: 0)}</span>
                         </button>
                         {archivedUsersOpen && (
                           <div className="overflow-x-auto">

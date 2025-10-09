@@ -206,6 +206,42 @@ export async function updateUser(userId: string, formData: FormData) {
     const roleId = formData.get('role_id') as string;
     const teamId = formData.get('team_id') as string;
     const newPassword = formData.get('password') as string | null;
+    const avatarFile = formData.get('avatar') as File | null;
+    
+    const { data: currentProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', userId)
+        .single();
+    
+    if (fetchError) {
+        return { error: `Could not fetch user data: ${fetchError.message}` };
+    }
+
+    let avatarUrl = currentProfile.avatar_url;
+
+    if (avatarFile && avatarFile.size > 0) {
+        if (avatarUrl && !avatarUrl.includes('pravatar.cc')) {
+            const oldAvatarPath = new URL(avatarUrl).pathname.split('/avatars/').pop();
+            if (oldAvatarPath) {
+                await supabase.storage.from('avatars').remove([oldAvatarPath]);
+            }
+        }
+        const newFilePath = `public/${Date.now()}_${avatarFile.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(newFilePath, avatarFile);
+
+        if (uploadError) {
+            return { error: `Failed to upload new avatar: ${uploadError.message}` };
+        }
+
+        const { data: publicUrlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(newFilePath);
+        
+        avatarUrl = publicUrlData.publicUrl;
+    }
 
     // Update profile in 'profiles' table
     const { data: profileData, error: profileError } = await supabase
@@ -214,6 +250,7 @@ export async function updateUser(userId: string, formData: FormData) {
             full_name: fullName,
             role_id: roleId,
             team_id: teamId,
+            avatar_url: avatarUrl,
         })
         .eq('id', userId)
         .select('*, roles(*), teams(*)')
@@ -223,18 +260,34 @@ export async function updateUser(userId: string, formData: FormData) {
         return { error: `Failed to update user profile: ${profileError.message}` };
     }
 
-    // Update password in Supabase Auth if provided
-    if (newPassword && supabaseAdmin) {
+    const authUpdateData: { password?: string; data?: any } = {};
+    if (newPassword) {
+        authUpdateData.password = newPassword;
+    }
+    if (avatarUrl !== currentProfile.avatar_url || fullName !== profileData.full_name) {
+        authUpdateData.data = {
+            ...profileData,
+            full_name: fullName,
+            avatar_url: avatarUrl,
+        };
+    }
+
+    if (supabaseAdmin && Object.keys(authUpdateData).length > 0) {
         const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
             userId,
-            { password: newPassword }
+            authUpdateData
         );
 
         if (authError) {
-            return { error: `Failed to update password: ${authError.message}` };
+            // Attempt to revert profile changes if auth update fails
+             await supabase.from('profiles').update({ 
+                full_name: profileData.full_name,
+                avatar_url: currentProfile.avatar_url
+             }).eq('id', userId);
+            return { error: `Failed to update auth data: ${authError.message}` };
         }
-    } else if (newPassword && !supabaseAdmin) {
-        return { error: "Cannot update password. Admin client is not available. Check server environment variables." };
+    } else if (Object.keys(authUpdateData).length > 0 && !supabaseAdmin) {
+        return { error: "Cannot update password or auth metadata. Admin client is not available." };
     }
     
     revalidatePath('/teams');
