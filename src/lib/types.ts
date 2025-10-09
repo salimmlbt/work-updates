@@ -28,3 +28,5 @@ export type PermissionLevel = "Restricted" | "Viewer" | "Editor";
 export type RoleWithPermissions = Omit<Role, 'permissions'> & {
     permissions: Record<string, PermissionLevel>;
 };
+
+    

@@ -4,10 +4,11 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
 import { createClient } from '@/lib/supabase/client';
+import { logout } from './login/actions';
 
 export default function RootLayout({
   children,
@@ -15,24 +16,51 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
+    const supabase = createClient();
     const checkAuth = async () => {
-        const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
         setIsAuthenticated(!!session);
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('status')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile?.status === 'Archived') {
+            await logout();
+            router.push('/login');
+          }
+        }
     };
     checkAuth();
 
-    const { data: authListener } = createClient().auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       setIsAuthenticated(!!session);
+      if (event === 'SIGNED_IN' && session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('status')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.status === 'Archived') {
+          await logout();
+        }
+      }
+      if (event === "SIGNED_OUT") {
+          router.push('/login');
+      }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [pathname, router]);
 
   const showNav = isAuthenticated && pathname !== '/login';
 
@@ -73,3 +101,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    

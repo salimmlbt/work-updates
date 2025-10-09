@@ -172,6 +172,7 @@ export async function addUser(formData: FormData) {
         avatar_url: avatarUrl,
         role_id: roleId,
         team_id: teamId,
+        status: 'Active'
       })
       .select('*, roles(*), teams(*)')
       .single();
@@ -214,3 +215,17 @@ export async function updateUserTeam(userId: string, teamId: string | null) {
   revalidatePath('/teams')
   return { success: true }
 }
+
+export async function updateUserStatus(userId: string, status: 'Active' | 'Archived') {
+    const supabase = createServerClient();
+    const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
+    
+    if (error) {
+        return { error: error.message };
+    }
+    
+    revalidatePath('/teams');
+    return { success: true };
+}
+
+    

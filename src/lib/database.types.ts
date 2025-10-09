@@ -129,6 +129,7 @@ export type Database = {
           id: string
           role_id: string | null
           team_id: string | null
+          status: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -137,6 +138,7 @@ export type Database = {
           id: string
           role_id?: string | null
           team_id?: string | null
+          status?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -145,6 +147,7 @@ export type Database = {
           id?: string
           role_id?: string | null
           team_id?: string | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -286,3 +289,5 @@ export type Database = {
     }
   }
 }
+
+    
