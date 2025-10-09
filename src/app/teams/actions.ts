@@ -1,4 +1,5 @@
 
+
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server'
@@ -116,6 +117,7 @@ export async function deleteRole(id: string) {
 
 export async function addUser(formData: FormData) {
     const supabase = createServerClient()
+    const supabaseAdmin = createSupabaseAdminClient()
     
     const fullName = formData.get('full_name') as string;
     const email = formData.get('email') as string;
@@ -174,7 +176,6 @@ export async function addUser(formData: FormData) {
         avatar_url: avatarUrl,
         role_id: roleId,
         team_id: teamId,
-        status: 'Active',
         is_archived: false,
       })
       .select('*, roles(*), teams(*)')
@@ -183,8 +184,9 @@ export async function addUser(formData: FormData) {
     if (profileError) {
         // If profile creation fails, we should ideally delete the auth user
         // to avoid orphaned auth users.
-        const supabaseAdmin = createSupabaseAdminClient();
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        if (supabaseAdmin) {
+            await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        }
         return { error: `Failed to create user profile: ${profileError.message}` };
     }
 
@@ -224,6 +226,10 @@ export async function updateUserIsArchived(userId: string, isArchived: boolean) 
   const supabase = createServerClient();
   const supabaseAdmin = createSupabaseAdminClient();
 
+  if (!supabaseAdmin) {
+    return { error: "Admin client not initialized. Service key may be missing." };
+  }
+
   // 1. Update the is_archived status in the profiles table
   const { error: profileError } = await supabase
     .from('profiles')
@@ -246,7 +252,7 @@ export async function updateUserIsArchived(userId: string, isArchived: boolean) 
 
   if (authError) {
     console.error('Error updating user ban status:', authError);
-    // Optionally, revert the profile update
+    // Revert the profile update
     await supabase.from('profiles').update({ is_archived: !isArchived }).eq('id', userId);
     return { error: `Could not update user auth status: ${authError.message}` };
   }
