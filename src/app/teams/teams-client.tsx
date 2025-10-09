@@ -19,6 +19,7 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+  DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -268,10 +269,17 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                   </DropdownMenuItem>
                                 </>
                               ) : (
-                                <DropdownMenuItem onClick={() => handleUpdateUserArchived(user, false)}>
-                                    <Archive className="mr-2 h-4 w-4" />
-                                    Restore User
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuItem onClick={() => handleUpdateUserArchived(user, false)}>
+                                      <Archive className="mr-2 h-4 w-4" />
+                                      Restore User
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Permanently delete user
+                                  </DropdownMenuItem>
+                                </>
                               )}
                           </DropdownMenuContent>
                       </DropdownMenu>
