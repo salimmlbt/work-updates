@@ -64,6 +64,12 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
 
     const [modifiedPermissions, setModifiedPermissions] = useState<Record<string, PermissionLevel> | null>(null);
 
+    const sortedRoles = [...roles].sort((a, b) => {
+        if (a.name === 'Falaq Admin') return -1;
+        if (b.name === 'Falaq Admin') return 1;
+        return a.name.localeCompare(b.name);
+    });
+
     const currentRole = roles.find(r => r.name === selectedRole);
 
     useEffect(() => {
@@ -195,7 +201,7 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                     <div>
                         <h3 className="text-lg font-semibold mb-4">Role</h3>
                         <nav className="space-y-2">
-                            {roles.map(role => (
+                            {sortedRoles.map(role => (
                                 <div key={role.id} className="relative group flex items-center">
                                     <div
                                         role="button"
@@ -273,7 +279,7 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                         </Button>
                         <div className="space-y-4">
                             {permissionsList.map((permission) => (
-                                <div key={permission.id} className="flex justify-between items-center p-4 border rounded-lg">
+                                <div key={permission.id} className="flex justify-between items-center p-4">
                                     <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
                                     <div className="flex gap-2">
                                          {permissionLevels.map((level) => (
