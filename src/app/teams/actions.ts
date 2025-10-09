@@ -141,6 +141,10 @@ export async function addUser(formData: FormData) {
         const { data: publicUrlData } = supabase.storage
             .from('avatars')
             .getPublicUrl(filePath);
+
+        if (!publicUrlData) {
+            return { error: 'Could not get public URL for avatar.' };
+        }
         
         avatarUrl = publicUrlData.publicUrl;
     }

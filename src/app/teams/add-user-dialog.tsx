@@ -34,9 +34,7 @@ interface AddUserDialogProps {
   onUserAdded: (newUser: Profile) => void
 }
 
-export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: AddUserDialogProps) {
-  const [isPending, startTransition] = useTransition();
-  const [formState, setFormState] = useState({
+const initialFormState = {
     name: '',
     email: '',
     roleId: '',
@@ -44,7 +42,11 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     password: '',
     confirmPassword: '',
     avatar: null as File | null,
-  });
+};
+
+export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: AddUserDialogProps) {
+  const [isPending, startTransition] = useTransition();
+  const [formState, setFormState] = useState(initialFormState);
   const [isFormValid, setIsFormValid] = useState(false);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +64,14 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                     password === confirmPassword;
     setIsFormValid(isValid);
   }, [formState]);
+  
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+        setFormState(initialFormState);
+        setAvatarPreview(null);
+    }
+    setIsOpen(open);
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -120,25 +130,14 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
         }
         onUserAdded(addedUser as Profile);
         toast({ title: "User invited", description: `An invitation has been sent to ${fullEmail}.` });
-        setIsOpen(false);
-        // Reset form
-        setFormState({
-          name: '',
-          email: '',
-          roleId: '',
-          teamId: '',
-          password: '',
-          confirmPassword: '',
-          avatar: null,
-        });
-        setAvatarPreview(null);
+        handleDialogChange(false);
       }
     });
   };
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Add User</DialogTitle>
@@ -226,7 +225,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                 </div>
               </div>
               <DialogFooter className="justify-end sm:justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+                <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)}>
                   Cancel
                 </Button>
                 <Button 
