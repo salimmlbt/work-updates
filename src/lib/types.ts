@@ -11,7 +11,6 @@ export type Profile = DB['public']['Tables']['profiles']['Row'] & {
 export type Role = DB['public']['Tables']['roles']['Row'];
 export type Team = DB['public']['Tables']['teams']['Row'];
 export type Client = DB['public']['Tables']['clients']['Row'];
-export type ProjectMember = DB['public']['Tables']['project_members']['Row'];
 
 export type TaskWithAssignee = Task & {
   profiles: DB['public']['Tables']['profiles']['Row'] | null;

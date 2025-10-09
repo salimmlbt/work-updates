@@ -17,6 +17,7 @@ export async function addProject(formData: FormData) {
     status: formData.get('status') as string,
     priority: formData.get('priority') as string,
     members: (formData.get('members') as string).split(',').filter(Boolean),
+    type: formData.get('type') as string | null,
   }
 
   if (!rawFormData.name) {
@@ -34,6 +35,7 @@ export async function addProject(formData: FormData) {
       status: rawFormData.status,
       priority: rawFormData.priority,
       members: rawFormData.members,
+      type: rawFormData.type,
     })
     .select()
     .single()

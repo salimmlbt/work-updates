@@ -45,6 +45,7 @@ import { AddPeopleDialog } from './add-people-dialog'
 import type { User } from '@supabase/supabase-js'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { getInitials } from '@/lib/utils'
+import { predefinedTasks } from '@/lib/predefined-tasks'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -54,6 +55,7 @@ const projectSchema = z.object({
   start_date: z.date().optional(),
   due_date: z.date().optional(),
   client_id: z.string().nullable().optional(),
+  type: z.string().optional(),
 })
 
 type ProjectFormData = z.infer<typeof projectSchema>
@@ -110,6 +112,7 @@ export function AddProjectDialog({
       priority: 'None',
       status: 'New',
       client_id: null,
+      type: undefined,
     },
   })
 
@@ -125,6 +128,7 @@ export function AddProjectDialog({
       if (data.start_date) formData.append('start_date', data.start_date.toISOString())
       if (data.due_date) formData.append('due_date', data.due_date.toISOString())
       if (data.client_id) formData.append('client_id', data.client_id)
+      if (data.type) formData.append('type', data.type)
       
       const result = await addProject(formData)
 
@@ -263,6 +267,27 @@ export function AddProjectDialog({
                                </div>
                             </SelectItem>
                           )})}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Type</Label>
+                  <Controller
+                    name="type"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
+                          <SelectValue placeholder="Select project type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {predefinedTasks.map(task => (
+                            <SelectItem key={task} value={task}>
+                              {task}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     )}
