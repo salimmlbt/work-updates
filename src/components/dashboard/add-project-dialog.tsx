@@ -39,10 +39,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { useToast } from '@/hooks/use-toast'
 import { addProject } from '@/app/actions'
-import { cn } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 import type { Client, Profile, Project, ProjectType } from '@/lib/types'
 import { AddPeopleDialog } from './add-people-dialog'
 import type { User } from '@supabase/supabase-js'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -183,29 +184,38 @@ export function AddProjectDialog({
                     />
                     {errors.name && <p className="text-sm text-destructive mt-2">{errors.name.message}</p>}
 
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Members {selectedMembers.length}</Label>
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm">
+                    <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Members {selectedMembers.length}</Label>
+                        <div className="space-y-2">
                         {selectedMembers.length > 0 ? (
-                           selectedMembers.map(id => {
+                            selectedMembers.map(id => {
                             const profile = profiles.find(p => p.id === id);
-                            return profile?.full_name || 'Unknown User';
-                           }).join(', ')
-                        ) : 'No members selected'}
-                      </div>
-                    </div>
-                     <Button 
-                        type="button" 
-                        variant="ghost" 
-                        className="text-muted-foreground inline-flex items-center p-0 h-auto hover:bg-transparent hover:text-primary focus:ring-0 focus:ring-offset-0" 
+                            if (!profile) return null;
+                            return (
+                                <div key={id} className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={profile.avatar_url ?? undefined} />
+                                    <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium">{profile.full_name}</span>
+                                </div>
+                            );
+                            })
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No members selected</p>
+                        )}
+                        </div>
+                        <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-muted-foreground inline-flex items-center p-0 h-auto hover:bg-transparent hover:text-primary focus:ring-0 focus:ring-offset-0"
                         onClick={() => setAddPeopleOpen(true)}
-                     >
+                        >
                         <Plus className="h-4 w-4 mr-1" />
                         Add people
-                      </Button>
-                    {errors.members && <p className="text-sm text-destructive">{errors.members.message}</p>}
-                  </div>
+                        </Button>
+                        {errors.members && <p className="text-sm text-destructive">{errors.members.message}</p>}
+                    </div>
                 </div>
                 <div className="mt-auto px-6 py-4 border-t flex justify-end gap-2">
                    <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
@@ -371,3 +381,5 @@ export function AddProjectDialog({
     </>
   )
 }
+
+    
