@@ -277,9 +277,9 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                             <ChevronDown className="mr-2 h-5 w-5" />
                             Permissions
                         </Button>
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             {permissionsList.map((permission) => (
-                                <div key={permission.id} className="flex justify-between items-center p-4">
+                                <div key={permission.id} className="flex justify-between items-center py-2">
                                     <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
                                     <div className="flex gap-2">
                                          {permissionLevels.map((level) => (
