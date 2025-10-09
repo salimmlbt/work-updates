@@ -242,9 +242,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
         </div>
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start flex-1">
         <ProjectSidebar activeView={activeView} setActiveView={setActiveView} projectTypes={projectTypeCounts} onAddTypeClick={() => setCreateTypeOpen(true)} />
-        <main className="md:col-span-3">
+        <main className="md:col-span-4">
           <div className="mb-8">
             <button onClick={() => setActiveProjectsOpen(!activeProjectsOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
                 {activeProjectsOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronDown className="w-5 h-5 -rotate-90" />}
@@ -467,3 +467,5 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
+
+    
