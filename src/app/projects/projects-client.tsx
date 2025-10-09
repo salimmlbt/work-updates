@@ -44,9 +44,10 @@ const ProjectSidebar = ({
 }) => {
     return (
         <aside className="md:col-span-1">
+            <h2 className="text-lg font-bold mb-4">Type</h2>
             <nav className="space-y-1">
                 <div
-                    key="general"
+                    key="all-projects"
                     role="button"
                     onClick={() => setActiveView('general')}
                     className={cn(
@@ -57,11 +58,8 @@ const ProjectSidebar = ({
                             : 'hover:bg-accent'
                     )}
                 >
-                   General
+                   All Projects
                 </div>
-            </nav>
-            <h2 className="text-lg font-bold mt-8 mb-4">Type</h2>
-            <nav className="space-y-1">
                 {projectTypes.map(type => (
                      <div
                         key={type}
