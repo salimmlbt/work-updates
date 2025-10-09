@@ -20,12 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Pencil, User } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu"
+import { Loader2, Pencil, User, ChevronDown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile } from '@/lib/types'
 import { updateUser } from './actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface EditUserDialogProps {
   isOpen: boolean
@@ -40,8 +47,8 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
   const [isPending, startTransition] = useTransition();
   const [formState, setFormState] = useState({
     name: user.full_name || '',
-    roleId: user.role_id || '',
-    teamId: user.team_id || '',
+    roleId: user.roles?.id || '',
+    teamIds: (Array.isArray(user.teams) ? user.teams.map(t => t.teams?.id).filter(Boolean) : []) as string[],
     password: '',
     confirmPassword: '',
     avatar: null as File | null,
@@ -53,25 +60,26 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
   useEffect(() => {
-    const { name, roleId, teamId, password, confirmPassword } = formState;
+    const { name, roleId, password, confirmPassword } = formState;
     const isPasswordValid = (!password && !confirmPassword) || (password.length >= 6 && password === confirmPassword);
     const isValid = name.trim() !== '' &&
                     roleId !== '' &&
-                    teamId !== '' &&
                     isPasswordValid;
     setIsFormValid(isValid);
   }, [formState]);
   
   useEffect(() => {
-    setFormState({
-        name: user.full_name || '',
-        roleId: user.role_id || '',
-        teamId: user.team_id || '',
-        password: '',
-        confirmPassword: '',
-        avatar: null,
-    });
-    setAvatarPreview(user.avatar_url);
+    if (isOpen) {
+      setFormState({
+          name: user.full_name || '',
+          roleId: user.roles?.id || '',
+          teamIds: (Array.isArray(user.teams) ? user.teams.map(t => t.teams?.id).filter(Boolean) : []) as string[],
+          password: '',
+          confirmPassword: '',
+          avatar: null,
+      });
+      setAvatarPreview(user.avatar_url);
+    }
   }, [user, isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,8 +87,17 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     setFormState(prevState => ({ ...prevState, [name]: value }));
   };
 
-  const handleSelectChange = (name: 'roleId' | 'teamId') => (value: string) => {
+  const handleSelectChange = (name: 'roleId') => (value: string) => {
     setFormState(prevState => ({ ...prevState, [name]: value }));
+  };
+
+  const handleTeamSelect = (teamId: string) => {
+    setFormState(prev => {
+      const newTeamIds = prev.teamIds.includes(teamId)
+        ? prev.teamIds.filter(id => id !== teamId)
+        : [...prev.teamIds, teamId];
+      return { ...prev, teamIds: newTeamIds };
+    });
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +127,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     const formData = new FormData();
     formData.append('full_name', formState.name);
     formData.append('role_id', formState.roleId);
-    formData.append('team_id', formState.teamId);
+    formData.append('team_ids', formState.teamIds.join(','));
     if (formState.password) {
       formData.append('password', formState.password);
     }
@@ -192,17 +209,31 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="team">Team</Label>
-                      <Select name="teamId" onValueChange={handleSelectChange('teamId')} value={formState.teamId} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a team" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {teams.map(team => (
-                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                       <Label htmlFor="team">Team</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full justify-between font-normal">
+                               <span className="truncate">
+                                {formState.teamIds.length > 0 ? `${formState.teamIds.length} team(s) selected` : "Select teams"}
+                              </span>
+                              <ChevronDown className="h-4 w-4 opacity-50" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                            <ScrollArea className="h-60">
+                              {teams.map(team => (
+                                <DropdownMenuCheckboxItem
+                                  key={team.id}
+                                  checked={formState.teamIds.includes(team.id)}
+                                  onCheckedChange={() => handleTeamSelect(team.id)}
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  {team.name}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </ScrollArea>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                   </div>
                   <div className="space-y-2">

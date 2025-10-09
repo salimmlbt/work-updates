@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
@@ -19,12 +20,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Pencil, User } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu"
+import { Loader2, Pencil, User, ChevronDown, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile } from '@/lib/types'
 import { addUser } from './actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
 
 interface AddUserDialogProps {
   isOpen: boolean
@@ -38,7 +47,7 @@ const initialFormState = {
     name: '',
     email: '',
     roleId: '',
-    teamId: '',
+    teamIds: [] as string[],
     password: '',
     confirmPassword: '',
     avatar: null as File | null,
@@ -54,11 +63,10 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
   useEffect(() => {
-    const { name, email, roleId, teamId, password, confirmPassword } = formState;
+    const { name, email, roleId, password, confirmPassword } = formState;
     const isValid = name.trim() !== '' &&
                     email.trim() !== '' &&
                     roleId !== '' &&
-                    teamId !== '' &&
                     password.trim() !== '' &&
                     password.length >= 6 &&
                     password === confirmPassword;
@@ -78,8 +86,17 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     setFormState(prevState => ({ ...prevState, [name]: value }));
   };
 
-  const handleSelectChange = (name: 'roleId' | 'teamId') => (value: string) => {
+  const handleSelectChange = (name: 'roleId') => (value: string) => {
     setFormState(prevState => ({ ...prevState, [name]: value }));
+  };
+  
+  const handleTeamSelect = (teamId: string) => {
+    setFormState(prev => {
+      const newTeamIds = prev.teamIds.includes(teamId)
+        ? prev.teamIds.filter(id => id !== teamId)
+        : [...prev.teamIds, teamId];
+      return { ...prev, teamIds: newTeamIds };
+    });
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,7 +130,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     formData.append('email', fullEmail);
     formData.append('password', formState.password);
     formData.append('role_id', formState.roleId);
-    formData.append('team_id', formState.teamId);
+    formData.append('team_ids', formState.teamIds.join(','));
     if (formState.avatar) {
       formData.append('avatar', formState.avatar);
     }
@@ -123,12 +140,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
       if (error) {
         toast({ title: "Error adding user", description: error, variant: "destructive" });
       } else if (data) {
-        const addedUser = {
-          ...data,
-          roles: roles.find(r => r.id === data.role_id),
-          teams: teams.find(t => t.id === data.team_id),
-        }
-        onUserAdded(addedUser as Profile);
+        onUserAdded(data as Profile);
         toast({ title: "User invited", description: `An invitation has been sent to ${fullEmail}.` });
         handleDialogChange(false);
       }
@@ -203,16 +215,30 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="team">Team</Label>
-                    <Select name="teamId" onValueChange={handleSelectChange('teamId')} value={formState.teamId} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a team" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teams.map(team => (
-                          <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between font-normal">
+                          <span className="truncate">
+                            {formState.teamIds.length > 0 ? `${formState.teamIds.length} team(s) selected` : "Select teams"}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-50" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                        <ScrollArea className="h-60">
+                          {teams.map(team => (
+                            <DropdownMenuCheckboxItem
+                              key={team.id}
+                              checked={formState.teamIds.includes(team.id)}
+                              onCheckedChange={() => handleTeamSelect(team.id)}
+                              onSelect={(e) => e.preventDefault()}
+                            >
+                              {team.name}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                        </ScrollArea>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
                  <div className="space-y-2">

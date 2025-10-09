@@ -5,9 +5,9 @@ export type Database = DB;
 
 export type Project = DB['public']['Tables']['projects']['Row'];
 export type Task = DB['public']['Tables']['tasks']['Row'];
-export type Profile = DB['public']['Tables']['profiles']['Row'] & {
+export type Profile = Omit<DB['public']['Tables']['profiles']['Row'], 'team_id'> & {
     roles: Role | null;
-    teams: Team | null;
+    teams: { teams: Team | null }[];
 };
 export type Role = DB['public']['Tables']['roles']['Row'];
 export type Team = DB['public']['Tables']['teams']['Row'];

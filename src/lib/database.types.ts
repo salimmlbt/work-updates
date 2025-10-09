@@ -128,7 +128,6 @@ export type Database = {
           full_name: string | null
           id: string
           role_id: string | null
-          team_id: string | null
           status: string | null
           is_archived: boolean
         }
@@ -138,7 +137,6 @@ export type Database = {
           full_name?: string | null
           id: string
           role_id?: string | null
-          team_id?: string | null
           status?: string | null
           is_archived?: boolean
         }
@@ -148,7 +146,6 @@ export type Database = {
           full_name?: string | null
           id?: string
           role_id?: string | null
-          team_id?: string | null
           status?: string | null
           is_archived?: boolean
         }
@@ -161,17 +158,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "profiles_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "profiles_id_fkey"
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      profile_teams: {
+        Row: {
+          profile_id: string
+          team_id: string
+        }
+        Insert: {
+          profile_id: string
+          team_id: string
+        }
+        Update: {
+          profile_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_teams_profile_id_fkey"
+            columns: ["profile_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_teams_team_id_fkey"
+            columns: ["team_id"]
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           }
         ]

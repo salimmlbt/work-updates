@@ -1,28 +1,21 @@
 
-
 'use client'
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Plus, MoreVertical, Pencil, Trash2, Archive, UserCog, ChevronDown } from 'lucide-react';
-import { cn, getInitials } from '@/lib/utils';
-import type { Profile, Role, Team } from '@/lib/types';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
   DropdownMenuSeparator,
 	DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Plus, MoreVertical, Pencil, Trash2, Archive, UserCog, ChevronDown, Check } from 'lucide-react';
+import { cn, getInitials } from '@/lib/utils';
+import type { Profile, Role, Team } from '@/lib/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,9 +31,10 @@ import { AddUserDialog } from './add-user-dialog';
 import { EditUserDialog } from './edit-user-dialog';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
-import { updateUserRole, updateUserTeam, deleteTeam, updateUserIsArchived } from './actions';
+import { updateUserRole, updateUserTeams, deleteTeam, updateUserIsArchived } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { RenameTeamDialog } from './rename-team-dialog'
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TeamsClientProps {
 	initialUsers: Profile[];
@@ -53,20 +47,19 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 	const [isCreateTeamOpen, setCreateTeamOpen] = useState(false);
 	const [isAddUserOpen, setAddUserOpen] = useState(false);
 	const [isEditUserOpen, setEditUserOpen] = useState(false);
-    const [userToEdit, setUserToEdit] = useState<Profile | null>(null);
+  const [userToEdit, setUserToEdit] = useState<Profile | null>(null);
 	const [teams, setTeams] = useState(initialTeams);
 	const [users, setUsers] = useState(initialUsers);
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [isPending, startTransition] = useTransition();
-    const { toast } = useToast();
-    const [isRenameTeamOpen, setRenameTeamOpen] = useState(false);
-    const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
-    const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
-    const [userToArchive, setUserToArchive] = useState<Profile | null>(null);
-    const [isArchiveAlertOpen, setArchiveAlertOpen] = useState(false);
-    const [activeUsersOpen, setActiveUsersOpen] = useState(true);
-    const [archivedUsersOpen, setArchivedUsersOpen] = useState(true);
-
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+  const [isRenameTeamOpen, setRenameTeamOpen] = useState(false);
+  const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [userToArchive, setUserToArchive] = useState<Profile | null>(null);
+  const [isArchiveAlertOpen, setArchiveAlertOpen] = useState(false);
+  const [activeUsersOpen, setActiveUsersOpen] = useState(true);
+  const [archivedUsersOpen, setArchivedUsersOpen] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -125,14 +118,15 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
     });
   }
 
-  const handleTeamChange = (userId: string, teamId: string | null) => {
+  const handleTeamChange = (userId: string, teamIds: string[]) => {
       startTransition(async () => {
-        const { error } = await updateUserTeam(userId, teamId);
+        const { error } = await updateUserTeams(userId, teamIds);
         if (error) {
-            toast({ title: "Error updating team", description: error.message, variant: "destructive" });
+            toast({ title: "Error updating teams", description: error.message, variant: "destructive" });
         } else {
-            toast({ title: "Team updated successfully" });
-            setUsers(prevUsers => prevUsers.map(u => u.id === userId ? {...u, team_id: teamId, teams: teams.find(t => t.id === teamId) || null} : u));
+            toast({ title: "Teams updated successfully" });
+            const updatedTeamsForUser = teamIds.map(id => ({ teams: teams.find(t => t.id === id)}));
+            setUsers(prevUsers => prevUsers.map(u => u.id === userId ? {...u, teams: updatedTeamsForUser as any } : u));
         }
       });
   }
@@ -175,11 +169,13 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
       setArchiveAlertOpen(false);
   };
 
-  const usersWithData = users.map((user) => {
+  const usersWithData = useMemo(() => users.map((user) => {
     const isAdmin = user.email === 'admin@falaq.com';
+    const userTeams = Array.isArray(user.teams) ? user.teams.map(t => t.teams).filter(Boolean) as Team[] : [];
+    
     return {
       ...user,
-      team: user.teams,
+      teams: userTeams,
       role: isAdmin ? initialRoles.find(r => r.name === 'Falaq Admin') : user.roles,
       is_archived: user.is_archived || false,
       isAdmin
@@ -188,24 +184,27 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
     if (a.isAdmin && !b.isAdmin) return -1;
     if (!a.isAdmin && b.isAdmin) return 1;
     return (a.full_name || '').localeCompare(b.full_name || '');
-  });
+  }), [users, initialRoles]);
 
 	const adminUser = usersWithData.find(user => user.isAdmin);
   const otherUsers = usersWithData.filter(user => !user.isAdmin);
 
   const teamFilteredUsers = selectedTeam === 'All teams'
     ? otherUsers
-    : otherUsers.filter(user => user.team?.name === selectedTeam);
+    : otherUsers.filter(user => user.teams.some(t => t.name === selectedTeam));
 
   const activeUsers = teamFilteredUsers.filter(u => !u.is_archived);
   const archivedUsers = teamFilteredUsers.filter(u => u.is_archived);
 
-	const teamUserCounts = teams.reduce((acc, team) => {
-		acc[team.id] = usersWithData.filter(u => u.team?.id === team.id).length;
+	const teamUserCounts = useMemo(() => teams.reduce((acc, team) => {
+		acc[team.id] = usersWithData.filter(u => u.teams.some(t => t.id === team.id)).length;
 		return acc;
-	}, {} as Record<string, number>);
+	}, {} as Record<string, number>), [teams, usersWithData]);
 
-    const UserRow = ({ user }: { user: Profile & { team: Team | null; role: Role | null; is_archived: boolean; isAdmin: boolean } }) => (
+  const UserRow = ({ user }: { user: (typeof usersWithData)[0] }) => {
+    const userTeamIds = user.teams.map(t => t.id);
+
+    return (
         <div className="grid grid-cols-5 items-center py-3 px-4 group">
             <div className="col-span-1 flex items-center gap-3">
                 <Avatar className="h-8 w-8">
@@ -217,44 +216,55 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
             <div className="col-span-1 text-muted-foreground">{user.email}</div>
             <div className="col-span-1">
                 {user.isAdmin ? (
-                    <div className="text-sm px-3">All teams</div>
+                    <div className="text-sm px-3 py-2">All teams</div>
                 ) : (
-                    <Select
-                        value={user.team?.id ?? ''}
-                        onValueChange={(teamId) => handleTeamChange(user.id, teamId === 'none' ? null : teamId)}
-                        disabled={isPending || user.is_archived}
-                    >
-                        <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0">
-                            <SelectValue placeholder="No team" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="none">No team</SelectItem>
-                            {teams.map(team => (
-                                <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-start text-left font-normal" disabled={isPending || user.is_archived}>
+                          <div className="flex flex-col items-start">
+                            {user.teams.length > 0 
+                              ? user.teams.map(t => t.name).join(', ')
+                              : <span className="text-muted-foreground">No team</span>
+                            }
+                          </div>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                        <ScrollArea className="h-60">
+                          {teams.map(team => (
+                            <DropdownMenuCheckboxItem
+                              key={team.id}
+                              checked={userTeamIds.includes(team.id)}
+                              onCheckedChange={(checked) => {
+                                const newTeamIds = checked 
+                                  ? [...userTeamIds, team.id]
+                                  : userTeamIds.filter(id => id !== team.id);
+                                handleTeamChange(user.id, newTeamIds);
+                              }}
+                            >
+                              {team.name}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                        </ScrollArea>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
             </div>
             <div className="col-span-1">
-                {user.isAdmin ? (
-                    <div className="text-sm px-3">{user.role?.name || 'No role'}</div>
-                ) : (
-                    <Select
-                        value={user.role?.id}
-                        onValueChange={(roleId) => handleRoleChange(user.id, roleId)}
-                        disabled={isPending || user.is_archived}
-                    >
-                        <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0">
-                            <SelectValue placeholder="No role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {initialRoles.map(role => (
-                                <SelectItem key={role.id} value={role.id} disabled={role.name === 'Falaq Admin'}>{role.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-start text-left font-normal" disabled={isPending || user.is_archived || user.isAdmin}>
+                      {user.role ? user.role.name : <span className="text-muted-foreground">No role</span>}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                     {initialRoles.filter(r => r.name !== 'Falaq Admin').map(role => (
+                        <DropdownMenuItem key={role.id} onSelect={() => handleRoleChange(user.id, role.id)} className={cn(user.role?.id === role.id && 'bg-accent')}>
+                           {role.name}
+                        </DropdownMenuItem>
+                      ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
             </div>
             <div className="col-span-1 flex justify-between items-center">
                 <Badge variant="outline" className={cn(
@@ -263,7 +273,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                     <span className={cn('h-2 w-2 rounded-full mr-2', !user.is_archived ? 'bg-green-500' : 'bg-gray-500')}></span>
                     {user.is_archived ? 'Archived' : 'Active'}
                 </Badge>
-                {currentUser?.id !== user.id && (
+                {currentUser?.id !== user.id && !user.isAdmin && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -278,12 +288,10 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                       <UserCog className="mr-2 h-4 w-4" />
                                       Edit User
                                   </DropdownMenuItem>
-                                  {!user.isAdmin && (
-                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Archive
-                                    </DropdownMenuItem>
-                                  )}
+                                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Archive
+                                  </DropdownMenuItem>
                                 </>
                               ) : (
                                 <>
@@ -305,6 +313,8 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
             </div>
         </div>
     );
+  };
+
 
 	return (
 		<>
@@ -453,16 +463,16 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 				teams={teams}
 				onUserAdded={onUserAdded}
 			/>
-            {userToEdit && (
-                <EditUserDialog
-                    isOpen={isEditUserOpen}
-                    setIsOpen={setEditUserOpen}
-                    user={userToEdit}
-                    roles={initialRoles.filter(r => r.name !== 'Falaq Admin')}
-                    teams={teams}
-                    onUserUpdated={onUserUpdated}
-                />
-            )}
+      {userToEdit && (
+          <EditUserDialog
+              isOpen={isEditUserOpen}
+              setIsOpen={setEditUserOpen}
+              user={userToEdit}
+              roles={initialRoles.filter(r => r.name !== 'Falaq Admin')}
+              teams={teams}
+              onUserUpdated={onUserUpdated}
+          />
+      )}
       {teamToEdit && (
         <RenameTeamDialog
           isOpen={isRenameTeamOpen}
@@ -514,5 +524,3 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 		</>
 	);
 }
-    
-    

@@ -40,7 +40,7 @@ export default async function TeamsPage() {
   }
   
   const { data: roles } = await supabase.from('roles').select('*');
-  const { data: profiles } = await supabase.from('profiles').select('*, teams(*), roles(*)');
+  const { data: profiles } = await supabase.from('profiles').select('*, teams:profile_teams(teams(*))');
   const { data: teams } = await supabase.from('teams').select('*');
 
   const permissionsList = [

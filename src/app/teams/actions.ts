@@ -1,5 +1,4 @@
 
-
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server'
@@ -50,8 +49,8 @@ export async function deleteTeam(id: string) {
 
     // Unassign users from the team first
     const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ team_id: null })
+        .from('profile_teams')
+        .delete()
         .eq('team_id', id)
 
     if (updateError) {
@@ -123,7 +122,7 @@ export async function addUser(formData: FormData) {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const roleId = formData.get('role_id') as string;
-    const teamId = formData.get('team_id') as string;
+    const teamIds = (formData.get('team_ids') as string).split(',').filter(Boolean);
     const avatarFile = formData.get('avatar') as File | null;
     
     let avatarUrl = `https://i.pravatar.cc/150?u=${email}`;
@@ -179,23 +178,36 @@ export async function addUser(formData: FormData) {
         email: email,
         avatar_url: avatarUrl,
         role_id: roleId,
-        team_id: teamId,
         is_archived: false,
       })
-      .select('*, roles(*), teams(*)')
+      .select('*, roles(*)')
       .single();
 
     if (profileError) {
-        // If profile creation fails, we should ideally delete the auth user
-        // to avoid orphaned auth users.
         if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
         return { error: `Failed to create user profile: ${profileError.message}` };
     }
 
+    // 3. Link user to teams
+    if (teamIds.length > 0) {
+      const teamLinks = teamIds.map(team_id => ({ profile_id: authData.user!.id, team_id }));
+      const { error: teamLinkError } = await supabase.from('profile_teams').insert(teamLinks);
+      if (teamLinkError) {
+        // Rollback profile creation
+         if (supabaseAdmin) {
+            await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        }
+        return { error: `Failed to link user to teams: ${teamLinkError.message}` };
+      }
+    }
+    
+    const { data: finalProfileData } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))').eq('id', profileData.id).single();
+
+
     revalidatePath('/teams')
-    return { data: profileData as Profile }
+    return { data: finalProfileData as Profile }
 }
 
 export async function updateUser(userId: string, formData: FormData) {
@@ -204,7 +216,7 @@ export async function updateUser(userId: string, formData: FormData) {
 
     const fullName = formData.get('full_name') as string;
     const roleId = formData.get('role_id') as string;
-    const teamId = formData.get('team_id') as string;
+    const teamIds = (formData.get('team_ids') as string).split(',').filter(Boolean);
     const newPassword = formData.get('password') as string | null;
     const avatarFile = formData.get('avatar') as File | null;
     
@@ -249,16 +261,29 @@ export async function updateUser(userId: string, formData: FormData) {
         .update({
             full_name: fullName,
             role_id: roleId,
-            team_id: teamId,
             avatar_url: avatarUrl,
         })
         .eq('id', userId)
-        .select('*, roles(*), teams(*)')
+        .select('*, roles(*)')
         .single();
 
     if (profileError) {
         return { error: `Failed to update user profile: ${profileError.message}` };
     }
+    
+    // Update team memberships
+    const { error: deleteTeamsError } = await supabase.from('profile_teams').delete().eq('profile_id', userId);
+    if (deleteTeamsError) {
+      return { error: `Failed to update teams: ${deleteTeamsError.message}` };
+    }
+    if (teamIds.length > 0) {
+      const teamLinks = teamIds.map(team_id => ({ profile_id: userId, team_id }));
+      const { error: teamLinkError } = await supabase.from('profile_teams').insert(teamLinks);
+      if (teamLinkError) {
+        return { error: `Failed to update teams: ${teamLinkError.message}` };
+      }
+    }
+
 
     const authUpdateData: { password?: string; data?: any } = {};
     if (newPassword) {
@@ -290,8 +315,10 @@ export async function updateUser(userId: string, formData: FormData) {
         return { error: "Cannot update password or auth metadata. Admin client is not available." };
     }
     
+    const { data: finalProfileData } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))').eq('id', userId).single();
+
     revalidatePath('/teams');
-    return { data: profileData as Profile };
+    return { data: finalProfileData as Profile };
 }
 
 export async function updateUserRole(userId: string, roleId: string) {
@@ -308,18 +335,31 @@ export async function updateUserRole(userId: string, roleId: string) {
   return { success: true }
 }
 
-export async function updateUserTeam(userId: string, teamId: string | null) {
+export async function updateUserTeams(userId: string, teamIds: string[]) {
   const supabase = createServerClient()
-  const { error } = await supabase
-    .from('profiles')
-    .update({ team_id: teamId })
-    .eq('id', userId)
+  
+  // First, remove all existing team associations for the user
+  const { error: deleteError } = await supabase
+    .from('profile_teams')
+    .delete()
+    .eq('profile_id', userId);
 
-  if (error) {
-    return { error: error.message }
+  if (deleteError) {
+    return { error: `Failed to remove old teams: ${deleteError.message}` };
   }
-  revalidatePath('/teams')
-  return { success: true }
+
+  // Then, add the new team associations
+  if (teamIds.length > 0) {
+    const newLinks = teamIds.map(team_id => ({ profile_id: userId, team_id }));
+    const { error: insertError } = await supabase.from('profile_teams').insert(newLinks);
+
+    if (insertError) {
+      return { error: `Failed to add new teams: ${insertError.message}` };
+    }
+  }
+
+  revalidatePath('/teams');
+  return { success: true };
 }
 
 export async function updateUserIsArchived(userId: string, isArchived: boolean) {
