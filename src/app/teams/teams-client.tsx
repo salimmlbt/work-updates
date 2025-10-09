@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect, useTransition } from 'react';
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { CreateTeamDialog } from './create-team-dialog';
 import { AddUserDialog } from './add-user-dialog';
+import { EditUserDialog } from './edit-user-dialog';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { updateUserRole, updateUserTeam, deleteTeam, updateUserIsArchived } from './actions';
@@ -50,6 +52,8 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 	const [selectedTeam, setSelectedTeam] = useState('All teams');
 	const [isCreateTeamOpen, setCreateTeamOpen] = useState(false);
 	const [isAddUserOpen, setAddUserOpen] = useState(false);
+	const [isEditUserOpen, setEditUserOpen] = useState(false);
+    const [userToEdit, setUserToEdit] = useState<Profile | null>(null);
 	const [teams, setTeams] = useState(initialTeams);
 	const [users, setUsers] = useState(initialUsers);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -96,6 +100,17 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 
   const onUserAdded = (newUser: Profile) => {
     setUsers(prev => [...prev, newUser]);
+  }
+
+  const onUserUpdated = (updatedUser: Profile) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    setEditUserOpen(false);
+    setUserToEdit(null);
+  }
+
+  const handleEditUserClick = (user: Profile) => {
+    setUserToEdit(user);
+    setEditUserOpen(true);
   }
 
   const handleRoleChange = (userId: string, roleId: string) => {
@@ -259,9 +274,9 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                           <DropdownMenuContent>
                               {!user.is_archived ? (
                                 <>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditUserClick(user)}>
                                       <UserCog className="mr-2 h-4 w-4" />
-                                      User settings
+                                      Edit User
                                   </DropdownMenuItem>
                                   <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
                                       <Trash2 className="mr-2 h-4 w-4" />
@@ -436,6 +451,16 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 				teams={teams}
 				onUserAdded={onUserAdded}
 			/>
+            {userToEdit && (
+                <EditUserDialog
+                    isOpen={isEditUserOpen}
+                    setIsOpen={setEditUserOpen}
+                    user={userToEdit}
+                    roles={initialRoles.filter(r => r.name !== 'Falaq Admin')}
+                    teams={teams}
+                    onUserUpdated={onUserUpdated}
+                />
+            )}
       {teamToEdit && (
         <RenameTeamDialog
           isOpen={isRenameTeamOpen}

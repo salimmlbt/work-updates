@@ -194,6 +194,49 @@ export async function addUser(formData: FormData) {
     return { data: profileData as Profile }
 }
 
+export async function updateUser(userId: string, formData: FormData) {
+    const supabase = createServerClient();
+    const supabaseAdmin = createSupabaseAdminClient();
+
+    const fullName = formData.get('full_name') as string;
+    const roleId = formData.get('role_id') as string;
+    const teamId = formData.get('team_id') as string;
+    const newPassword = formData.get('password') as string | null;
+
+    // Update profile in 'profiles' table
+    const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .update({
+            full_name: fullName,
+            role_id: roleId,
+            team_id: teamId,
+        })
+        .eq('id', userId)
+        .select('*, roles(*), teams(*)')
+        .single();
+
+    if (profileError) {
+        return { error: `Failed to update user profile: ${profileError.message}` };
+    }
+
+    // Update password in Supabase Auth if provided
+    if (newPassword && supabaseAdmin) {
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+            userId,
+            { password: newPassword }
+        );
+
+        if (authError) {
+            return { error: `Failed to update password: ${authError.message}` };
+        }
+    } else if (newPassword && !supabaseAdmin) {
+        return { error: "Cannot update password. Admin client is not available. Check server environment variables." };
+    }
+    
+    revalidatePath('/teams');
+    return { data: profileData as Profile };
+}
+
 export async function updateUserRole(userId: string, roleId: string) {
   const supabase = createServerClient()
   const { error } = await supabase
