@@ -114,15 +114,23 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
                             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
                             <td className="px-4 py-3">
-                              {project.owner && (
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-6 w-6">
-                                      <AvatarImage src={project.owner.avatar_url ?? undefined} />
-                                      <AvatarFallback>{getInitials(project.owner.full_name)}</AvatarFallback>
-                                  </Avatar>
-                                  <span>{project.owner.id === currentUser?.id ? 'Me' : project.owner.full_name}</span>
-                                </div>
-                              )}
+                               <div className="flex -space-x-2">
+                                {project.members && project.members.slice(0, 3).map(id => {
+                                  const profile = profiles.find(p => p.id === id);
+                                  if (!profile) return null;
+                                  return (
+                                      <Avatar key={id} className="h-6 w-6 border-2 border-background">
+                                          <AvatarImage src={profile.avatar_url ?? undefined} />
+                                          <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                                      </Avatar>
+                                  )
+                                })}
+                                {project.members && project.members.length > 3 && (
+                                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
+                                      +{project.members.length-3}
+                                  </div>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}
