@@ -1,6 +1,8 @@
+
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { RoleWithPermissions, PermissionLevel, Profile } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 
@@ -172,7 +174,8 @@ export async function addUser(formData: FormData) {
         avatar_url: avatarUrl,
         role_id: roleId,
         team_id: teamId,
-        status: 'Active'
+        status: 'Active',
+        is_archived: false,
       })
       .select('*, roles(*), teams(*)')
       .single();
@@ -180,7 +183,8 @@ export async function addUser(formData: FormData) {
     if (profileError) {
         // If profile creation fails, we should ideally delete the auth user
         // to avoid orphaned auth users.
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        const supabaseAdmin = createSupabaseAdminClient();
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         return { error: `Failed to create user profile: ${profileError.message}` };
     }
 
@@ -216,6 +220,41 @@ export async function updateUserTeam(userId: string, teamId: string | null) {
   return { success: true }
 }
 
+export async function updateUserIsArchived(userId: string, isArchived: boolean) {
+  const supabase = createServerClient();
+  const supabaseAdmin = createSupabaseAdminClient();
+
+  // 1. Update the is_archived status in the profiles table
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ is_archived: isArchived })
+    .eq('id', userId);
+
+  if (profileError) {
+    console.error('Error updating profile:', profileError);
+    return { error: `Could not update user status: ${profileError.message}` };
+  }
+
+  // 2. Ban or un-ban the user in Supabase Auth
+  const oneHundredYearsInHours = '876000h';
+  const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+    userId,
+    {
+      ban_duration: isArchived ? oneHundredYearsInHours : 'none',
+    }
+  );
+
+  if (authError) {
+    console.error('Error updating user ban status:', authError);
+    // Optionally, revert the profile update
+    await supabase.from('profiles').update({ is_archived: !isArchived }).eq('id', userId);
+    return { error: `Could not update user auth status: ${authError.message}` };
+  }
+
+  revalidatePath('/teams', 'layout');
+  return { success: true };
+}
+
 export async function updateUserStatus(userId: string, status: 'Active' | 'Archived') {
     const supabase = createServerClient();
     const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
@@ -227,5 +266,3 @@ export async function updateUserStatus(userId: string, status: 'Active' | 'Archi
     revalidatePath('/teams');
     return { success: true };
 }
-
-    

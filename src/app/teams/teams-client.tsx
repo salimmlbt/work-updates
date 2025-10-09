@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useTransition } from 'react';
@@ -34,7 +35,7 @@ import { CreateTeamDialog } from './create-team-dialog';
 import { AddUserDialog } from './add-user-dialog';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
-import { updateUserRole, updateUserTeam, deleteTeam, updateUserStatus } from './actions';
+import { updateUserRole, updateUserTeam, deleteTeam, updateUserIsArchived } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { RenameTeamDialog } from './rename-team-dialog'
 
@@ -137,25 +138,25 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
     });
   }
 
-  const handleUpdateUserStatus = (user: Profile, status: 'Active' | 'Archived') => {
+  const handleUpdateUserArchived = (user: Profile, isArchived: boolean) => {
       startTransition(async () => {
-          const result = await updateUserStatus(user.id, status);
+          const result = await updateUserIsArchived(user.id, isArchived);
           if (result.error) {
               toast({
-                  title: `Error ${status === 'Active' ? 'restoring' : 'archiving'} user`,
+                  title: `Error ${isArchived ? 'archiving' : 'restoring'} user`,
                   description: result.error,
                   variant: 'destructive',
               });
           } else {
               toast({
-                  title: `User ${status === 'Active' ? 'Restored' : 'Archived'}`,
-                  description: `${user.full_name} has been ${status === 'Active' ? 'restored' : 'archived'}.`,
+                  title: `User ${isArchived ? 'Archived' : 'Restored'}`,
+                  description: `${user.full_name} has been ${isArchived ? 'archived' : 'restored'}.`,
               });
-              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status } : u));
-              setArchiveAlertOpen(false);
-              setUserToArchive(null);
+              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_archived: isArchived } : u));
           }
       });
+      setUserToArchive(null);
+      setArchiveAlertOpen(false);
   };
 
   const usersWithData = users.map((user) => {
@@ -164,7 +165,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
       ...user,
       team: user.teams,
       role: isAdmin ? initialRoles.find(r => r.name === 'Falaq Admin') : user.roles,
-      status: user.status || 'Active',
+      is_archived: user.is_archived || false,
       isAdmin
     }
   }).sort((a, b) => {
@@ -180,15 +181,15 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
     ? otherUsers
     : otherUsers.filter(user => user.team?.name === selectedTeam);
 
-  const activeUsers = teamFilteredUsers.filter(u => u.status === 'Active');
-  const archivedUsers = teamFilteredUsers.filter(u => u.status === 'Archived');
+  const activeUsers = teamFilteredUsers.filter(u => !u.is_archived);
+  const archivedUsers = teamFilteredUsers.filter(u => u.is_archived);
 
 	const teamUserCounts = teams.reduce((acc, team) => {
 		acc[team.id] = usersWithData.filter(u => u.team?.id === team.id).length;
 		return acc;
 	}, {} as Record<string, number>);
 
-    const UserRow = ({ user }: { user: Profile & { team: Team | null; role: Role | null; status: string; isAdmin: boolean } }) => (
+    const UserRow = ({ user }: { user: Profile & { team: Team | null; role: Role | null; is_archived: boolean; isAdmin: boolean } }) => (
         <div className="grid grid-cols-5 items-center py-3 px-4 group">
             <div className="col-span-1 flex items-center gap-3">
                 <Avatar className="h-8 w-8">
@@ -205,7 +206,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                     <Select
                         value={user.team?.id ?? ''}
                         onValueChange={(teamId) => handleTeamChange(user.id, teamId === 'none' ? null : teamId)}
-                        disabled={isPending}
+                        disabled={isPending || user.is_archived}
                     >
                         <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0">
                             <SelectValue placeholder="No team" />
@@ -226,7 +227,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                     <Select
                         value={user.role?.id}
                         onValueChange={(roleId) => handleRoleChange(user.id, roleId)}
-                        disabled={isPending}
+                        disabled={isPending || user.is_archived}
                     >
                         <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0">
                             <SelectValue placeholder="No role" />
@@ -241,10 +242,10 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
             </div>
             <div className="col-span-1 flex justify-between items-center">
                 <Badge variant="outline" className={cn(
-                    user.status === 'Active' ? 'border-green-500 text-green-700 bg-green-50' : 'border-gray-500 text-gray-700 bg-gray-50'
+                    !user.is_archived ? 'border-green-500 text-green-700 bg-green-50' : 'border-gray-500 text-gray-700 bg-gray-50'
                 )}>
-                    <span className={cn('h-2 w-2 rounded-full mr-2', user.status === 'Active' ? 'bg-green-500' : 'bg-gray-500')}></span>
-                    {user.status}
+                    <span className={cn('h-2 w-2 rounded-full mr-2', !user.is_archived ? 'bg-green-500' : 'bg-gray-500')}></span>
+                    {user.is_archived ? 'Archived' : 'Active'}
                 </Badge>
                 {currentUser?.id !== user.id && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -255,7 +256,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                               </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
-                              {user.status === 'Active' ? (
+                              {!user.is_archived ? (
                                 <>
                                   <DropdownMenuItem>
                                       <UserCog className="mr-2 h-4 w-4" />
@@ -267,7 +268,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                   </DropdownMenuItem>
                                 </>
                               ) : (
-                                <DropdownMenuItem onClick={() => handleUpdateUserStatus(user, 'Active')}>
+                                <DropdownMenuItem onClick={() => handleUpdateUserArchived(user, false)}>
                                     <Archive className="mr-2 h-4 w-4" />
                                     Restore User
                                 </DropdownMenuItem>
@@ -373,7 +374,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                         <div className="col-span-1">Status</div>
                                     </div>
                                     <div className="divide-y">
-                                        {adminUser && <UserRow user={adminUser} />}
+                                        {adminUser && !adminUser.is_archived && <UserRow user={adminUser} />}
                                         {activeUsers.map((user) => <UserRow key={user.id} user={user} />)}
                                     </div>
                                 </div>
@@ -408,6 +409,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                         <div className="col-span-1">Status</div>
                                     </div>
                                     <div className="divide-y">
+                                        {adminUser && adminUser.is_archived && <UserRow user={adminUser} />}
                                         {archivedUsers.map((user) => <UserRow key={user.id} user={user} />)}
                                     </div>
                                 </div>
@@ -465,7 +467,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                 <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setUserToArchive(null)}>Cancel</AlertDialogCancel>
                 <AlertDialogAction 
-                    onClick={() => handleUpdateUserStatus(userToArchive!, 'Archived')}
+                    onClick={() => handleUpdateUserArchived(userToArchive!, true)}
                     className={cn(buttonVariants({ variant: "destructive" }))}
                     disabled={isPending}
                 >
@@ -477,12 +479,3 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 		</>
 	);
 }
-    
-
-    
-
-    
-
-
-
-    
