@@ -348,18 +348,23 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     return (
         <>
             <div className="mb-8 overflow-x-auto">
-                <Collapsible.Root open={activeProjectsOpen} onOpenChange={setActiveProjectsOpen} asChild>
-                    <table className="w-full text-left">
-                        <thead>
-                            <Collapsible.Trigger asChild>
-                                <tr role="button" className="border-b">
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">
-                                        <div className="flex items-center gap-2">
-                                            <ChevronDown className={cn("w-5 h-5 transition-transform", !activeProjectsOpen && "-rotate-90")} />
-                                            Active projects
-                                            <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
-                                        </div>
-                                    </th>
+                <Collapsible.Root open={activeProjectsOpen} onOpenChange={setActiveProjectsOpen}>
+                    <div className="flex items-center gap-2">
+                        <Collapsible.Trigger asChild>
+                            <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
+                                <div className="flex items-center gap-2">
+                                <ChevronDown className={cn("w-5 h-5 transition-transform", !activeProjectsOpen && "-rotate-90")} />
+                                Active projects
+                                <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
+                                </div>
+                            </Button>
+                        </Collapsible.Trigger>
+                    </div>
+                    <Collapsible.Content className="data-[state=closed]:animate-fade-out-bottom-up data-[state=open]:animate-fade-in-top-down">
+                        <table className="w-full text-left mt-2">
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">Name</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
@@ -375,16 +380,14 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         </Button>
                                     </th>
                                 </tr>
-                            </Collapsible.Trigger>
-                        </thead>
-                        <Collapsible.Content asChild>
-                            <tbody className="data-[state=closed]:animate-fade-out-bottom-up data-[state=open]:animate-fade-in-top-down">
+                            </thead>
+                            <tbody>
                                 {activeProjects.map(project => (
                                     <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
                                 ))}
                             </tbody>
-                        </Collapsible.Content>
-                    </table>
+                        </table>
+                    </Collapsible.Content>
                 </Collapsible.Root>
             </div>
             {closedProjects.length > 0 && (
