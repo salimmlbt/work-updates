@@ -279,8 +279,8 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                         </Button>
                         <div className="space-y-0">
                             {permissionsList.map((permission) => (
-                                <div key={permission.id} className="flex items-center justify-between py-2">
-                                    <div className="flex-shrink-0 mr-4">
+                                <div key={permission.id} className="flex items-center gap-4 py-2">
+                                    <div className="mr-4">
                                         <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
                                     </div>
                                     <div className="flex gap-2">
