@@ -116,6 +116,38 @@ export async function deleteProject(projectId: string) {
     return { success: true };
 }
 
+export async function restoreProject(projectId: string) {
+    const supabase = createServerClient()
+
+    const { error } = await supabase
+        .from('projects')
+        .update({ is_deleted: false })
+        .eq('id', projectId);
+
+    if (error) {
+        return { error: `Failed to restore project: ${error.message}` };
+    }
+
+    revalidatePath('/projects');
+    return { success: true };
+}
+
+export async function deleteProjectPermanently(projectId: string) {
+    const supabase = createServerClient()
+
+    const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+    if (error) {
+        return { error: `Failed to permanently delete project: ${error.message}` };
+    }
+
+    revalidatePath('/projects');
+    return { success: true };
+}
+
 export async function addTask(formData: FormData) {
   const supabase = createServerClient()
   

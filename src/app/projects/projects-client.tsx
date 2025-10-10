@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
-import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2, Trash } from 'lucide-react';
+import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2, Trash, RefreshCcw } from 'lucide-react';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { deleteProject } from '@/app/actions';
+import { deleteProject, restoreProject, deleteProjectPermanently } from '@/app/actions';
 import { EditProjectDialog } from './edit-project-dialog';
 
 type ProjectWithOwner = Project & {
@@ -229,6 +230,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [isEditProjectOpen, setEditProjectOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectWithOwner | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [projectToRestore, setProjectToRestore] = useState<ProjectWithOwner | null>(null);
+  const [projectToDeletePermanently, setProjectToDeletePermanently] = useState<ProjectWithOwner | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   
@@ -320,6 +323,32 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     });
   }
 
+  const handleRestoreProject = (project: ProjectWithOwner) => {
+      startTransition(async () => {
+          const { error } = await restoreProject(project.id);
+          if (error) {
+              toast({ title: "Error restoring project", description: error, variant: "destructive" });
+          } else {
+              toast({ title: "Project restored" });
+              setProjects(prev => prev.map(p => p.id === project.id ? { ...p, is_deleted: false } : p));
+          }
+      });
+  }
+
+  const handleDeletePermanently = () => {
+      if (!projectToDeletePermanently) return;
+      startTransition(async () => {
+          const { error } = await deleteProjectPermanently(projectToDeletePermanently.id);
+          if (error) {
+              toast({ title: "Error deleting project", description: error, variant: "destructive" });
+          } else {
+              toast({ title: "Project permanently deleted" });
+              setProjects(prev => prev.filter(p => p.id !== projectToDeletePermanently.id));
+          }
+          setProjectToDeletePermanently(null);
+      });
+  }
+
   const mainContent = () => {
     if (activeView === 'deleted') {
         return (
@@ -342,7 +371,25 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <td className="px-4 py-3">{project.status ?? "New"}</td>
                                     <td className="px-4 py-3 text-muted-foreground">{format(new Date(project.due_date || ''), 'dd MMM yyyy')}</td>
                                     <td className="px-4 py-3">
-                                        {/* Restore/Permanent Delete Options Here */}
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onClick={() => handleRestoreProject(project)}>
+                                                        <RefreshCcw className="mr-2 h-4 w-4" />
+                                                        Restore project
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => setProjectToDeletePermanently(project)}>
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete permanently
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </td>
                                 </tr>
                                 ))}
@@ -517,6 +564,26 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+        <AlertDialog open={!!projectToDeletePermanently} onOpenChange={(open) => !open && setProjectToDeletePermanently(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the project "{projectToDeletePermanently?.name}" and all its associated data.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleDeletePermanently}
+                        className={cn(buttonVariants({ variant: "destructive" }))}
+                        disabled={isPending}
+                    >
+                       {isPending ? 'Deleting...' : 'Permanently Delete'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
@@ -524,3 +591,4 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     
 
     
+
