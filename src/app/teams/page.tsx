@@ -12,18 +12,19 @@ import type { Role, Profile, Team } from '@/lib/types';
 import RolesClient from './roles-client';
 import TeamsClient from './teams-client';
 
+async function getRoles(supabase: ReturnType<typeof createServerClient>) {
+    return await supabase.from('roles').select('*');
+}
+
 export default async function TeamsPage() {
   const supabase = createServerClient();
   
-  // Ensure "Falaq Admin" role exists
-  const { data: adminRole, error: adminRoleError } = await supabase
-    .from('roles')
-    .select('id')
-    .eq('name', 'Falaq Admin')
-    .single();
+  let { data: rolesData } = await getRoles(supabase);
 
-  if (!adminRole && (!adminRoleError || adminRoleError.code === 'PGRST116')) { // PGRST116: "exact one row not found"
-    await supabase.from('roles').insert({
+  const adminRoleExists = rolesData?.some(r => r.name === 'Falaq Admin');
+
+  if (!adminRoleExists) {
+    const { error: insertError } = await supabase.from('roles').insert({
       name: 'Falaq Admin',
       permissions: {
         dashboard: "Editor",
@@ -37,9 +38,14 @@ export default async function TeamsPage() {
         settings: "Editor",
       }
     });
+    
+    if (!insertError) {
+      // Re-fetch roles after creating the admin role
+      const { data: updatedRolesData } = await getRoles(supabase);
+      rolesData = updatedRolesData;
+    }
   }
   
-  const { data: rolesData } = await supabase.from('roles').select('*');
   const { data: profilesData } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))');
   const { data: teamsData } = await supabase.from('teams').select('*');
 
