@@ -8,15 +8,18 @@ import { revalidatePath } from 'next/cache'
 
 export async function createTeam(name: string, defaultTasks: string[]) {
   const supabase = createServerClient()
-  // Using a placeholder since auth is removed.
-  const placeholderUserId = '00000000-0000-0000-0000-000000000000';
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to create a team.' };
+  }
 
   const { data, error } = await supabase
     .from('teams')
     .insert({ 
       name, 
       default_tasks: defaultTasks,
-      owner_id: placeholderUserId 
+      owner_id: user.id
     })
     .select()
     .single()
@@ -214,7 +217,7 @@ export async function updateUser(userId: string, formData: FormData) {
 
     const fullName = formData.get('full_name') as string;
     const roleId = formData.get('role_id') as string;
-    const teamIds = (formData.get('team_ids') as string).split(',').filter(Boolean);
+    const teamIds = (formData.get('team_ids')as string).split(',').filter(Boolean);
     const newPassword = formData.get('password') as string | null;
     const avatarFile = formData.get('avatar') as File | null;
     
@@ -410,5 +413,3 @@ export async function updateUserStatus(userId: string, status: 'Active' | 'Archi
     revalidatePath('/teams');
     return { success: true };
 }
-
-    

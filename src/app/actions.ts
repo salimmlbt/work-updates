@@ -324,14 +324,18 @@ export async function deleteClient(clientId: string) {
 
 export async function createTeam(name: string, defaultTasks: string[]) {
   const supabase = createServerClient()
-  const placeholderUserId = '00000000-0000-0000-0000-000000000000';
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to create a team.' };
+  }
 
   const { data, error } = await supabase
     .from('teams')
     .insert({ 
       name, 
       default_tasks: defaultTasks,
-      owner_id: placeholderUserId 
+      owner_id: user.id 
     })
     .select()
     .single()
