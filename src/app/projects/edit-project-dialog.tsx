@@ -243,7 +243,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('client_id', value, { shouldDirty: true }); }} value={field.value ?? undefined}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0">
                           <SelectValue placeholder="Select a client" />
                         </SelectTrigger>
                         <SelectContent>
@@ -265,7 +265,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('type', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0">
                           <SelectValue placeholder="Select project type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -286,7 +286,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('status', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -310,7 +310,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('priority', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -337,7 +337,7 @@ export function EditProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="p-0 h-auto justify-start w-full font-medium text-base focus:ring-0">
+                          <Button variant="ghost" className="p-0 h-auto justify-start w-full font-medium text-base focus:ring-0 border-0">
                             <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                             {field.value ? formatDate(field.value) : 'No start date'}
                           </Button>
@@ -357,7 +357,7 @@ export function EditProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="p-0 h-auto justify-start w-full font-medium text-base focus:ring-0">
+                          <Button variant="ghost" className="p-0 h-auto justify-start w-full font-medium text-base focus:ring-0 border-0">
                             <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                             {field.value ? formatDate(field.value) : 'No due date'}
                           </Button>
