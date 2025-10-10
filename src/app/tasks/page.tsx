@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState } from 'react';
@@ -22,6 +21,8 @@ import {
   AlertCircle,
   Clock,
   CheckCircle2,
+  Save,
+  X,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { predefinedTasks } from '@/lib/predefined-tasks';
 
 const teamMembers = [
   { name: 'Sofia Brown', avatar: 'https://i.pravatar.cc/150?u=sofia-brown' },
@@ -54,6 +60,8 @@ const allTasks = [
     responsible: 'Sofia Brown',
     comments: 3,
     attachments: 1,
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-2',
@@ -63,6 +71,8 @@ const allTasks = [
     dueDate: '19 Apr 2024',
     responsible: 'Anastasia Novak',
     checklist: { completed: 1, total: 3 },
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-3',
@@ -71,6 +81,8 @@ const allTasks = [
     type: 'Operational',
     dueDate: '',
     responsible: 'Anastasia Novak',
+    project: 'Marketing Campaign',
+    client: 'Apex Solutions'
   },
   {
     id: 'TASK-4',
@@ -81,6 +93,8 @@ const allTasks = [
     responsible: 'Michael Martinez',
     tags: ['ASAP'],
     comments: 7,
+    project: 'Logo Design',
+    client: 'Quantum Leap'
   },
   {
     id: 'TASK-5',
@@ -89,6 +103,8 @@ const allTasks = [
     type: 'Design',
     dueDate: '24 Apr 2024',
     responsible: 'Michael Martinez',
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-6',
@@ -98,6 +114,8 @@ const allTasks = [
     dueDate: '',
     responsible: 'Marry Williams',
     tags: ['Feedback'],
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-7',
@@ -107,6 +125,8 @@ const allTasks = [
     dueDate: '',
     responsible: 'Michael Martinez',
     checklist: { completed: 0, total: 2 },
+    project: 'Logo Design',
+    client: 'Quantum Leap'
   },
   {
     id: 'TASK-8',
@@ -117,6 +137,8 @@ const allTasks = [
     responsible: 'David Thomas',
     tags: ['blocked'],
     checklist: { completed: 0, total: 4 },
+    project: 'Marketing Campaign',
+    client: 'Apex Solutions'
   },
   {
     id: 'TASK-9',
@@ -125,6 +147,8 @@ const allTasks = [
     type: 'Operational',
     dueDate: '',
     responsible: 'David Thomas',
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-10',
@@ -133,6 +157,8 @@ const allTasks = [
     type: 'Operational',
     dueDate: '',
     responsible: 'David Thomas',
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-11',
@@ -141,6 +167,8 @@ const allTasks = [
     type: 'Operational',
     dueDate: '',
     responsible: 'David Thomas',
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-12',
@@ -149,6 +177,8 @@ const allTasks = [
     type: 'Operational',
     dueDate: '',
     responsible: 'David Thomas',
+    project: 'Marketing Campaign',
+    client: 'Apex Solutions'
   },
   {
     id: 'TASK-13',
@@ -157,6 +187,8 @@ const allTasks = [
     type: 'Operational',
     dueDate: '',
     responsible: 'David Thomas',
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-14',
@@ -165,6 +197,8 @@ const allTasks = [
     type: 'Operational',
     dueDate: '',
     responsible: 'David Thomas',
+    project: 'Logo Design',
+    client: 'Quantum Leap'
   },
   {
     id: 'TASK-15',
@@ -175,6 +209,8 @@ const allTasks = [
     responsible: 'Sofia Brown',
     checklist: { completed: 4, total: 4 },
     comments: 2,
+    project: 'Website Redesign',
+    client: 'Innovate Corp'
   },
   {
     id: 'TASK-16',
@@ -184,11 +220,14 @@ const allTasks = [
     dueDate: '',
     responsible: 'Sofia Brown',
     checklist: { completed: 0, total: 7 },
+    project: 'Marketing Campaign',
+    client: 'Apex Solutions'
   }
 ];
 
-const activeTasks = allTasks.filter(t => t.status !== 'Completed');
-const completedTasks = allTasks.filter(t => t.status === 'Completed');
+const projects = [...new Set(allTasks.map(t => t.project))];
+const clients = [...new Set(allTasks.map(t => t.client))];
+const taskTypes = [...new Set(allTasks.map(t => t.type))];
 
 const statusIcons = {
   'In progress': <Rocket className="h-4 w-4 text-purple-600" />,
@@ -208,8 +247,98 @@ const getResponsibleAvatar = (name: string) => {
   return member ? member.avatar : undefined;
 }
 
-const TaskRow = ({ task }: { task: (typeof activeTasks)[0] }) => (
-  <tr className="border-b border-gray-200 hover:bg-gray-50">
+const AddTaskRow = ({ onSave, onCancel }: { onSave: (task: any) => void; onCancel: () => void; }) => {
+    const [taskName, setTaskName] = useState('');
+    const [project, setProject] = useState('');
+    const [client, setClient] = useState('');
+    const [type, setType] = useState('');
+    const [dueDate, setDueDate] = useState<Date | undefined>();
+    const [assignee, setAssignee] = useState('');
+
+    const handleSave = () => {
+        if (taskName) {
+            onSave({
+                id: `TASK-${Date.now()}`,
+                name: taskName,
+                project,
+                client,
+                type,
+                dueDate: dueDate ? format(dueDate, 'dd MMM yyyy') : '',
+                responsible: assignee,
+                status: 'New task'
+            });
+        }
+    };
+
+    return (
+        <tr className="border-b bg-gray-50">
+            <td className="px-4 py-3">
+                <Select onValueChange={setTaskName} value={taskName}>
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select a task" /></SelectTrigger>
+                    <SelectContent>
+                        {predefinedTasks.map(task => <SelectItem key={task} value={task}>{task}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </td>
+             <td className="px-4 py-3">
+                <Select onValueChange={setProject} value={project}>
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select project" /></SelectTrigger>
+                    <SelectContent>
+                        {projects.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </td>
+            <td className="px-4 py-3">
+                <Select onValueChange={setClient} value={client}>
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select client" /></SelectTrigger>
+                    <SelectContent>
+                        {clients.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </td>
+            <td className="px-4 py-3">
+               <Select onValueChange={setType} value={type}>
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select type" /></SelectTrigger>
+                    <SelectContent>
+                        {taskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </td>
+            <td className="px-4 py-3">
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-white">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <CalendarComponent mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+                    </PopoverContent>
+                </Popover>
+            </td>
+            <td className="px-4 py-3">
+                <Select onValueChange={setAssignee} value={assignee}>
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select assignee" /></SelectTrigger>
+                    <SelectContent>
+                        {teamMembers.map(m => <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </td>
+            <td className="px-4 py-3"></td>
+            <td className="px-4 py-3 text-right">
+                <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" onClick={onCancel}><X className="h-4 w-4" /></Button>
+                    <Button size="icon" onClick={handleSave}><Save className="h-4 w-4" /></Button>
+                </div>
+            </td>
+        </tr>
+    );
+};
+
+
+const TaskRow = ({ task }: { task: (typeof activeTasks)[0] & {project?: string, client?: string} }) => (
+  <tr className="border-b border-gray-200 hover:bg-gray-50 group">
     <td className="px-4 py-3 text-sm font-medium text-gray-800">
       <div className="flex items-center gap-3">
         <Checkbox id={`task-${task.id}`} />
@@ -228,12 +357,8 @@ const TaskRow = ({ task }: { task: (typeof activeTasks)[0] }) => (
         {task.checklist && <span className="flex items-center gap-1 text-gray-500 text-xs"><CheckSquare className="w-4 h-4"/>{task.checklist.completed}/{task.checklist.total}</span>}
       </div>
     </td>
-    <td className="px-4 py-3 text-sm text-gray-600">
-      <div className="flex items-center gap-2">
-        {statusIcons[task.status as keyof typeof statusIcons]}
-        <span>{task.status}</span>
-      </div>
-    </td>
+    <td className="px-4 py-3 text-sm text-gray-600">{task.project}</td>
+    <td className="px-4 py-3 text-sm text-gray-600">{task.client}</td>
     <td className="px-4 py-3 text-sm">
        <Badge variant="outline" className={`border-0 ${typeColors[task.type as keyof typeof typeColors]}`}>{task.type}</Badge>
     </td>
@@ -254,17 +379,25 @@ const TaskRow = ({ task }: { task: (typeof activeTasks)[0] }) => (
         <span>{task.responsible}</span>
       </div>
     </td>
+    <td className="px-4 py-3 text-sm text-gray-600">
+      <div className="flex items-center gap-2">
+        {statusIcons[task.status as keyof typeof statusIcons]}
+        <span>{task.status}</span>
+      </div>
+    </td>
     <td className="px-4 py-3">
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreHorizontal className="h-4 w-4" />
         </Button>
+      </div>
     </td>
   </tr>
 );
 
 
-const TaskSection = ({ title, count, tasks, defaultOpen = true }: { title: string, count: number, tasks: any[], defaultOpen?: boolean }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask, onCancelAddTask }: { title: string, count: number, tasks: any[], onAddTask: () => void, isAddingTask: boolean, onSaveTask: (task: any) => void, onCancelAddTask: () => void }) => {
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
     <div className="mb-8">
@@ -277,11 +410,12 @@ const TaskSection = ({ title, count, tasks, defaultOpen = true }: { title: strin
         <div className="overflow-x-auto">
           <table className="w-full table-fixed">
             <tbody>
+              {title === "Active tasks" && isAddingTask && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask}/>}
               {tasks.map(task => <TaskRow key={task.id} task={task} />)}
               {title === "Active tasks" && (
                 <tr className="border-b-0">
-                    <td colSpan={6} className="pt-2 pb-4 px-4">
-                        <Button variant="ghost" className="text-gray-500">
+                    <td colSpan={8} className="pt-2 pb-4 px-4">
+                        <Button variant="ghost" className="text-gray-500" onClick={onAddTask}>
                             <Plus className="w-4 h-4 mr-2"/>
                             Add task
                         </Button>
@@ -349,13 +483,13 @@ const KanbanCard = ({ task }: { task: any }) => {
 };
 
 
-const KanbanBoard = () => {
+const KanbanBoard = ({ tasks: allTasksProp }: {tasks: any[]}) => {
   const statuses = ['New task', 'Scheduled', 'In progress', 'Completed'];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {statuses.map(status => {
-        const tasksInStatus = allTasks.filter(task => task.status === status);
+        const tasksInStatus = allTasksProp.filter(task => task.status === status);
         return (
           <div key={status}>
             <h2 className="text-lg font-semibold mb-4 flex items-center">
@@ -376,13 +510,23 @@ const KanbanBoard = () => {
 
 export default function TasksPage() {
   const [view, setView] = useState('table');
+  const [tasks, setTasks] = useState(allTasks);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+
+  const activeTasks = tasks.filter(t => t.status !== 'Completed');
+  const completedTasks = tasks.filter(t => t.status === 'Completed');
+  
+  const handleSaveTask = (newTask: any) => {
+    setTasks(prev => [newTask, ...prev]);
+    setIsAddingTask(false);
+  }
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm h-full w-full">
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tools</h1>
-          <Button>
+          <Button onClick={() => setIsAddingTask(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add new
           </Button>
@@ -437,20 +581,38 @@ export default function TasksPage() {
             <table className="w-full text-left table-fixed">
                 <thead>
                     <tr className="border-b border-gray-200">
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-2/5">Active tasks</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Status</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Type</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Due date</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[25%]">Task</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Project</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Client</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Due date</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
                         <th className="px-4 py-2 w-[5%]"></th>
                     </tr>
                 </thead>
             </table>
-            <TaskSection title="Active tasks" count={activeTasks.length} tasks={activeTasks} />
-            <TaskSection title="Completed tasks" count={completedTasks.length} tasks={completedTasks} />
+            <TaskSection 
+                title="Active tasks" 
+                count={activeTasks.length} 
+                tasks={activeTasks}
+                onAddTask={() => setIsAddingTask(true)}
+                isAddingTask={isAddingTask}
+                onSaveTask={handleSaveTask}
+                onCancelAddTask={() => setIsAddingTask(false)}
+            />
+            <TaskSection 
+                title="Completed tasks" 
+                count={completedTasks.length} 
+                tasks={completedTasks} 
+                onAddTask={() => {}} 
+                isAddingTask={false} 
+                onSaveTask={() => {}} 
+                onCancelAddTask={() => {}} 
+            />
           </>
         ) : (
-          <KanbanBoard />
+          <KanbanBoard tasks={tasks} />
         )}
       </main>
     </div>
