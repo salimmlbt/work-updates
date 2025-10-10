@@ -74,7 +74,7 @@ export async function updateProject(projectId: string, formData: FormData) {
         return { error: 'Project name is required.' }
     }
 
-    const { data: project, error: projectError } = await supabase
+    const { error: projectError } = await supabase
         .from('projects')
         .update({
             name: rawFormData.name,
@@ -88,21 +88,15 @@ export async function updateProject(projectId: string, formData: FormData) {
             type: rawFormData.type,
         })
         .eq('id', projectId)
-        .select()
-        .maybeSingle()
 
     if (projectError) {
         console.error('Error updating project:', projectError)
         return { error: projectError.message }
     }
     
-    if (!project) {
-        return { error: "Could not find project to update." }
-    }
-
     revalidatePath('/dashboard')
     revalidatePath('/projects')
-    return { data: project }
+    return { data: { success: true } }
 }
 
 export async function deleteProject(projectId: string) {

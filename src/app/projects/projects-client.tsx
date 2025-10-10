@@ -269,12 +269,16 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   }
 
   const handleProjectUpdated = (updatedProject: Project) => {
-    const updatedProjectWithOwner = {
-        ...updatedProject,
-        owner: profiles.find(p => p.id === updatedProject.owner_id) || null,
-        client: clients.find(c => c.id === updatedProject.client_id) || null,
-    };
-    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProjectWithOwner as ProjectWithOwner : p));
+    setProjects(prev => prev.map(p => {
+      if (p.id === updatedProject.id) {
+        return {
+          ...p,
+          ...updatedProject,
+          client: clients.find(c => c.id === updatedProject.client_id) || null,
+        } as ProjectWithOwner;
+      }
+      return p;
+    }));
   }
   
   const handleTypeCreated = (newType: ProjectType) => {

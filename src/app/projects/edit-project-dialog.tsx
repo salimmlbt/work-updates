@@ -155,12 +155,18 @@ export function EditProjectDialog({
           description: result.error,
           variant: 'destructive',
         })
-      } else if (result.data) {
+      } else {
         toast({
           title: 'Project Updated',
-          description: `The project "${result.data.name}" has been updated successfully.`,
+          description: `The project "${data.name}" has been updated successfully.`,
         })
-        onProjectUpdated(result.data as Project)
+        const updatedProject = {
+          ...project,
+          ...data,
+          start_date: data.start_date?.toISOString() ?? null,
+          due_date: data.due_date?.toISOString() ?? null,
+        }
+        onProjectUpdated(updatedProject)
         setIsOpen(false)
       }
     })
