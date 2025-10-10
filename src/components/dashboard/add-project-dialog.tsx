@@ -238,7 +238,7 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full hover:bg-accent">
                           <SelectValue placeholder="Select a client" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
@@ -261,7 +261,7 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full hover:bg-accent">
                           <SelectValue placeholder="Select project type" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
@@ -283,8 +283,10 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent">
+                          <div className="flex items-center gap-2">
                            <SelectValue />
+                          </div>
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
@@ -311,8 +313,10 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group">
-                           <SelectValue />
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent">
+                           <div className="flex items-center gap-2">
+                            <SelectValue />
+                           </div>
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
@@ -339,7 +343,7 @@ export function AddProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group">
+                          <Button variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent">
                              <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 {field.value ? formatDate(field.value) : <span className="text-muted-foreground">No start date</span>}
@@ -362,7 +366,7 @@ export function AddProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group">
+                          <Button variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent">
                             <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 {formatDate(field.value)}
