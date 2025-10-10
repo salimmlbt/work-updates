@@ -461,7 +461,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 			<AddUserDialog 
 				isOpen={isAddUserOpen} 
 				setIsOpen={setAddUserOpen} 
-				roles={initialRoles.filter(r => r.name !== 'Falaq Admin')} 
+				roles={(initialRoles || []).filter(r => r.name !== 'Falaq Admin')} 
 				teams={teams}
 				onUserAdded={onUserAdded}
 			/>
