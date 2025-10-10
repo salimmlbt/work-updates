@@ -215,7 +215,7 @@ export function EditProjectDialog({
                     {errors.name && <p className="text-sm text-destructive -mt-4">{errors.name.message}</p>}
 
                     <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Leaders {selectedLeaders.length}</Label>
+                        <Label className="text-sm text-muted-foreground">Leaders</Label>
                          <div className="space-y-2">
                         {selectedLeaders.length > 0 ? (
                             selectedLeaders.map(id => {
@@ -248,7 +248,7 @@ export function EditProjectDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Members {selectedMembers.length}</Label>
+                        <Label className="text-sm text-muted-foreground">Members</Label>
                          <div className="space-y-2">
                         {selectedMembers.length > 0 ? (
                             selectedMembers.map(id => {
@@ -297,7 +297,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('client_id', value, { shouldDirty: true }); }} value={field.value ?? undefined}>
-                        <SelectTrigger className="h-12 py-2 px-3 justify-between font-medium text-base group hover:bg-accent data-[state=open]:bg-accent bg-transparent border-0 shadow-none">
+                        <SelectTrigger className="h-12 py-2 px-3 justify-between font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select a client" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
@@ -320,7 +320,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('type', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger className="h-12 py-2 px-3 justify-between font-medium text-base group hover:bg-accent data-[state=open]:bg-accent bg-transparent border-0 shadow-none">
+                        <SelectTrigger className="h-12 py-2 px-3 justify-between font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select project type" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
@@ -342,7 +342,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('status', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger className="h-12 py-2 px-3 justify-between w-full font-medium text-base group hover:bg-accent data-[state=open]:bg-accent bg-transparent border-0 shadow-none">
+                        <SelectTrigger className="h-12 py-2 px-3 justify-between w-full font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                            <SelectValue />
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
@@ -370,7 +370,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('priority', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger className="h-12 py-2 px-3 justify-between w-full font-medium text-base group hover:bg-accent data-[state=open]:bg-accent bg-transparent border-0 shadow-none">
+                        <SelectTrigger className="h-12 py-2 px-3 justify-between w-full font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                            <SelectValue />
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
@@ -398,7 +398,7 @@ export function EditProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button className="h-12 py-2 px-3 justify-between w-full font-medium text-base group hover:bg-accent data-[state=open]:bg-accent bg-transparent border-0 shadow-none">
+                          <Button className="h-12 py-2 px-3 justify-between w-full font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                              <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 {field.value ? formatDate(field.value) : <span className="text-muted-foreground">No start date</span>}
@@ -420,7 +420,7 @@ export function EditProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button className="h-12 py-2 px-3 justify-between w-full font-medium text-base group hover:bg-accent data-[state=open]:bg-accent bg-transparent border-0 shadow-none">
+                          <Button className="h-12 py-2 px-3 justify-between w-full font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                             <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 {formatDate(field.value)}
