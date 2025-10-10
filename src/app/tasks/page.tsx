@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -113,7 +112,7 @@ const AddTaskRow = ({
     const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
     const availableTaskTypes = assigneeTeams.flatMap(t => t.default_tasks || []);
 
-    const filteredProjects = clientId ? projects.filter(p => p.client_id === clientId) : projects;
+    const filteredProjects = clientId ? projects.filter(p => p.client_id === clientId) : [];
 
     useEffect(() => {
         if (projectId && projectId !== 'no-project') {
@@ -130,23 +129,24 @@ const AddTaskRow = ({
     }
 
     const handleSave = async () => {
-        if (taskName && clientId && dueDate && assigneeId && taskType) {
-            const result = await createTask({
-                description: taskName,
-                project_id: projectId === 'no-project' ? null : projectId,
-                client_id: clientId || null,
-                deadline: dueDate.toISOString(),
-                assignee_id: assigneeId,
-                type: taskType || null,
-            });
-
-            if (result.error) {
-                toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
-            } else if (result.data) {
-                onSave(result.data);
-            }
-        } else {
+        if (!taskName || !clientId || !dueDate || !assigneeId || !taskType) {
             toast({ title: "Missing fields", description: "Task Name, Client, Due Date, Assignee, and Type are all required.", variant: "destructive" });
+            return;
+        }
+
+        const result = await createTask({
+            description: taskName,
+            project_id: projectId === 'no-project' ? null : projectId,
+            client_id: clientId || null,
+            deadline: dueDate.toISOString(),
+            assignee_id: assigneeId,
+            type: taskType || null,
+        });
+
+        if (result.error) {
+            toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
+        } else if (result.data) {
+            onSave(result.data);
         }
     };
     
@@ -176,7 +176,7 @@ const AddTaskRow = ({
                 </Select>
             </td>
              <td className="px-4 py-3">
-                <Select onValueChange={setProjectId} value={projectId}>
+                <Select onValueChange={setProjectId} value={projectId} disabled={!clientId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select project" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="no-project">No project</SelectItem>
@@ -220,7 +220,7 @@ const AddTaskRow = ({
               </div>
             </td>
             <td className="px-4 py-3 text-right">
-                <div className="flex gap-2">
+                <div className="flex gap-2 justify-end">
                     <Button variant="ghost" size="icon" onClick={onCancel}><X className="h-4 w-4" /></Button>
                     <Button size="icon" onClick={handleSave}><Save className="h-4 w-4" /></Button>
                 </div>
@@ -501,7 +501,7 @@ export default function TasksPage() {
             <table className="w-full text-left table-fixed">
                 <thead>
                     <tr className="border-b border-gray-200">
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task Name</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Client</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
