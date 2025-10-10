@@ -152,16 +152,10 @@ export async function addUser(formData: FormData) {
     }
 
 
-    // 1. Create the user in Supabase Auth, passing profile data to be handled by a trigger
+    // 1. Create the user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
-      options: {
-        data: {
-          full_name: fullName,
-          avatar_url: avatarUrl,
-        }
-      }
     })
 
     if (authError) {
@@ -172,19 +166,27 @@ export async function addUser(formData: FormData) {
       return { error: "User could not be created in Auth."}
     }
     
-    // 2. Update the newly created profile with the role_id
-    const { error: profileError } = await supabase
+    // 2. Insert the user profile into the public.profiles table
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .update({ role_id: roleId })
-      .eq('id', authData.user.id);
+      .insert({
+        id: authData.user.id,
+        full_name: fullName,
+        email: email,
+        avatar_url: avatarUrl,
+        role_id: roleId,
+      })
+      .select()
+      .single();
 
     if (profileError) {
-        // If updating the profile fails, we should delete the auth user to avoid orphaned accounts.
+        // If creating the profile fails, delete the auth user to avoid orphans.
         if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
-        return { error: `Failed to assign role to user: ${profileError.message}` };
+        return { error: `Failed to create user profile: ${profileError.message}` };
     }
+
 
     // 3. Link user to teams
     if (teamIds.length > 0) {
@@ -261,7 +263,7 @@ export async function updateUser(userId: string, formData: FormData) {
     }
 
     // Update profile in 'profiles' table
-    const { data: profileData, error: profileError } = await supabase
+    const { error: profileError } = await supabase
         .from('profiles')
         .update({
             full_name: fullName,
@@ -295,9 +297,8 @@ export async function updateUser(userId: string, formData: FormData) {
         authUpdateData.password = newPassword;
     }
 
-    if (profileData && (avatarUrl !== currentProfile.avatar_url || fullName !== profileData.full_name)) {
+    if (avatarUrl !== currentProfile.avatar_url || fullName) {
         authUpdateData.data = {
-            ...profileData,
             full_name: fullName,
             avatar_url: avatarUrl,
         };
