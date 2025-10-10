@@ -280,8 +280,8 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                         <div className="space-y-2">
                             {permissionsList.map((permission) => (
                                 <div key={permission.id} className="flex items-center gap-4">
-                                    <div className="w-64">
-                                        <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
+                                    <div className="w-80">
+                                        <p className="truncate">{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
                                     </div>
                                     <div className="flex gap-2">
                                          {permissionLevels.map((level) => (
