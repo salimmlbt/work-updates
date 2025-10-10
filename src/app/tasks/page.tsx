@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -106,13 +107,15 @@ const AddTaskRow = ({
     const availableTaskTypes = assigneeTeams.flatMap(t => t.default_tasks || []);
 
     useEffect(() => {
-        if (projectId) {
+        if (projectId && projectId !== 'no-project') {
             const project = projects.find(p => p.id === projectId);
             if (project?.client_id) {
                 setClientId(project.client_id);
             } else {
                 setClientId('');
             }
+        } else {
+            setClientId('');
         }
     }, [projectId, projects]);
 
@@ -120,7 +123,7 @@ const AddTaskRow = ({
         if (taskName && dueDate && assigneeId) {
             const result = await createTask({
                 description: taskName,
-                project_id: projectId || null,
+                project_id: projectId === 'no-project' ? null : projectId,
                 client_id: clientId || null,
                 deadline: dueDate.toISOString(),
                 assignee_id: assigneeId,
@@ -158,13 +161,13 @@ const AddTaskRow = ({
                 <Select onValueChange={setProjectId} value={projectId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select project" /></SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">No project</SelectItem>
+                        <SelectItem value="no-project">No project</SelectItem>
                         {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </td>
             <td className="px-4 py-3">
-                <Select onValueChange={setClientId} value={clientId} disabled={!!projectId}>
+                <Select onValueChange={setClientId} value={clientId} disabled={!!projectId && projectId !== 'no-project'}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select client" /></SelectTrigger>
                     <SelectContent>
                         {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -304,8 +307,7 @@ const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask,
               {tasks.map(task => <TaskRow key={task.id} task={task} />)}
               {title === "Active tasks" && (
                 <>
-                  {isAddingTask && isLast && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} projects={projects} clients={clients} profiles={profiles} />}
-                  <tr>
+                   <tr>
                       <td colSpan={8} className="pt-2 pb-4 px-4">
                           <Button variant="ghost" className="text-gray-500" onClick={onAddTask}>
                               <Plus className="w-4 h-4 mr-2"/>
@@ -313,6 +315,7 @@ const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask,
                           </Button>
                       </td>
                   </tr>
+                  {isAddingTask && isLast && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} projects={projects} clients={clients} profiles={profiles} />}
                 </>
               )}
             </tbody>
