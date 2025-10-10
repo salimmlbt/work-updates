@@ -128,12 +128,89 @@ const ProjectSidebar = ({
     )
 }
 
+const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick }: { project: ProjectWithOwner, profiles: Profile[], handleEditClick: (project: ProjectWithOwner) => void, handleDeleteClick: (project: ProjectWithOwner) => void }) => {
+    const formatDate = (dateString: string | null | undefined) => {
+        if (!dateString) return '-';
+        try {
+            return format(new Date(dateString), 'dd MMM yyyy');
+        } catch (e) {
+            return '-';
+        }
+    };
+
+    return (
+        <tr className="border-b hover:bg-muted/50 group">
+            <td className="px-4 py-3 font-medium">{project.name}</td>
+            <td className="px-4 py-3">{project.status ?? "New"}</td>
+            <td className="px-4 py-3">
+                <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
+                    <span className="mr-2 text-yellow-500">=</span>
+                    {project.priority ?? "Medium"}
+                </Badge>
+            </td>
+            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
+            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
+            <td className="px-4 py-3">
+                <div className="flex -space-x-2">
+                    {project.members && project.members.slice(0, 3).map(id => {
+                        const profile = profiles.find(p => p.id === id);
+                        if (!profile) return null;
+                        return (
+                            <Avatar key={id} className="h-6 w-6 border-2 border-background">
+                                <AvatarImage src={profile.avatar_url ?? undefined} />
+                                <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                            </Avatar>
+                        )
+                    })}
+                    {project.members && project.members.length > 3 && (
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
+                            +{project.members.length - 3}
+                        </div>
+                    )}
+                </div>
+            </td>
+            <td className="px-4 py-3">
+                {project.owner && (
+                    <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                            <AvatarImage src={project.owner.avatar_url ?? undefined} />
+                            <AvatarFallback>{getInitials(project.owner.full_name)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-muted-foreground">{project.owner.full_name}</span>
+                    </div>
+                )}
+            </td>
+            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.created_at)}</td>
+            <td className="px-4 py-3 text-muted-foreground">{project.status === 'Done' ? formatDate(project.due_date) : '-'}</td>
+            <td className="px-4 py-3">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleEditClick(project)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </td>
+        </tr>
+    )
+}
+
 export default function ProjectsClient({ initialProjects, currentUser, profiles, clients, initialProjectTypes }: ProjectsClientProps) {
   const [projects, setProjects] = useState(initialProjects);
   const [isAddProjectOpen, setAddProjectOpen] = useState(false);
   const [activeView, setActiveView] = useState('general');
-  const [activeProjectsOpen, setActiveProjectsOpen] = useState(true);
-  const [closedProjectsOpen, setClosedProjectsOpen] = useState(true);
   const [projectTypes, setProjectTypes] = useState(initialProjectTypes);
   const [isCreateTypeOpen, setCreateTypeOpen] = useState(false);
   
@@ -176,15 +253,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const activeProjects = filteredProjects.filter(p => p.status !== 'Done');
   const closedProjects = filteredProjects.filter(p => p.status === 'Done');
-
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return '-';
-    try {
-      return format(new Date(dateString), 'dd MMM yyyy');
-    } catch (e) {
-      return '-';
-    }
-  }
 
   const handleProjectAdded = (newProject: Project) => {
     const newProjectWithOwner = {
@@ -254,7 +322,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                 <tr key={project.id} className="border-b hover:bg-muted/50 group">
                                     <td className="px-4 py-3 font-medium">{project.name}</td>
                                     <td className="px-4 py-3">{project.status ?? "New"}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
+                                    <td className="px-4 py-3 text-muted-foreground">{format(new Date(project.due_date || ''), 'dd MMM yyyy')}</td>
                                     <td className="px-4 py-3">
                                         {/* Restore/Permanent Delete Options Here */}
                                     </td>
@@ -274,180 +342,70 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
     return (
         <>
-            <div className="mb-8">
-                <button onClick={() => setActiveProjectsOpen(!activeProjectsOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
-                    {activeProjectsOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronDown className="w-5 h-5 -rotate-90" />}
-                    Active projects
-                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
-                </button>
-
-                {activeProjectsOpen && (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+            <div className="mb-8 overflow-x-auto">
+                 <table className="w-full text-left">
                     <thead>
                         <tr className="border-b">
-                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">Project Name</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">
+                                <div className="flex items-center gap-2">
+                                    <ChevronDown className="w-5 h-5" />
+                                    Active projects
+                                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
+                                </div>
+                            </th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Project owner</th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                                <Button variant="ghost" size="icon" onClick={() => setAddProjectOpen(true)}>
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {activeProjects.map(project => (
-                        <tr key={project.id} className="border-b hover:bg-muted/50 group">
-                            <td className="px-4 py-3 font-medium">{project.name}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{project.client?.name ?? '-'}</td>
-                            <td className="px-4 py-3">{project.status ?? "New"}</td>
-                            <td className="px-4 py-3">
-                            <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
-                                <span className="mr-2 text-yellow-500">=</span>
-                                {project.priority ?? "Medium"}
-                            </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
-                            <td className="px-4 py-3">
-                            <div className="flex -space-x-2">
-                                {project.members && project.members.slice(0, 3).map(id => {
-                                const profile = profiles.find(p => p.id === id);
-                                if (!profile) return null;
-                                return (
-                                    <Avatar key={id} className="h-6 w-6 border-2 border-background">
-                                        <AvatarImage src={profile.avatar_url ?? undefined} />
-                                        <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                                    </Avatar>
-                                )
-                                })}
-                                {project.members && project.members.length > 3 && (
-                                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
-                                    +{project.members.length-3}
-                                </div>
-                                )}
-                            </div>
-                            </td>
-                            <td className="px-4 py-3">
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onClick={() => handleEditClick(project)}>
-                                                <Pencil className="mr-2 h-4 w-4" />
-                                                Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </td>
-                        </tr>
+                            <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
                         ))}
-                        <tr>
-                        <td colSpan={8} className="px-4 pt-4">
-                            <Button variant="ghost" className="text-muted-foreground" onClick={() => setAddProjectOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add project
-                            </Button>
-                        </td>
-                        </tr>
                     </tbody>
-                    </table>
-                </div>
-                )}
+                </table>
             </div>
-            <div className="mb-4">
-                <button onClick={() => setClosedProjectsOpen(!closedProjectsOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
-                    {closedProjectsOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronDown className="w-5 h-5 -rotate-90" />}
-                    Closed projects
-                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{closedProjects.length}</span>
-                </button>
-
-                {closedProjectsOpen && (
-                <div className="overflow-x-auto">
+            {closedProjects.length > 0 && (
+                <div className="mb-4 overflow-x-auto">
                     <table className="w-full text-left">
-                    <thead>
-                        <tr className="border-b">
-                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">Project Name</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {closedProjects.map(project => (
-                        <tr key={project.id} className="border-b hover:bg-muted/50 group">
-                            <td className="px-4 py-3 font-medium">{project.name}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{project.client?.name ?? '-'}</td>
-                            <td className="px-4 py-3">{project.status ?? "New"}</td>
-                            <td className="px-4 py-3">
-                            <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
-                                <span className="mr-2 text-yellow-500">=</span>
-                                {project.priority ?? "Medium"}
-                            </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
-                            <td className="px-4 py-3">
-                            <div className="flex -space-x-2">
-                                {project.members && project.members.slice(0, 3).map(id => {
-                                const profile = profiles.find(p => p.id === id);
-                                if (!profile) return null;
-                                return (
-                                    <Avatar key={id} className="h-6 w-6 border-2 border-background">
-                                        <AvatarImage src={profile.avatar_url ?? undefined} />
-                                        <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                                    </Avatar>
-                                )
-                                })}
-                                {project.members && project.members.length > 3 && (
-                                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
-                                    +{project.members.length-3}
-                                </div>
-                                )}
-                            </div>
-                            </td>
-                            <td className="px-4 py-3">
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onClick={() => handleEditClick(project)}>
-                                                <Pencil className="mr-2 h-4 w-4" />
-                                                Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </td>
-                        </tr>
-                        ))}
-                    </tbody>
+                        <thead>
+                            <tr className="border-b">
+                                <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">
+                                    <div className="flex items-center gap-2">
+                                        <ChevronDown className="w-5 h-5" />
+                                        Closed projects
+                                        <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{closedProjects.length}</span>
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Project owner</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {closedProjects.map(project => (
+                                <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
+                            ))}
+                        </tbody>
                     </table>
                 </div>
-                )}
-            </div>
+            )}
         </>
     );
   }
@@ -527,5 +485,3 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
-
-    
