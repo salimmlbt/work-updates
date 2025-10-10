@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useTransition } from 'react';
 import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2, Trash } from 'lucide-react';
+import * as Collapsible from '@radix-ui/react-collapsible';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -347,40 +348,44 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     return (
         <>
             <div className="mb-8 overflow-x-auto">
-                 <table className="w-full text-left">
-                    <thead>
-                        <tr role="button" onClick={() => setActiveProjectsOpen(!activeProjectsOpen)} className="border-b">
-                            <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">
-                                <div className="flex items-center gap-2">
-                                    <ChevronDown className={cn("w-5 h-5 transition-transform", !activeProjectsOpen && "-rotate-90")} />
-                                    Active projects
-                                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
-                                </div>
-                            </th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Project owner</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
-                            <th className="px-4 py-3 font-medium text-muted-foreground text-right">
-                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setAddProjectOpen(true);}}>
-                                    <Plus className="h-4 w-4" />
-                                </Button>
-                            </th>
-                        </tr>
-                    </thead>
-                    {activeProjectsOpen && (
-                        <tbody>
-                            {activeProjects.map(project => (
-                                <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
-                            ))}
-                        </tbody>
-                    )}
-                </table>
+                <Collapsible.Root open={activeProjectsOpen} onOpenChange={setActiveProjectsOpen} asChild>
+                    <table className="w-full text-left">
+                        <thead>
+                            <Collapsible.Trigger asChild>
+                                <tr role="button" className="border-b">
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">
+                                        <div className="flex items-center gap-2">
+                                            <ChevronDown className={cn("w-5 h-5 transition-transform", !activeProjectsOpen && "-rotate-90")} />
+                                            Active projects
+                                            <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Project owner</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setAddProjectOpen(true);}}>
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </th>
+                                </tr>
+                            </Collapsible.Trigger>
+                        </thead>
+                        <Collapsible.Content asChild>
+                            <tbody className="data-[state=closed]:animate-fade-out-bottom-up data-[state=open]:animate-fade-in-top-down">
+                                {activeProjects.map(project => (
+                                    <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
+                                ))}
+                            </tbody>
+                        </Collapsible.Content>
+                    </table>
+                </Collapsible.Root>
             </div>
             {closedProjects.length > 0 && (
                 <div className="mb-4 overflow-x-auto">
