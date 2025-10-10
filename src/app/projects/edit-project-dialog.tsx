@@ -138,8 +138,8 @@ export function EditProjectDialog({
     startTransition(async () => {
       const formData = new FormData()
       formData.append('name', data.name)
-      formData.append('leaders', data.leaders.join(','))
-      formData.append('members', data.members.join(','))
+      data.leaders.forEach(id => formData.append('leaders', id))
+      data.members.forEach(id => formData.append('members', id))
       formData.append('status', data.status)
       formData.append('priority', data.priority)
       if (data.start_date) formData.append('start_date', data.start_date.toISOString())

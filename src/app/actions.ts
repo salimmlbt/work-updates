@@ -66,8 +66,8 @@ export async function updateProject(projectId: string, formData: FormData) {
         due_date: formData.get('due_date') as string | null,
         status: formData.get('status') as string,
         priority: formData.get('priority') as string,
-        leaders: (formData.get('leaders') as string).split(',').filter(Boolean),
-        members: (formData.get('members') as string).split(',').filter(Boolean),
+        leaders: formData.getAll('leaders') as string[],
+        members: formData.getAll('members') as string[],
         type: formData.get('type') as string | null,
     }
 
