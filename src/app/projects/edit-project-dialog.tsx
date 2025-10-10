@@ -175,6 +175,11 @@ export function EditProjectDialog({
     return format(date, "d MMM");
   }
 
+  const CurrentStatusIcon = (statusOptions.find(o => o.value === selectedStatus) || statusOptions[0]).icon;
+  const CurrentPriorityIcon = (priorityOptions.find(o => o.value === selectedPriority) || priorityOptions[5]).icon;
+  const currentPriorityColor = (priorityOptions.find(o => o.value === selectedPriority) || priorityOptions[5]).color;
+
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -297,20 +302,23 @@ export function EditProjectDialog({
                       <Select onValueChange={(value) => { field.onChange(value); setValue('status', value, { shouldDirty: true }); }} value={field.value}>
                         <SelectTrigger variant="ghost" className="p-0 h-auto justify-between font-medium text-base focus:ring-0 border-0 group w-full">
                            <div className="flex items-center gap-2">
-                             {(statusOptions.find(o => o.value === selectedStatus) || statusOptions[0]).icon({ className: "h-4 w-4"})}
+                             <CurrentStatusIcon className="h-4 w-4" />
                              <SelectValue />
                            </div>
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
-                          {statusOptions.map(option => (
-                            <SelectItem key={option.value} value={option.value}>
-                              <div className="flex items-center gap-2">
-                                <option.icon className="h-4 w-4" />
-                                {option.label}
-                              </div>
-                            </SelectItem>
-                          ))}
+                          {statusOptions.map(option => {
+                            const Icon = option.icon;
+                            return (
+                              <SelectItem key={option.value} value={option.value}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="h-4 w-4" />
+                                  {option.label}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     )}
@@ -325,7 +333,7 @@ export function EditProjectDialog({
                       <Select onValueChange={(value) => { field.onChange(value); setValue('priority', value, { shouldDirty: true }); }} value={field.value}>
                         <SelectTrigger variant="ghost" className="p-0 h-auto justify-between font-medium text-base focus:ring-0 border-0 group w-full">
                            <div className="flex items-center gap-2">
-                            {(priorityOptions.find(o => o.value === selectedPriority) || priorityOptions[5]).icon({ className: cn("h-4 w-4", (priorityOptions.find(o => o.value === selectedPriority) || priorityOptions[5]).color) })}
+                            <CurrentPriorityIcon className={cn("h-4 w-4", currentPriorityColor)} />
                             <SelectValue />
                            </div>
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
@@ -413,3 +421,5 @@ export function EditProjectDialog({
     </>
   )
 }
+
+    
