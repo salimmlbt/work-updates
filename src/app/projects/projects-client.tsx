@@ -374,10 +374,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Project owner</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right">
-                                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setAddProjectOpen(true);}}>
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[5%]">
                                     </th>
                                 </tr>
                             </thead>
@@ -389,6 +386,13 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                         </table>
                     </Collapsible.Content>
                 </Collapsible.Root>
+                <Button
+                    variant="ghost"
+                    className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                    onClick={() => setAddProjectOpen(true)}
+                >
+                    <Plus className="mr-2 h-4 w-4" /> Add project
+                </Button>
             </div>
             {closedProjects.length > 0 && (
                 <div className="mb-4 overflow-x-auto">
@@ -503,3 +507,5 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
+
+    
