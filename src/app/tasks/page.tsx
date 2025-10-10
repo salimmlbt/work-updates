@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Save,
   X,
+  MoreVertical,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,12 @@ import type { Project, Client, Profile, Team, Task } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const statusIcons = {
   'In progress': <Rocket className="h-4 w-4 text-purple-600" />,
@@ -106,18 +113,21 @@ const AddTaskRow = ({
     const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
     const availableTaskTypes = assigneeTeams.flatMap(t => t.default_tasks || []);
 
+    const filteredProjects = clientId ? projects.filter(p => p.client_id === clientId) : projects;
+
     useEffect(() => {
         if (projectId && projectId !== 'no-project') {
             const project = projects.find(p => p.id === projectId);
-            if (project?.client_id) {
+            if (project?.client_id && project.client_id !== clientId) {
                 setClientId(project.client_id);
-            } else {
-                setClientId('');
             }
-        } else {
-            setClientId('');
         }
-    }, [projectId, projects]);
+    }, [projectId, projects, clientId]);
+
+    const handleClientChange = (selectedClientId: string) => {
+        setClientId(selectedClientId);
+        setProjectId(''); // Reset project when client changes
+    }
 
     const handleSave = async () => {
         if (taskName && dueDate && assigneeId) {
@@ -157,20 +167,20 @@ const AddTaskRow = ({
                     className="bg-white"
                 />
             </td>
+            <td className="px-4 py-3">
+                <Select onValueChange={handleClientChange} value={clientId}>
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select client" /></SelectTrigger>
+                    <SelectContent>
+                        {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </td>
              <td className="px-4 py-3">
                 <Select onValueChange={setProjectId} value={projectId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select project" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="no-project">No project</SelectItem>
-                        {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </td>
-            <td className="px-4 py-3">
-                <Select onValueChange={setClientId} value={clientId} disabled={!!projectId && projectId !== 'no-project'}>
-                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select client" /></SelectTrigger>
-                    <SelectContent>
-                        {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        {filteredProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </td>
@@ -203,14 +213,18 @@ const AddTaskRow = ({
                     </SelectContent>
                 </Select>
             </td>
-            
+            <td className="px-4 py-3 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                {statusIcons['todo']}
+                <span>{statusLabels['todo']}</span>
+              </div>
+            </td>
             <td className="px-4 py-3 text-right">
                 <div className="flex gap-2">
                     <Button variant="ghost" size="icon" onClick={onCancel}><X className="h-4 w-4" /></Button>
                     <Button size="icon" onClick={handleSave}><Save className="h-4 w-4" /></Button>
                 </div>
             </td>
-            <td className="px-4 py-3"></td>
         </tr>
     );
 };
@@ -231,15 +245,10 @@ const TaskRow = ({ task }: { task: TaskWithDetails }) => (
             {tag}
           </Badge>
         ))}
-        {/*
-        {task.comments && <span className="flex items-center gap-1 text-gray-500 text-xs"><MessageSquare className="w-4 h-4"/>{task.comments}</span>}
-        {task.attachments && <span className="flex items-center gap-1 text-gray-500 text-xs"><Paperclip className="w-4 h-4"/>{task.attachments}</span>}
-        {task.checklist && <span className="flex items-center gap-1 text-gray-500 text-xs"><CheckSquare className="w-4 h-4"/>{task.checklist.completed}/{task.checklist.total}</span>}
-        */}
       </div>
     </td>
-    <td className="px-4 py-3 text-sm text-gray-600">{task.projects?.name}</td>
     <td className="px-4 py-3 text-sm text-gray-600">{task.clients?.name}</td>
+    <td className="px-4 py-3 text-sm text-gray-600">{task.projects?.name}</td>
     <td className="px-4 py-3 text-sm text-gray-600">
       {task.deadline ? (
         <div className="flex items-center gap-2">
@@ -262,18 +271,30 @@ const TaskRow = ({ task }: { task: TaskWithDetails }) => (
      <td className="px-4 py-3 text-sm">
        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
     </td>
-    <td className="px-4 py-3">
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </div>
-    </td>
     <td className="px-4 py-3 text-sm text-gray-600">
       <div className="flex items-center gap-2">
         {statusIcons[task.status]}
         <span>{statusLabels[task.status]}</span>
       </div>
+    </td>
+    <td className="px-4 py-3">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem>
+                        Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                        Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
     </td>
   </tr>
 );
@@ -308,6 +329,7 @@ const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask,
               {tasks.map(task => <TaskRow key={task.id} task={task} />)}
               {title === "Active tasks" && (
                 <>
+                  {isAddingTask && isLast && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} projects={projects} clients={clients} profiles={profiles} />}
                    <tr>
                       <td colSpan={8} className="pt-2 pb-4 px-4">
                           <Button variant="ghost" className="text-gray-500" onClick={onAddTask}>
@@ -316,7 +338,6 @@ const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask,
                           </Button>
                       </td>
                   </tr>
-                  {isAddingTask && isLast && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} projects={projects} clients={clients} profiles={profiles} />}
                 </>
               )}
             </tbody>
@@ -356,20 +377,6 @@ const KanbanCard = ({ task }: { task: any }) => {
       </CardContent>
       <CardFooter className="p-4 pt-0 flex justify-between items-center">
         <div className="flex items-center">
-          {/*
-          {task.checklist && (
-            <span className="flex items-center gap-1 text-gray-500 text-xs mr-2">
-              <CheckSquare className="w-4 h-4" />
-              {task.checklist.completed}/{task.checklist.total}
-            </span>
-          )}
-          {task.comments && (
-            <span className="flex items-center gap-1 text-gray-500 text-xs">
-              <MessageSquare className="w-4 h-4" />
-              {task.comments}
-            </span>
-          )}
-          */}
         </div>
          {task.profiles && (
             <Avatar className="h-6 w-6">
@@ -455,7 +462,7 @@ export default function TasksPage() {
     <div className="bg-white p-6 rounded-lg shadow-sm h-full w-full">
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold">Tools</h1>
+          <h1 className="text-xl font-bold">Tasks</h1>
           <Button onClick={() => setIsAddingTask(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add new
@@ -485,25 +492,6 @@ export default function TasksPage() {
           <Button variant="ghost" size="icon"><Search className="h-5 w-5" /></Button>
           <Button variant="outline"><Users className="mr-2 h-4 w-4" />Group</Button>
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
-          {/*
-          <div className="flex items-center -space-x-2">
-            {teamMembers.slice(0, 3).map(member => (
-              <Avatar key={member.name} className="h-8 w-8 border-2 border-white">
-                <AvatarImage src={member.avatar} />
-                <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
-              </Avatar>
-            ))}
-            {teamMembers.length > 3 && (
-              <Avatar className="h-8 w-8 border-2 border-white">
-                <AvatarFallback>+{teamMembers.length - 3}</AvatarFallback>
-              </Avatar>
-            )}
-          </div>
-          <Avatar className="h-9 w-9">
-            <AvatarImage src="/avatars/user-profile.png" />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-          */}
         </div>
       </header>
 
@@ -514,13 +502,13 @@ export default function TasksPage() {
                 <thead>
                     <tr className="border-b border-gray-200">
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Client</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
-                        <th className="px-4 py-2 w-[5%]"></th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
+                        <th className="px-4 py-2 w-[5%]"></th>
                     </tr>
                 </thead>
             </table>
