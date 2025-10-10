@@ -153,15 +153,24 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick }: {
             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
             <td className="px-4 py-3">
-                {project.leaders && project.leaders.length > 0 ? (
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={profiles.find(p => p.id === project.leaders![0])?.avatar_url ?? undefined} />
-                            <AvatarFallback>{getInitials(profiles.find(p => p.id === project.leaders![0])?.full_name)}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm text-muted-foreground">{profiles.find(p => p.id === project.leaders![0])?.full_name}</span>
-                    </div>
-                ) : '-'}
+                <div className="flex -space-x-2">
+                    {project.leaders && project.leaders.slice(0, 3).map(id => {
+                        const profile = profiles.find(p => p.id === id);
+                        if (!profile) return null;
+                        return (
+                            <Avatar key={id} className="h-6 w-6 border-2 border-background">
+                                <AvatarImage src={profile.avatar_url ?? undefined} />
+                                <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                            </Avatar>
+                        )
+                    })}
+                    {project.leaders && project.leaders.length > 3 && (
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
+                            +{project.leaders.length - 3}
+                        </div>
+                    )}
+                     {(!project.leaders || project.leaders.length === 0) && '-'}
+                </div>
             </td>
             <td className="px-4 py-3">
                 <div className="flex -space-x-2">
@@ -374,7 +383,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Leader</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
