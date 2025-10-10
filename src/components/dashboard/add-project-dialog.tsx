@@ -245,9 +245,8 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between font-medium text-base focus:ring-0 border-0 group w-full">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
                           <SelectValue placeholder="Select a client" />
-                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="no-client">No Client</SelectItem>
@@ -268,9 +267,8 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between font-medium text-base focus:ring-0 border-0 group w-full">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
                           <SelectValue placeholder="Select project type" />
-                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {projectTypes.map(type => (
@@ -290,12 +288,11 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between font-medium text-base focus:ring-0 border-0 group w-full">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
                            <div className="flex items-center gap-2">
                              <CurrentStatusIcon className="h-4 w-4" />
                              <SelectValue />
                            </div>
-                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions.map(option => {
@@ -321,12 +318,11 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between font-medium text-base focus:ring-0 border-0 group w-full">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
                            <div className="flex items-center gap-2">
                             <CurrentPriorityIcon className={cn("h-4 w-4", currentPriorityColor)} />
                             <SelectValue />
                            </div>
-                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {priorityOptions.map(option => {
@@ -411,5 +407,3 @@ export function AddProjectDialog({
     </>
   )
 }
-
-    
