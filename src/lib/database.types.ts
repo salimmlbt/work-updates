@@ -51,7 +51,6 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          owner_id: string | null
           start_date: string | null
           due_date: string | null
           client_id: string | null
@@ -60,13 +59,12 @@ export type Database = {
           leaders: string[] | null
           members: string[] | null
           type: string | null
-          is_deleted: boolean | null
+          is_deleted: boolean
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
-          owner_id?: string | null
           start_date?: string | null
           due_date?: string | null
           client_id?: string | null
@@ -75,13 +73,12 @@ export type Database = {
           leaders?: string[] | null
           members?: string[] | null
           type?: string | null
-          is_deleted?: boolean | null
+          is_deleted?: boolean
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
-          owner_id?: string | null
           start_date?: string | null
           due_date?: string | null
           client_id?: string | null
@@ -90,16 +87,9 @@ export type Database = {
           leaders?: string[] | null
           members?: string[] | null
           type?: string | null
-          is_deleted?: boolean | null
+          is_deleted?: boolean
         }
         Relationships: [
-          {
-            foreignKeyName: "projects_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "projects_client_id_fkey"
             columns: ["client_id"]

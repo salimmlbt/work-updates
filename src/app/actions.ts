@@ -38,6 +38,7 @@ export async function addProject(formData: FormData) {
       leaders: rawFormData.leaders,
       members: rawFormData.members,
       type: rawFormData.type,
+      is_deleted: false,
     })
     .select()
     .maybeSingle()
