@@ -29,7 +29,6 @@ export async function addProject(formData: FormData) {
     .from('projects')
     .insert({
       name: rawFormData.name,
-      owner_id: null,
       client_id: rawFormData.client_id === 'no-client' ? null : rawFormData.client_id,
       start_date: rawFormData.start_date ? new Date(rawFormData.start_date).toISOString() : null,
       due_date: rawFormData.due_date ? new Date(rawFormData.due_date).toISOString() : null,
