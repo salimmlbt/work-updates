@@ -130,7 +130,7 @@ const AddTaskRow = ({
     }
 
     const handleSave = async () => {
-        if (taskName && dueDate && assigneeId) {
+        if (taskName && clientId && dueDate && assigneeId && taskType) {
             const result = await createTask({
                 description: taskName,
                 project_id: projectId === 'no-project' ? null : projectId,
@@ -146,7 +146,7 @@ const AddTaskRow = ({
                 onSave(result.data);
             }
         } else {
-            toast({ title: "Missing fields", description: "Please fill all required fields.", variant: "destructive" });
+            toast({ title: "Missing fields", description: "Task Name, Client, Due Date, Assignee, and Type are all required.", variant: "destructive" });
         }
     };
     
@@ -161,7 +161,7 @@ const AddTaskRow = ({
         <tr className="border-b bg-gray-50">
             <td className="px-4 py-3">
                 <Input 
-                    placeholder="Enter task details" 
+                    placeholder="Type Task name" 
                     value={taskName} 
                     onChange={(e) => setTaskName(e.target.value)} 
                     className="bg-white"
@@ -327,9 +327,9 @@ const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask,
           <table className="w-full table-fixed">
             <tbody>
               {tasks.map(task => <TaskRow key={task.id} task={task} />)}
-              {title === "Active tasks" && (
+              {title === "Active tasks" && isLast && (
                 <>
-                  {isAddingTask && isLast && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} projects={projects} clients={clients} profiles={profiles} />}
+                  {isAddingTask && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} projects={projects} clients={clients} profiles={profiles} />}
                    <tr>
                       <td colSpan={8} className="pt-2 pb-4 px-4">
                           <Button variant="ghost" className="text-gray-500" onClick={onAddTask}>
