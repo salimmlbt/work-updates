@@ -40,11 +40,14 @@ export async function addProject(formData: FormData) {
       type: rawFormData.type,
     })
     .select()
-    .single()
+    .maybeSingle()
 
   if (projectError) {
     console.error('Error creating project:', projectError)
     return { error: projectError.message }
+  }
+  if (!project) {
+    return { error: "Could not create project." }
   }
 
   revalidatePath('/dashboard')
@@ -86,11 +89,15 @@ export async function updateProject(projectId: string, formData: FormData) {
         })
         .eq('id', projectId)
         .select()
-        .single()
+        .maybeSingle()
 
     if (projectError) {
         console.error('Error updating project:', projectError)
         return { error: projectError.message }
+    }
+    
+    if (!project) {
+        return { error: "Could not find project to update." }
     }
 
     revalidatePath('/dashboard')
