@@ -286,7 +286,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                     <table className="w-full text-left">
                     <thead>
                         <tr className="border-b">
-                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/3"></th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">Project Name</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
                         <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                         <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                         <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
@@ -299,6 +300,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                         {activeProjects.map(project => (
                         <tr key={project.id} className="border-b hover:bg-muted/50 group">
                             <td className="px-4 py-3 font-medium">{project.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{project.client?.name ?? '-'}</td>
                             <td className="px-4 py-3">{project.status ?? "New"}</td>
                             <td className="px-4 py-3">
                             <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
@@ -351,7 +353,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                         </tr>
                         ))}
                         <tr>
-                        <td colSpan={7} className="px-4 pt-4">
+                        <td colSpan={8} className="px-4 pt-4">
                             <Button variant="ghost" className="text-muted-foreground" onClick={() => setAddProjectOpen(true)}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add project
@@ -375,7 +377,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                     <table className="w-full text-left">
                     <thead>
                         <tr className="border-b">
-                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/3"></th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">Project Name</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
                         <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                         <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                         <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
@@ -388,6 +391,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                         {closedProjects.map(project => (
                         <tr key={project.id} className="border-b hover:bg-muted/50 group">
                             <td className="px-4 py-3 font-medium">{project.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{project.client?.name ?? '-'}</td>
                             <td className="px-4 py-3">{project.status ?? "New"}</td>
                             <td className="px-4 py-3">
                             <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
@@ -523,3 +527,5 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
+
+    
