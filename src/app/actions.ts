@@ -136,13 +136,24 @@ export async function restoreProject(projectId: string) {
 export async function deleteProjectPermanently(projectId: string) {
     const supabase = createServerClient()
 
-    const { error } = await supabase
+    // First, delete all tasks associated with the project
+    const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('project_id', projectId);
+
+    if (tasksError) {
+        return { error: `Failed to delete associated tasks: ${tasksError.message}` };
+    }
+
+    // Then, delete the project itself
+    const { error: projectError } = await supabase
         .from('projects')
         .delete()
         .eq('id', projectId);
 
-    if (error) {
-        return { error: `Failed to permanently delete project: ${error.message}` };
+    if (projectError) {
+        return { error: `Failed to permanently delete project: ${projectError.message}` };
     }
 
     revalidatePath('/projects');
