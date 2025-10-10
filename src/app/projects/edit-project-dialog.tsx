@@ -128,6 +128,9 @@ export function EditProjectDialog({
   }, [project, reset]);
 
   const selectedMembers = watch('members', [])
+  const selectedStatus = watch('status')
+  const selectedPriority = watch('priority')
+
 
   const onSubmit = async (data: ProjectFormData) => {
     startTransition(async () => {
@@ -294,7 +297,7 @@ export function EditProjectDialog({
                       <Select onValueChange={(value) => { field.onChange(value); setValue('status', value, { shouldDirty: true }); }} value={field.value}>
                         <SelectTrigger variant="ghost" className="p-0 h-auto justify-between font-medium text-base focus:ring-0 border-0 group w-full">
                            <div className="flex items-center gap-2">
-                             {(statusOptions.find(o => o.value === field.value) || statusOptions[0]).icon({ className: "h-4 w-4"})}
+                             {(statusOptions.find(o => o.value === selectedStatus) || statusOptions[0]).icon({ className: "h-4 w-4"})}
                              <SelectValue />
                            </div>
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
@@ -322,7 +325,7 @@ export function EditProjectDialog({
                       <Select onValueChange={(value) => { field.onChange(value); setValue('priority', value, { shouldDirty: true }); }} value={field.value}>
                         <SelectTrigger variant="ghost" className="p-0 h-auto justify-between font-medium text-base focus:ring-0 border-0 group w-full">
                            <div className="flex items-center gap-2">
-                            {(priorityOptions.find(o => o.value === field.value) || priorityOptions[5]).icon({ className: cn("h-4 w-4", (priorityOptions.find(o => o.value === field.value) || priorityOptions[5]).color) })}
+                            {(priorityOptions.find(o => o.value === selectedPriority) || priorityOptions[5]).icon({ className: cn("h-4 w-4", (priorityOptions.find(o => o.value === selectedPriority) || priorityOptions[5]).color) })}
                             <SelectValue />
                            </div>
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
