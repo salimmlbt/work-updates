@@ -149,7 +149,7 @@ export async function addUser(formData: FormData) {
     }
 
 
-    // 1. Create the user in Supabase Auth
+    // 1. Create the user in Supabase Auth, passing profile data to be handled by a trigger
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
@@ -169,25 +169,18 @@ export async function addUser(formData: FormData) {
       return { error: "User could not be created in Auth."}
     }
     
-    // 2. Create the user profile in the 'profiles' table
-    const { data: profileData, error: profileError } = await supabase
+    // 2. Update the newly created profile with the role_id
+    const { error: profileError } = await supabase
       .from('profiles')
-      .insert({
-        id: authData.user.id,
-        full_name: fullName,
-        email: email,
-        avatar_url: avatarUrl,
-        role_id: roleId,
-        is_archived: false,
-      })
-      .select('*, roles(*)')
-      .single();
+      .update({ role_id: roleId })
+      .eq('id', authData.user.id);
 
     if (profileError) {
+        // If updating the profile fails, we should delete the auth user to avoid orphaned accounts.
         if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
-        return { error: `Failed to create user profile: ${profileError.message}` };
+        return { error: `Failed to assign role to user: ${profileError.message}` };
     }
 
     // 3. Link user to teams
@@ -195,7 +188,7 @@ export async function addUser(formData: FormData) {
       const teamLinks = teamIds.map(team_id => ({ profile_id: authData.user!.id, team_id }));
       const { error: teamLinkError } = await supabase.from('profile_teams').insert(teamLinks);
       if (teamLinkError) {
-        // Rollback profile creation
+        // Rollback profile and auth user creation
          if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
@@ -203,7 +196,12 @@ export async function addUser(formData: FormData) {
       }
     }
     
-    const { data: finalProfileData } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))').eq('id', profileData.id).single();
+    // 4. Fetch the complete profile data to return to the client
+    const { data: finalProfileData, error: finalFetchError } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))').eq('id', authData.user.id).single();
+
+    if (finalFetchError) {
+        return { error: `Failed to fetch newly created user profile: ${finalFetchError.message}` };
+    }
 
 
     revalidatePath('/teams')
@@ -234,10 +232,14 @@ export async function updateUser(userId: string, formData: FormData) {
 
     if (avatarFile && avatarFile.size > 0) {
         if (avatarUrl && !avatarUrl.includes('pravatar.cc')) {
+          try {
             const oldAvatarPath = new URL(avatarUrl).pathname.split('/avatars/').pop();
             if (oldAvatarPath) {
                 await supabase.storage.from('avatars').remove([oldAvatarPath]);
             }
+          } catch (e) {
+            console.error("Failed to parse or delete old avatar URL:", e);
+          }
         }
         const newFilePath = `public/${Date.now()}_${avatarFile.name}`;
         const { error: uploadError } = await supabase.storage
@@ -264,7 +266,7 @@ export async function updateUser(userId: string, formData: FormData) {
             avatar_url: avatarUrl,
         })
         .eq('id', userId)
-        .select('*, roles(*)')
+        .select('full_name, avatar_url, roles(*)')
         .single();
 
     if (profileError) {
@@ -289,7 +291,8 @@ export async function updateUser(userId: string, formData: FormData) {
     if (newPassword) {
         authUpdateData.password = newPassword;
     }
-    if (avatarUrl !== currentProfile.avatar_url || fullName !== profileData.full_name) {
+
+    if (profileData && (avatarUrl !== currentProfile.avatar_url || fullName !== profileData.full_name)) {
         authUpdateData.data = {
             ...profileData,
             full_name: fullName,
@@ -304,11 +307,6 @@ export async function updateUser(userId: string, formData: FormData) {
         );
 
         if (authError) {
-            // Attempt to revert profile changes if auth update fails
-             await supabase.from('profiles').update({ 
-                full_name: profileData.full_name,
-                avatar_url: currentProfile.avatar_url
-             }).eq('id', userId);
             return { error: `Failed to update auth data: ${authError.message}` };
         }
     } else if (Object.keys(authUpdateData).length > 0 && !supabaseAdmin) {
@@ -412,3 +410,5 @@ export async function updateUserStatus(userId: string, status: 'Active' | 'Archi
     revalidatePath('/teams');
     return { success: true };
 }
+
+    
