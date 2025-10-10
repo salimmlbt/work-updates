@@ -248,8 +248,9 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('client_id', value, { shouldDirty: true }); }} value={field.value ?? undefined}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-start font-medium text-base focus:ring-0 border-0 group w-full hover:bg-accent">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base focus:ring-0 border-0 group w-full hover:bg-accent focus-visible:ring-0">
                           <SelectValue placeholder="Select a client" />
+                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="no-client">No Client</SelectItem>
@@ -270,8 +271,9 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('type', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-start font-medium text-base focus:ring-0 border-0 group w-full hover:bg-accent">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base focus:ring-0 border-0 group w-full hover:bg-accent focus-visible:ring-0">
                           <SelectValue placeholder="Select project type" />
+                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {projectTypes.map(type => (
@@ -291,8 +293,9 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('status', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent focus-visible:ring-0">
                            <SelectValue />
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions.map(option => {
@@ -318,8 +321,9 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('priority', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent focus-visible:ring-0">
                            <SelectValue />
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {priorityOptions.map(option => {
@@ -345,7 +349,7 @@ export function EditProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent">
+                          <Button variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent focus-visible:ring-0">
                              <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 {field.value ? formatDate(field.value) : <span className="text-muted-foreground">No start date</span>}
@@ -368,7 +372,7 @@ export function EditProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent">
+                          <Button variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base focus:ring-0 border-0 group hover:bg-accent focus-visible:ring-0">
                             <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 {formatDate(field.value)}
@@ -404,5 +408,3 @@ export function EditProjectDialog({
     </>
   )
 }
-
-    
