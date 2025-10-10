@@ -240,7 +240,7 @@ export function EditProjectDialog({
                 </div>
               </div>
               
-              <div className="p-6 space-y-8 border-l">
+              <div className="bg-[#f5f8fa] p-6 space-y-8 border-l">
                  <div>
                   <Label className="text-sm text-muted-foreground">Client</Label>
                   <Controller
@@ -248,7 +248,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('client_id', value, { shouldDirty: true }); }} value={field.value ?? undefined}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base border-0 group w-full hover:bg-accent data-[state=open]:bg-accent">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select a client" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
@@ -271,7 +271,7 @@ export function EditProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={(value) => { field.onChange(value); setValue('type', value, { shouldDirty: true }); }} value={field.value}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base border-0 group w-full hover:bg-accent data-[state=open]:bg-accent">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select project type" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>

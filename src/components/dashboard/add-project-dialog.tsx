@@ -231,7 +231,7 @@ export function AddProjectDialog({
                 </div>
               </div>
               
-              <div className="p-6 space-y-8 border-l">
+              <div className="bg-[#f5f8fa] p-6 space-y-8 border-l">
                 <div>
                   <Label className="text-sm text-muted-foreground">Client</Label>
                   <Controller
