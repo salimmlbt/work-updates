@@ -338,9 +338,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const handleDeletePermanently = () => {
       if (!projectToDeletePermanently) return;
       startTransition(async () => {
-          const { error } = await deleteProjectPermanently(projectToDeletePermanently.id);
-          if (error) {
-              toast({ title: "Error deleting project", description: error, variant: "destructive" });
+          const result = await deleteProjectPermanently(projectToDeletePermanently.id);
+          if (result.error) {
+              toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
           } else {
               toast({ title: "Project permanently deleted" });
               setProjects(prev => prev.filter(p => p.id !== projectToDeletePermanently.id));
