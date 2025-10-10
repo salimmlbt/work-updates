@@ -118,10 +118,7 @@ export function AddProjectDialog({
   })
 
   const selectedMembers = watch('members', [])
-  const selectedStatus = watch('status')
-  const selectedPriority = watch('priority')
-
-
+  
   const onSubmit = async (data: ProjectFormData) => {
     startTransition(async () => {
       const formData = new FormData()
@@ -165,10 +162,6 @@ export function AddProjectDialog({
     if (isTomorrow(date)) return 'Tomorrow';
     return format(date, "d MMM");
   }
-
-  const CurrentStatusIcon = (statusOptions.find(o => o.value === selectedStatus) || statusOptions[0]).icon;
-  const CurrentPriorityIcon = (priorityOptions.find(o => o.value === selectedPriority) || priorityOptions[5]).icon;
-  const currentPriorityColor = (priorityOptions.find(o => o.value === selectedPriority) || priorityOptions[5]).color;
 
   return (
     <>
@@ -247,6 +240,7 @@ export function AddProjectDialog({
                       <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
                         <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
                           <SelectValue placeholder="Select a client" />
+                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="no-client">No Client</SelectItem>
@@ -269,6 +263,7 @@ export function AddProjectDialog({
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
                           <SelectValue placeholder="Select project type" />
+                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {projectTypes.map(type => (
@@ -288,11 +283,9 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
-                           <div className="flex items-center gap-2">
-                             <CurrentStatusIcon className="h-4 w-4" />
-                             <SelectValue />
-                           </div>
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group">
+                           <SelectValue />
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions.map(option => {
@@ -318,11 +311,9 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group w-full">
-                           <div className="flex items-center gap-2">
-                            <CurrentPriorityIcon className={cn("h-4 w-4", currentPriorityColor)} />
-                            <SelectValue />
-                           </div>
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-between w-full font-medium text-base focus:ring-0 border-0 group">
+                           <SelectValue />
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {priorityOptions.map(option => {
@@ -407,3 +398,5 @@ export function AddProjectDialog({
     </>
   )
 }
+
+    
