@@ -239,9 +239,9 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base border-0 group w-full hover:bg-accent data-[state=open]:bg-accent focus-visible:ring-0">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select a client" />
-                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50" />
+                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="no-client">No Client</SelectItem>
@@ -262,9 +262,9 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base border-0 group w-full hover:bg-accent data-[state=open]:bg-accent focus-visible:ring-0">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select project type" />
-                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50" />
+                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
                         <SelectContent>
                           {projectTypes.map(type => (
@@ -284,9 +284,11 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent focus-visible:ring-0">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent">
+                          <div className="flex items-center gap-2">
                            <SelectValue />
-                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50" />
+                          </div>
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions.map(option => {
@@ -312,9 +314,11 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent focus-visible:ring-0">
+                        <SelectTrigger variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent">
+                           <div className="flex items-center gap-2">
                             <SelectValue />
-                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50" />
+                           </div>
+                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                         </SelectTrigger>
                         <SelectContent>
                           {priorityOptions.map(option => {
@@ -340,12 +344,12 @@ export function AddProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent focus-visible:ring-0">
+                          <Button variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent">
                              <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 {field.value ? formatDate(field.value) : <span className="text-muted-foreground">No start date</span>}
                             </div>
-                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50" />
+                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
@@ -363,12 +367,12 @@ export function AddProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent focus-visible:ring-0">
+                          <Button variant="ghost" className="h-12 py-2 px-3 justify-between w-full font-medium text-base border-0 group hover:bg-accent data-[state=open]:bg-accent">
                             <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 {formatDate(field.value)}
                             </div>
-                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50" />
+                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
