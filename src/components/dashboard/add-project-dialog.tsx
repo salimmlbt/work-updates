@@ -15,6 +15,7 @@ import {
   Loader2,
   Plus,
   PauseCircle,
+  ChevronDown,
 } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
 
@@ -156,7 +157,7 @@ export function AddProjectDialog({
   }
 
   const formatDate = (date: Date | undefined) => {
-    if (!date) return 'No due date';
+    if (!date) return <span className="text-muted-foreground">No due date</span>;
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
     return format(date, "d MMM");
@@ -166,23 +167,26 @@ export function AddProjectDialog({
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-4xl p-0 gap-0">
-          <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-2xl font-bold">Create new project</DialogTitle>
-            <DialogDescription>
-              Fill in the details below to create a new project.
-            </DialogDescription>
-          </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-[2fr_1fr] min-h-[500px]">
               <div className="flex flex-col">
-                 <div className="p-6 space-y-6">
+                 <DialogHeader className="p-6 pb-0">
+                    <DialogTitle className="text-2xl font-bold">Create new project</DialogTitle>
+                    <DialogDescription>
+                      Fill in the details below to create a new project.
+                    </DialogDescription>
+                  </DialogHeader>
+                 <div className="p-6 space-y-6 flex-1">
                    <Input
                         id="name"
                         placeholder="Project name"
                         {...register('name')}
-                        className="text-2xl font-bold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                        className={cn(
+                            "text-xl font-bold p-2 h-auto",
+                            errors.name ? "border-destructive focus-visible:ring-destructive" : "border-input"
+                        )}
                     />
-                    {errors.name && <p className="text-sm text-destructive mt-2">{errors.name.message}</p>}
+                    {errors.name && <p className="text-sm text-destructive -mt-4">{errors.name.message}</p>}
 
                     <div className="space-y-2">
                         <Label className="text-sm text-muted-foreground">Members {selectedMembers.length}</Label>
@@ -217,7 +221,7 @@ export function AddProjectDialog({
                         {errors.members && <p className="text-sm text-destructive">{errors.members.message}</p>}
                     </div>
                 </div>
-                <div className="mt-auto px-6 py-4 border-t flex justify-end gap-2">
+                <div className="px-6 py-4 border-t flex justify-end gap-2">
                    <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
                     <Button type="submit" disabled={isPending}>
                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -234,8 +238,9 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group">
                           <SelectValue placeholder="Select a client" />
+                          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="no-client">No Client</SelectItem>
@@ -256,8 +261,9 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0">
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group">
                           <SelectValue placeholder="Select project type" />
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {projectTypes.map(type => (
@@ -277,8 +283,12 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0">
-                          <SelectValue />
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group">
+                            <div className="flex items-center gap-2">
+                                <Plus className="h-4 w-4" />
+                                <SelectValue />
+                            </div>
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions.map(option => (
@@ -301,8 +311,12 @@ export function AddProjectDialog({
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0">
-                          <SelectValue />
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0 border-0 group">
+                            <div className="flex items-center gap-2">
+                                <Equal className="h-4 w-4 text-gray-400" />
+                                <SelectValue />
+                            </div>
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </SelectTrigger>
                         <SelectContent>
                           {priorityOptions.map(option => {
@@ -328,9 +342,12 @@ export function AddProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="p-0 h-auto justify-start w-full font-medium text-base focus:ring-0 border-0">
-                            <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                            {field.value ? formatDate(field.value) : 'No start date'}
+                          <Button variant="ghost" className="p-0 h-auto justify-start w-full font-medium text-base focus:ring-0 border-0 group">
+                            <div className="flex items-center gap-2">
+                                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                                {field.value ? formatDate(field.value) : <span className="text-muted-foreground">No start date</span>}
+                            </div>
+                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity ml-auto" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
@@ -348,9 +365,12 @@ export function AddProjectDialog({
                     render={({ field }) => (
                        <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" className="p-0 h-auto justify-start w-full font-medium text-base focus:ring-0 border-0">
-                            <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                            {field.value ? formatDate(field.value) : 'No due date'}
+                          <Button variant="ghost" className="p-0 h-auto justify-start w-full font-medium text-base focus:ring-0 border-0 group">
+                             <div className="flex items-center gap-2">
+                                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                                {formatDate(field.value)}
+                             </div>
+                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity ml-auto" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
