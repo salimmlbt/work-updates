@@ -153,6 +153,17 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick }: {
             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
             <td className="px-4 py-3">
+                {project.leaders && project.leaders.length > 0 ? (
+                    <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                            <AvatarImage src={profiles.find(p => p.id === project.leaders![0])?.avatar_url ?? undefined} />
+                            <AvatarFallback>{getInitials(profiles.find(p => p.id === project.leaders![0])?.full_name)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-muted-foreground">{profiles.find(p => p.id === project.leaders![0])?.full_name}</span>
+                    </div>
+                ) : '-'}
+            </td>
+            <td className="px-4 py-3">
                 <div className="flex -space-x-2">
                     {project.members && project.members.slice(0, 3).map(id => {
                         const profile = profiles.find(p => p.id === id);
@@ -170,17 +181,6 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick }: {
                         </div>
                     )}
                 </div>
-            </td>
-            <td className="px-4 py-3">
-                {project.owner && (
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={project.owner.avatar_url ?? undefined} />
-                            <AvatarFallback>{getInitials(project.owner.full_name)}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm text-muted-foreground">{project.owner.full_name}</span>
-                    </div>
-                )}
             </td>
             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.created_at)}</td>
             <td className="px-4 py-3 text-muted-foreground">{project.status === 'Done' ? formatDate(project.due_date) : '-'}</td>
@@ -374,8 +374,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Leader</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Project owner</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[5%]">
@@ -415,8 +415,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Leader</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Project owner</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
@@ -511,5 +511,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
+
+    
 
     
