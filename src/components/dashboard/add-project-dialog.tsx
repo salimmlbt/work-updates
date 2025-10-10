@@ -228,6 +228,49 @@ export function AddProjectDialog({
               
               <div className="p-6 space-y-8 border-l">
                 <div>
+                  <Label className="text-sm text-muted-foreground">Client</Label>
+                  <Controller
+                    name="client_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
+                          <SelectValue placeholder="Select a client" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no-client">No Client</SelectItem>
+                          {clients.map(client => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Type</Label>
+                  <Controller
+                    name="type"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
+                          <SelectValue placeholder="Select project type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projectTypes.map(type => (
+                            <SelectItem key={type.id} value={type.name}>
+                              {type.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div>
                   <Label className="text-sm text-muted-foreground">Status</Label>
                    <Controller
                     name="status"
@@ -278,27 +321,6 @@ export function AddProjectDialog({
                   />
                 </div>
                 <div>
-                  <Label className="text-sm text-muted-foreground">Type</Label>
-                  <Controller
-                    name="type"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
-                          <SelectValue placeholder="Select project type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projectTypes.map(type => (
-                            <SelectItem key={type.id} value={type.name}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-                <div>
                   <Label className="text-sm text-muted-foreground">Start date</Label>
                   <Controller
                     name="start_date"
@@ -343,28 +365,6 @@ export function AddProjectDialog({
                     )}
                   />
                 </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground">Client</Label>
-                  <Controller
-                    name="client_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
-                        <SelectTrigger variant="ghost" className="p-0 h-auto justify-start font-medium text-base focus:ring-0">
-                          <SelectValue placeholder="Select a client" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="no-client">No Client</SelectItem>
-                          {clients.map(client => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
               </div>
             </div>
           </form>
@@ -381,5 +381,3 @@ export function AddProjectDialog({
     </>
   )
 }
-
-    
