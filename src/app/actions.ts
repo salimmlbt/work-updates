@@ -97,16 +97,13 @@ export async function updateProject(projectId: string, formData: FormData) {
 export async function deleteProject(projectId: string) {
     const supabase = createServerClient()
 
-    // First, delete associated tasks
-    const { error: tasksError } = await supabase.from('tasks').delete().eq('project_id', projectId);
-    if (tasksError) {
-        return { error: `Failed to delete project tasks: ${tasksError.message}` };
-    }
+    const { error } = await supabase
+        .from('projects')
+        .update({ is_deleted: true })
+        .eq('id', projectId);
 
-    // Then, delete the project
-    const { error: projectError } = await supabase.from('projects').delete().eq('id', projectId);
-    if (projectError) {
-        return { error: `Failed to delete project: ${projectError.message}` };
+    if (error) {
+        return { error: `Failed to delete project: ${error.message}` };
     }
 
     revalidatePath('/dashboard');

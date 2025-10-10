@@ -59,6 +59,7 @@ export type Database = {
           priority: string | null
           members: string[] | null
           type: string | null
+          is_deleted: boolean | null
         }
         Insert: {
           created_at?: string
@@ -72,6 +73,7 @@ export type Database = {
           priority?: string | null
           members?: string[] | null
           type?: string | null
+          is_deleted?: boolean | null
         }
         Update: {
           created_at?: string
@@ -85,6 +87,7 @@ export type Database = {
           priority?: string | null
           members?: string[] | null
           type?: string | null
+          is_deleted?: boolean | null
         }
         Relationships: [
           {

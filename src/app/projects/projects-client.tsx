@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
-import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2, Trash } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -52,12 +52,14 @@ const ProjectSidebar = ({
     activeView, 
     setActiveView,
     projectTypes,
-    onAddTypeClick
+    onAddTypeClick,
+    deletedCount
 }: { 
     activeView: string, 
     setActiveView: (view: string) => void,
     projectTypes: {name: string, count: number}[],
-    onAddTypeClick: () => void
+    onAddTypeClick: () => void,
+    deletedCount: number
 }) => {
     return (
         <aside className="md:col-span-1">
@@ -98,11 +100,29 @@ const ProjectSidebar = ({
                 ))}
                 <Button
                     variant="ghost"
-                    className="mt-2 text-muted-foreground inline-flex items-center p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                    className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
                     onClick={onAddTypeClick}
                 >
                     <Plus className="mr-2 h-4 w-4" /> Create type
                 </Button>
+                 <div
+                    key="deleted-projects"
+                    role="button"
+                    onClick={() => setActiveView('deleted')}
+                    className={cn(
+                        buttonVariants({ variant: 'ghost' }),
+                        'w-full justify-between text-left h-auto pr-8 group mt-4',
+                        activeView === 'deleted'
+                            ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50'
+                            : 'hover:bg-accent'
+                    )}
+                >
+                   <div className="flex items-center gap-2">
+                     <Trash className="h-4 w-4 text-red-500" />
+                     Deleted Projects
+                   </div>
+                   <span className="text-muted-foreground">{deletedCount}</span>
+                </div>
             </nav>
         </aside>
     )
@@ -112,7 +132,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [projects, setProjects] = useState(initialProjects);
   const [isAddProjectOpen, setAddProjectOpen] = useState(false);
   const [activeView, setActiveView] = useState('general');
-  const [view, setView] = useState('table');
   const [activeProjectsOpen, setActiveProjectsOpen] = useState(true);
   const [closedProjectsOpen, setClosedProjectsOpen] = useState(true);
   const [projectTypes, setProjectTypes] = useState(initialProjectTypes);
@@ -125,9 +144,12 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  const nonDeletedProjects = useMemo(() => projects.filter(p => !p.is_deleted), [projects]);
+  const deletedProjects = useMemo(() => projects.filter(p => p.is_deleted), [projects]);
+
   const projectTypeCounts = useMemo(() => {
     const types = new Map<string, number>();
-    projects.forEach(p => {
+    nonDeletedProjects.forEach(p => {
         if (p.type) {
             types.set(p.type, (types.get(p.type) || 0) + 1);
         }
@@ -140,14 +162,17 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     });
 
     return Array.from(types).map(([name, count]) => ({name, count}));
-  }, [projects, projectTypes]);
+  }, [nonDeletedProjects, projectTypes]);
 
   const filteredProjects = useMemo(() => {
     if (activeView === 'general') {
-        return projects;
+        return nonDeletedProjects;
     }
-    return projects.filter(p => p.type === activeView);
-  }, [projects, activeView]);
+    if (activeView === 'deleted') {
+        return deletedProjects;
+    }
+    return nonDeletedProjects.filter(p => p.type === activeView);
+  }, [nonDeletedProjects, deletedProjects, activeView]);
 
   const activeProjects = filteredProjects.filter(p => p.status !== 'Done');
   const closedProjects = filteredProjects.filter(p => p.status === 'Done');
@@ -201,12 +226,226 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         if (result.error) {
             toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
         } else {
-            toast({ title: "Project deleted", description: `Project "${projectToDelete.name}" has been deleted.` });
-            setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+            toast({ title: "Project moved to bin", description: `Project "${projectToDelete.name}" has been deleted.` });
+            setProjects(prev => prev.map(p => p.id === projectToDelete.id ? { ...p, is_deleted: true } : p));
         }
         setDeleteAlertOpen(false);
         setProjectToDelete(null);
     });
+  }
+
+  const mainContent = () => {
+    if (activeView === 'deleted') {
+        return (
+            <div className="mb-8">
+                <div className="overflow-x-auto">
+                    {deletedProjects.length > 0 ? (
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b">
+                                <th className="px-4 py-3 font-medium text-muted-foreground w-1/3">Name</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {deletedProjects.map(project => (
+                                <tr key={project.id} className="border-b hover:bg-muted/50 group">
+                                    <td className="px-4 py-3 font-medium">{project.name}</td>
+                                    <td className="px-4 py-3">{project.status ?? "New"}</td>
+                                    <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
+                                    <td className="px-4 py-3">
+                                        {/* Restore/Permanent Delete Options Here */}
+                                    </td>
+                                </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="text-center py-10 text-muted-foreground">
+                            The bin is empty.
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <>
+            <div className="mb-8">
+                <button onClick={() => setActiveProjectsOpen(!activeProjectsOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
+                    {activeProjectsOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronDown className="w-5 h-5 -rotate-90" />}
+                    Active projects
+                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
+                </button>
+
+                {activeProjectsOpen && (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                    <thead>
+                        <tr className="border-b">
+                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/3"></th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {activeProjects.map(project => (
+                        <tr key={project.id} className="border-b hover:bg-muted/50 group">
+                            <td className="px-4 py-3 font-medium">{project.name}</td>
+                            <td className="px-4 py-3">{project.status ?? "New"}</td>
+                            <td className="px-4 py-3">
+                            <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
+                                <span className="mr-2 text-yellow-500">=</span>
+                                {project.priority ?? "Medium"}
+                            </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
+                            <td className="px-4 py-3">
+                            <div className="flex -space-x-2">
+                                {project.members && project.members.slice(0, 3).map(id => {
+                                const profile = profiles.find(p => p.id === id);
+                                if (!profile) return null;
+                                return (
+                                    <Avatar key={id} className="h-6 w-6 border-2 border-background">
+                                        <AvatarImage src={profile.avatar_url ?? undefined} />
+                                        <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                                    </Avatar>
+                                )
+                                })}
+                                {project.members && project.members.length > 3 && (
+                                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
+                                    +{project.members.length-3}
+                                </div>
+                                )}
+                            </div>
+                            </td>
+                            <td className="px-4 py-3">
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => handleEditClick(project)}>
+                                                <Pencil className="mr-2 h-4 w-4" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </td>
+                        </tr>
+                        ))}
+                        <tr>
+                        <td colSpan={7} className="px-4 pt-4">
+                            <Button variant="ghost" className="text-muted-foreground" onClick={() => setAddProjectOpen(true)}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add project
+                            </Button>
+                        </td>
+                        </tr>
+                    </tbody>
+                    </table>
+                </div>
+                )}
+            </div>
+            <div className="mb-4">
+                <button onClick={() => setClosedProjectsOpen(!closedProjectsOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
+                    {closedProjectsOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronDown className="w-5 h-5 -rotate-90" />}
+                    Closed projects
+                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{closedProjects.length}</span>
+                </button>
+
+                {closedProjectsOpen && (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                    <thead>
+                        <tr className="border-b">
+                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/3"></th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
+                        <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {closedProjects.map(project => (
+                        <tr key={project.id} className="border-b hover:bg-muted/50 group">
+                            <td className="px-4 py-3 font-medium">{project.name}</td>
+                            <td className="px-4 py-3">{project.status ?? "New"}</td>
+                            <td className="px-4 py-3">
+                            <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
+                                <span className="mr-2 text-yellow-500">=</span>
+                                {project.priority ?? "Medium"}
+                            </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
+                            <td className="px-4 py-3">
+                            <div className="flex -space-x-2">
+                                {project.members && project.members.slice(0, 3).map(id => {
+                                const profile = profiles.find(p => p.id === id);
+                                if (!profile) return null;
+                                return (
+                                    <Avatar key={id} className="h-6 w-6 border-2 border-background">
+                                        <AvatarImage src={profile.avatar_url ?? undefined} />
+                                        <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                                    </Avatar>
+                                )
+                                })}
+                                {project.members && project.members.length > 3 && (
+                                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
+                                    +{project.members.length-3}
+                                </div>
+                                )}
+                            </div>
+                            </td>
+                            <td className="px-4 py-3">
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => handleEditClick(project)}>
+                                                <Pencil className="mr-2 h-4 w-4" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </td>
+                        </tr>
+                        ))}
+                    </tbody>
+                    </table>
+                </div>
+                )}
+            </div>
+        </>
+    );
   }
 
   return (
@@ -217,204 +456,21 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             <Plus className="mr-2 h-4 w-4" />
             Add new
           </Button>
-          <div className="flex items-center rounded-lg bg-gray-100 p-1">
-            <Button
-              variant={view === 'table' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setView('table')}
-              className={view === 'table' ? 'bg-white shadow' : ''}
-            >
-              <Table className="mr-2 h-4 w-4" />
-              Table view
-            </Button>
-            <Button
-              variant={view === 'kanban' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setView('kanban')}
-              className={view === 'kanban' ? 'bg-white shadow' : ''}
-            >
-              <LayoutGrid className="mr-2 h-4 w-4" />
-              Kanban board
-            </Button>
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
         </div>
       </header>
       <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start flex-1">
-        <ProjectSidebar activeView={activeView} setActiveView={setActiveView} projectTypes={projectTypeCounts} onAddTypeClick={() => setCreateTypeOpen(true)} />
+        <ProjectSidebar 
+            activeView={activeView} 
+            setActiveView={setActiveView} 
+            projectTypes={projectTypeCounts} 
+            onAddTypeClick={() => setCreateTypeOpen(true)}
+            deletedCount={deletedProjects.length}
+        />
         <main className="md:col-span-4">
-          <div className="mb-8">
-            <button onClick={() => setActiveProjectsOpen(!activeProjectsOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
-                {activeProjectsOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronDown className="w-5 h-5 -rotate-90" />}
-                Active projects
-                <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
-            </button>
-
-            {activeProjectsOpen && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="px-4 py-3 font-medium text-muted-foreground w-1/3"></th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeProjects.map(project => (
-                      <tr key={project.id} className="border-b hover:bg-muted/50 group">
-                        <td className="px-4 py-3 font-medium">{project.name}</td>
-                        <td className="px-4 py-3">{project.status ?? "New"}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
-                            <span className="mr-2 text-yellow-500">=</span>
-                            {project.priority ?? "Medium"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex -space-x-2">
-                            {project.members && project.members.slice(0, 3).map(id => {
-                              const profile = profiles.find(p => p.id === id);
-                              if (!profile) return null;
-                              return (
-                                  <Avatar key={id} className="h-6 w-6 border-2 border-background">
-                                      <AvatarImage src={profile.avatar_url ?? undefined} />
-                                      <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                                  </Avatar>
-                              )
-                            })}
-                            {project.members && project.members.length > 3 && (
-                              <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
-                                  +{project.members.length-3}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={() => handleEditClick(project)}>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </td>
-                      </tr>
-                    ))}
-                    <tr>
-                      <td colSpan={7} className="px-4 pt-4">
-                          <Button variant="ghost" className="text-muted-foreground" onClick={() => setAddProjectOpen(true)}>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add project
-                          </Button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-          <div className="mb-4">
-            <button onClick={() => setClosedProjectsOpen(!closedProjectsOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
-                {closedProjectsOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronDown className="w-5 h-5 -rotate-90" />}
-                Closed projects
-                <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{closedProjects.length}</span>
-            </button>
-
-            {closedProjectsOpen && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="px-4 py-3 font-medium text-muted-foreground w-1/3"></th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {closedProjects.map(project => (
-                      <tr key={project.id} className="border-b hover:bg-muted/50 group">
-                        <td className="px-4 py-3 font-medium">{project.name}</td>
-                        <td className="px-4 py-3">{project.status ?? "New"}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
-                            <span className="mr-2 text-yellow-500">=</span>
-                            {project.priority ?? "Medium"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex -space-x-2">
-                            {project.members && project.members.slice(0, 3).map(id => {
-                              const profile = profiles.find(p => p.id === id);
-                              if (!profile) return null;
-                              return (
-                                  <Avatar key={id} className="h-6 w-6 border-2 border-background">
-                                      <AvatarImage src={profile.avatar_url ?? undefined} />
-                                      <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                                  </Avatar>
-                              )
-                            })}
-                            {project.members && project.members.length > 3 && (
-                              <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
-                                  +{project.members.length-3}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={() => handleEditClick(project)}>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+            {mainContent()}
         </main>
       </div>
        <AddProjectDialog
@@ -448,8 +504,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the project
-                        "{projectToDelete?.name}" and all associated data.
+                        This action cannot be undone. This will move the project
+                        "{projectToDelete?.name}" to the bin.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -467,5 +523,3 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
-
-    
