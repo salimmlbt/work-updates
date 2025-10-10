@@ -141,6 +141,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick }: {
     return (
         <tr className="border-b hover:bg-muted/50 group">
             <td className="px-4 py-3 font-medium">{project.name}</td>
+            <td className="px-4 py-3">{project.client?.name ?? '-'}</td>
             <td className="px-4 py-3">{project.status ?? "New"}</td>
             <td className="px-4 py-3">
                 <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
@@ -220,6 +221,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  
+  const [activeProjectsOpen, setActiveProjectsOpen] = useState(true);
+  const [closedProjectsOpen, setClosedProjectsOpen] = useState(true);
 
   const nonDeletedProjects = useMemo(() => projects.filter(p => !p.is_deleted), [projects]);
   const deletedProjects = useMemo(() => projects.filter(p => p.is_deleted), [projects]);
@@ -345,14 +349,15 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             <div className="mb-8 overflow-x-auto">
                  <table className="w-full text-left">
                     <thead>
-                        <tr className="border-b">
+                        <tr role="button" onClick={() => setActiveProjectsOpen(!activeProjectsOpen)} className="border-b">
                             <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">
                                 <div className="flex items-center gap-2">
-                                    <ChevronDown className="w-5 h-5" />
+                                    <ChevronDown className={cn("w-5 h-5 transition-transform", !activeProjectsOpen && "-rotate-90")} />
                                     Active projects
                                     <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
                                 </div>
                             </th>
+                            <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
                             <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                             <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                             <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
@@ -362,31 +367,34 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                             <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
                             <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
                             <th className="px-4 py-3 font-medium text-muted-foreground text-right">
-                                <Button variant="ghost" size="icon" onClick={() => setAddProjectOpen(true)}>
+                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setAddProjectOpen(true);}}>
                                     <Plus className="h-4 w-4" />
                                 </Button>
                             </th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {activeProjects.map(project => (
-                            <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
-                        ))}
-                    </tbody>
+                    {activeProjectsOpen && (
+                        <tbody>
+                            {activeProjects.map(project => (
+                                <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
+                            ))}
+                        </tbody>
+                    )}
                 </table>
             </div>
             {closedProjects.length > 0 && (
                 <div className="mb-4 overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b">
+                            <tr role="button" onClick={() => setClosedProjectsOpen(!closedProjectsOpen)} className="border-b">
                                 <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">
                                     <div className="flex items-center gap-2">
-                                        <ChevronDown className="w-5 h-5" />
+                                        <ChevronDown className={cn("w-5 h-5 transition-transform", !closedProjectsOpen && "-rotate-90")} />
                                         Closed projects
                                         <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{closedProjects.length}</span>
                                     </div>
                                 </th>
+                                <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
@@ -398,11 +406,13 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                 <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {closedProjects.map(project => (
-                                <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
-                            ))}
-                        </tbody>
+                        {closedProjectsOpen && (
+                            <tbody>
+                                {closedProjects.map(project => (
+                                    <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
+                                ))}
+                            </tbody>
+                        )}
                     </table>
                 </div>
             )}
