@@ -15,13 +15,11 @@ import {
   TeamUsersIcon,
   SettingsIcon,
 } from '@/components/icons';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
 import { LogOut } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { Profile } from '@/lib/types';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
@@ -38,18 +36,12 @@ const bottomNavItems = [
   { href: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-export default function Sidebar() {
-  const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
+interface SidebarProps {
+    profile: Profile | null;
+}
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const supabase = createClient();
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-    };
-    fetchUser();
-  }, []);
+export default function Sidebar({ profile }: SidebarProps) {
+  const pathname = usePathname();
 
   const NavLink = ({ item }: { item: typeof navItems[0] }) => {
     const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
@@ -111,12 +103,12 @@ export default function Sidebar() {
           <div className="border-t border-sidebar-border pt-4">
             <div className={cn("flex items-center gap-3 px-3")}>
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.user_metadata.avatar_url} alt={user?.user_metadata.full_name} />
-                <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                <AvatarImage src={profile?.avatar_url ?? undefined} alt={profile?.full_name ?? ''} />
+                <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
               </Avatar>
               <div className={cn("flex flex-col")}>
-                <span className="text-sm font-bold text-sidebar-foreground">{user?.user_metadata.full_name}</span>
-                <span className="text-xs text-sidebar-foreground/80">{user?.email}</span>
+                <span className="text-sm font-bold text-sidebar-foreground">{profile?.full_name}</span>
+                <span className="text-xs text-sidebar-foreground/80">{profile?.email}</span>
               </div>
             </div>
           </div>
