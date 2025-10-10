@@ -90,7 +90,7 @@ const ProjectSidebar = ({
                             'w-full justify-between text-left h-auto pr-8 group',
                             activeView === type.name
                                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                                : 'hover:bg-accent'
+                                : 'hover-bg-accent'
                         )}
                     >
                        <div className="flex items-center gap-2">
@@ -193,7 +193,6 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick }: {
                 </div>
             </td>
             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.created_at)}</td>
-            <td className="px-4 py-3 text-muted-foreground">{project.status === 'Done' ? formatDate(project.due_date) : '-'}</td>
             <td className="px-4 py-3">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
@@ -433,7 +432,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[5%]">
                                     </th>
                                 </tr>
@@ -474,7 +472,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Leader</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Closed date</th>
                                 <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
                             </tr>
                         </thead>
@@ -591,4 +588,5 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     
 
     
+
 
