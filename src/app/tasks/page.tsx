@@ -410,8 +410,8 @@ const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask,
         <div className="overflow-x-auto">
           <table className="w-full table-fixed">
             <tbody>
-              {title === "Active tasks" && isAddingTask && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask}/>}
               {tasks.map(task => <TaskRow key={task.id} task={task} />)}
+              {title === "Active tasks" && isAddingTask && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} />}
               {title === "Active tasks" && (
                 <tr className="border-b-0">
                     <td colSpan={8} className="pt-2 pb-4 px-4">
