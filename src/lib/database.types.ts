@@ -57,6 +57,7 @@ export type Database = {
           client_id: string | null
           status: string | null
           priority: string | null
+          leaders: string[] | null
           members: string[] | null
           type: string | null
           is_deleted: boolean | null
@@ -71,6 +72,7 @@ export type Database = {
           client_id?: string | null
           status?: string | null
           priority?: string | null
+          leaders?: string[] | null
           members?: string[] | null
           type?: string | null
           is_deleted?: boolean | null
@@ -85,6 +87,7 @@ export type Database = {
           client_id?: string | null
           status?: string | null
           priority?: string | null
+          leaders?: string[] | null
           members?: string[] | null
           type?: string | null
           is_deleted?: boolean | null

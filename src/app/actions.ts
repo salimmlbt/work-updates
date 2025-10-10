@@ -16,6 +16,7 @@ export async function addProject(formData: FormData) {
     due_date: formData.get('due_date') as string | null,
     status: formData.get('status') as string,
     priority: formData.get('priority') as string,
+    leaders: (formData.get('leaders') as string).split(',').filter(Boolean),
     members: (formData.get('members') as string).split(',').filter(Boolean),
     type: formData.get('type') as string | null,
   }
@@ -34,6 +35,7 @@ export async function addProject(formData: FormData) {
       due_date: rawFormData.due_date ? new Date(rawFormData.due_date).toISOString() : null,
       status: rawFormData.status,
       priority: rawFormData.priority,
+      leaders: rawFormData.leaders,
       members: rawFormData.members,
       type: rawFormData.type,
     })
@@ -60,6 +62,7 @@ export async function updateProject(projectId: string, formData: FormData) {
         due_date: formData.get('due_date') as string | null,
         status: formData.get('status') as string,
         priority: formData.get('priority') as string,
+        leaders: (formData.get('leaders') as string).split(',').filter(Boolean),
         members: (formData.get('members') as string).split(',').filter(Boolean),
         type: formData.get('type') as string | null,
     }
@@ -77,6 +80,7 @@ export async function updateProject(projectId: string, formData: FormData) {
             due_date: rawFormData.due_date ? new Date(rawFormData.due_date).toISOString() : null,
             status: rawFormData.status,
             priority: rawFormData.priority,
+            leaders: rawFormData.leaders,
             members: rawFormData.members,
             type: rawFormData.type,
         })

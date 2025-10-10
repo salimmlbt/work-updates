@@ -49,6 +49,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
+  leaders: z.array(z.string()),
   members: z.array(z.string()),
   status: z.string().min(1, 'Status is required'),
   priority: z.string().min(1, 'Priority is required'),
@@ -99,7 +100,8 @@ export function EditProjectDialog({
 }: EditProjectDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
-  const [isAddPeopleOpen, setAddPeopleOpen] = useState(false)
+  const [isAddLeadersOpen, setAddLeadersOpen] = useState(false)
+  const [isAddMembersOpen, setAddMembersOpen] = useState(false)
 
   const {
     register,
@@ -117,6 +119,7 @@ export function EditProjectDialog({
     if (project) {
         reset({
             name: project.name,
+            leaders: project.leaders || [],
             members: project.members || [],
             status: project.status || 'New',
             priority: project.priority || 'None',
@@ -128,12 +131,14 @@ export function EditProjectDialog({
     }
   }, [project, reset]);
 
+  const selectedLeaders = watch('leaders', [])
   const selectedMembers = watch('members', [])
 
   const onSubmit = async (data: ProjectFormData) => {
     startTransition(async () => {
       const formData = new FormData()
       formData.append('name', data.name)
+      formData.append('leaders', data.leaders.join(','))
       formData.append('members', data.members.join(','))
       formData.append('status', data.status)
       formData.append('priority', data.priority)
@@ -161,9 +166,14 @@ export function EditProjectDialog({
     })
   }
 
+  const handleSaveLeaders = (newLeaders: string[]) => {
+    setValue('leaders', newLeaders, { shouldValidate: true, shouldDirty: true })
+    setAddLeadersOpen(false)
+  }
+
   const handleSaveMembers = (newMembers: string[]) => {
     setValue('members', newMembers, { shouldValidate: true, shouldDirty: true })
-    setAddPeopleOpen(false)
+    setAddMembersOpen(false)
   }
 
   const formatDate = (date: Date | undefined) => {
@@ -199,6 +209,39 @@ export function EditProjectDialog({
                     {errors.name && <p className="text-sm text-destructive -mt-4">{errors.name.message}</p>}
 
                     <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Leaders {selectedLeaders.length}</Label>
+                         <div className="space-y-2">
+                        {selectedLeaders.length > 0 ? (
+                            selectedLeaders.map(id => {
+                            const profile = profiles.find(p => p.id === id);
+                            if (!profile) return null;
+                            return (
+                                <div key={id} className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={profile.avatar_url ?? undefined} />
+                                    <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium">{profile.full_name}</span>
+                                </div>
+                            );
+                            })
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No leaders selected</p>
+                        )}
+                        </div>
+                        <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-muted-foreground inline-flex items-center p-0 h-auto hover:bg-transparent hover:text-primary focus:ring-0 focus:ring-offset-0"
+                        onClick={() => setAddLeadersOpen(true)}
+                        >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add people
+                        </Button>
+                        {errors.leaders && <p className="text-sm text-destructive">{errors.leaders.message}</p>}
+                    </div>
+
+                    <div className="space-y-2">
                         <Label className="text-sm text-muted-foreground">Members {selectedMembers.length}</Label>
                          <div className="space-y-2">
                         {selectedMembers.length > 0 ? (
@@ -223,7 +266,7 @@ export function EditProjectDialog({
                         type="button"
                         variant="ghost"
                         className="text-muted-foreground inline-flex items-center p-0 h-auto hover:bg-transparent hover:text-primary focus:ring-0 focus:ring-offset-0"
-                        onClick={() => setAddPeopleOpen(true)}
+                        onClick={() => setAddMembersOpen(true)}
                         >
                         <Plus className="h-4 w-4 mr-1" />
                         Add people
@@ -396,12 +439,24 @@ export function EditProjectDialog({
         </DialogContent>
       </Dialog>
       <AddPeopleDialog
-        isOpen={isAddPeopleOpen}
-        setIsOpen={setAddPeopleOpen}
+        isOpen={isAddLeadersOpen}
+        setIsOpen={setAddLeadersOpen}
         profiles={profiles}
         currentUser={currentUser}
-        selectedMembers={selectedMembers}
+        selectedPeople={selectedLeaders}
+        onSave={handleSaveLeaders}
+        excludeIds={selectedMembers}
+        title="Add leaders"
+      />
+      <AddPeopleDialog
+        isOpen={isAddMembersOpen}
+        setIsOpen={setAddMembersOpen}
+        profiles={profiles}
+        currentUser={currentUser}
+        selectedPeople={selectedMembers}
         onSave={handleSaveMembers}
+        excludeIds={selectedLeaders}
+        title="Add members"
       />
     </>
   )

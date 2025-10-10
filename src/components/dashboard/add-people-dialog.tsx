@@ -18,28 +18,30 @@ interface AddPeopleDialogProps {
   setIsOpen: (open: boolean) => void;
   profiles: Profile[];
   currentUser: User | null;
-  selectedMembers: string[];
-  onSave: (selectedMembers: string[]) => void;
+  selectedPeople: string[];
+  onSave: (selectedPeople: string[]) => void;
+  excludeIds?: string[];
+  title: string;
 }
 
-export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, selectedMembers, onSave }: AddPeopleDialogProps) {
+export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, selectedPeople, onSave, excludeIds = [], title }: AddPeopleDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [tempSelected, setTempSelected] = useState<string[]>(selectedMembers);
+  const [tempSelected, setTempSelected] = useState<string[]>(selectedPeople);
 
   useEffect(() => {
-    setTempSelected(selectedMembers);
-  }, [isOpen, selectedMembers]);
+    setTempSelected(selectedPeople);
+  }, [isOpen, selectedPeople]);
 
-  const nonAdminProfiles = useMemo(() => {
-    return profiles.filter(p => p.email !== 'admin@falaq.com');
-  }, [profiles]);
+  const availableProfiles = useMemo(() => {
+    return profiles.filter(p => p.email !== 'admin@falaq.com' && !excludeIds.includes(p.id));
+  }, [profiles, excludeIds]);
 
   const filteredProfiles = useMemo(() => {
-    return nonAdminProfiles.filter(p =>
+    return availableProfiles.filter(p =>
       p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [nonAdminProfiles, searchQuery]);
+  }, [availableProfiles, searchQuery]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -65,7 +67,7 @@ export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, sele
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-2xl p-0 gap-0">
         <DialogHeader className="p-6">
-          <DialogTitle className="text-2xl font-bold">Add people</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
           <DialogDescription>
             Search for people to add to your project.
           </DialogDescription>
