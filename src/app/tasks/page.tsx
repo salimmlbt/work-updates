@@ -203,13 +203,14 @@ const AddTaskRow = ({
                     </SelectContent>
                 </Select>
             </td>
-            <td className="px-4 py-3"></td>
+            
             <td className="px-4 py-3 text-right">
                 <div className="flex gap-2">
                     <Button variant="ghost" size="icon" onClick={onCancel}><X className="h-4 w-4" /></Button>
                     <Button size="icon" onClick={handleSave}><Save className="h-4 w-4" /></Button>
                 </div>
             </td>
+            <td className="px-4 py-3"></td>
         </tr>
     );
 };
@@ -261,17 +262,17 @@ const TaskRow = ({ task }: { task: TaskWithDetails }) => (
      <td className="px-4 py-3 text-sm">
        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
     </td>
-    <td className="px-4 py-3 text-sm text-gray-600">
-      <div className="flex items-center gap-2">
-        {statusIcons[task.status]}
-        <span>{statusLabels[task.status]}</span>
-      </div>
-    </td>
     <td className="px-4 py-3">
       <div className="opacity-0 group-hover:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreHorizontal className="h-4 w-4" />
         </Button>
+      </div>
+    </td>
+    <td className="px-4 py-3 text-sm text-gray-600">
+      <div className="flex items-center gap-2">
+        {statusIcons[task.status]}
+        <span>{statusLabels[task.status]}</span>
       </div>
     </td>
   </tr>
@@ -436,11 +437,14 @@ export default function TasksPage() {
   const completedTasks = tasks.filter(t => t.status === 'done');
   
   const handleSaveTask = (newTask: Task) => {
+    const project = projects.find(p => p.id === newTask.project_id);
+    const client = project ? clients.find(c => c.id === project.client_id) : clients.find(c => c.id === newTask.client_id);
+
      const newTaskWithDetails = {
         ...newTask,
         profiles: profiles.find(p => p.id === newTask.assignee_id) || null,
-        projects: projects.find(p => p.id === newTask.project_id) || null,
-        clients: clients.find(c => c.id === (projects.find(p => p.id === newTask.project_id)?.client_id || null)) || null,
+        projects: project || null,
+        clients: client || null,
      }
     setTasks(prev => [newTaskWithDetails as TaskWithDetails, ...prev]);
     setIsAddingTask(false);
@@ -515,8 +519,8 @@ export default function TasksPage() {
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
                         <th className="px-4 py-2 w-[5%]"></th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
                     </tr>
                 </thead>
             </table>
