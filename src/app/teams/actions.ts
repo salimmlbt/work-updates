@@ -3,7 +3,7 @@
 
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import type { RoleWithPermissions, PermissionLevel, Profile } from '@/lib/types'
+import type { RoleWithPermissions, PermissionLevel, Profile, Task } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 
 export async function createTeam(name: string, defaultTasks: string[]) {
@@ -19,7 +19,7 @@ export async function createTeam(name: string, defaultTasks: string[]) {
     .insert({ 
       name, 
       default_tasks: defaultTasks,
-      owner_id: user.id
+      owner_id: user.id 
     })
     .select()
     .single()
@@ -156,6 +156,12 @@ export async function addUser(formData: FormData) {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
+      options: {
+        data: {
+          full_name: fullName,
+          avatar_url: avatarUrl,
+        }
+      }
     })
 
     if (authError) {
@@ -166,25 +172,18 @@ export async function addUser(formData: FormData) {
       return { error: "User could not be created in Auth."}
     }
     
-    // 2. Insert the user profile into the public.profiles table
-    const { data: profileData, error: profileError } = await supabase
+    // 2. Update the user profile with role
+    const { error: profileError } = await supabase
       .from('profiles')
-      .insert({
-        id: authData.user.id,
-        full_name: fullName,
-        email: email,
-        avatar_url: avatarUrl,
-        role_id: roleId,
-      })
-      .select()
-      .single();
-
+      .update({ role_id: roleId })
+      .eq('id', authData.user.id);
+      
     if (profileError) {
-        // If creating the profile fails, delete the auth user to avoid orphans.
+        // If updating the profile fails, delete the auth user to avoid orphans.
         if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
-        return { error: `Failed to create user profile: ${profileError.message}` };
+        return { error: `Failed to set user role: ${profileError.message}` };
     }
 
 
@@ -413,4 +412,30 @@ export async function updateUserStatus(userId: string, status: 'Active' | 'Archi
     
     revalidatePath('/teams');
     return { success: true };
+}
+
+export async function createTask(taskData: {
+    description: string;
+    project_id: string | null;
+    client_id: string | null;
+    deadline: string;
+    assignee_id: string;
+    type: string | null;
+}) {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+            ...taskData,
+            status: 'todo',
+        })
+        .select()
+        .single();
+    
+    if (error) {
+        return { error: error.message };
+    }
+    
+    revalidatePath('/tasks');
+    return { data: data as Task };
 }

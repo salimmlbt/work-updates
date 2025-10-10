@@ -222,9 +222,11 @@ export type Database = {
           deadline: string
           description: string
           id: string
-          project_id: string
+          project_id: string | null
+          client_id: string | null
           status: "todo" | "inprogress" | "done"
           tags: string[] | null
+          type: string | null
         }
         Insert: {
           assignee_id?: string | null
@@ -232,9 +234,11 @@ export type Database = {
           deadline: string
           description: string
           id?: string
-          project_id: string
+          project_id?: string | null
+          client_id?: string | null
           status?: "todo" | "inprogress" | "done"
           tags?: string[] | null
+          type?: string | null
         }
         Update: {
           assignee_id?: string | null
@@ -242,9 +246,11 @@ export type Database = {
           deadline?: string
           description?: string
           id?: string
-          project_id?: string
+          project_id?: string | null
+          client_id?: string | null
           status?: "todo" | "inprogress" | "done"
           tags?: string[] | null
+          type?: string | null
         }
         Relationships: [
           {
@@ -261,6 +267,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+           {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
         ]
       }
       teams: {

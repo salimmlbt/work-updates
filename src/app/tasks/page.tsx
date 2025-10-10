@@ -1,7 +1,8 @@
 
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createServerClient } from '@/lib/supabase/server';
 import {
   ChevronDown,
   ChevronRight,
@@ -28,7 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { getInitials } from '@/lib/utils';
+import { getInitials, cn } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -39,202 +40,28 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { predefinedTasks } from '@/lib/predefined-tasks';
-
-const teamMembers = [
-  { name: 'Sofia Brown', avatar: 'https://i.pravatar.cc/150?u=sofia-brown' },
-  { name: 'Anastasia Novak', avatar: 'https://i.pravatar.cc/150?u=anastasia-novak' },
-  { name: 'Michael Martinez', avatar: 'https://i.pravatar.cc/150?u=michael-martinez' },
-  { name: 'Marry Williams', avatar: 'https://i.pravatar.cc/150?u=marry-williams' },
-  { name: 'David Thomas', avatar: 'https://i.pravatar.cc/150?u=david-thomas' },
-];
-
-const allTasks = [
-  {
-    id: 'TASK-1',
-    name: 'Develop a wireframe',
-    status: 'In progress',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'Sofia Brown',
-    comments: 3,
-    attachments: 1,
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-2',
-    name: 'Write website copy',
-    status: 'In progress',
-    type: 'Operational',
-    dueDate: '19 Apr 2024',
-    responsible: 'Anastasia Novak',
-    checklist: { completed: 1, total: 3 },
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-3',
-    name: 'Write meta title & meta description for each page',
-    status: 'Scheduled',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'Anastasia Novak',
-    project: 'Marketing Campaign',
-    client: 'Apex Solutions'
-  },
-  {
-    id: 'TASK-4',
-    name: 'Design drafts in 3 different styles',
-    status: 'In progress',
-    type: 'Design',
-    dueDate: '17 Apr 2024',
-    responsible: 'Michael Martinez',
-    tags: ['ASAP'],
-    comments: 7,
-    project: 'Logo Design',
-    client: 'Quantum Leap'
-  },
-  {
-    id: 'TASK-5',
-    name: 'Design the entire website in a chosen style',
-    status: 'Scheduled',
-    type: 'Design',
-    dueDate: '24 Apr 2024',
-    responsible: 'Michael Martinez',
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-6',
-    name: 'Review and comment on website design',
-    status: 'New task',
-    type: 'Important',
-    dueDate: '',
-    responsible: 'Marry Williams',
-    tags: ['Feedback'],
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-7',
-    name: 'Prepare design files for web developer',
-    status: 'New task',
-    type: 'Design',
-    dueDate: '',
-    responsible: 'Michael Martinez',
-    checklist: { completed: 0, total: 2 },
-    project: 'Logo Design',
-    client: 'Quantum Leap'
-  },
-  {
-    id: 'TASK-8',
-    name: 'Develop the website using the chosen CMS platform',
-    status: 'Scheduled',
-    type: 'Operational',
-    dueDate: '19 Apr 2024',
-    responsible: 'David Thomas',
-    tags: ['blocked'],
-    checklist: { completed: 0, total: 4 },
-    project: 'Marketing Campaign',
-    client: 'Apex Solutions'
-  },
-  {
-    id: 'TASK-9',
-    name: 'Implement responsive design',
-    status: 'Scheduled',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'David Thomas',
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-10',
-    name: 'Deploy the website to the development hosting server',
-    status: 'New task',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'David Thomas',
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-11',
-    name: 'Send new website link to the team',
-    status: 'New task',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'David Thomas',
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-12',
-    name: 'Fix all the bugs reported by the team',
-    status: 'New task',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'David Thomas',
-    project: 'Marketing Campaign',
-    client: 'Apex Solutions'
-  },
-  {
-    id: 'TASK-13',
-    name: 'Deploy the website to the production environment',
-    status: 'New task',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'David Thomas',
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-14',
-    name: 'Research potential CMS platforms for website development',
-    status: 'Completed',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'David Thomas',
-    project: 'Logo Design',
-    client: 'Quantum Leap'
-  },
-  {
-    id: 'TASK-15',
-    name: 'Develop a structure for a new website',
-    status: 'Completed',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'Sofia Brown',
-    checklist: { completed: 4, total: 4 },
-    comments: 2,
-    project: 'Website Redesign',
-    client: 'Innovate Corp'
-  },
-  {
-    id: 'TASK-16',
-    name: 'Final check of the website',
-    status: 'New task',
-    type: 'Operational',
-    dueDate: '',
-    responsible: 'Sofia Brown',
-    checklist: { completed: 0, total: 7 },
-    project: 'Marketing Campaign',
-    client: 'Apex Solutions'
-  }
-];
-
-const projects = [...new Set(allTasks.map(t => t.project))];
-const clients = [...new Set(allTasks.map(t => t.client))];
-const taskTypes = [...new Set(allTasks.map(t => t.type))];
+import { format, isToday, isTomorrow } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import type { Project, Client, Profile, Team, Task } from '@/lib/types';
+import { createTask } from '@/app/teams/actions';
+import { useToast } from '@/hooks/use-toast';
+import { createClient } from '@/lib/supabase/client';
 
 const statusIcons = {
   'In progress': <Rocket className="h-4 w-4 text-purple-600" />,
   Scheduled: <Calendar className="h-4 w-4 text-gray-500" />,
   'New task': <AlertCircle className="h-4 w-4 text-gray-400" />,
   Completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+  'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
+  'inprogress': <Rocket className="h-4 w-4 text-purple-600" />,
+  'done': <CheckCircle2 className="h-4 w-4 text-green-500" />,
 };
+
+const statusLabels = {
+    'todo': 'New Task',
+    'inprogress': 'In Progress',
+    'done': 'Completed'
+}
 
 const typeColors = {
   Operational: 'bg-blue-100 text-blue-800',
@@ -242,65 +69,105 @@ const typeColors = {
   Important: 'bg-red-100 text-red-800',
 };
 
-const getResponsibleAvatar = (name: string) => {
-  const member = teamMembers.find(m => m.name === name);
-  return member ? member.avatar : undefined;
+
+type TaskWithDetails = Task & {
+    profiles: Profile | null;
+    projects: Project | null;
+    clients: Client | null;
 }
 
-const AddTaskRow = ({ onSave, onCancel }: { onSave: (task: any) => void; onCancel: () => void; }) => {
-    const [taskName, setTaskName] = useState('');
-    const [project, setProject] = useState('');
-    const [client, setClient] = useState('');
-    const [type, setType] = useState('');
-    const [dueDate, setDueDate] = useState<Date | undefined>();
-    const [assignee, setAssignee] = useState('');
+const getResponsibleAvatar = (profile: Profile | null) => {
+  return profile?.avatar_url ?? undefined;
+}
 
-    const handleSave = () => {
-        if (taskName) {
-            onSave({
-                id: `TASK-${Date.now()}`,
-                name: taskName,
-                project,
-                client,
-                type,
-                dueDate: dueDate ? format(dueDate, 'dd MMM yyyy') : '',
-                responsible: assignee,
-                status: 'New task'
+const AddTaskRow = ({ 
+    onSave, 
+    onCancel,
+    projects,
+    clients,
+    profiles
+}: { 
+    onSave: (task: any) => void; 
+    onCancel: () => void; 
+    projects: Project[],
+    clients: Client[],
+    profiles: Profile[]
+}) => {
+    const [taskName, setTaskName] = useState('');
+    const [projectId, setProjectId] = useState('');
+    const [clientId, setClientId] = useState('');
+    const [dueDate, setDueDate] = useState<Date | undefined>();
+    const [assigneeId, setAssigneeId] = useState('');
+    const [taskType, setTaskType] = useState('');
+    const { toast } = useToast();
+
+    const selectedAssignee = profiles.find(p => p.id === assigneeId);
+    const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
+    const availableTaskTypes = assigneeTeams.flatMap(t => t.default_tasks || []);
+
+    useEffect(() => {
+        if (projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (project?.client_id) {
+                setClientId(project.client_id);
+            } else {
+                setClientId('');
+            }
+        }
+    }, [projectId, projects]);
+
+    const handleSave = async () => {
+        if (taskName && dueDate && assigneeId) {
+            const result = await createTask({
+                description: taskName,
+                project_id: projectId || null,
+                client_id: clientId || null,
+                deadline: dueDate.toISOString(),
+                assignee_id: assigneeId,
+                type: taskType || null,
             });
+
+            if (result.error) {
+                toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
+            } else if (result.data) {
+                onSave(result.data);
+            }
+        } else {
+            toast({ title: "Missing fields", description: "Please fill all required fields.", variant: "destructive" });
         }
     };
+    
+    const formatDate = (date: Date | undefined) => {
+      if (!date) return <span>Pick a date</span>;
+      if (isToday(date)) return 'Today';
+      if (isTomorrow(date)) return 'Tomorrow';
+      return format(date, "dd MMM");
+    }
 
     return (
         <tr className="border-b bg-gray-50">
             <td className="px-4 py-3">
-                <Select onValueChange={setTaskName} value={taskName}>
-                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select a task" /></SelectTrigger>
-                    <SelectContent>
-                        {predefinedTasks.map(task => <SelectItem key={task} value={task}>{task}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+                <Input 
+                    placeholder="Enter task details" 
+                    value={taskName} 
+                    onChange={(e) => setTaskName(e.target.value)} 
+                    className="bg-white"
+                />
             </td>
              <td className="px-4 py-3">
-                <Select onValueChange={setProject} value={project}>
+                <Select onValueChange={setProjectId} value={projectId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select project" /></SelectTrigger>
                     <SelectContent>
-                        {projects.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                        <SelectItem value="">No project</SelectItem>
+                        {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </td>
             <td className="px-4 py-3">
-                <Select onValueChange={setClient} value={client}>
+                <Select onValueChange={setClientId} value={clientId} disabled={!!projectId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select client" /></SelectTrigger>
                     <SelectContent>
-                        {clients.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </td>
-            <td className="px-4 py-3">
-               <Select onValueChange={setType} value={type}>
-                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select type" /></SelectTrigger>
-                    <SelectContent>
-                        {taskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </td>
@@ -309,7 +176,7 @@ const AddTaskRow = ({ onSave, onCancel }: { onSave: (task: any) => void; onCance
                     <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start text-left font-normal bg-white">
                             <Calendar className="mr-2 h-4 w-4" />
-                            {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
+                            {formatDate(dueDate)}
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -318,10 +185,18 @@ const AddTaskRow = ({ onSave, onCancel }: { onSave: (task: any) => void; onCance
                 </Popover>
             </td>
             <td className="px-4 py-3">
-                <Select onValueChange={setAssignee} value={assignee}>
+                <Select onValueChange={setAssigneeId} value={assigneeId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select assignee" /></SelectTrigger>
                     <SelectContent>
-                        {teamMembers.map(m => <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>)}
+                        {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </td>
+            <td className="px-4 py-3">
+               <Select onValueChange={setTaskType} value={taskType} disabled={!assigneeId || availableTaskTypes.length === 0}>
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select type" /></SelectTrigger>
+                    <SelectContent>
+                        {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </td>
@@ -337,12 +212,12 @@ const AddTaskRow = ({ onSave, onCancel }: { onSave: (task: any) => void; onCance
 };
 
 
-const TaskRow = ({ task }: { task: (typeof activeTasks)[0] & {project?: string, client?: string} }) => (
+const TaskRow = ({ task }: { task: TaskWithDetails }) => (
   <tr className="border-b border-gray-200 hover:bg-gray-50 group">
     <td className="px-4 py-3 text-sm font-medium text-gray-800">
       <div className="flex items-center gap-3">
         <Checkbox id={`task-${task.id}`} />
-        <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink" title={task.name}>{task.name}</label>
+        <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink" title={task.description}>{task.description}</label>
         {task.tags?.map(tag => (
           <Badge 
             key={tag} 
@@ -352,37 +227,41 @@ const TaskRow = ({ task }: { task: (typeof activeTasks)[0] & {project?: string, 
             {tag}
           </Badge>
         ))}
+        {/*
         {task.comments && <span className="flex items-center gap-1 text-gray-500 text-xs"><MessageSquare className="w-4 h-4"/>{task.comments}</span>}
         {task.attachments && <span className="flex items-center gap-1 text-gray-500 text-xs"><Paperclip className="w-4 h-4"/>{task.attachments}</span>}
         {task.checklist && <span className="flex items-center gap-1 text-gray-500 text-xs"><CheckSquare className="w-4 h-4"/>{task.checklist.completed}/{task.checklist.total}</span>}
+        */}
       </div>
     </td>
-    <td className="px-4 py-3 text-sm text-gray-600">{task.project}</td>
-    <td className="px-4 py-3 text-sm text-gray-600">{task.client}</td>
-    <td className="px-4 py-3 text-sm">
-       <Badge variant="outline" className={`border-0 ${typeColors[task.type as keyof typeof typeColors]}`}>{task.type}</Badge>
-    </td>
+    <td className="px-4 py-3 text-sm text-gray-600">{task.projects?.name}</td>
+    <td className="px-4 py-3 text-sm text-gray-600">{task.clients?.name}</td>
     <td className="px-4 py-3 text-sm text-gray-600">
-      {task.dueDate ? (
+      {task.deadline ? (
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          <span>{task.dueDate}</span>
+          <span>{format(new Date(task.deadline), 'dd MMM yyyy')}</span>
         </div>
       ) : <div className="flex justify-center">-</div>}
     </td>
     <td className="px-4 py-3 text-sm text-gray-800">
-      <div className="flex items-center gap-2">
-        <Avatar className="h-6 w-6">
-          <AvatarImage src={getResponsibleAvatar(task.responsible)} />
-          <AvatarFallback>{getInitials(task.responsible)}</AvatarFallback>
-        </Avatar>
-        <span>{task.responsible}</span>
-      </div>
+      {task.profiles ? (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={getResponsibleAvatar(task.profiles)} />
+            <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
+          </Avatar>
+          <span>{task.profiles.full_name}</span>
+        </div>
+      ) : null}
+    </td>
+     <td className="px-4 py-3 text-sm">
+       {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
     </td>
     <td className="px-4 py-3 text-sm text-gray-600">
       <div className="flex items-center gap-2">
-        {statusIcons[task.status as keyof typeof statusIcons]}
-        <span>{task.status}</span>
+        {statusIcons[task.status]}
+        <span>{statusLabels[task.status]}</span>
       </div>
     </td>
     <td className="px-4 py-3">
@@ -396,7 +275,19 @@ const TaskRow = ({ task }: { task: (typeof activeTasks)[0] & {project?: string, 
 );
 
 
-const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask, onCancelAddTask }: { title: string, count: number, tasks: any[], onAddTask: () => void, isAddingTask: boolean, onSaveTask: (task: any) => void, onCancelAddTask: () => void }) => {
+const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask, onCancelAddTask, projects, clients, profiles, isLast }: { 
+  title: string, 
+  count: number, 
+  tasks: any[], 
+  onAddTask: () => void, 
+  isAddingTask: boolean, 
+  onSaveTask: (task: any) => void, 
+  onCancelAddTask: () => void,
+  projects: Project[],
+  clients: Client[],
+  profiles: Profile[],
+  isLast: boolean
+}) => {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
@@ -411,16 +302,18 @@ const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask,
           <table className="w-full table-fixed">
             <tbody>
               {tasks.map(task => <TaskRow key={task.id} task={task} />)}
-              {title === "Active tasks" && isAddingTask && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} />}
               {title === "Active tasks" && (
-                <tr className="border-b-0">
-                    <td colSpan={8} className="pt-2 pb-4 px-4">
-                        <Button variant="ghost" className="text-gray-500" onClick={onAddTask}>
-                            <Plus className="w-4 h-4 mr-2"/>
-                            Add task
-                        </Button>
-                    </td>
-                </tr>
+                <>
+                  {isAddingTask && isLast && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} projects={projects} clients={clients} profiles={profiles} />}
+                  <tr>
+                      <td colSpan={8} className="pt-2 pb-4 px-4">
+                          <Button variant="ghost" className="text-gray-500" onClick={onAddTask}>
+                              <Plus className="w-4 h-4 mr-2"/>
+                              Add task
+                          </Button>
+                      </td>
+                  </tr>
+                </>
               )}
             </tbody>
           </table>
@@ -432,16 +325,15 @@ const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask,
 
 const KanbanCard = ({ task }: { task: any }) => {
   const cardColors: { [key: string]: string } = {
-    "New task": "bg-blue-100",
-    "Scheduled": "bg-red-100",
-    "In progress": "bg-yellow-100",
-    "Completed": "bg-gray-100",
+    "todo": "bg-blue-100",
+    "inprogress": "bg-yellow-100",
+    "done": "bg-gray-100",
   };
   
   return (
     <Card className={`mb-4 ${cardColors[task.status] ?? 'bg-gray-100'}`}>
       <CardHeader className="p-4">
-        <CardTitle className="text-sm font-medium">{task.name}</CardTitle>
+        <CardTitle className="text-sm font-medium">{task.description}</CardTitle>
       </CardHeader>
       <CardContent className="p-4 pt-0">
         {task.tags && (
@@ -456,10 +348,11 @@ const KanbanCard = ({ task }: { task: any }) => {
             ))}
           </div>
         )}
-        {task.dueDate && <p className="text-xs text-gray-600">{task.dueDate}</p>}
+        {task.deadline && <p className="text-xs text-gray-600">{format(new Date(task.deadline), 'dd MMM yyyy')}</p>}
       </CardContent>
       <CardFooter className="p-4 pt-0 flex justify-between items-center">
         <div className="flex items-center">
+          {/*
           {task.checklist && (
             <span className="flex items-center gap-1 text-gray-500 text-xs mr-2">
               <CheckSquare className="w-4 h-4" />
@@ -472,11 +365,14 @@ const KanbanCard = ({ task }: { task: any }) => {
               {task.comments}
             </span>
           )}
+          */}
         </div>
-        <Avatar className="h-6 w-6">
-          <AvatarImage src={getResponsibleAvatar(task.responsible)} />
-          <AvatarFallback>{getInitials(task.responsible)}</AvatarFallback>
-        </Avatar>
+         {task.profiles && (
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={getResponsibleAvatar(task.profiles)} />
+              <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
+            </Avatar>
+        )}
       </CardFooter>
     </Card>
   );
@@ -484,16 +380,16 @@ const KanbanCard = ({ task }: { task: any }) => {
 
 
 const KanbanBoard = ({ tasks: allTasksProp }: {tasks: any[]}) => {
-  const statuses = ['New task', 'Scheduled', 'In progress', 'Completed'];
+  const statuses = ['todo', 'inprogress', 'done'];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {statuses.map(status => {
         const tasksInStatus = allTasksProp.filter(task => task.status === status);
         return (
           <div key={status}>
             <h2 className="text-lg font-semibold mb-4 flex items-center">
-              {status}
+              {statusLabels[status as keyof typeof statusLabels]}
               <Badge variant="secondary" className="ml-2">{tasksInStatus.length}</Badge>
             </h2>
             <div className="bg-gray-100 p-4 rounded-lg h-full">
@@ -510,15 +406,42 @@ const KanbanBoard = ({ tasks: allTasksProp }: {tasks: any[]}) => {
 
 export default function TasksPage() {
   const [view, setView] = useState('table');
-  const [tasks, setTasks] = useState(allTasks);
+  const [tasks, setTasks] = useState<TaskWithDetails[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const { toast } = useToast();
 
-  const activeTasks = tasks.filter(t => t.status !== 'Completed');
-  const completedTasks = tasks.filter(t => t.status === 'Completed');
+  useEffect(() => {
+    const supabase = createClient();
+    const fetchData = async () => {
+      const { data: tasksData } = await supabase.from('tasks').select('*, profiles(*), projects(*), clients(*)');
+      const { data: projectsData } = await supabase.from('projects').select('*');
+      const { data: clientsData } = await supabase.from('clients').select('*');
+      const { data: profilesData } = await supabase.from('profiles').select('*, teams:profile_teams(teams(*))');
+
+      setTasks((tasksData as any) || []);
+      setProjects(projectsData || []);
+      setClients(clientsData || []);
+      setProfiles(profilesData || []);
+    };
+    fetchData();
+  }, []);
+
+  const activeTasks = tasks.filter(t => t.status !== 'done');
+  const completedTasks = tasks.filter(t => t.status === 'done');
   
-  const handleSaveTask = (newTask: any) => {
-    setTasks(prev => [newTask, ...prev]);
+  const handleSaveTask = (newTask: Task) => {
+     const newTaskWithDetails = {
+        ...newTask,
+        profiles: profiles.find(p => p.id === newTask.assignee_id) || null,
+        projects: projects.find(p => p.id === newTask.project_id) || null,
+        clients: clients.find(c => c.id === (projects.find(p => p.id === newTask.project_id)?.client_id || null)) || null,
+     }
+    setTasks(prev => [newTaskWithDetails as TaskWithDetails, ...prev]);
     setIsAddingTask(false);
+    toast({ title: 'Task created', description: `Task "${newTask.description}" has been successfully created.`})
   }
 
   return (
@@ -555,6 +478,7 @@ export default function TasksPage() {
           <Button variant="ghost" size="icon"><Search className="h-5 w-5" /></Button>
           <Button variant="outline"><Users className="mr-2 h-4 w-4" />Group</Button>
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+          {/*
           <div className="flex items-center -space-x-2">
             {teamMembers.slice(0, 3).map(member => (
               <Avatar key={member.name} className="h-8 w-8 border-2 border-white">
@@ -572,6 +496,7 @@ export default function TasksPage() {
             <AvatarImage src="/avatars/user-profile.png" />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
+          */}
         </div>
       </header>
 
@@ -581,12 +506,12 @@ export default function TasksPage() {
             <table className="w-full text-left table-fixed">
                 <thead>
                     <tr className="border-b border-gray-200">
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[25%]">Task</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Project</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Client</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Due date</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Client</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
                         <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
                         <th className="px-4 py-2 w-[5%]"></th>
                     </tr>
@@ -600,6 +525,10 @@ export default function TasksPage() {
                 isAddingTask={isAddingTask}
                 onSaveTask={handleSaveTask}
                 onCancelAddTask={() => setIsAddingTask(false)}
+                projects={projects}
+                clients={clients}
+                profiles={profiles}
+                isLast={true}
             />
             <TaskSection 
                 title="Completed tasks" 
@@ -609,6 +538,10 @@ export default function TasksPage() {
                 isAddingTask={false} 
                 onSaveTask={() => {}} 
                 onCancelAddTask={() => {}} 
+                projects={projects}
+                clients={clients}
+                profiles={profiles}
+                isLast={false}
             />
           </>
         ) : (
