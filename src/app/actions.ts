@@ -212,7 +212,6 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
     return { error: error.message }
   }
 
-  revalidatePath('/dashboard')
   return { success: true }
 }
 
@@ -536,4 +535,48 @@ export async function createProjectType(name: string) {
     }
     revalidatePath('/projects');
     return { data };
+}
+
+export async function renameProjectType(id: string, oldName: string, newName: string) {
+    const supabase = createServerClient();
+
+    // First update all projects with the old type name
+    const { error: projectsError } = await supabase
+        .from('projects')
+        .update({ type: newName })
+        .eq('type', oldName);
+    
+    if (projectsError) {
+        console.error('Error updating projects with new type name:', projectsError);
+        return { error: `Failed to update projects: ${projectsError.message}` };
+    }
+
+    // Then update the project type itself
+    const { data, error } = await supabase
+        .from('project_types')
+        .update({ name: newName })
+        .eq('id', id)
+        .select()
+        .single();
+        
+    if (error) {
+        console.error('Error renaming project type:', error);
+        return { error: `Failed to rename project type: ${error.message}` };
+    }
+    
+    revalidatePath('/projects');
+    return { data };
+}
+
+export async function deleteProjectType(id: string) {
+    const supabase = createServerClient();
+    const { error } = await supabase.from('project_types').delete().eq('id', id);
+
+    if (error) {
+        console.error('Error deleting project type:', error);
+        return { error: `Failed to delete project type: ${error.message}` };
+    }
+    
+    revalidatePath('/projects');
+    return { success: true };
 }

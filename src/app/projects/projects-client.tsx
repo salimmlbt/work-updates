@@ -27,8 +27,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectStatus } from '@/app/actions';
+import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectStatus, deleteProjectType } from '@/app/actions';
 import { EditProjectDialog } from './edit-project-dialog';
+import { RenameTypeDialog } from './rename-type-dialog';
 
 type ProjectWithOwner = Project & {
     owner: {
@@ -59,12 +60,16 @@ const ProjectSidebar = ({
     setActiveView,
     projectTypes,
     onAddTypeClick,
+    onRenameType,
+    onDeleteType,
     deletedCount
 }: { 
     activeView: string, 
     setActiveView: (view: string) => void,
-    projectTypes: {name: string, count: number}[],
+    projectTypes: (ProjectType & { count: number })[],
     onAddTypeClick: () => void,
+    onRenameType: (type: ProjectType) => void,
+    onDeleteType: (type: ProjectType) => void,
     deletedCount: number
 }) => {
     return (
@@ -86,22 +91,48 @@ const ProjectSidebar = ({
                 </div>
                 {projectTypes.map(type => (
                      <div
-                        key={type.name}
+                        key={type.id}
                         role="button"
                         onClick={() => setActiveView(type.name)}
                         className={cn(
+                            'relative group flex items-center justify-between',
                             buttonVariants({ variant: 'ghost' }),
                             'w-full justify-between text-left h-auto pr-8 group',
                             activeView === type.name
                                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                                : 'hover-bg-accent'
+                                : 'hover:bg-accent'
                         )}
                     >
                        <div className="flex items-center gap-2">
                          <Folder className="h-4 w-4" />
                          {type.name}
                        </div>
-                       <span className="text-muted-foreground">{type.count}</span>
+                       <div className="flex items-center gap-2">
+                         <span className="text-muted-foreground">{type.count}</span>
+                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <DropdownMenu>
+                               <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                                     <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                               </DropdownMenuTrigger>
+                               <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenuItem onClick={() => onRenameType(type)}>
+                                     <Pencil className="mr-2 h-4 w-4" />
+                                     Rename
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    disabled={type.count > 0}
+                                    onClick={() => onDeleteType(type)}
+                                    className="text-red-600 focus:text-red-600"
+                                  >
+                                     <Trash2 className="mr-2 h-4 w-4" />
+                                     Delete
+                                  </DropdownMenuItem>
+                               </DropdownMenuContent>
+                            </DropdownMenu>
+                         </div>
+                       </div>
                     </div>
                 ))}
                 <Button
@@ -176,6 +207,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                 </Badge>
             </td>
             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
+            <td className="px-4 py-3 text-muted-foreground">{project.tasks_count ?? 0}</td>
             <td className="px-4 py-3">
                 <div className="flex -space-x-2">
                     {project.leaders && project.leaders.slice(0, 3).map(id => {
@@ -215,7 +247,6 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     )}
                 </div>
             </td>
-             <td className="px-4 py-3 text-muted-foreground">{project.tasks_count ?? 0}</td>
             <td className="px-4 py-3">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
@@ -260,24 +291,26 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [activeProjectsOpen, setActiveProjectsOpen] = useState(true);
   const [closedProjectsOpen, setClosedProjectsOpen] = useState(true);
 
+  const [typeToRename, setTypeToRename] = useState<ProjectType | null>(null);
+  const [isRenameTypeOpen, setRenameTypeOpen] = useState(false);
+  const [typeToDelete, setTypeToDelete] = useState<ProjectType | null>(null);
+  const [isDeleteTypeAlertOpen, setDeleteTypeAlertOpen] = useState(false);
+
   const nonDeletedProjects = useMemo(() => projects.filter(p => !p.is_deleted), [projects]);
   const deletedProjects = useMemo(() => projects.filter(p => p.is_deleted), [projects]);
 
   const projectTypeCounts = useMemo(() => {
-    const types = new Map<string, number>();
+    const counts = new Map<string, number>();
     nonDeletedProjects.forEach(p => {
         if (p.type) {
-            types.set(p.type, (types.get(p.type) || 0) + 1);
+            counts.set(p.type, (counts.get(p.type) || 0) + 1);
         }
     });
     
-    projectTypes.forEach(pt => {
-        if (!types.has(pt.name)) {
-            types.set(pt.name, 0);
-        }
-    });
-
-    return Array.from(types).map(([name, count]) => ({name, count}));
+    return projectTypes.map(pt => ({
+        ...pt,
+        count: counts.get(pt.name) || 0,
+    })).sort((a,b) => a.name.localeCompare(b.name));
   }, [nonDeletedProjects, projectTypes]);
 
   const filteredProjects = useMemo(() => {
@@ -318,6 +351,14 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   
   const handleTypeCreated = (newType: ProjectType) => {
       setProjectTypes(prev => [...prev, newType]);
+  }
+  
+  const handleTypeRenamed = (updatedType: ProjectType, oldName: string) => {
+    setProjectTypes(prev => prev.map(t => t.id === updatedType.id ? updatedType : t));
+    setProjects(prev => prev.map(p => p.type === oldName ? { ...p, type: updatedType.name } : p));
+    if (activeView === oldName) {
+        setActiveView(updatedType.name);
+    }
   }
 
   const handleEditClick = (project: ProjectWithOwner) => {
@@ -385,6 +426,24 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             toast({ title: "Error updating status", description: error, variant: "destructive" });
             setProjects(originalProjects); // Revert on error
         }
+    });
+  }
+
+  const handleDeleteTypeAction = () => {
+    if (!typeToDelete) return;
+    startTransition(async () => {
+      const { error } = await deleteProjectType(typeToDelete.id);
+      if (error) {
+        toast({ title: "Error deleting type", description: error, variant: "destructive" });
+      } else {
+        toast({ title: "Project type deleted" });
+        setProjectTypes(prev => prev.filter(t => t.id !== typeToDelete.id));
+        if (activeView === typeToDelete.name) {
+          setActiveView('general');
+        }
+      }
+      setDeleteTypeAlertOpen(false);
+      setTypeToDelete(null);
     });
   }
 
@@ -472,7 +531,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[5%]">
                                     </th>
                                 </tr>
@@ -516,10 +574,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground"></th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
                                     </tr>
                                 </thead>
@@ -556,6 +613,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             setActiveView={setActiveView} 
             projectTypes={projectTypeCounts} 
             onAddTypeClick={() => setCreateTypeOpen(true)}
+            onRenameType={(type) => { setTypeToRename(type); setRenameTypeOpen(true); }}
+            onDeleteType={(type) => { setTypeToDelete(type); setDeleteTypeAlertOpen(true); }}
             deletedCount={deletedProjects.length}
         />
         <main className="md:col-span-4">
@@ -588,6 +647,34 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             setIsOpen={setCreateTypeOpen}
             onTypeCreated={handleTypeCreated}
         />
+        {typeToRename && (
+            <RenameTypeDialog
+                isOpen={isRenameTypeOpen}
+                setIsOpen={setRenameTypeOpen}
+                projectType={typeToRename}
+                onTypeRenamed={handleTypeRenamed}
+            />
+        )}
+        <AlertDialog open={isDeleteTypeAlertOpen} onOpenChange={setDeleteTypeAlertOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the project type "{typeToDelete?.name}".
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setTypeToDelete(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleDeleteTypeAction}
+                        className={cn(buttonVariants({ variant: "destructive" }))}
+                        disabled={isPending}
+                    >
+                       {isPending ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
         <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -632,4 +719,3 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
-
