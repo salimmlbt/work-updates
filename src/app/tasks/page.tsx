@@ -2,29 +2,21 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { createServerClient } from '@/lib/supabase/server';
 import {
   ChevronDown,
-  ChevronRight,
   Plus,
   Table,
   LayoutGrid,
   Search,
   Users,
   Filter,
-  MessageSquare,
-  Paperclip,
-  CheckSquare,
   Calendar,
-  MoreHorizontal,
-  PlusCircle,
-  Rocket,
-  AlertCircle,
-  Clock,
-  CheckCircle2,
+  MoreVertical,
   Save,
   X,
-  MoreVertical,
+  Rocket,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -53,12 +45,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import * as Collapsible from '@radix-ui/react-collapsible';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const statusIcons = {
-  'In progress': <Rocket className="h-4 w-4 text-purple-600" />,
-  Scheduled: <Calendar className="h-4 w-4 text-gray-500" />,
-  'New task': <AlertCircle className="h-4 w-4 text-gray-400" />,
-  Completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
   'inprogress': <Rocket className="h-4 w-4 text-purple-600" />,
   'done': <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -231,7 +221,7 @@ const AddTaskRow = ({
 
 
 const TaskRow = ({ task }: { task: TaskWithDetails }) => (
-  <tr className="border-b border-gray-200 hover:bg-gray-50 group">
+  <>
     <td className="px-4 py-3 text-sm font-medium text-gray-800">
       <div className="flex items-center gap-3">
         <Checkbox id={`task-${task.id}`} />
@@ -296,57 +286,61 @@ const TaskRow = ({ task }: { task: TaskWithDetails }) => (
             </DropdownMenu>
         </div>
     </td>
-  </tr>
+  </>
 );
 
-
-const TaskSection = ({ title, count, tasks, onAddTask, isAddingTask, onSaveTask, onCancelAddTask, projects, clients, profiles, isLast }: { 
-  title: string, 
-  count: number, 
-  tasks: any[], 
-  onAddTask: () => void, 
-  isAddingTask: boolean, 
-  onSaveTask: (task: any) => void, 
-  onCancelAddTask: () => void,
-  projects: Project[],
-  clients: Client[],
-  profiles: Profile[],
-  isLast: boolean
+const TaskTableBody = ({
+  isOpen,
+  tasks,
+  isAddingTask,
+  onSaveTask,
+  onCancelAddTask,
+  projects,
+  clients,
+  profiles,
+}: {
+  isOpen: boolean
+  tasks: TaskWithDetails[]
+  isAddingTask?: boolean
+  onSaveTask?: (task: any) => void
+  onCancelAddTask?: () => void
+  projects?: Project[]
+  clients?: Client[]
+  profiles?: Profile[]
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
-
   return (
-    <div className="mb-8">
-      <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
-        {isOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-        {title}
-        <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{count}</span>
-      </button>
-      {isOpen && (
-        <div className="overflow-x-auto">
-          <table className="w-full table-fixed">
-            <tbody>
-              {tasks.map(task => <TaskRow key={task.id} task={task} />)}
-              {title === "Active tasks" && isLast && (
-                <>
-                  {isAddingTask && <AddTaskRow onSave={onSaveTask} onCancel={onCancelAddTask} projects={projects} clients={clients} profiles={profiles} />}
-                   <tr>
-                      <td colSpan={8} className="pt-2 pb-4 px-4">
-                          <Button variant="ghost" className="text-gray-500" onClick={onAddTask}>
-                              <Plus className="w-4 h-4 mr-2"/>
-                              Add task
-                          </Button>
-                      </td>
-                  </tr>
-                </>
-              )}
-            </tbody>
-          </table>
-        </div>
+    <tbody>
+      <AnimatePresence>
+        {isOpen &&
+          tasks.map((task, index) => (
+            <motion.tr
+              key={task.id}
+              variants={{
+                hidden: { opacity: 0, y: -10 },
+                visible: { opacity: 1, y: 0 },
+              }}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              transition={{ duration: 0.2, delay: index * 0.05 }}
+              className="border-b hover:bg-muted/50 group"
+            >
+              <TaskRow task={task} />
+            </motion.tr>
+          ))}
+      </AnimatePresence>
+      {isAddingTask && onSaveTask && onCancelAddTask && projects && clients && profiles && (
+        <AddTaskRow 
+            onSave={onSaveTask} 
+            onCancel={onCancelAddTask} 
+            projects={projects} 
+            clients={clients} 
+            profiles={profiles} 
+        />
       )}
-    </div>
-  );
-};
+    </tbody>
+  )
+}
 
 const KanbanCard = ({ task }: { task: any }) => {
   const cardColors: { [key: string]: string } = {
@@ -407,6 +401,9 @@ const KanbanBoard = ({ tasks: allTasksProp }: {tasks: any[]}) => {
               {tasksInStatus.map(task => (
                 <KanbanCard key={task.id} task={task} />
               ))}
+              <Button variant="ghost" className="w-full mt-2 text-gray-500">
+                <Plus className="w-4 h-4 mr-2"/> Add task
+              </Button>
             </div>
           </div>
         );
@@ -423,6 +420,9 @@ export default function TasksPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const { toast } = useToast();
+  
+  const [activeTasksOpen, setActiveTasksOpen] = useState(true)
+  const [completedTasksOpen, setCompletedTasksOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient();
@@ -498,46 +498,120 @@ export default function TasksPage() {
       <main>
         {view === 'table' ? (
           <>
-            <table className="w-full text-left table-fixed">
-                <thead>
-                    <tr className="border-b border-gray-200">
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task Name</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Client</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
-                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
-                        <th className="px-4 py-2 w-[5%]"></th>
-                    </tr>
-                </thead>
-            </table>
-            <TaskSection 
-                title="Active tasks" 
-                count={activeTasks.length} 
-                tasks={activeTasks}
-                onAddTask={() => setIsAddingTask(true)}
-                isAddingTask={isAddingTask}
-                onSaveTask={handleSaveTask}
-                onCancelAddTask={() => setIsAddingTask(false)}
-                projects={projects}
-                clients={clients}
-                profiles={profiles}
-                isLast={true}
-            />
-            <TaskSection 
-                title="Completed tasks" 
-                count={completedTasks.length} 
-                tasks={completedTasks} 
-                onAddTask={() => {}} 
-                isAddingTask={false} 
-                onSaveTask={() => {}} 
-                onCancelAddTask={() => {}} 
-                projects={projects}
-                clients={clients}
-                profiles={profiles}
-                isLast={false}
-            />
+            <div className="mb-8 overflow-x-auto">
+              <Collapsible.Root open={activeTasksOpen} onOpenChange={setActiveTasksOpen}>
+                <div className="flex items-center gap-2">
+                  <Collapsible.Trigger asChild>
+                    <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={cn("w-5 h-5 transition-transform", !activeTasksOpen && "-rotate-90")} />
+                        Active tasks
+                        <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeTasks.length}</span>
+                      </div>
+                    </Button>
+                  </Collapsible.Trigger>
+                </div>
+                <Collapsible.Content asChild>
+                  <motion.div
+                    initial="collapsed"
+                    animate={activeTasksOpen ? "open" : "collapsed"}
+                    variants={{
+                        open: { opacity: 1, height: 'auto' },
+                        collapsed: { opacity: 0, height: 0 },
+                    }}
+                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                    className="overflow-hidden"
+                  >
+                    <table className="w-full text-left mt-2 table-fixed">
+                        <thead>
+                            <tr className="border-b border-gray-200">
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task Name</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Client</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
+                                <th className="px-4 py-2 w-[5%]"></th>
+                            </tr>
+                        </thead>
+                        <TaskTableBody
+                            isOpen={activeTasksOpen}
+                            tasks={activeTasks}
+                            isAddingTask={isAddingTask}
+                            onSaveTask={handleSaveTask}
+                            onCancelAddTask={() => setIsAddingTask(false)}
+                            projects={projects}
+                            clients={clients}
+                            profiles={profiles}
+                        />
+                    </table>
+                     <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: activeTasksOpen ? 1 : 0 }}
+                          transition={{ duration: 0.2 }}
+                      >
+                      <Button
+                          variant="ghost"
+                          className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                          onClick={() => setIsAddingTask(true)}
+                      >
+                          <Plus className="mr-2 h-4 w-4" /> Add task
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                </Collapsible.Content>
+              </Collapsible.Root>
+            </div>
+
+            {completedTasks.length > 0 && (
+              <div className="mb-4 overflow-x-auto">
+                <Collapsible.Root open={completedTasksOpen} onOpenChange={setCompletedTasksOpen}>
+                  <div className="flex items-center gap-2">
+                    <Collapsible.Trigger asChild>
+                      <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
+                          <div className="flex items-center gap-2">
+                              <ChevronDown className={cn("w-5 h-5 transition-transform", !completedTasksOpen && "-rotate-90")} />
+                              Completed tasks
+                              <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{completedTasks.length}</span>
+                          </div>
+                      </Button>
+                    </Collapsible.Trigger>
+                  </div>
+                   <Collapsible.Content asChild>
+                        <motion.div
+                            initial="collapsed"
+                            animate={completedTasksOpen ? "open" : "collapsed"}
+                            variants={{
+                                open: { opacity: 1, height: 'auto' },
+                                collapsed: { opacity: 0, height: 0 },
+                            }}
+                            transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                            className="overflow-hidden"
+                        >
+                            <table className="w-full text-left mt-2 table-fixed">
+                                <thead>
+                                    <tr className="border-b border-gray-200">
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task Name</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Client</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
+                                        <th className="px-4 py-2 w-[5%]"></th>
+                                    </tr>
+                                </thead>
+                                <TaskTableBody
+                                    isOpen={completedTasksOpen}
+                                    tasks={completedTasks}
+                                />
+                            </table>
+                        </motion.div>
+                   </Collapsible.Content>
+                </Collapsible.Root>
+              </div>
+            )}
           </>
         ) : (
           <KanbanBoard tasks={tasks} />
