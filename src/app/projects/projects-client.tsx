@@ -115,7 +115,11 @@ const ProjectSidebar = ({
                                <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
-                                    className="p-1 h-auto text-gray-500 data-[state=open]:text-blue-500 hover:text-blue-500 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0"
+                                    className={cn(
+                                      "p-1 h-auto text-gray-500 data-[state=open]:text-blue-500 hover:text-blue-500 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0",
+                                      activeView === type.name ? "hover:bg-transparent" : "hover:bg-gray-100 dark:hover:bg-gray-800",
+                                      "data-[state=open]:bg-transparent"
+                                    )}
                                   >
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
@@ -712,7 +716,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                         className={cn(buttonVariants({ variant: "destructive" }))}
                         disabled={isPending}
                     >
-                       {isPending ? 'Deleting...' : 'Permanently Delete'}
+                       {isPending ? 'Permanently Delete' : 'Permanently Delete'}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
