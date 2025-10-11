@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -37,7 +36,8 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import type { Project, Client, Profile, Team, Task } from '@/lib/types';
-import { createTask, updateTaskStatus as updateTaskStatusAction } from '@/app/teams/actions';
+import { createTask } from '@/app/teams/actions';
+import { updateTaskStatus as updateTaskStatusAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
