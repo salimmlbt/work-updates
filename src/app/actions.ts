@@ -214,6 +214,7 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
     return { error: error.message }
   }
 
+  revalidatePath('/tasks')
   return { success: true }
 }
 

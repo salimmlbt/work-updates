@@ -1,7 +1,8 @@
 
+
 'use client'
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import {
   ChevronDown,
   Plus,
@@ -36,7 +37,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import type { Project, Client, Profile, Team, Task } from '@/lib/types';
-import { createTask } from '@/app/teams/actions';
+import { createTask, updateTaskStatus as updateTaskStatusAction } from '@/app/teams/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -55,10 +56,12 @@ const statusIcons = {
 };
 
 const statusLabels = {
-    'todo': 'New Task',
+    'todo': 'To Do',
     'inprogress': 'In Progress',
-    'done': 'Completed'
+    'done': 'Done'
 }
+const statusOptions: ('todo' | 'inprogress' | 'done')[] = ['todo', 'inprogress', 'done'];
+
 
 const typeColors = {
   Operational: 'bg-blue-100 text-blue-800',
@@ -220,8 +223,8 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task }: { task: TaskWithDetails }) => (
-  <>
+const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void }) => (
+  <React.Fragment>
     <td className="px-4 py-3 text-sm font-medium text-gray-800">
       <div className="flex items-center gap-3">
         <Checkbox id={`task-${task.id}`} />
@@ -262,10 +265,30 @@ const TaskRow = ({ task }: { task: TaskWithDetails }) => (
        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
     </td>
     <td className="px-4 py-3 text-sm text-gray-600">
-      <div className="flex items-center gap-2">
-        {statusIcons[task.status]}
-        <span>{statusLabels[task.status]}</span>
-      </div>
+       <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start text-left font-normal p-0 h-auto hover:bg-transparent group-hover:bg-accent -m-2 p-2 rounded">
+                    <div className="flex items-center gap-2">
+                        {statusIcons[task.status]}
+                        <span>{statusLabels[task.status]}</span>
+                    </div>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                {statusOptions.map(status => (
+                    <DropdownMenuItem 
+                        key={status}
+                        disabled={task.status === status}
+                        onClick={() => onStatusChange(task.id, status)}
+                    >
+                         <div className="flex items-center gap-2">
+                            {statusIcons[status]}
+                            <span>{statusLabels[status]}</span>
+                        </div>
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
     </td>
     <td className="px-4 py-3">
         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -286,7 +309,7 @@ const TaskRow = ({ task }: { task: TaskWithDetails }) => (
             </DropdownMenu>
         </div>
     </td>
-  </>
+  </React.Fragment>
 );
 
 const TaskTableBody = ({
@@ -298,6 +321,7 @@ const TaskTableBody = ({
   projects,
   clients,
   profiles,
+  onStatusChange
 }: {
   isOpen: boolean
   tasks: TaskWithDetails[]
@@ -306,7 +330,8 @@ const TaskTableBody = ({
   onCancelAddTask?: () => void
   projects?: Project[]
   clients?: Client[]
-  profiles?: Profile[]
+  profiles?: Profile[],
+  onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void
 }) => {
   return (
     <tbody>
@@ -325,7 +350,7 @@ const TaskTableBody = ({
               transition={{ duration: 0.2, delay: index * 0.05 }}
               className="border-b hover:bg-muted/50 group"
             >
-              <TaskRow task={task} />
+              <TaskRow task={task} onStatusChange={onStatusChange} />
             </motion.tr>
           ))}
       </AnimatePresence>
@@ -342,7 +367,7 @@ const TaskTableBody = ({
   )
 }
 
-const KanbanCard = ({ task }: { task: any }) => {
+const KanbanCard = ({ task, onStatusChange }: { task: any, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void }) => {
   const cardColors: { [key: string]: string } = {
     "todo": "bg-blue-100",
     "inprogress": "bg-yellow-100",
@@ -351,8 +376,28 @@ const KanbanCard = ({ task }: { task: any }) => {
   
   return (
     <Card className={`mb-4 ${cardColors[task.status] ?? 'bg-gray-100'}`}>
-      <CardHeader className="p-4">
+      <CardHeader className="p-4 flex flex-row items-start justify-between">
         <CardTitle className="text-sm font-medium">{task.description}</CardTitle>
+         <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 -mt-2 -mr-2">
+                    <MoreVertical className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuItem>Edit</DropdownMenuItem>
+                 {statusOptions.map(status => (
+                    <DropdownMenuItem 
+                        key={status}
+                        disabled={task.status === status}
+                        onClick={() => onStatusChange(task.id, status)}
+                    >
+                         Change to {statusLabels[status]}
+                    </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem className="text-red-600 focus:text-red-600">Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </CardHeader>
       <CardContent className="p-4 pt-0">
         {task.tags && (
@@ -384,7 +429,7 @@ const KanbanCard = ({ task }: { task: any }) => {
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp }: {tasks: any[]}) => {
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange }: {tasks: any[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void}) => {
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
@@ -399,7 +444,7 @@ const KanbanBoard = ({ tasks: allTasksProp }: {tasks: any[]}) => {
             </h2>
             <div className="bg-gray-100 p-4 rounded-lg h-full">
               {tasksInStatus.map(task => (
-                <KanbanCard key={task.id} task={task} />
+                <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} />
               ))}
               <Button variant="ghost" className="w-full mt-2 text-gray-500">
                 <Plus className="w-4 h-4 mr-2"/> Add task
@@ -420,6 +465,8 @@ export default function TasksPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
   
   const [activeTasksOpen, setActiveTasksOpen] = useState(true)
   const [completedTasksOpen, setCompletedTasksOpen] = useState(false)
@@ -438,6 +485,22 @@ export default function TasksPage() {
       setProfiles(profilesData || []);
     };
     fetchData();
+
+    const channel = supabase
+      .channel('realtime-tasks-all')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        (payload) => {
+           // Just refetch all data for simplicity
+           fetchData();
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, []);
 
   const activeTasks = tasks.filter(t => t.status !== 'done');
@@ -457,9 +520,21 @@ export default function TasksPage() {
     setIsAddingTask(false);
     toast({ title: 'Task created', description: `Task "${newTask.description}" has been successfully created.`})
   }
+  
+  const handleStatusChange = (taskId: string, status: 'todo' | 'inprogress' | 'done') => {
+    startTransition(async () => {
+        const { error } = await updateTaskStatusAction(taskId, status);
+        if (error) {
+            toast({ title: "Error updating status", description: error, variant: "destructive" });
+        } else {
+            toast({ title: "Task status updated" });
+            // The listener will update the state
+        }
+    });
+  }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm h-full w-full">
+    <div className="bg-white p-6 rounded-lg h-full w-full">
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tasks</h1>
@@ -544,6 +619,7 @@ export default function TasksPage() {
                             projects={projects}
                             clients={clients}
                             profiles={profiles}
+                            onStatusChange={handleStatusChange}
                         />
                     </table>
                      <motion.div
@@ -605,6 +681,7 @@ export default function TasksPage() {
                                 <TaskTableBody
                                     isOpen={completedTasksOpen}
                                     tasks={completedTasks}
+                                    onStatusChange={handleStatusChange}
                                 />
                             </table>
                         </motion.div>
@@ -614,7 +691,7 @@ export default function TasksPage() {
             )}
           </>
         ) : (
-          <KanbanBoard tasks={tasks} />
+          <KanbanBoard tasks={tasks} onStatusChange={handleStatusChange} />
         )}
       </main>
     </div>
