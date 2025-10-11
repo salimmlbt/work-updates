@@ -95,9 +95,9 @@ const ProjectSidebar = ({
                         role="button"
                         onClick={() => setActiveView(type.name)}
                         className={cn(
-                            'relative group flex items-center justify-between',
+                            'relative group flex items-center',
                             buttonVariants({ variant: 'ghost' }),
-                            'w-full justify-between text-left h-auto pr-8 group',
+                            'w-full justify-between text-left h-auto pr-2 group',
                             activeView === type.name
                                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                                 : 'hover:bg-accent'
