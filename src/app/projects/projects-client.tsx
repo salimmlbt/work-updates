@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -286,6 +285,43 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
     )
 }
 
+const ProjectTableBody = ({ 
+    isOpen, 
+    projects,
+    ...rest 
+} : { 
+    isOpen: boolean; 
+    projects: ProjectWithOwner[];
+    profiles: Profile[]; 
+    handleEditClick: (project: ProjectWithOwner) => void;
+    handleDeleteClick: (project: ProjectWithOwner) => void;
+    onStatusChange: (projectId: string, newStatus: string) => void;
+    isCompleted: boolean;
+}) => {
+    return (
+        <tbody>
+            <AnimatePresence>
+                {isOpen && projects.map((project, index) => (
+                    <motion.tr
+                        key={project.id}
+                        variants={{
+                            hidden: { opacity: 0, y: -10 },
+                            visible: { opacity: 1, y: 0 },
+                        }}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        transition={{ duration: 0.2, delay: (projects.length - 1 - index) * 0.05 }}
+                        className="border-b hover:bg-muted/50 group"
+                    >
+                        <ProjectRow project={project} {...rest} />
+                    </motion.tr>
+                ))}
+            </AnimatePresence>
+        </tbody>
+    )
+}
+
 export default function ProjectsClient({ initialProjects, currentUser, profiles, clients, initialProjectTypes }: ProjectsClientProps) {
   const [projects, setProjects] = useState(initialProjects);
   const [isAddProjectOpen, setAddProjectOpen] = useState(false);
@@ -558,26 +594,15 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                       <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[6%]"></th>
                                   </tr>
                               </thead>
-                              <tbody>
-                                <AnimatePresence>
-                                {activeProjectsOpen && activeProjects.map((project, index) => (
-                                    <motion.tr
-                                        key={project.id}
-                                        variants={{
-                                            hidden: { opacity: 0, y: -10 },
-                                            visible: { opacity: 1, y: 0 },
-                                        }}
-                                        initial="hidden"
-                                        animate="visible"
-                                        exit="hidden"
-                                        transition={{ duration: 0.2, delay: (activeProjects.length - 1 - index) * 0.05 }}
-                                        className="border-b hover:bg-muted/50 group"
-                                    >
-                                        <ProjectRow project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={false} />
-                                    </motion.tr>
-                                ))}
-                                </AnimatePresence>
-                              </tbody>
+                               <ProjectTableBody
+                                isOpen={activeProjectsOpen}
+                                projects={activeProjects}
+                                profiles={profiles}
+                                handleEditClick={handleEditClick}
+                                handleDeleteClick={handleDeleteClick}
+                                onStatusChange={handleStatusChange}
+                                isCompleted={false}
+                               />
                           </table>
                            <motion.div
                                 initial={{ opacity: 0 }}
@@ -637,26 +662,15 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                             <th className="px-4 py-3 font-medium text-muted-foreground w-[6%]"></th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <AnimatePresence>
-                                            {closedProjectsOpen && closedProjects.map((project, index) => (
-                                                <motion.tr
-                                                    key={project.id}
-                                                    variants={{
-                                                        hidden: { opacity: 0, y: -10 },
-                                                        visible: { opacity: 1, y: 0 },
-                                                    }}
-                                                    initial="hidden"
-                                                    animate="visible"
-                                                    exit="hidden"
-                                                    transition={{ duration: 0.2, delay: (closedProjects.length - 1 - index) * 0.05 }}
-                                                    className="border-b hover:bg-muted/50 group"
-                                                >
-                                                    <ProjectRow project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={true} />
-                                                </motion.tr>
-                                            ))}
-                                        </AnimatePresence>
-                                    </tbody>
+                                    <ProjectTableBody
+                                        isOpen={closedProjectsOpen}
+                                        projects={closedProjects}
+                                        profiles={profiles}
+                                        handleEditClick={handleEditClick}
+                                        handleDeleteClick={handleDeleteClick}
+                                        onStatusChange={handleStatusChange}
+                                        isCompleted={true}
+                                    />
                                 </table>
                             </motion.div>
                         </Collapsible.Content>
@@ -792,6 +806,3 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
-
-
-
