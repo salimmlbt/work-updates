@@ -116,9 +116,9 @@ const ProjectSidebar = ({
                                   <Button
                                     variant="ghost"
                                     className={cn(
-                                      "p-1 h-auto text-gray-500 data-[state=open]:text-blue-500 hover:text-blue-500 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0",
+                                      "p-1 h-auto text-gray-500 hover:text-blue-500 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0",
                                       activeView === type.name ? "hover:bg-blue-100/50 dark:hover:bg-blue-900/20" : "hover:bg-gray-100 dark:hover:bg-gray-800",
-                                      "data-[state=open]:bg-transparent"
+                                      "data-[state=open]:bg-transparent data-[state=open]:text-blue-500"
                                     )}
                                   >
                                     <MoreVertical className="h-4 w-4" />
