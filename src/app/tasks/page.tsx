@@ -38,7 +38,7 @@ import { format, isToday, isTomorrow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import type { Project, Client, Profile, Team, Task } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
-import { updateTaskStatus as updateTaskStatusAction } from '@/app/actions';
+import { updateTaskStatus } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -265,32 +265,32 @@ const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChan
      <td className="px-4 py-3 text-sm border-r">
        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
     </td>
-    <td className="px-4 py-3 text-sm text-gray-600 border-r">
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="group w-full justify-between items-center px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted">
+    <td className="p-0 text-sm text-gray-600 border-r">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <div className="group relative w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
+            <div className="flex items-center gap-2">
+                {statusIcons[task.status]}
+                <span>{statusLabels[task.status]}</span>
+            </div>
+            <ChevronDown className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+            {statusOptions.map(status => (
+                <DropdownMenuItem 
+                    key={status}
+                    disabled={task.status === status}
+                    onClick={() => onStatusChange(task.id, status)}
+                >
                     <div className="flex items-center gap-2">
-                        {statusIcons[task.status]}
-                        <span>{statusLabels[task.status]}</span>
+                        {statusIcons[status]}
+                        <span>{statusLabels[status]}</span>
                     </div>
-                    <ChevronDown className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-                {statusOptions.map(status => (
-                    <DropdownMenuItem 
-                        key={status}
-                        disabled={task.status === status}
-                        onClick={() => onStatusChange(task.id, status)}
-                    >
-                        <div className="flex items-center gap-2">
-                            {statusIcons[status]}
-                            <span>{statusLabels[status]}</span>
-                        </div>
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+                </DropdownMenuItem>
+            ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </td>
     <td className="px-4 py-3">
         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -532,7 +532,7 @@ export default function TasksPage() {
     );
 
     startTransition(async () => {
-        const { error } = await updateTaskStatusAction(taskId, status);
+        const { error } = await updateTaskStatus(taskId, status);
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
             setTasks(originalTasks); // Revert on error
