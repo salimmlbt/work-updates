@@ -151,7 +151,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
             <td className="px-4 py-3">
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0">
+                        <Button variant="ghost" className="px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent">
                             {project.status ?? "New"}
                             <ChevronDown className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Button>
@@ -176,7 +176,6 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                 </Badge>
             </td>
             <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
-            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.due_date)}</td>
             <td className="px-4 py-3">
                 <div className="flex -space-x-2">
                     {project.leaders && project.leaders.slice(0, 3).map(id => {
@@ -470,7 +469,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
@@ -517,7 +516,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground"></th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
@@ -633,3 +632,4 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
+
