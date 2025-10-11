@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -265,30 +264,33 @@ const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChan
        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
     </td>
     <td className="px-4 py-3 text-sm text-gray-600">
-       <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start text-left font-normal p-0 h-auto hover:bg-transparent group-hover:bg-accent -m-2 p-2 rounded">
-                    <div className="flex items-center gap-2">
-                        {statusIcons[task.status]}
-                        <span>{statusLabels[task.status]}</span>
-                    </div>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-                {statusOptions.map(status => (
-                    <DropdownMenuItem 
-                        key={status}
-                        disabled={task.status === status}
-                        onClick={() => onStatusChange(task.id, status)}
-                    >
-                         <div className="flex items-center gap-2">
-                            {statusIcons[status]}
-                            <span>{statusLabels[status]}</span>
-                        </div>
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+       <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                {statusIcons[task.status]}
+                <span>{statusLabels[task.status]}</span>
+            </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 p-1 opacity-0 group-hover:opacity-100">
+                        <ChevronDown className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    {statusOptions.map(status => (
+                        <DropdownMenuItem 
+                            key={status}
+                            disabled={task.status === status}
+                            onClick={() => onStatusChange(task.id, status)}
+                        >
+                            <div className="flex items-center gap-2">
+                                {statusIcons[status]}
+                                <span>{statusLabels[status]}</span>
+                            </div>
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
     </td>
     <td className="px-4 py-3">
         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
