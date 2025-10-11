@@ -151,7 +151,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
             <td className="px-4 py-3">
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="px-2 py-1 h-auto group-hover:bg-accent">
+                        <Button variant="ghost" className="px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0">
                             {project.status ?? "New"}
                             <ChevronDown className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Button>
@@ -385,8 +385,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
             setProjects(originalProjects); // Revert on error
-        } else {
-            toast({ title: "Project status updated" });
         }
     });
   }
