@@ -522,13 +522,17 @@ export default function TasksPage() {
   }
   
   const handleStatusChange = (taskId: string, status: 'todo' | 'inprogress' | 'done') => {
+    const originalTasks = [...tasks];
+    const newTasks = tasks.map(t => 
+      t.id === taskId ? { ...t, status } : t
+    );
+    setTasks(newTasks);
+
     startTransition(async () => {
         const { error } = await updateTaskStatusAction(taskId, status);
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
-        } else {
-            toast({ title: "Task status updated" });
-            // The listener will update the state
+            setTasks(originalTasks); // Revert on error
         }
     });
   }
