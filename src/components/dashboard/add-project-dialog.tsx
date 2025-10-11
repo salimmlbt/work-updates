@@ -15,7 +15,6 @@ import {
   Calendar as CalendarIcon,
   Loader2,
   Plus,
-  PauseCircle,
   ChevronDown,
 } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
@@ -50,12 +49,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   leaders: z.array(z.string()),
-  members: z.array(z.string()),
-  status: z.string().min(1, 'Status is required'),
+  members: z.array(z.string()).min(1, 'At least one member is required'),
   priority: z.string().min(1, 'Priority is required'),
   start_date: z.date().optional(),
-  due_date: z.date().optional(),
-  client_id: z.string().nullable().optional(),
+  due_date: z.date({ required_error: 'Due date is required.' }),
+  client_id: z.string().min(1, 'Client is required').refine(val => val !== 'no-client', { message: 'Client is required' }),
   type: z.string().optional(),
 })
 
@@ -77,14 +75,6 @@ const priorityOptions = [
     { value: 'Medium', label: 'Medium', icon: Equal, color: 'text-yellow-500' },
     { value: 'Low', label: 'Low', icon: ArrowDown, color: 'text-blue-500' },
     { value: 'Lowest', label: 'Lowest', icon: ChevronsDown, color: 'text-gray-500' },
-    { value: 'None', label: 'None', icon: Equal, color: 'text-gray-400' },
-]
-
-const statusOptions = [
-  { value: 'New', label: 'New', icon: Plus },
-  { value: 'On Hold', label: 'On Hold', icon: PauseCircle },
-  { value: 'In Progress', label: 'In Progress', icon: Loader2 },
-  { value: 'Done', label: 'Done', icon: ChevronsUp },
 ]
 
 export function AddProjectDialog({
@@ -114,9 +104,8 @@ export function AddProjectDialog({
     defaultValues: {
       leaders: [],
       members: [],
-      priority: 'None',
-      status: 'New',
-      client_id: null,
+      priority: 'Medium',
+      client_id: undefined,
       type: undefined,
     },
   })
@@ -130,7 +119,6 @@ export function AddProjectDialog({
       formData.append('name', data.name)
       data.leaders.forEach(id => formData.append('leaders', id))
       data.members.forEach(id => formData.append('members', id))
-      formData.append('status', data.status)
       formData.append('priority', data.priority)
       if (data.start_date) formData.append('start_date', data.start_date.toISOString())
       if (data.due_date) formData.append('due_date', data.due_date.toISOString())
@@ -281,7 +269,7 @@ export function AddProjectDialog({
                     name="client_id"
                     control={control}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <SelectTrigger className="h-12 py-2 px-3 justify-between font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select a client" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
@@ -297,6 +285,7 @@ export function AddProjectDialog({
                       </Select>
                     )}
                   />
+                  {errors.client_id && <p className="text-sm text-destructive mt-1">{errors.client_id.message}</p>}
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Type</Label>
@@ -315,34 +304,6 @@ export function AddProjectDialog({
                               {type.name}
                             </SelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground">Status</Label>
-                   <Controller
-                    name="status"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger className="h-12 py-2 px-3 justify-between w-full font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
-                           <SelectValue />
-                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusOptions.map(option => {
-                            const Icon = option.icon;
-                            return (
-                              <SelectItem key={option.value} value={option.value}>
-                                <div className="flex items-center gap-2">
-                                  <Icon className="h-4 w-4" />
-                                  {option.label}
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
                         </SelectContent>
                       </Select>
                     )}
@@ -374,6 +335,7 @@ export function AddProjectDialog({
                       </Select>
                     )}
                   />
+                  {errors.priority && <p className="text-sm text-destructive mt-1">{errors.priority.message}</p>}
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Start date</Label>
@@ -423,6 +385,7 @@ export function AddProjectDialog({
                       </Popover>
                     )}
                   />
+                   {errors.due_date && <p className="text-sm text-destructive mt-1">{errors.due_date.message}</p>}
                 </div>
               </div>
             </div>

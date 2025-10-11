@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { deleteProject, restoreProject, deleteProjectPermanently } from '@/app/actions';
+import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectStatus } from '@/app/actions';
 import { EditProjectDialog } from './edit-project-dialog';
 
 type ProjectWithOwner = Project & {
@@ -49,6 +49,9 @@ interface ProjectsClientProps {
   clients: Client[];
   initialProjectTypes: ProjectType[];
 }
+
+const statusOptions = ['New', 'On Hold', 'In Progress', 'Done'];
+
 
 const ProjectSidebar = ({ 
     activeView, 
@@ -130,7 +133,7 @@ const ProjectSidebar = ({
     )
 }
 
-const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick }: { project: ProjectWithOwner, profiles: Profile[], handleEditClick: (project: ProjectWithOwner) => void, handleDeleteClick: (project: ProjectWithOwner) => void }) => {
+const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onStatusChange }: { project: ProjectWithOwner, profiles: Profile[], handleEditClick: (project: ProjectWithOwner) => void, handleDeleteClick: (project: ProjectWithOwner) => void, onStatusChange: (projectId: string, newStatus: string) => void }) => {
     const formatDate = (dateString: string | null | undefined) => {
         if (!dateString) return '-';
         try {
@@ -144,7 +147,27 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick }: {
         <tr className="border-b hover:bg-muted/50 group">
             <td className="px-4 py-3 font-medium">{project.name}</td>
             <td className="px-4 py-3">{project.client?.name ?? '-'}</td>
-            <td className="px-4 py-3">{project.status ?? "New"}</td>
+            <td className="px-4 py-3">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="px-2 py-1 h-auto group-hover:bg-accent">
+                            {project.status ?? "New"}
+                            <ChevronDown className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        {statusOptions.map(status => (
+                            <DropdownMenuItem 
+                                key={status} 
+                                onClick={() => onStatusChange(project.id, status)}
+                                disabled={project.status === status}
+                            >
+                                {status}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </td>
             <td className="px-4 py-3">
                 <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
                     <span className="mr-2 text-yellow-500">=</span>
@@ -267,7 +290,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     return nonDeletedProjects.filter(p => p.type === activeView);
   }, [nonDeletedProjects, deletedProjects, activeView]);
 
-  const activeProjects = filteredProjects.filter(p => p.status !== 'Done');
+  const activeProjects = filteredProjects.filter(p => (p.status ?? 'New') !== 'Done');
   const closedProjects = filteredProjects.filter(p => p.status === 'Done');
 
   const handleProjectAdded = (newProject: Project) => {
@@ -347,6 +370,19 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
           setProjectToDeletePermanently(null);
       });
   }
+
+  const handleStatusChange = (projectId: string, newStatus: string) => {
+    startTransition(async () => {
+        const { error } = await updateProjectStatus(projectId, newStatus);
+        if (error) {
+            toast({ title: "Error updating status", description: error, variant: "destructive" });
+        } else {
+            toast({ title: "Project status updated" });
+            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
+        }
+    });
+  }
+
 
   const mainContent = () => {
     if (activeView === 'deleted') {
@@ -438,7 +474,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                             </thead>
                             <tbody>
                                 {activeProjects.map(project => (
-                                    <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
+                                    <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} />
                                 ))}
                             </tbody>
                         </table>
@@ -454,35 +490,42 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             </div>
             {closedProjects.length > 0 && (
                 <div className="mb-4 overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr role="button" onClick={() => setClosedProjectsOpen(!closedProjectsOpen)} className="border-b">
-                                <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">
+                     <Collapsible.Root open={closedProjectsOpen} onOpenChange={setClosedProjectsOpen}>
+                        <div className="flex items-center gap-2">
+                            <Collapsible.Trigger asChild>
+                                <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
                                     <div className="flex items-center gap-2">
-                                        <ChevronDown className={cn("w-5 h-5 transition-transform", !closedProjectsOpen && "-rotate-90")} />
-                                        Closed projects
-                                        <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{closedProjects.length}</span>
+                                    <ChevronDown className={cn("w-5 h-5 transition-transform", !closedProjectsOpen && "-rotate-90")} />
+                                    Closed projects
+                                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{closedProjects.length}</span>
                                     </div>
-                                </th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Leader</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
-                            </tr>
-                        </thead>
-                        {closedProjectsOpen && (
-                            <tbody>
-                                {closedProjects.map(project => (
-                                    <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} />
-                                ))}
-                            </tbody>
-                        )}
-                    </table>
+                                </Button>
+                            </Collapsible.Trigger>
+                        </div>
+                         <Collapsible.Content className="data-[state=closed]:animate-fade-out-bottom-up data-[state=open]:animate-fade-in-top-down">
+                            <table className="w-full text-left mt-2">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">Name</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {closedProjects.map(project => (
+                                        <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </Collapsible.Content>
+                    </Collapsible.Root>
                 </div>
             )}
         </>
@@ -588,5 +631,3 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     
 
     
-
-

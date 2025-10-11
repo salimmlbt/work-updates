@@ -15,7 +15,6 @@ export async function addProject(formData: FormData) {
     client_id: formData.get('client_id') as string | null,
     start_date: formData.get('start_date') as string | null,
     due_date: formData.get('due_date') as string | null,
-    status: formData.get('status') as string,
     priority: formData.get('priority') as string,
     leaders: formData.getAll('leaders') as string[],
     members: formData.getAll('members') as string[],
@@ -33,7 +32,7 @@ export async function addProject(formData: FormData) {
       client_id: rawFormData.client_id === 'no-client' ? null : rawFormData.client_id,
       start_date: rawFormData.start_date ? new Date(rawFormData.start_date).toISOString() : null,
       due_date: rawFormData.due_date ? new Date(rawFormData.due_date).toISOString() : null,
-      status: rawFormData.status,
+      status: 'New',
       priority: rawFormData.priority,
       leaders: rawFormData.leaders,
       members: rawFormData.members,
@@ -99,6 +98,22 @@ export async function updateProject(projectId: string, formData: FormData) {
     revalidatePath('/projects')
     return { data: { success: true } }
 }
+
+export async function updateProjectStatus(projectId: string, status: string) {
+    const supabase = createServerClient();
+    const { error } = await supabase
+        .from('projects')
+        .update({ status })
+        .eq('id', projectId);
+
+    if (error) {
+        return { error: `Failed to update project status: ${error.message}` };
+    }
+
+    revalidatePath('/projects');
+    return { success: true };
+}
+
 
 export async function deleteProject(projectId: string) {
     const supabase = createServerClient()
@@ -171,6 +186,7 @@ export async function addTask(formData: FormData) {
   }
 
   revalidatePath('/dashboard')
+  revalidatePath('/projects')
   return { success: true }
 }
 
@@ -507,4 +523,3 @@ export async function createProjectType(name: string) {
     revalidatePath('/projects');
     return { data };
 }
-
