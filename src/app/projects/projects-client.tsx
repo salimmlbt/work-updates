@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectStatus, deleteProjectType, renameProjectType } from '@/app/actions';
 import { EditProjectDialog } from './edit-project-dialog';
 import { RenameTypeDialog } from './rename-type-dialog';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type ProjectWithOwner = Project & {
     owner: {
@@ -189,16 +190,16 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
 
     return (
         <tr className="border-b hover:bg-muted/50 group">
-            <td className="px-4 py-3 font-medium border-r">{project.name}</td>
-            <td className="px-4 py-3 border-r">{project.client?.name ?? '-'}</td>
-            <td className="px-4 py-3 border-r">
+            <td className="px-4 py-3 font-medium">{project.name}</td>
+            <td className="px-4 py-3">{project.client?.name ?? '-'}</td>
+            <td className="px-4 py-3">
                 <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
                     <span className="mr-2 text-yellow-500">=</span>
                     {project.priority ?? "Medium"}
                 </Badge>
             </td>
-            <td className="px-4 py-3 text-muted-foreground border-r">{project.tasks_count ?? 0}</td>
-            <td className="px-4 py-3 border-r">
+            <td className="px-4 py-3 text-muted-foreground">{project.tasks_count ?? 0}</td>
+            <td className="px-4 py-3">
                 <div className="flex -space-x-2">
                     {project.leaders && project.leaders.slice(0, 3).map(id => {
                         const profile = profiles.find(p => p.id === id);
@@ -218,7 +219,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                      {(!project.leaders || project.leaders.length === 0) && '-'}
                 </div>
             </td>
-            <td className="px-4 py-3 border-r">
+            <td className="px-4 py-3">
                 <div className="flex -space-x-2">
                     {project.members && project.members.slice(0, 3).map(id => {
                         const profile = profiles.find(p => p.id === id);
@@ -237,7 +238,8 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     )}
                 </div>
             </td>
-             <td className="px-4 py-3 border-r">
+             <td className="px-4 py-3 text-muted-foreground">{formatDate(dateToShow)}</td>
+             <td className="px-4 py-3">
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent">
@@ -258,7 +260,6 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     </DropdownMenuContent>
                 </DropdownMenu>
             </td>
-             <td className="px-4 py-3 text-muted-foreground border-r">{formatDate(dateToShow)}</td>
             <td className="px-4 py-3">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
@@ -531,34 +532,67 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                             </Button>
                         </Collapsible.Trigger>
                     </div>
-                    <Collapsible.Content className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                        <table className="w-full text-left mt-2 table-fixed">
-                            <thead>
-                                <tr className="border-b">
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[18%]">Name</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Client</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Priority</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[8%]">Tasks</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Created date</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[6%]"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {activeProjects.map(project => (
-                                    <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={false} />
+                    <Collapsible.Content asChild>
+                      <motion.div
+                          initial="collapsed"
+                          animate={activeProjectsOpen ? 'open' : 'collapsed'}
+                          variants={{
+                            open: { opacity: 1, height: 'auto' },
+                            collapsed: { opacity: 0, height: 0 },
+                          }}
+                          transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                          className="overflow-hidden"
+                      >
+                          <table className="w-full text-left mt-2 table-fixed">
+                              <thead>
+                                  <tr className="border-b">
+                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[18%]">Name</th>
+                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Client</th>
+                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Priority</th>
+                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[8%]">Tasks</th>
+                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
+                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
+                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Created date</th>
+                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
+                                      <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[6%]"></th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                <AnimatePresence>
+                                {activeProjectsOpen && activeProjects.map((project, index) => (
+                                    <motion.tr
+                                        key={project.id}
+                                        variants={{
+                                            hidden: { opacity: 0, y: -10 },
+                                            visible: { opacity: 1, y: 0 },
+                                        }}
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="hidden"
+                                        transition={{ duration: 0.2, delay: (activeProjects.length - 1 - index) * 0.05 }}
+                                        className="animate-fade-in-top-down"
+                                    >
+                                        <ProjectRow project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={false} />
+                                    </motion.tr>
                                 ))}
-                            </tbody>
-                        </table>
-                         <Button
-                            variant="ghost"
-                            className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
-                            onClick={() => setAddProjectOpen(true)}
-                        >
-                            <Plus className="mr-2 h-4 w-4" /> Add project
-                        </Button>
+                                </AnimatePresence>
+                              </tbody>
+                          </table>
+                           <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                           >
+                            <Button
+                                variant="ghost"
+                                className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                                onClick={() => setAddProjectOpen(true)}
+                            >
+                                <Plus className="mr-2 h-4 w-4" /> Add project
+                            </Button>
+                           </motion.div>
+                      </motion.div>
                     </Collapsible.Content>
                 </Collapsible.Root>
                
@@ -587,8 +621,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[8%]">Tasks</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Completed date</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[6%]"></th>
                                     </tr>
                                 </thead>
