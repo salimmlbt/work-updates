@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -263,7 +264,7 @@ const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChan
      <td className="px-4 py-3 text-sm">
        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
     </td>
-    <td className="px-4 py-3 text-sm text-gray-600">
+    <td className="px-4 py-3 text-sm text-gray-600 group">
        <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
                 {statusIcons[task.status]}
@@ -350,7 +351,7 @@ const TaskTableBody = ({
               animate="visible"
               exit="hidden"
               transition={{ duration: 0.2, delay: index * 0.05 }}
-              className="border-b hover:bg-muted/50 group"
+              className="border-b hover:bg-muted/50"
             >
               <TaskRow task={task} onStatusChange={onStatusChange} />
             </motion.tr>
