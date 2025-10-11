@@ -2,6 +2,7 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState, useMemo, useTransition } from 'react';
 import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2, Trash, RefreshCcw } from 'lucide-react';
 import * as Collapsible from '@radix-ui/react-collapsible';
@@ -791,4 +792,5 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
+
 
