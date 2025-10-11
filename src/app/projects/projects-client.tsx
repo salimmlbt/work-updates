@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useEffect } from 'react';
 import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2, Trash, RefreshCcw } from 'lucide-react';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -311,7 +311,7 @@ const ProjectTableBody = ({
                         initial="hidden"
                         animate="visible"
                         exit="hidden"
-                        transition={{ duration: 0.2, delay: (projects.length - 1 - index) * 0.05 }}
+                        transition={{ duration: 0.2, delay: index * 0.05 }}
                         className="border-b hover:bg-muted/50 group"
                     >
                         <ProjectRow project={project} {...rest} />
@@ -340,6 +340,10 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   
   const [activeProjectsOpen, setActiveProjectsOpen] = useState(true);
   const [closedProjectsOpen, setClosedProjectsOpen] = useState(true);
+  
+  const [showActiveProjects, setShowActiveProjects] = useState(true);
+  const [showClosedProjects, setShowClosedProjects] = useState(true);
+
 
   const [typeToRename, setTypeToRename] = useState<ProjectType | null>(null);
   const [isRenameTypeOpen, setRenameTypeOpen] = useState(false);
@@ -497,6 +501,34 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     });
   }
 
+  const handleToggleActiveProjects = () => {
+    if (activeProjectsOpen) {
+      // Start exit animation
+      setShowActiveProjects(false);
+      // Wait for animation to finish before collapsing
+      const totalAnimationTime = (activeProjects.length - 1) * 0.05 * 1000 + 200; // delay * (n-1) + duration
+      setTimeout(() => {
+        setActiveProjectsOpen(false);
+      }, totalAnimationTime);
+    } else {
+      setActiveProjectsOpen(true);
+      setShowActiveProjects(true);
+    }
+  };
+
+  const handleToggleClosedProjects = () => {
+    if (closedProjectsOpen) {
+      // Start exit animation
+      setShowClosedProjects(false);
+      const totalAnimationTime = (closedProjects.length - 1) * 0.05 * 1000 + 200;
+      setTimeout(() => {
+        setClosedProjectsOpen(false);
+      }, totalAnimationTime);
+    } else {
+      setClosedProjectsOpen(true);
+      setShowClosedProjects(true);
+    }
+  };
 
   const mainContent = () => {
     if (activeView === 'deleted') {
@@ -557,7 +589,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     return (
         <>
             <div className="mb-8 overflow-x-auto">
-                <Collapsible.Root open={activeProjectsOpen} onOpenChange={setActiveProjectsOpen}>
+                <Collapsible.Root open={activeProjectsOpen} onOpenChange={handleToggleActiveProjects}>
                     <div className="flex items-center gap-2">
                         <Collapsible.Trigger asChild>
                             <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
@@ -595,7 +627,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                   </tr>
                               </thead>
                                <ProjectTableBody
-                                isOpen={activeProjectsOpen}
+                                isOpen={showActiveProjects}
                                 projects={activeProjects}
                                 profiles={profiles}
                                 handleEditClick={handleEditClick}
@@ -606,8 +638,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                           </table>
                            <motion.div
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
+                                animate={{ opacity: showActiveProjects ? 1 : 0 }}
                                 transition={{ duration: 0.2 }}
                            >
                             <Button
@@ -625,7 +656,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             </div>
             {closedProjects.length > 0 && (
                 <div className="mb-4 overflow-x-auto">
-                     <Collapsible.Root open={closedProjectsOpen} onOpenChange={setClosedProjectsOpen}>
+                     <Collapsible.Root open={closedProjectsOpen} onOpenChange={handleToggleClosedProjects}>
                         <div className="flex items-center gap-2">
                             <Collapsible.Trigger asChild>
                                 <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
@@ -663,7 +694,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         </tr>
                                     </thead>
                                     <ProjectTableBody
-                                        isOpen={closedProjectsOpen}
+                                        isOpen={showClosedProjects}
                                         projects={closedProjects}
                                         profiles={profiles}
                                         handleEditClick={handleEditClick}
