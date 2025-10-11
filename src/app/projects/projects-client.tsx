@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectStatus, deleteProjectType } from '@/app/actions';
+import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectStatus, deleteProjectType, renameProjectType } from '@/app/actions';
 import { EditProjectDialog } from './edit-project-dialog';
 import { RenameTypeDialog } from './rename-type-dialog';
 
@@ -110,14 +110,14 @@ const ProjectSidebar = ({
                        </div>
                        <div className="flex items-center gap-2">
                          <span className="text-muted-foreground">{type.count}</span>
-                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                         <div className="opacity-0 group-hover:opacity-100 transition-opacity group-has-[[data-state=open]]:opacity-100">
                             <DropdownMenu>
                                <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     className={cn(
                                       "p-1 h-auto text-gray-500 data-[state=open]:text-blue-500 hover:text-blue-500 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0",
-                                      activeView === type.name ? "hover:bg-transparent" : "hover:bg-gray-100 dark:hover:bg-gray-800",
+                                      activeView === type.name ? "hover:bg-blue-100/50 dark:hover:bg-blue-900/20" : "hover:bg-gray-100 dark:hover:bg-gray-800",
                                       "data-[state=open]:bg-transparent"
                                     )}
                                   >
