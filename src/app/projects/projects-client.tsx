@@ -112,7 +112,7 @@ const ProjectSidebar = ({
                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <DropdownMenu>
                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 focus-visible:ring-0 focus-visible:ring-offset-0">
                                      <MoreVertical className="h-4 w-4" />
                                   </Button>
                                </DropdownMenuTrigger>
@@ -206,7 +206,6 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     {project.priority ?? "Medium"}
                 </Badge>
             </td>
-            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.start_date)}</td>
             <td className="px-4 py-3 text-muted-foreground">{project.tasks_count ?? 0}</td>
             <td className="px-4 py-3">
                 <div className="flex -space-x-2">
@@ -527,7 +526,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
@@ -573,7 +571,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Start date</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
