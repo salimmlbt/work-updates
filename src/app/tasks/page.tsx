@@ -268,7 +268,7 @@ const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChan
     <td className="p-0 text-sm text-gray-600 border-r">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <div className="group relative w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
+          <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
             <div className="flex items-center gap-2">
                 {statusIcons[task.status]}
                 <span>{statusLabels[task.status]}</span>
@@ -282,6 +282,7 @@ const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChan
                     key={status}
                     disabled={task.status === status}
                     onClick={() => onStatusChange(task.id, status)}
+                    className={cn(task.status === status && 'bg-accent')}
                 >
                     <div className="flex items-center gap-2">
                         {statusIcons[status]}
@@ -393,6 +394,7 @@ const KanbanCard = ({ task, onStatusChange }: { task: any, onStatusChange: (task
                         key={status}
                         disabled={task.status === status}
                         onClick={() => onStatusChange(task.id, status)}
+                        className={cn(task.status === status && 'bg-accent')}
                     >
                          Change to {statusLabels[status]}
                     </DropdownMenuItem>
@@ -704,3 +706,4 @@ export default function TasksPage() {
     </div>
   );
 }
+
