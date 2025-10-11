@@ -24,6 +24,19 @@ export async function addProject(formData: FormData) {
   if (!rawFormData.name) {
     return { error: 'Project name is required.' }
   }
+   if (!rawFormData.members || rawFormData.members.length === 0) {
+    return { error: 'At least one member is required.' };
+  }
+  if (!rawFormData.client_id || rawFormData.client_id === 'no-client') {
+    return { error: 'Client is required.' };
+  }
+  if (!rawFormData.due_date) {
+    return { error: 'Due date is required.' };
+  }
+  if (!rawFormData.priority) {
+    return { error: 'Priority is required.' };
+  }
+
 
   const { data: project, error: projectError } = await supabase
     .from('projects')
@@ -107,10 +120,10 @@ export async function updateProjectStatus(projectId: string, status: string) {
         .eq('id', projectId);
 
     if (error) {
+        console.error('Error updating project status:', error)
         return { error: `Failed to update project status: ${error.message}` };
     }
 
-    revalidatePath('/projects');
     return { success: true };
 }
 
@@ -195,6 +208,7 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
   const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId)
   
   if (error) {
+    console.error('Error updating task status:', error);
     return { error: error.message }
   }
 

@@ -9,7 +9,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, cn } from '@/lib/utils';
-import type { Project, Profile, Client, ProjectType } from '@/lib/types';
+import type { Project, Profile, Client, ProjectType, Task } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { FilterIcon } from '@/components/icons';
@@ -40,6 +40,7 @@ type ProjectWithOwner = Project & {
         id: string;
         name: string;
     } | null;
+    tasks_count: number | null;
 };
 
 interface ProjectsClientProps {
@@ -215,7 +216,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     )}
                 </div>
             </td>
-            <td className="px-4 py-3 text-muted-foreground">{formatDate(project.created_at)}</td>
+             <td className="px-4 py-3 text-muted-foreground">{project.tasks_count ?? 0}</td>
             <td className="px-4 py-3">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
@@ -296,8 +297,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const handleProjectAdded = (newProject: Project) => {
     const newProjectWithOwner = {
       ...newProject,
-      owner: profiles.find(p => p.id === newProject.owner_id) || null,
+      owner: profiles.find(p => p.id === currentUser?.id) || null,
       client: clients.find(c => c.id === newProject.client_id) || null,
+      tasks_count: 0
     };
     setProjects(prev => [newProjectWithOwner as ProjectWithOwner, ...prev]);
   }
@@ -372,13 +374,19 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   }
 
   const handleStatusChange = (projectId: string, newStatus: string) => {
+    const originalProjects = projects;
+    const newProjects = projects.map(p => 
+      p.id === projectId ? { ...p, status: newStatus } : p
+    );
+    setProjects(newProjects);
+
     startTransition(async () => {
         const { error } = await updateProjectStatus(projectId, newStatus);
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
+            setProjects(originalProjects); // Revert on error
         } else {
             toast({ title: "Project status updated" });
-            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
         }
     });
   }
@@ -467,7 +475,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[5%]">
                                     </th>
                                 </tr>
@@ -514,7 +522,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Creation date</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
                                     </tr>
                                 </thead>
@@ -627,7 +635,3 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
-
-    
-
-    
