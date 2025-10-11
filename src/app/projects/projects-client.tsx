@@ -189,7 +189,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
     const dateToShow = isCompleted ? project.updated_at : project.created_at;
 
     return (
-        <tr className="border-b hover:bg-muted/50 group">
+        <>
             <td className="px-4 py-3 font-medium">{project.name}</td>
             <td className="px-4 py-3">{project.client?.name ?? '-'}</td>
             <td className="px-4 py-3">
@@ -281,7 +281,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     </DropdownMenu>
                 </div>
             </td>
-        </tr>
+        </>
     )
 }
 
@@ -570,7 +570,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                         animate="visible"
                                         exit="hidden"
                                         transition={{ duration: 0.2, delay: (activeProjects.length - 1 - index) * 0.05 }}
-                                        className="animate-fade-in-top-down"
+                                        className="border-b hover:bg-muted/50 group"
                                     >
                                         <ProjectRow project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={false} />
                                     </motion.tr>
@@ -628,7 +628,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                 </thead>
                                 <tbody>
                                     {closedProjects.map(project => (
-                                        <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={true} />
+                                        <tr key={project.id} className="border-b hover:bg-muted/50 group">
+                                          <ProjectRow project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={true} />
+                                        </tr>
                                     ))}
                                 </tbody>
                             </table>
