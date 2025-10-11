@@ -112,8 +112,12 @@ const ProjectSidebar = ({
                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <DropdownMenu>
                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 focus-visible:ring-0 focus-visible:ring-offset-0">
-                                     <MoreVertical className="h-4 w-4" />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 !p-0 !bg-transparent data-[state=open]:bg-gray-100 dark:data-[state=open]:bg-gray-800 focus:!bg-transparent focus:!ring-0 focus:!ring-offset-0 !shadow-none text-gray-500 data-[state=open]:text-blue-500 hover:text-blue-500 transition-colors"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
                                   </Button>
                                </DropdownMenuTrigger>
                                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
