@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -152,7 +153,7 @@ const AddTaskRow = ({
 
     return (
         <tr className="border-b bg-gray-50">
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r">
                 <Input 
                     placeholder="Type Task name" 
                     value={taskName} 
@@ -160,7 +161,7 @@ const AddTaskRow = ({
                     className="bg-white"
                 />
             </td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r">
                 <Select onValueChange={handleClientChange} value={clientId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select client" /></SelectTrigger>
                     <SelectContent>
@@ -168,7 +169,7 @@ const AddTaskRow = ({
                     </SelectContent>
                 </Select>
             </td>
-             <td className="px-4 py-3">
+             <td className="px-4 py-3 border-r">
                 <Select onValueChange={setProjectId} value={projectId} disabled={!clientId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select project" /></SelectTrigger>
                     <SelectContent>
@@ -177,7 +178,7 @@ const AddTaskRow = ({
                     </SelectContent>
                 </Select>
             </td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r">
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start text-left font-normal bg-white">
@@ -190,7 +191,7 @@ const AddTaskRow = ({
                     </PopoverContent>
                 </Popover>
             </td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r">
                 <Select onValueChange={setAssigneeId} value={assigneeId}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select assignee" /></SelectTrigger>
                     <SelectContent>
@@ -198,7 +199,7 @@ const AddTaskRow = ({
                     </SelectContent>
                 </Select>
             </td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r">
                <Select onValueChange={setTaskType} value={taskType} disabled={!assigneeId || availableTaskTypes.length === 0}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Select type" /></SelectTrigger>
                     <SelectContent>
@@ -206,7 +207,7 @@ const AddTaskRow = ({
                     </SelectContent>
                 </Select>
             </td>
-            <td className="px-4 py-3 text-sm text-gray-600">
+            <td className="px-4 py-3 text-sm text-gray-600 border-r">
               <div className="flex items-center gap-2">
                 {statusIcons['todo']}
                 <span>{statusLabels['todo']}</span>
@@ -225,7 +226,7 @@ const AddTaskRow = ({
 
 const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void }) => (
   <React.Fragment>
-    <td className="px-4 py-3 text-sm font-medium text-gray-800">
+    <td className="px-4 py-3 text-sm font-medium text-gray-800 border-r">
       <div className="flex items-center gap-3">
         <Checkbox id={`task-${task.id}`} />
         <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink" title={task.description}>{task.description}</label>
@@ -240,9 +241,9 @@ const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChan
         ))}
       </div>
     </td>
-    <td className="px-4 py-3 text-sm text-gray-600">{task.clients?.name}</td>
-    <td className="px-4 py-3 text-sm text-gray-600">{task.projects?.name}</td>
-    <td className="px-4 py-3 text-sm text-gray-600">
+    <td className="px-4 py-3 text-sm text-gray-600 border-r">{task.clients?.name}</td>
+    <td className="px-4 py-3 text-sm text-gray-600 border-r">{task.projects?.name}</td>
+    <td className="px-4 py-3 text-sm text-gray-600 border-r">
       {task.deadline ? (
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
@@ -250,7 +251,7 @@ const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChan
         </div>
       ) : <div className="flex justify-center">-</div>}
     </td>
-    <td className="px-4 py-3 text-sm text-gray-800">
+    <td className="px-4 py-3 text-sm text-gray-800 border-r">
       {task.profiles ? (
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
@@ -261,13 +262,13 @@ const TaskRow = ({ task, onStatusChange }: { task: TaskWithDetails, onStatusChan
         </div>
       ) : null}
     </td>
-     <td className="px-4 py-3 text-sm">
+     <td className="px-4 py-3 text-sm border-r">
        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
     </td>
-    <td className="px-4 py-3 text-sm text-gray-600">
+    <td className="px-4 py-3 text-sm text-gray-600 border-r">
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="group flex justify-between items-center w-full px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted">
+                <Button variant="ghost" className="group w-full justify-between items-center px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted">
                     <div className="flex items-center gap-2">
                         {statusIcons[task.status]}
                         <span>{statusLabels[task.status]}</span>
@@ -524,10 +525,11 @@ export default function TasksPage() {
   
   const handleStatusChange = (taskId: string, status: 'todo' | 'inprogress' | 'done') => {
     const originalTasks = [...tasks];
-    const newTasks = tasks.map(t => 
-      t.id === taskId ? { ...t, status } : t
+    setTasks(prevTasks => 
+      prevTasks.map(t => 
+        t.id === taskId ? { ...t, status } : t
+      )
     );
-    setTasks(newTasks);
 
     startTransition(async () => {
         const { error } = await updateTaskStatusAction(taskId, status);
