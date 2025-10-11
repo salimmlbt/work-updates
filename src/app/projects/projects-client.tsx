@@ -187,9 +187,9 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
 
     return (
         <tr className="border-b hover:bg-muted/50 group">
-            <td className="px-4 py-3 font-medium">{project.name}</td>
-            <td className="px-4 py-3">{project.client?.name ?? '-'}</td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 font-medium border-r">{project.name}</td>
+            <td className="px-4 py-3 border-r">{project.client?.name ?? '-'}</td>
+            <td className="px-4 py-3 border-r">
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent">
@@ -210,14 +210,14 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     </DropdownMenuContent>
                 </DropdownMenu>
             </td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r">
                 <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
                     <span className="mr-2 text-yellow-500">=</span>
                     {project.priority ?? "Medium"}
                 </Badge>
             </td>
-            <td className="px-4 py-3 text-muted-foreground">{project.tasks_count ?? 0}</td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 text-muted-foreground border-r">{project.tasks_count ?? 0}</td>
+            <td className="px-4 py-3 border-r">
                 <div className="flex -space-x-2">
                     {project.leaders && project.leaders.slice(0, 3).map(id => {
                         const profile = profiles.find(p => p.id === id);
@@ -237,7 +237,7 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                      {(!project.leaders || project.leaders.length === 0) && '-'}
                 </div>
             </td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r">
                 <div className="flex -space-x-2">
                     {project.members && project.members.slice(0, 3).map(id => {
                         const profile = profiles.find(p => p.id === id);
@@ -529,17 +529,17 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                         </Collapsible.Trigger>
                     </div>
                     <Collapsible.Content className="data-[state=closed]:animate-fade-out-bottom-up data-[state=open]:animate-fade-in-top-down">
-                        <table className="w-full text-left mt-2">
+                        <table className="w-full text-left mt-2 table-fixed">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">Name</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[5%]">
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[20%]">Name</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[15%]">Client</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Priority</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Tasks</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[6%]">
                                     </th>
                                 </tr>
                             </thead>
@@ -574,17 +574,17 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                             </Collapsible.Trigger>
                         </div>
                          <Collapsible.Content className="data-[state=closed]:animate-fade-out-bottom-up data-[state=open]:animate-fade-in-top-down">
-                            <table className="w-full text-left mt-2">
+                            <table className="w-full text-left mt-2 table-fixed">
                                 <thead>
                                     <tr className="border-b">
-                                        <th className="px-4 py-3 font-medium text-muted-foreground w-1/4">Name</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Client</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Tasks</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Leaders</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground">Members</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[20%]">Name</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[15%]">Client</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Priority</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Tasks</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[6%]"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
