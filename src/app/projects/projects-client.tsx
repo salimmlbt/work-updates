@@ -175,7 +175,7 @@ const ProjectSidebar = ({
     )
 }
 
-const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onStatusChange }: { project: ProjectWithOwner, profiles: Profile[], handleEditClick: (project: ProjectWithOwner) => void, handleDeleteClick: (project: ProjectWithOwner) => void, onStatusChange: (projectId: string, newStatus: string) => void }) => {
+const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onStatusChange, isCompleted }: { project: ProjectWithOwner, profiles: Profile[], handleEditClick: (project: ProjectWithOwner) => void, handleDeleteClick: (project: ProjectWithOwner) => void, onStatusChange: (projectId: string, newStatus: string) => void, isCompleted: boolean }) => {
     const formatDate = (dateString: string | null | undefined) => {
         if (!dateString) return '-';
         try {
@@ -184,32 +184,13 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
             return '-';
         }
     };
+    
+    const dateToShow = isCompleted ? project.updated_at : project.created_at;
 
     return (
         <tr className="border-b hover:bg-muted/50 group">
             <td className="px-4 py-3 font-medium border-r">{project.name}</td>
             <td className="px-4 py-3 border-r">{project.client?.name ?? '-'}</td>
-            <td className="px-4 py-3 border-r">
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent">
-                            {project.status ?? "New"}
-                            <ChevronDown className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        {statusOptions.map(status => (
-                            <DropdownMenuItem 
-                                key={status} 
-                                onClick={() => onStatusChange(project.id, status)}
-                                disabled={project.status === status}
-                            >
-                                {status}
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </td>
             <td className="px-4 py-3 border-r">
                 <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
                     <span className="mr-2 text-yellow-500">=</span>
@@ -256,6 +237,28 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     )}
                 </div>
             </td>
+             <td className="px-4 py-3 border-r">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent">
+                            {project.status ?? "New"}
+                            <ChevronDown className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        {statusOptions.map(status => (
+                            <DropdownMenuItem 
+                                key={status} 
+                                onClick={() => onStatusChange(project.id, status)}
+                                disabled={project.status === status}
+                            >
+                                {status}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </td>
+             <td className="px-4 py-3 text-muted-foreground border-r">{formatDate(dateToShow)}</td>
             <td className="px-4 py-3">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
@@ -423,9 +426,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   }
 
   const handleStatusChange = (projectId: string, newStatus: string) => {
-    const originalProjects = projects;
+    const originalProjects = [...projects];
     const newProjects = projects.map(p => 
-      p.id === projectId ? { ...p, status: newStatus } : p
+      p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
     );
     setProjects(newProjects);
 
@@ -528,36 +531,37 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                             </Button>
                         </Collapsible.Trigger>
                     </div>
-                    <Collapsible.Content className="data-[state=closed]:animate-fade-out-bottom-up data-[state=open]:animate-fade-in-top-down">
+                    <Collapsible.Content className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                         <table className="w-full text-left mt-2 table-fixed">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[20%]">Name</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[15%]">Client</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[18%]">Name</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Client</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Priority</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Tasks</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[8%]">Tasks</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[6%]">
-                                    </th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Created date</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[6%]"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {activeProjects.map(project => (
-                                    <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} />
+                                    <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={false} />
                                 ))}
                             </tbody>
                         </table>
+                         <Button
+                            variant="ghost"
+                            className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                            onClick={() => setAddProjectOpen(true)}
+                        >
+                            <Plus className="mr-2 h-4 w-4" /> Add project
+                        </Button>
                     </Collapsible.Content>
                 </Collapsible.Root>
-                <Button
-                    variant="ghost"
-                    className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
-                    onClick={() => setAddProjectOpen(true)}
-                >
-                    <Plus className="mr-2 h-4 w-4" /> Add project
-                </Button>
+               
             </div>
             {closedProjects.length > 0 && (
                 <div className="mb-4 overflow-x-auto">
@@ -573,23 +577,24 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                 </Button>
                             </Collapsible.Trigger>
                         </div>
-                         <Collapsible.Content className="data-[state=closed]:animate-fade-out-bottom-up data-[state=open]:animate-fade-in-top-down">
+                         <Collapsible.Content className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                             <table className="w-full text-left mt-2 table-fixed">
                                 <thead>
                                     <tr className="border-b">
-                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[20%]">Name</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[15%]">Client</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[18%]">Name</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Client</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Priority</th>
-                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Tasks</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[8%]">Tasks</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
+                                        <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Completed date</th>
                                         <th className="px-4 py-3 font-medium text-muted-foreground w-[6%]"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {closedProjects.map(project => (
-                                        <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} />
+                                        <ProjectRow key={project.id} project={project} profiles={profiles} handleEditClick={handleEditClick} handleDeleteClick={handleDeleteClick} onStatusChange={handleStatusChange} isCompleted={true} />
                                     ))}
                                 </tbody>
                             </table>

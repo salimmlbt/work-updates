@@ -99,6 +99,7 @@ export async function updateProject(projectId: string, formData: FormData) {
             leaders: rawFormData.leaders,
             members: rawFormData.members,
             type: rawFormData.type,
+            updated_at: new Date().toISOString()
         })
         .eq('id', projectId)
 
@@ -116,7 +117,7 @@ export async function updateProjectStatus(projectId: string, status: string) {
     const supabase = createServerClient();
     const { error } = await supabase
         .from('projects')
-        .update({ status })
+        .update({ status, updated_at: new Date().toISOString() })
         .eq('id', projectId);
 
     if (error) {
@@ -124,6 +125,7 @@ export async function updateProjectStatus(projectId: string, status: string) {
         return { error: `Failed to update project status: ${error.message}` };
     }
 
+    revalidatePath('/projects')
     return { success: true };
 }
 
