@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useForm } from 'react-hook-form'
@@ -56,7 +57,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-2 mb-4">
                <Logo className="h-8 w-8 text-primary" />
-               <CardTitle className="text-2xl">TaskFlow</CardTitle>
+               <CardTitle className="text-2xl">Falaq</CardTitle>
             </div>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>

@@ -80,145 +80,229 @@ const getResponsibleAvatar = (profile: Profile | null) => {
 }
 
 const AddTaskRow = ({ 
-    onSave, 
-    onCancel,
-    projects,
-    clients,
-    profiles
+  onSave, 
+  onCancel,
+  projects,
+  clients,
+  profiles
 }: { 
-    onSave: (task: any) => void; 
-    onCancel: () => void; 
-    projects: Project[],
-    clients: Client[],
-    profiles: Profile[]
+  onSave: (task: any) => void; 
+  onCancel: () => void; 
+  projects: Project[],
+  clients: Client[],
+  profiles: Profile[]
 }) => {
-    const [taskName, setTaskName] = useState('');
-    const [projectId, setProjectId] = useState('');
-    const [clientId, setClientId] = useState('');
-    const [dueDate, setDueDate] = useState<Date | undefined>();
-    const [assigneeId, setAssigneeId] = useState('');
-    const [taskType, setTaskType] = useState('');
-    const { toast } = useToast();
+  const [taskName, setTaskName] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [assigneeId, setAssigneeId] = useState('');
+  const [taskType, setTaskType] = useState('');
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
-    const selectedAssignee = profiles.find(p => p.id === assigneeId);
-    const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
-    const availableTaskTypes = assigneeTeams.flatMap(t => t.default_tasks || []);
+  const { toast } = useToast();
 
-    const filteredProjects = clientId ? projects.filter(p => p.client_id === clientId) : [];
+  const selectedAssignee = profiles.find(p => p.id === assigneeId);
+  const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
+  const availableTaskTypes = assigneeTeams.flatMap(t => t.default_tasks || []);
+  const filteredProjects = clientId ? projects.filter(p => p.client_id === clientId) : [];
 
-    useEffect(() => {
-        if (projectId && projectId !== 'no-project') {
-            const project = projects.find(p => p.id === projectId);
-            if (project?.client_id && project.client_id !== clientId) {
-                setClientId(project.client_id);
-            }
-        }
-    }, [projectId, projects, clientId]);
+  const taskInputRef = React.useRef<HTMLInputElement>(null);
+  const clientRef = React.useRef<HTMLButtonElement>(null);
+  const projectRef = React.useRef<HTMLButtonElement>(null);
+  const dueDateRef = React.useRef<HTMLButtonElement>(null);
+  const assigneeRef = React.useRef<HTMLButtonElement>(null);
+  const typeRef = React.useRef<HTMLButtonElement>(null);
 
-    const handleClientChange = (selectedClientId: string) => {
-        setClientId(selectedClientId);
-        setProjectId(''); // Reset project when client changes
-    }
+  useEffect(() => {
+      if (projectId && projectId !== 'no-project') {
+          const project = projects.find(p => p.id === projectId);
+          if (project?.client_id && project.client_id !== clientId) {
+              setClientId(project.client_id);
+          }
+      }
+  }, [projectId, projects, clientId]);
 
-    const handleSave = async () => {
-        if (!taskName || !clientId || !dueDate || !assigneeId || !taskType) {
-            toast({ title: "Missing fields", description: "Task Name, Client, Due Date, Assignee, and Type are all required.", variant: "destructive" });
-            return;
-        }
+  const handleClientChange = (selectedClientId: string) => {
+      setClientId(selectedClientId);
+      setProjectId(''); // Reset project when client changes
+  }
 
-        const result = await createTask({
-            description: taskName,
-            project_id: projectId === 'no-project' ? null : projectId,
-            client_id: clientId || null,
-            deadline: dueDate.toISOString(),
-            assignee_id: assigneeId,
-            type: taskType || null,
-        });
+  const handleSave = async () => {
+      if (!taskName || !clientId || !dueDate || !assigneeId || !taskType) {
+          toast({ title: "Missing fields", description: "Task Name, Client, Due Date, Assignee, and Type are all required.", variant: "destructive" });
+          return;
+      }
 
-        if (result.error) {
-            toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
-        } else if (result.data) {
-            onSave(result.data);
-        }
-    };
-    
-    const formatDate = (date: Date | undefined) => {
-      if (!date) return <span>Pick a date</span>;
-      if (isToday(date)) return 'Today';
-      if (isTomorrow(date)) return 'Tomorrow';
-      return format(date, "dd MMM yyyy");
-    }
+      const result = await createTask({
+          description: taskName,
+          project_id: projectId === 'no-project' ? null : projectId,
+          client_id: clientId || null,
+          deadline: dueDate.toISOString(),
+          assignee_id: assigneeId,
+          type: taskType || null,
+      });
 
-    return (
-        <tr className="border-b bg-gray-50">
-            <td className="px-4 py-3 border-r">
-                <Input 
-                    placeholder="Type Task name" 
-                    value={taskName} 
-                    onChange={(e) => setTaskName(e.target.value)} 
-                    className="bg-white"
-                />
-            </td>
-            <td className="px-4 py-3 border-r">
-                <Select onValueChange={handleClientChange} value={clientId}>
-                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select client" /></SelectTrigger>
-                    <SelectContent>
-                        {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </td>
-             <td className="px-4 py-3 border-r">
-                <Select onValueChange={setProjectId} value={projectId} disabled={!clientId}>
-                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select project" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="no-project">No project</SelectItem>
-                        {filteredProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </td>
-            <td className="px-4 py-3 border-r">
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-white">
-                            <Calendar className="mr-2 h-4 w-4" />
-                            {formatDate(dueDate)}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                        <CalendarComponent mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
-                    </PopoverContent>
-                </Popover>
-            </td>
-            <td className="px-4 py-3 border-r">
-                <Select onValueChange={setAssigneeId} value={assigneeId}>
-                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select assignee" /></SelectTrigger>
-                    <SelectContent>
-                        {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </td>
-            <td className="px-4 py-3 border-r">
-               <Select onValueChange={setTaskType} value={taskType} disabled={!assigneeId || availableTaskTypes.length === 0}>
-                    <SelectTrigger className="bg-white"><SelectValue placeholder="Select type" /></SelectTrigger>
-                    <SelectContent>
-                        {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </td>
-            <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-              <div className="flex items-center gap-2">
-                {statusIcons['todo']}
-                <span>{statusLabels['todo']}</span>
+      if (result.error) {
+          toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
+      } else if (result.data) {
+          onSave(result.data);
+      }
+  };
+
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return <span>Pick a date</span>;
+    if (isToday(date)) return 'Today';
+    if (isTomorrow(date)) return 'Tomorrow';
+    return format(date, "dd MMM yyyy");
+  }
+
+  // Handle Enter key navigation
+  const handleKeyDown = (e: React.KeyboardEvent, nextRef?: React.RefObject<any>) => {
+      if (e.key === 'Enter') {
+          e.preventDefault();
+          if (nextRef?.current) {
+              nextRef.current.focus();
+              nextRef.current.click?.(); // Open dropdowns
+          }
+      }
+  }
+
+  // Handle Enter specifically for Calendar
+  const handleCalendarKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+          e.preventDefault();
+          if (dueDate) {
+              setCalendarOpen(false); // Close calendar
+              assigneeRef.current?.focus();
+              assigneeRef.current?.click?.();
+          }
+      }
+  }
+
+  // Handle Enter specifically for Type to save task
+  const handleTypeKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+          e.preventDefault();
+          handleSave();
+      }
+  }
+
+  return (
+      <tr className="border-b bg-gray-50">
+          <td className="px-4 py-3 border-r">
+              <Input 
+                  placeholder="Type Task name" 
+                  value={taskName} 
+                  ref={taskInputRef}
+                  onChange={(e) => setTaskName(e.target.value)} 
+                  onKeyDown={(e) => handleKeyDown(e, clientRef)}
+                  className="bg-white"
+              />
+          </td>
+          <td className="px-4 py-3 border-r">
+              <Select onValueChange={handleClientChange} value={clientId}>
+                  <SelectTrigger 
+                      className="bg-white" 
+                      ref={clientRef} 
+                      onKeyDown={(e) => handleKeyDown(e, projectRef)}
+                  >
+                      <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+              </Select>
+          </td>
+           <td className="px-4 py-3 border-r">
+              <Select onValueChange={setProjectId} value={projectId} disabled={!clientId}>
+                  <SelectTrigger 
+                      className="bg-white" 
+                      ref={projectRef} 
+                      onKeyDown={(e) => handleKeyDown(e, dueDateRef)}
+                  >
+                      <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="no-project">No project</SelectItem>
+                      {filteredProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+              </Select>
+          </td>
+          <td className="px-4 py-3 border-r">
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                      <Button 
+                          variant="outline" 
+                          className="w-full justify-start text-left font-normal bg-white"
+                          ref={dueDateRef} 
+                          onKeyDown={handleCalendarKeyDown}
+                      >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {formatDate(dueDate)}
+                      </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                      <CalendarComponent 
+                          mode="single" 
+                          selected={dueDate} 
+                          onSelect={(date) => {
+                              setDueDate(date);
+                              setCalendarOpen(false);
+                              assigneeRef.current?.focus();
+                              assigneeRef.current?.click?.();
+                          }} 
+                          initialFocus 
+                      />
+                  </PopoverContent>
+              </Popover>
+          </td>
+          <td className="px-4 py-3 border-r">
+              <Select onValueChange={setAssigneeId} value={assigneeId}>
+                  <SelectTrigger 
+                      className="bg-white" 
+                      ref={assigneeRef} 
+                      onKeyDown={(e) => handleKeyDown(e, typeRef)}
+                  >
+                      <SelectValue placeholder="Select assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                  </SelectContent>
+              </Select>
+          </td>
+          <td className="px-4 py-3 border-r">
+             <Select 
+                  onValueChange={setTaskType} 
+                  value={taskType} 
+                  disabled={!assigneeId || availableTaskTypes.length === 0}
+              >
+                  <SelectTrigger 
+                      className="bg-white" 
+                      ref={typeRef} 
+                      onKeyDown={handleTypeKeyDown}
+                  >
+                      <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+              </Select>
+          </td>
+          <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+            <div className="flex items-center gap-2">
+              {statusIcons['todo']}
+              <span>{statusLabels['todo']}</span>
+            </div>
+          </td>
+          <td className="px-4 py-3 text-right">
+              <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+                  <Button onClick={handleSave}>Save</Button>
               </div>
-            </td>
-            <td className="px-4 py-3 text-right">
-                <div className="flex gap-2 justify-end">
-                    <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-                    <Button onClick={handleSave}>Save</Button>
-                </div>
-            </td>
-        </tr>
-    );
+          </td>
+      </tr>
+  );
 };
 
 
