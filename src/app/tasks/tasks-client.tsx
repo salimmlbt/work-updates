@@ -222,7 +222,7 @@ const AddTaskRow = ({
 
 
 const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; }) => {
-  const [dateText, setDateText] = useState(() => 'No date');
+  const [dateText, setDateText] = useState('No date');
 
   useEffect(() => {
     if (task.deadline) {
@@ -234,7 +234,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
   }, [task.deadline]);
   
   return (
-    <React.Fragment>
+    <>
       <td className="px-4 py-3 text-sm font-medium text-gray-800 border-r whitespace-nowrap truncate">
         <div className="flex items-center gap-3 truncate">
           <Checkbox id={`task-${task.id}`} />
@@ -258,9 +258,9 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
             <span className="truncate">{dateText}</span>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-800 border-r">
+      <td className="px-4 py-3 text-sm text-gray-800 border-r whitespace-nowrap truncate">
         {task.profiles ? (
-          <div className="flex items-center gap-2 truncate whitespace-nowrap">
+          <div className="flex items-center gap-2 truncate">
             <Avatar className="h-6 w-6 shrink-0">
               <AvatarImage src={getResponsibleAvatar(task.profiles)} />
               <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
@@ -318,7 +318,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
           </DropdownMenu>
         </div>
       </td>
-    </React.Fragment>
+    </>
   );
 };
 
