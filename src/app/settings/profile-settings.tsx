@@ -3,8 +3,9 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { useTransition } from 'react'
+import { useEffect, useTransition } from 'react'
 import { Loader2 } from 'lucide-react'
+import 'react-international-phone/style.css';
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { updateProfile } from '@/app/actions'
+import { PhoneInput } from 'react-international-phone'
 
 const months = [
   "January", "February", "March", "April", "May", "June", 
@@ -52,6 +54,7 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -63,6 +66,19 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
       birthday_month: profile?.birthday ? months[new Date(profile.birthday).getMonth()] : '',
     }
   })
+
+  useEffect(() => {
+    if (profile) {
+      reset({
+        full_name: profile.full_name ?? '',
+        contact: profile.contact ?? '',
+        instagram_username: profile.instagram ? new URL(profile.instagram).pathname.slice(1) : '',
+        birthday_day: profile.birthday ? new Date(profile.birthday).getDate().toString() : '',
+        birthday_month: profile.birthday ? months[new Date(profile.birthday).getMonth()] : '',
+      })
+    }
+  }, [profile, reset])
+
 
   const onSubmit = (data: ProfileFormData) => {
     if (!profile) return;
@@ -120,7 +136,20 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contact">Contact</Label>
-                  <Input id="contact" placeholder="Enter contact number" {...register('contact')} />
+                   <Controller
+                    name="contact"
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneInput
+                        {...field}
+                        defaultCountry="in"
+                        inputClassName="!h-10 !w-full !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background file:!border-0 file:!bg-transparent file:!text-sm file:!font-medium placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                        countrySelectorStyleProps={{
+                           buttonClassName: "!h-10 !rounded-l-md !border-input !bg-muted"
+                        }}
+                      />
+                    )}
+                  />
                 </div>
             </div>
             <div className="space-y-8">

@@ -488,17 +488,19 @@ export async function deleteRole(id: string) {
 }
 
 export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id' | 'roles' | 'teams'> & {password: string, role_id: string, team_id: string}) {
-    const supabase = createServerClient()
+    const supabaseAdmin = createSupabaseAdminClient()
+    if (!supabaseAdmin) {
+        return { error: "Admin client not initialized. Cannot create user." }
+    }
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email!,
       password: userData.password,
-      options: {
-        data: {
+      user_metadata: {
           full_name: userData.full_name,
           avatar_url: userData.avatar_url,
-        }
-      }
+      },
+      email_confirm: true,
     })
 
     if (authError) {
@@ -509,7 +511,7 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
       return { error: "User could not be created in Auth."}
     }
     
-    const { data: profileData, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await createServerClient()
       .from('profiles')
       .insert({
         id: authData.user.id,
@@ -522,7 +524,7 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
       .single();
 
     if (profileError) {
-        await createSupabaseAdminClient()?.auth.admin.deleteUser(authData.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         return { error: `Failed to create user profile: ${profileError.message}` };
     }
 
@@ -643,7 +645,7 @@ export async function updateProfile(userId: string, formData: FormData) {
 
   const updates = {
     full_name: fullName,
-    contact,
+    contact: contact,
     instagram: instagramUrl,
     birthday,
   };
