@@ -228,13 +228,27 @@ const AddTaskRow = ({
                   <SelectTrigger 
                       className="bg-white" 
                       ref={projectRef} 
-                      onKeyDown={(e) => handleKeyDown(e, typeRef)}
+                      onKeyDown={(e) => handleKeyDown(e, assigneeRef)}
                   >
                       <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
                       <SelectItem value="no-project">No project</SelectItem>
                       {filteredProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+              </Select>
+          </td>
+           <td className="px-4 py-3 border-r">
+              <Select onValueChange={setAssigneeId} value={assigneeId}>
+                  <SelectTrigger 
+                      className="bg-white" 
+                      ref={assigneeRef} 
+                      onKeyDown={(e) => handleKeyDown(e, typeRef)}
+                  >
+                      <SelectValue placeholder="Select assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
                   </SelectContent>
               </Select>
           </td>
@@ -275,27 +289,12 @@ const AddTaskRow = ({
                           onSelect={(date) => {
                               setDueDate(date);
                               setCalendarOpen(false);
-                              assigneeRef.current?.focus();
-                              assigneeRef.current?.click?.();
+                              handleSave();
                           }} 
                           initialFocus 
                       />
                   </PopoverContent>
               </Popover>
-          </td>
-          <td className="px-4 py-3 border-r">
-              <Select onValueChange={setAssigneeId} value={assigneeId}>
-                  <SelectTrigger 
-                      className="bg-white" 
-                      ref={assigneeRef} 
-                      onKeyDown={handleTypeKeyDown}
-                  >
-                      <SelectValue placeholder="Select assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
-                  </SelectContent>
-              </Select>
           </td>
           <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
             <div className="flex items-center gap-2">
@@ -356,16 +355,6 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
       <td className="px-4 py-3 border-r max-w-[150px]">
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
-      <td className="px-4 py-3 border-r max-w-[120px]">
-        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
-          {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
-        </div>
-      </td>
-      <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
-            <span className="truncate">{dateText}</span>
-        </div>
-      </td>
       {canEdit && (
         <td className="px-4 py-3 border-r max-w-[180px]">
           {task.profiles ? (
@@ -379,6 +368,16 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
           ) : <div className="flex justify-center">-</div>}
         </td>
       )}
+      <td className="px-4 py-3 border-r max-w-[120px]">
+        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
+          {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
+        </div>
+      </td>
+      <td className="px-4 py-3 border-r max-w-[150px]">
+        <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
+            <span className="truncate">{dateText}</span>
+        </div>
+      </td>
       <td className="p-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -880,9 +879,9 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
+                              {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                              {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                               <th className="px-4 py-2" style={{width: '50px'}}></th>
                           </tr>
@@ -955,9 +954,9 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
+                                    {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                                    {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                                     <th className="px-4 py-2" style={{width: '50px'}}></th>
                                 </tr>
