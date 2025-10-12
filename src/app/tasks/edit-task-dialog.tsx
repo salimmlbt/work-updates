@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { format, isToday, isTomorrow } from 'date-fns'
+import { format, isToday, isTomorrow, isYesterday } from 'date-fns'
 import { Calendar, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -139,6 +139,7 @@ export function EditTaskDialog({
     if (!date) return <span>Pick a date</span>;
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
+    if (isYesterday(date)) return 'Yesterday';
     return format(date, "dd MMM");
   }
 

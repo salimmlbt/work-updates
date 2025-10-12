@@ -36,7 +36,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, isToday, isTomorrow, parseISO } from 'date-fns';
+import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import type { Project, Client, Profile, Team, Task, TaskWithDetails } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
@@ -154,7 +154,8 @@ const AddTaskRow = ({
     if (!date) return <span>Pick a date</span>;
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
-    return format(date, "dd MMM yyyy");
+    if (isYesterday(date)) return 'Yesterday'
+    return format(date, "dd MMM");
   }
 
   // Handle Enter key navigation
@@ -312,7 +313,15 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
   useEffect(() => {
     if (task.deadline) {
       const date = parseISO(task.deadline);
-      setDateText(format(date, 'dd MMM yyyy'));
+      if (isToday(date)) {
+        setDateText('Today');
+      } else if (isTomorrow(date)) {
+        setDateText('Tomorrow');
+      } else if (isYesterday(date)) {
+        setDateText('Yesterday');
+      } else {
+        setDateText(format(date, 'dd MMM'));
+      }
     } else {
       setDateText('No date');
     }
@@ -343,7 +352,6 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
-            <Calendar className="h-4 w-4 shrink-0" />
             <span className="truncate">{dateText}</span>
         </div>
       </td>
