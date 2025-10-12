@@ -240,7 +240,7 @@ const AddTaskRow = ({
               </Select>
           </td>
           <td className="px-4 py-3 border-r">
-             <Select 
+              <Select 
                   onValueChange={setTaskType} 
                   value={taskType} 
                   disabled={!assigneeId || availableTaskTypes.length === 0}
@@ -994,6 +994,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
            <div
             className="flex items-center"
             onMouseEnter={() => setIsSearchOpen(true)}
+            onMouseLeave={() => { if (!searchQuery && searchInputRef.current !== document.activeElement) setIsSearchOpen(false) }}
           >
             <AnimatePresence>
               {isSearchOpen && (
@@ -1085,6 +1086,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     </div>
   );
 }
+
 
 
 
