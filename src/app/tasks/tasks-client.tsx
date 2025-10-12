@@ -252,8 +252,8 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
       </td>
       <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.clients?.name || '-'}</td>
       <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.projects?.name || '-'}</td>
-      <td className="px-4 py-3 text-sm text-gray-600 border-r">
-        <div className="flex items-center gap-2 whitespace-nowrap">
+      <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">
+        <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 shrink-0" />
             <span className="truncate">{dateText}</span>
         </div>
@@ -641,32 +641,34 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                     transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                     className="overflow-hidden"
                   >
-                    <table className="text-left mt-2 table-fixed" style={{minWidth: '1200px'}}>
-                        <thead>
-                            <tr className="border-b border-gray-200">
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Client</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Project</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '200px'}}>Responsible</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
-                                <th className="px-4 py-2" style={{width: '50px'}}></th>
-                            </tr>
-                        </thead>
-                        <TaskTableBody
-                            isOpen={activeTasksOpen}
-                            tasks={activeTasks}
-                            isAddingTask={isAddingTask}
-                            onSaveTask={handleSaveTask}
-                            onCancelAddTask={() => setIsAddingTask(false)}
-                            projects={projects}
-                            clients={clients}
-                            profiles={profiles}
-                            onStatusChange={handleStatusChange}
-                            onEdit={handleEditClick}
-                        />
-                    </table>
+                    <div className="inline-block align-middle">
+                      <table className="text-left mt-2 table-fixed" style={{minWidth: '1200px'}}>
+                          <thead>
+                              <tr className="border-b border-gray-200">
+                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Due date</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
+                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
+                                  <th className="px-4 py-2" style={{width: '50px'}}></th>
+                              </tr>
+                          </thead>
+                          <TaskTableBody
+                              isOpen={activeTasksOpen}
+                              tasks={activeTasks}
+                              isAddingTask={isAddingTask}
+                              onSaveTask={handleSaveTask}
+                              onCancelAddTask={() => setIsAddingTask(false)}
+                              projects={projects}
+                              clients={clients}
+                              profiles={profiles}
+                              onStatusChange={handleStatusChange}
+                              onEdit={handleEditClick}
+                          />
+                      </table>
+                    </div>
                      <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: activeTasksOpen ? 1 : 0 }}
@@ -710,14 +712,15 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                             transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                             className="overflow-hidden"
                         >
+                          <div className="inline-block align-middle">
                             <table className="text-left mt-2 table-fixed" style={{minWidth: '1200px'}}>
                                 <thead>
                                     <tr className="border-b border-gray-200">
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Client</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Project</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '200px'}}>Responsible</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Due date</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                                         <th className="px-4 py-2" style={{width: '50px'}}></th>
@@ -730,6 +733,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                                     onEdit={handleEditClick}
                                 />
                             </table>
+                          </div>
                         </motion.div>
                    </Collapsible.Content>
                 </Collapsible.Root>
