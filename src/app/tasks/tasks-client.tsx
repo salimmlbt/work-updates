@@ -204,7 +204,7 @@ const AddTaskRow = ({
                     </SelectContent>
                 </Select>
             </td>
-            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">
+            <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
               <div className="flex items-center gap-2">
                 {statusIcons['todo']}
                 <span>{statusLabels['todo']}</span>
@@ -236,7 +236,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
   return (
     <>
       <td className="px-4 py-3 border-r max-w-[250px]">
-        <div className="flex items-center gap-3 truncate whitespace-nowrap" title={task.description}>
+        <div className="flex items-center gap-3 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
           <Checkbox id={`task-${task.id}`} />
           <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink">{task.description}</label>
           {task.tags?.map(tag => (
@@ -251,20 +251,20 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="truncate whitespace-nowrap" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
+        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="truncate whitespace-nowrap" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
+        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="flex items-center gap-2 truncate whitespace-nowrap">
+        <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <Calendar className="h-4 w-4 shrink-0" />
             <span className="truncate">{dateText}</span>
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[180px]">
         {task.profiles ? (
-          <div className="flex items-center gap-2 truncate whitespace-nowrap" title={task.profiles.full_name ?? ''}>
+          <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
             <Avatar className="h-6 w-6 shrink-0">
               <AvatarImage src={getResponsibleAvatar(task.profiles)} />
               <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
@@ -274,9 +274,11 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
         ) : <div className="flex justify-center">-</div>}
       </td>
       <td className="px-4 py-3 border-r max-w-[120px]">
-        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
+         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
+            {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
+        </div>
       </td>
-      <td className="p-0 border-r">
+      <td className="p-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
