@@ -31,7 +31,7 @@ import { AddUserDialog } from './add-user-dialog';
 import { EditUserDialog } from './edit-user-dialog';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
-import { updateUserRole, updateUserTeams, deleteTeam, updateUserIsArchived } from './actions';
+import { updateUserRole, updateUserTeams, deleteTeam, updateUserIsArchived, deleteUserPermanently } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { RenameTeamDialog } from './rename-team-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -60,6 +60,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
   const [isArchiveAlertOpen, setArchiveAlertOpen] = useState(false);
   const [activeUsersOpen, setActiveUsersOpen] = useState(true);
   const [archivedUsersOpen, setArchivedUsersOpen] = useState(true);
+  const [userToDeletePermanently, setUserToDeletePermanently] = useState<Profile | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -168,6 +169,20 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
       setUserToArchive(null);
       setArchiveAlertOpen(false);
   };
+  
+  const handleDeletePermanently = () => {
+    if (!userToDeletePermanently) return;
+    startTransition(async () => {
+      const result = await deleteUserPermanently(userToDeletePermanently.id);
+      if (result.error) {
+        toast({ title: "Error deleting user", description: result.error, variant: "destructive" });
+      } else {
+        toast({ title: "User permanently deleted" });
+        setUsers(prev => prev.filter(p => p.id !== userToDeletePermanently.id));
+      }
+      setUserToDeletePermanently(null);
+    });
+  }
 
   const usersWithData = useMemo(() => users.map((user) => {
     const isAdmin = user.email === 'admin@falaq.com';
@@ -302,7 +317,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                                       Restore User
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => setUserToDeletePermanently(user as Profile)}>
                                       <Trash2 className="mr-2 h-4 w-4" />
                                       Permanently delete user
                                   </DropdownMenuItem>
@@ -520,6 +535,26 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                 >
                    {isPending ? 'Archiving...' : 'Archive'}
                 </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        <AlertDialog open={!!userToDeletePermanently} onOpenChange={(open) => !open && setUserToDeletePermanently(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the user "{userToDeletePermanently?.full_name}" from the system.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleDeletePermanently}
+                        className={cn(buttonVariants({ variant: "destructive" }))}
+                        disabled={isPending}
+                    >
+                       {isPending ? 'Permanently Delete' : 'Permanently Delete'}
+                    </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

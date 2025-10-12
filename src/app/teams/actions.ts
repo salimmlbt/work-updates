@@ -413,6 +413,24 @@ export async function updateUserIsArchived(userId: string, isArchived: boolean) 
   return { success: true };
 }
 
+export async function deleteUserPermanently(userId: string) {
+    const supabaseAdmin = createSupabaseAdminClient();
+
+    if (!supabaseAdmin) {
+        return { error: "Admin client not initialized. Cannot delete user." };
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+    if (error) {
+        return { error: `Failed to permanently delete user: ${error.message}` };
+    }
+
+    revalidatePath('/teams');
+    return { success: true };
+}
+
+
 export async function updateUserStatus(userId: string, status: 'Active' | 'Archived') {
     const supabase = createServerClient();
     const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
