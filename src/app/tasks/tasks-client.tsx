@@ -235,10 +235,10 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
   
   return (
     <>
-      <td className="px-4 py-3 text-sm font-medium text-gray-800 border-r whitespace-nowrap truncate">
-        <div className="flex items-center gap-3 truncate">
+      <td className="px-4 py-3 border-r max-w-[250px]">
+        <div className="flex items-center gap-3 truncate whitespace-nowrap" title={task.description}>
           <Checkbox id={`task-${task.id}`} />
-          <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink" title={task.description}>{task.description}</label>
+          <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink">{task.description}</label>
           {task.tags?.map(tag => (
             <Badge
               key={tag}
@@ -250,17 +250,21 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
           ))}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.clients?.name || '-'}</td>
-      <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.projects?.name || '-'}</td>
-      <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">
-        <div className="flex items-center gap-2">
+      <td className="px-4 py-3 border-r max-w-[150px]">
+        <div className="truncate whitespace-nowrap" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
+      </td>
+      <td className="px-4 py-3 border-r max-w-[150px]">
+        <div className="truncate whitespace-nowrap" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
+      </td>
+      <td className="px-4 py-3 border-r max-w-[150px]">
+        <div className="flex items-center gap-2 truncate whitespace-nowrap">
             <Calendar className="h-4 w-4 shrink-0" />
             <span className="truncate">{dateText}</span>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-800 border-r whitespace-nowrap truncate">
+      <td className="px-4 py-3 border-r max-w-[180px]">
         {task.profiles ? (
-          <div className="flex items-center gap-2 truncate">
+          <div className="flex items-center gap-2 truncate whitespace-nowrap" title={task.profiles.full_name ?? ''}>
             <Avatar className="h-6 w-6 shrink-0">
               <AvatarImage src={getResponsibleAvatar(task.profiles)} />
               <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
@@ -269,10 +273,10 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
           </div>
         ) : <div className="flex justify-center">-</div>}
       </td>
-      <td className="px-4 py-3 text-sm border-r whitespace-nowrap truncate">
+      <td className="px-4 py-3 border-r max-w-[120px]">
         {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
       </td>
-      <td className="p-0 text-sm text-gray-600 border-r whitespace-nowrap">
+      <td className="p-0 border-r">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
