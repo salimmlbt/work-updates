@@ -42,11 +42,11 @@ interface SidebarProps {
 
 export default function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname();
-  const isAdmin = profile?.email === 'admin@falaq.com';
+  const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 
-  const filteredNavItems = navItems.filter(item => isAdmin || userPermissions[item.id] !== 'Restricted');
-  const filteredBottomNavItems = bottomNavItems.filter(item => isAdmin || userPermissions[item.id] !== 'Restricted');
+  const filteredNavItems = navItems.filter(item => isFalaqAdmin || userPermissions[item.id] !== 'Restricted');
+  const filteredBottomNavItems = bottomNavItems.filter(item => isFalaqAdmin || userPermissions[item.id] !== 'Restricted');
 
   const NavLink = ({ item }: { item: typeof navItems[0] }) => {
     const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
@@ -80,7 +80,7 @@ export default function Sidebar({ profile }: SidebarProps) {
         <div className="flex h-20 items-center px-6 border-b border-sidebar-border">
           <Link href="/dashboard" className="flex items-center gap-3 font-semibold">
             <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center">
-              <Logo className="h-6 w-6 text-white" />
+              <Logo className="h-7 w-7 text-white" />
             </div>
             <div className="text-left">
                 <div className="text-xl font-bold tracking-wider text-sidebar-foreground">FALAQ</div>
