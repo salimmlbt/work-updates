@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -240,7 +241,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
   
     return (
         <React.Fragment>
-            <td className="px-4 py-3 text-sm font-medium text-gray-800 border-r">
+            <td className="px-4 py-3 text-sm font-medium text-gray-800 border-r whitespace-nowrap truncate">
                 <div className="flex items-center gap-3 truncate">
                     <Checkbox id={`task-${task.id}`} />
                     <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink" title={task.description}>{task.description}</label>
@@ -276,10 +277,10 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
                     </div>
                 ) : <div className="flex justify-center">-</div>}
             </td>
-            <td className="px-4 py-3 text-sm border-r whitespace-nowrap">
+            <td className="px-4 py-3 text-sm border-r whitespace-nowrap truncate">
                 {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
             </td>
-            <td className="p-0 text-sm text-gray-600 border-r">
+            <td className="p-0 text-sm text-gray-600 border-r whitespace-nowrap">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
