@@ -261,7 +261,7 @@ const AddTaskRow = ({
                       <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                      {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      {[...new Set(availableTaskTypes)].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
               </Select>
           </td>
@@ -625,6 +625,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
   const [showBin, setShowBin] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [taskView, setTaskView] = useState<'all' | 'mine'>('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const supabase = createClient();
@@ -674,11 +675,16 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
   }, [supabase, projects, clients, profiles]);
 
   const allTasks = useMemo(() => {
-    if (canEditTasks) {
-      return tasks;
+    let tasksToDisplay = tasks;
+
+    if (!canEditTasks) {
+      tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
+    } else if (taskView === 'mine') {
+      tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
     }
-    return tasks.filter(task => task.assignee_id === currentUserProfile?.id);
-  }, [tasks, canEditTasks, currentUserProfile?.id]);
+
+    return tasksToDisplay;
+  }, [tasks, canEditTasks, currentUserProfile?.id, taskView]);
 
   const filteredTasks = useMemo(() => {
     return allTasks.filter(task =>
@@ -1040,7 +1046,28 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                 <Search className="h-5 w-5" />
             </Button>
           </div>
-          <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+          {canEditTasks ? (
+            <div className="flex items-center rounded-lg bg-gray-100 p-1">
+              <Button
+                variant={taskView === 'all' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setTaskView('all')}
+                className={taskView === 'all' ? 'bg-white shadow' : ''}
+              >
+                All Tasks
+              </Button>
+              <Button
+                variant={taskView === 'mine' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setTaskView('mine')}
+                className={taskView === 'mine' ? 'bg-white shadow' : ''}
+              >
+                My Tasks
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+          )}
           {canEditTasks && (
             <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(!showBin)}>
               <Trash2 className="mr-2 h-4 w-4" />
