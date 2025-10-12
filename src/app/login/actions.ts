@@ -7,12 +7,14 @@ import { createServerClient } from '@/lib/supabase/server'
 export async function login(formData: FormData) {
   const supabase = createServerClient()
 
-  const email = formData.get('email') as string
+  const username = formData.get('email') as string
   const password = formData.get('password') as string
 
-  if (!email || !password) {
-    return { error: 'Email and password are required.' }
+  if (!username || !password) {
+    return { error: 'Username and password are required.' }
   }
+
+  const email = `${username}@falaq.com`;
 
   const { error } = await supabase.auth.signInWithPassword({
     email,

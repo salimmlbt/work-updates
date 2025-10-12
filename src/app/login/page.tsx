@@ -16,7 +16,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { cn } from '@/lib/utils'
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address.'),
+  email: z.string().min(1, 'Username is required.'),
   password: z.string().min(1, 'Password is required.'),
 })
 
@@ -65,12 +65,18 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                {...register('email')}
-              />
+              <div className="flex items-center">
+                <Input
+                  id="email"
+                  type="text"
+                  placeholder="username"
+                  className="rounded-r-none"
+                  {...register('email')}
+                />
+                <span className="inline-flex h-10 items-center rounded-r-md border border-l-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+                  @falaq.com
+                </span>
+              </div>
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
