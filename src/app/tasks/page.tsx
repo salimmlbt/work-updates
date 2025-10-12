@@ -30,7 +30,15 @@ export default async function TasksPage() {
         return { ...task, clients: client || null };
     });
 
-    const projects = (tasksData?.map(t => t.projects).filter(Boolean) as Project[] || []);
+    const projectMap = new Map<string, Project>();
+    if (tasksData) {
+      tasksData.forEach(task => {
+        if (task.projects && !projectMap.has(task.projects.id)) {
+          projectMap.set(task.projects.id, task.projects as Project);
+        }
+      });
+    }
+    const projects = Array.from(projectMap.values());
 
     return <TasksClient 
         initialTasks={tasks as TaskWithDetails[]} 
