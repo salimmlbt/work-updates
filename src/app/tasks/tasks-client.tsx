@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -227,13 +226,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
     useEffect(() => {
         if (task.deadline) {
             const date = parseISO(task.deadline);
-            if (isToday(date)) {
-                setDateText('Today');
-            } else if (isTomorrow(date)) {
-                setDateText('Tomorrow');
-            } else {
-                setDateText(format(date, 'dd MMM'));
-            }
+            setDateText(format(date, 'dd MMM'));
         } else {
             setDateText('No date');
         }
@@ -262,18 +255,18 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
                 {task.deadline ? (
                     <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        <span>{dateText}</span>
+                        <span className="truncate">{dateText}</span>
                     </div>
                 ) : <div className="flex justify-center">-</div>}
             </td>
             <td className="px-4 py-3 text-sm text-gray-800 border-r whitespace-nowrap truncate">
                 {task.profiles ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 truncate">
                         <Avatar className="h-6 w-6">
                             <AvatarImage src={getResponsibleAvatar(task.profiles)} />
                             <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
                         </Avatar>
-                        <span>{task.profiles.full_name}</span>
+                        <span className="truncate">{task.profiles.full_name}</span>
                     </div>
                 ) : <div className="flex justify-center">-</div>}
             </td>
