@@ -358,14 +358,14 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
       <td className="px-4 py-3 border-r max-w-[150px]">
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
-      <td className="px-4 py-3 border-r max-w-[120px]">
-         <div className="truncate" title={task.type || ''}>
-            {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
-        </div>
-      </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dateText}</span>
+        </div>
+      </td>
+      <td className="px-4 py-3 border-r max-w-[120px]">
+         <div className="truncate" title={task.type || ''}>
+            {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[180px]">
@@ -697,42 +697,53 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
 
   const handleDeleteTask = () => {
     if (!taskToDelete) return;
+    
+    const originalTasks = [...tasks];
+    setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: true } : t));
+    setDeleteAlertOpen(false);
+
     startTransition(async () => {
         const { error } = await deleteTask(taskToDelete.id);
         if (error) {
-            toast({ title: "Error deleting task", description: error, variant: "destructive" });
+            toast({ title: "Error deleting task", description: error.message, variant: "destructive" });
+            setTasks(originalTasks);
         } else {
             toast({ title: "Task moved to bin" });
-            setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: true } : t));
         }
-        setDeleteAlertOpen(false);
         setTaskToDelete(null);
     });
   }
   
   const handleRestoreTask = (task: TaskWithDetails) => {
+      const originalTasks = [...tasks];
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: false } : t));
+      
       startTransition(async () => {
           const { error } = await restoreTask(task.id);
           if (error) {
-              toast({ title: "Error restoring task", description: error, variant: "destructive" });
+              toast({ title: "Error restoring task", description: error.message, variant: "destructive" });
+              setTasks(originalTasks);
           } else {
               toast({ title: "Task restored" });
-              setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: false } : t));
           }
       });
   }
 
   const handleDeletePermanently = () => {
     if (!taskToDeletePermanently) return;
+    
+    const originalTasks = [...tasks];
+    setTasks(prev => prev.filter(t => t.id !== taskToDeletePermanently!.id));
+    setTaskToDeletePermanently(null);
+
     startTransition(async () => {
-        const { error } = await deleteTaskPermanently(taskToDeletePermanently.id);
+        const { error } = await deleteTaskPermanently(taskToDeletePermanently!.id);
         if (error) {
-            toast({ title: "Error deleting task", description: error, variant: "destructive" });
+            toast({ title: "Error deleting task", description: error.message, variant: "destructive" });
+            setTasks(originalTasks);
         } else {
             toast({ title: "Task permanently deleted" });
-            setTasks(prev => prev.filter(t => t.id !== taskToDeletePermanently.id));
         }
-        setTaskToDeletePermanently(null);
     });
   }
   
@@ -747,7 +758,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     startTransition(async () => {
         const { error } = await updateTaskStatus(taskId, status);
         if (error) {
-            toast({ title: "Error updating status", description: error, variant: "destructive" });
+            toast({ title: "Error updating status", description: error.message, variant: "destructive" });
             setTasks(originalTasks); // Revert on error
         }
     });
@@ -833,8 +844,8 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                               <th className="px-4 py-2" style={{width: '50px'}}></th>
@@ -905,8 +916,8 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                                     <th className="px-4 py-2" style={{width: '50px'}}></th>
@@ -1031,3 +1042,4 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     </div>
   );
 }
+
