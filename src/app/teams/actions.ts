@@ -121,6 +121,10 @@ export async function addUser(formData: FormData) {
     const supabase = createServerClient()
     const supabaseAdmin = createSupabaseAdminClient()
     
+    if (!supabaseAdmin) {
+        return { error: "Admin client not initialized. Cannot create user." }
+    }
+
     const fullName = formData.get('full_name') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -152,15 +156,14 @@ export async function addUser(formData: FormData) {
     }
 
 
-    // 1. Create the user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 1. Create the user in Supabase Auth using the admin client
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,
-      options: {
-        data: {
-          full_name: fullName,
-          avatar_url: avatarUrl,
-        }
+      email_confirm: true, // Auto-confirm email
+      user_metadata: {
+        full_name: fullName,
+        avatar_url: avatarUrl,
       }
     })
 
@@ -299,13 +302,13 @@ export async function updateUser(userId: string, formData: FormData) {
     }
 
 
-    const authUpdateData: { password?: string; data?: any } = {};
+    const authUpdateData: { password?: string; user_metadata?: any } = {};
     if (newPassword) {
         authUpdateData.password = newPassword;
     }
 
     if (avatarUrl !== currentProfile.avatar_url || fullName) {
-        authUpdateData.data = {
+        authUpdateData.user_metadata = {
             full_name: fullName,
             avatar_url: avatarUrl,
         };
