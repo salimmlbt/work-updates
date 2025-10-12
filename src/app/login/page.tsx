@@ -57,7 +57,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-3 mb-4">
-               <Logo className="h-7 w-7 text-primary" />
+               <Logo className="h-6 w-6 text-primary" />
                <CardTitle className="text-xl font-bold">Falaq Updates</CardTitle>
             </div>
           <CardDescription>Enter your credentials to access your account</CardDescription>
