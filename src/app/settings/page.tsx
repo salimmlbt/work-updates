@@ -56,7 +56,9 @@ export default async function SettingsPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6">
-          <ProfileSettings profile={profile} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <ProfileSettings profile={profile} />
+          </div>
         </TabsContent>
         <TabsContent value="appearance" className="mt-6">
           <Card>
