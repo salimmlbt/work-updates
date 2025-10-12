@@ -34,5 +34,3 @@ export type TaskWithDetails = Task & {
   projects: Project | null;
   clients: Client | null;
 }
-
-  

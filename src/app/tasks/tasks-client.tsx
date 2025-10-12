@@ -38,7 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns';
 import { Input } from '@/components/ui/input';
-import type { Project, Client, Profile, Team, Task, TaskWithDetails } from '@/lib/types';
+import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
 import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -315,7 +315,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; }) => {
+const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean }) => {
   const [dateText, setDateText] = useState('No date');
 
   useEffect(() => {
@@ -368,17 +368,19 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
             <span className="truncate">{dateText}</span>
         </div>
       </td>
-      <td className="px-4 py-3 border-r max-w-[180px]">
-        {task.profiles ? (
-          <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
-            <Avatar className="h-6 w-6 shrink-0">
-              <AvatarImage src={getResponsibleAvatar(task.profiles)} />
-              <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
-            </Avatar>
-            <span className="truncate">{task.profiles.full_name}</span>
-          </div>
-        ) : <div className="flex justify-center">-</div>}
-      </td>
+      {canEdit && (
+        <td className="px-4 py-3 border-r max-w-[180px]">
+          {task.profiles ? (
+            <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
+              <Avatar className="h-6 w-6 shrink-0">
+                <AvatarImage src={getResponsibleAvatar(task.profiles)} />
+                <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
+              </Avatar>
+              <span className="truncate">{task.profiles.full_name}</span>
+            </div>
+          ) : <div className="flex justify-center">-</div>}
+        </td>
+      )}
       <td className="p-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -407,6 +409,7 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
         </DropdownMenu>
       </td>
       <td className="px-4 py-3 text-right">
+        {canEdit && (
         <DropdownMenu
           onOpenChange={(open) => setOpenMenuId(open ? task.id : null)}
         >
@@ -436,6 +439,7 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </td>
     </>
   );
@@ -453,7 +457,8 @@ const TaskTableBody = ({
   profiles,
   onStatusChange,
   onEdit,
-  onDelete
+  onDelete,
+  canEdit
 }: {
   isOpen: boolean
   tasks: TaskWithDetails[]
@@ -466,6 +471,7 @@ const TaskTableBody = ({
   onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void
   onEdit: (task: TaskWithDetails) => void;
   onDelete: (task: TaskWithDetails) => void;
+  canEdit: boolean;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -487,7 +493,7 @@ const TaskTableBody = ({
               className={`border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors`}
               data-menu-open={openMenuId === task.id}
             >
-              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} />
+              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} canEdit={canEdit} />
             </motion.tr>
           ))}
       </AnimatePresence>
@@ -504,7 +510,7 @@ const TaskTableBody = ({
   )
 }
 
-const KanbanCard = ({ task, onStatusChange, onEdit, onDelete }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void }) => {
+const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean }) => {
   const cardColors: { [key: string]: string } = {
     "todo": "bg-blue-100",
     "inprogress": "bg-yellow-100",
@@ -515,27 +521,29 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete }: { task: TaskWith
     <Card className={`mb-4 ${cardColors[task.status] ?? 'bg-gray-100'}`}>
       <CardHeader className="p-4 flex flex-row items-start justify-between">
         <CardTitle className="text-sm font-medium">{task.description}</CardTitle>
-         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 -mt-2 -mr-2">
-                    <MoreVertical className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => onEdit(task)}>Edit</DropdownMenuItem>
-                 {statusOptions.map(status => (
-                    <DropdownMenuItem 
-                        key={status}
-                        disabled={task.status === status}
-                        onClick={() => onStatusChange(task.id, status)}
-                        className={cn(task.status === status && 'bg-accent')}
-                    >
-                         Change to {statusLabels[status]}
-                    </DropdownMenuItem>
-                ))}
-                <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+         {canEdit && (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 -mt-2 -mr-2">
+                        <MoreVertical className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => onEdit(task)}>Edit</DropdownMenuItem>
+                    {statusOptions.map(status => (
+                        <DropdownMenuItem 
+                            key={status}
+                            disabled={task.status === status}
+                            onClick={() => onStatusChange(task.id, status)}
+                            className={cn(task.status === status && 'bg-accent')}
+                        >
+                            Change to {statusLabels[status]}
+                        </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>Delete</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+         )}
       </CardHeader>
       <CardContent className="p-4 pt-0">
         {task.tags && (
@@ -567,7 +575,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete }: { task: TaskWith
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void }) => {
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean }) => {
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
@@ -582,11 +590,13 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete }: 
             </h2>
             <div className="bg-gray-100 p-4 rounded-lg h-full">
               {tasksInStatus.map(task => (
-                <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} />
+                <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit}/>
               ))}
-              <Button variant="ghost" className="w-full mt-2 text-gray-500">
-                <Plus className="w-4 h-4 mr-2"/> Add task
-              </Button>
+              {canEdit && (
+                <Button variant="ghost" className="w-full mt-2 text-gray-500">
+                    <Plus className="w-4 h-4 mr-2"/> Add task
+                </Button>
+              )}
             </div>
           </div>
         );
@@ -600,9 +610,10 @@ interface TasksClientProps {
   projects: Project[];
   clients: Client[];
   profiles: Profile[];
+  currentUserProfile: Profile | null;
 }
 
-export default function TasksClient({ initialTasks, projects, clients, profiles }: TasksClientProps) {
+export default function TasksClient({ initialTasks, projects, clients, profiles, currentUserProfile }: TasksClientProps) {
   const [view, setView] = useState('table');
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -623,6 +634,9 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const supabase = createClient();
+
+  const userPermissions = (currentUserProfile?.roles as RoleWithPermissions)?.permissions;
+  const canEditTasks = userPermissions?.tasks === 'Editor';
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -665,11 +679,18 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     }
   }, [supabase, projects, clients, profiles]);
 
+  const allTasks = useMemo(() => {
+    if (canEditTasks) {
+      return tasks;
+    }
+    return tasks.filter(task => task.assignee_id === currentUserProfile?.id);
+  }, [tasks, canEditTasks, currentUserProfile?.id]);
+
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task =>
+    return allTasks.filter(task =>
       task.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [tasks, searchQuery]);
+  }, [allTasks, searchQuery]);
 
 
   const activeTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status !== 'done'), [filteredTasks]);
@@ -863,7 +884,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
+                              {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                               <th className="px-4 py-2" style={{width: '50px'}}></th>
                           </tr>
@@ -871,7 +892,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                       <TaskTableBody
                           isOpen={activeTasksOpen}
                           tasks={activeTasks}
-                          isAddingTask={isAddingTask}
+                          isAddingTask={canEditTasks && isAddingTask}
                           onSaveTask={handleSaveTask}
                           onCancelAddTask={() => setIsAddingTask(false)}
                           projects={projects}
@@ -880,22 +901,25 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                           onStatusChange={handleStatusChange}
                           onEdit={handleEditClick}
                           onDelete={handleDeleteClick}
+                          canEdit={canEditTasks}
                       />
                   </table>
                 </div>
-                 <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: activeTasksOpen ? 1 : 0 }}
-                      transition={{ duration: 0.2 }}
-                  >
-                  <Button
-                      variant="ghost"
-                      className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
-                      onClick={() => setIsAddingTask(true)}
-                  >
-                      <Plus className="mr-2 h-4 w-4" /> Add task
-                  </Button>
-                </motion.div>
+                 {canEditTasks && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: activeTasksOpen ? 1 : 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                    <Button
+                        variant="ghost"
+                        className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                        onClick={() => setIsAddingTask(true)}
+                    >
+                        <Plus className="mr-2 h-4 w-4" /> Add task
+                    </Button>
+                    </motion.div>
+                 )}
               </motion.div>
             </Collapsible.Content>
           </Collapsible.Root>
@@ -935,7 +959,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
+                                    {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                                     <th className="px-4 py-2" style={{width: '50px'}}></th>
                                 </tr>
@@ -946,6 +970,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                                 onStatusChange={handleStatusChange}
                                 onEdit={handleEditClick}
                                 onDelete={handleDeleteClick}
+                                canEdit={canEditTasks}
                             />
                         </table>
                       </div>
@@ -956,7 +981,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
         )}
       </>
     ) : (
-      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} />
+      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} />
     )
   }
 
@@ -965,10 +990,12 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tasks</h1>
-          <Button onClick={() => setIsAddingTask(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add new
-          </Button>
+          {canEditTasks && (
+            <Button onClick={() => setIsAddingTask(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add new
+            </Button>
+          )}
           <div className="flex items-center rounded-lg bg-gray-100 p-1">
             <Button
               variant={view === 'table' ? 'secondary' : 'ghost'}
@@ -1021,10 +1048,12 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
             </Button>
           </div>
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
-          <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(!showBin)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Bin
-          </Button>
+          {canEditTasks && (
+            <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(!showBin)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Bin
+            </Button>
+          )}
         </div>
       </header>
 
@@ -1032,7 +1061,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
         {mainContent()}
       </main>
 
-      {taskToEdit && (
+      {taskToEdit && canEditTasks && (
         <EditTaskDialog
           isOpen={isEditTaskOpen}
           setIsOpen={setEditTaskOpen}
@@ -1086,8 +1115,3 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     </div>
   );
 }
-
-
-
-
-

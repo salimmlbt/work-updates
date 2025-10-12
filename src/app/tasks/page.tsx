@@ -6,6 +6,15 @@ import type { Task, Profile, Client, Project, TaskWithDetails } from '@/lib/type
 
 export default async function TasksPage() {
     const supabase = createServerClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    let userProfile: Profile | null = null;
+    if (user) {
+        const { data: profileData } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))').eq('id', user.id).single();
+        userProfile = profileData as Profile;
+    }
+
     const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*, profiles(*), projects(*)');
@@ -45,5 +54,7 @@ export default async function TasksPage() {
         projects={projects}
         clients={clientsData as Client[] || []}
         profiles={profilesData as Profile[] || []}
+        currentUserProfile={userProfile}
     />
 }
+
