@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useTransition } from 'react'
-import { ArrowUpRight, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { login } from './actions'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { Logo } from '@/components/icons'
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Username is required.'),
@@ -56,7 +57,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-3 mb-4">
                <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center">
-                <ArrowUpRight className="h-6 w-6" />
+                <Logo className="h-6 w-6 text-white" />
                </div>
                <div className="text-left">
                     <div className="text-xl font-bold tracking-wider">FALAQ</div>

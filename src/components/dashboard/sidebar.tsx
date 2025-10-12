@@ -13,11 +13,12 @@ import {
   BillingIcon,
   TeamUsersIcon,
   SettingsIcon,
+  Logo,
 } from '@/components/icons';
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
-import { ArrowUpRight, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 
 const navItems = [
@@ -74,7 +75,7 @@ export default function Sidebar({ profile }: SidebarProps) {
         <div className="flex h-20 items-center px-6 border-b border-sidebar-border">
           <Link href="/dashboard" className="flex items-center gap-3 font-semibold">
             <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center">
-              <ArrowUpRight className="h-6 w-6" />
+              <Logo className="h-6 w-6 text-white" />
             </div>
             <div className="text-left">
                 <div className="text-xl font-bold tracking-wider text-sidebar-foreground">FALAQ</div>
