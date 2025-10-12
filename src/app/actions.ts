@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
 import type { TaskWithAssignee } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export async function addProject(formData: FormData) {
   const supabase = createServerClient()
@@ -516,13 +517,12 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
         email: userData.email,
         avatar_url: userData.avatar_url,
         role_id: userData.role_id,
-        team_id: userData.team_id,
       })
       .select('*, roles(*), teams(*)')
       .single();
 
     if (profileError) {
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        await createSupabaseAdminClient()?.auth.admin.deleteUser(authData.user.id);
         return { error: `Failed to create user profile: ${profileError.message}` };
     }
 
@@ -610,4 +610,50 @@ export async function deleteProjectType(id: string) {
     
     revalidatePath('/projects');
     return { success: true };
+}
+
+const months = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
+
+export async function updateProfile(userId: string, formData: FormData) {
+  const supabase = createServerClient();
+
+  const fullName = formData.get('full_name') as string;
+  const contact = formData.get('contact') as string | null;
+  const instagramUsername = formData.get('instagram_username') as string | null;
+  const birthdayDay = formData.get('birthday_day') as string | null;
+  const birthdayMonth = formData.get('birthday_month') as string | null;
+
+  let instagramUrl = null;
+  if (instagramUsername) {
+    instagramUrl = `https://www.instagram.com/${instagramUsername}`;
+  }
+
+  let birthday = null;
+  if (birthdayDay && birthdayMonth) {
+    const monthIndex = months.indexOf(birthdayMonth);
+    if (monthIndex > -1) {
+      // Use a placeholder year like 2000, since we are not storing it.
+      const date = new Date(2000, monthIndex, parseInt(birthdayDay, 10));
+      birthday = date.toISOString();
+    }
+  }
+
+  const updates = {
+    full_name: fullName,
+    contact,
+    instagram: instagramUrl,
+    birthday,
+  };
+
+  const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+  
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/settings');
+  return { success: true };
 }
