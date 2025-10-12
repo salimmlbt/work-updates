@@ -23,10 +23,6 @@ const months = [
 ];
 
 export function ProfileSettings({ profile }: { profile: Profile | null }) {
-  const nameParts = profile?.full_name?.split(' ') || [''];
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
-
   return (
     <Card className="border-0">
       <CardHeader>
@@ -48,8 +44,8 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
           <div className="space-y-8">
              <div className="space-y-2">
-                <Label htmlFor="first-name">First name</Label>
-                <Input id="first-name" defaultValue={firstName} />
+                <Label htmlFor="full-name">Full name</Label>
+                <Input id="full-name" defaultValue={profile?.full_name ?? ''} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="contact">Contact</Label>
@@ -58,10 +54,6 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
           </div>
           <div className="space-y-8">
              <div className="space-y-2">
-                <Label htmlFor="last-name">Last name</Label>
-                <Input id="last-name" defaultValue={lastName} />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="instagram">Instagram</Label>
                 <Input id="instagram" placeholder="Enter Instagram profile URL" defaultValue={profile?.instagram ?? ''} />
             </div>
