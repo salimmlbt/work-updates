@@ -183,6 +183,15 @@ const AddTaskRow = ({
           setCalendarOpen(true);
       }
   }
+  
+  const handleDueDateKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !calendarOpen) {
+          e.preventDefault();
+          handleSave();
+      } else if (e.key === 'Enter' && calendarOpen) {
+          e.preventDefault();
+      }
+  };
 
   return (
       <tr className="border-b bg-gray-50">
@@ -248,7 +257,7 @@ const AddTaskRow = ({
                   <SelectTrigger 
                       className="bg-white" 
                       ref={typeRef} 
-                      onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); handleSave(); } }}
+                      onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); dueDateRef.current?.focus(); dueDateRef.current?.click(); } }}
                   >
                       <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -264,7 +273,7 @@ const AddTaskRow = ({
                           variant="outline" 
                           className="w-full justify-start text-left font-normal bg-white"
                           ref={dueDateRef} 
-                          onKeyDown={handleCalendarKeyDown}
+                          onKeyDown={handleDueDateKeyDown}
                       >
                           {formatDate(dueDate)}
                       </Button>
@@ -276,7 +285,13 @@ const AddTaskRow = ({
                           onSelect={(date) => {
                               setDueDate(date);
                               setCalendarOpen(false);
-                          }} 
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                setCalendarOpen(false);
+                                dueDateRef.current?.focus();
+                            }
+                          }}
                           initialFocus 
                       />
                   </PopoverContent>
