@@ -45,8 +45,15 @@ export default function Sidebar({ profile }: SidebarProps) {
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 
-  const filteredNavItems = navItems.filter(item => isFalaqAdmin || userPermissions[item.id] !== 'Restricted');
-  const filteredBottomNavItems = bottomNavItems.filter(item => isFalaqAdmin || userPermissions[item.id] !== 'Restricted');
+  const hasAccess = (itemId: string) => {
+    if (isFalaqAdmin) {
+      return true;
+    }
+    return userPermissions[itemId] !== 'Restricted';
+  };
+
+  const filteredNavItems = navItems.filter(item => hasAccess(item.id));
+  const filteredBottomNavItems = bottomNavItems.filter(item => hasAccess(item.id));
 
   const NavLink = ({ item }: { item: typeof navItems[0] }) => {
     const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
