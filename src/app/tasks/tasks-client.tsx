@@ -19,6 +19,7 @@ import {
   Pencil,
   Trash2,
   RefreshCcw,
+  Loader2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -106,6 +107,7 @@ const AddTaskRow = ({
   const [assigneeId, setAssigneeId] = useState('');
   const [taskType, setTaskType] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { toast } = useToast();
 
@@ -136,24 +138,29 @@ const AddTaskRow = ({
   }
 
   const handleSave = async () => {
+      if (isSaving) return;
       if (!taskName || !clientId || !dueDate || !assigneeId || !taskType) {
           toast({ title: "Missing fields", description: "Task Name, Client, Due Date, Assignee, and Type are all required.", variant: "destructive" });
           return;
       }
+      setIsSaving(true);
+      try {
+        const result = await createTask({
+            description: taskName,
+            project_id: projectId === 'no-project' ? null : projectId,
+            client_id: clientId || null,
+            deadline: dueDate.toISOString(),
+            assignee_id: assigneeId,
+            type: taskType || null,
+        });
 
-      const result = await createTask({
-          description: taskName,
-          project_id: projectId === 'no-project' ? null : projectId,
-          client_id: clientId || null,
-          deadline: dueDate.toISOString(),
-          assignee_id: assigneeId,
-          type: taskType || null,
-      });
-
-      if (result.error) {
-          toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
-      } else if (result.data) {
-          onSave(result.data);
+        if (result.error) {
+            toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
+        } else if (result.data) {
+            onSave(result.data);
+        }
+      } finally {
+        setIsSaving(false);
       }
   };
 
@@ -176,14 +183,6 @@ const AddTaskRow = ({
       }
   }
 
-  // Handle Enter specifically for Calendar
-  const handleCalendarKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-          e.preventDefault();
-          setCalendarOpen(true);
-      }
-  }
-  
   const handleDueDateKeyDown = (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !calendarOpen) {
           e.preventDefault();
@@ -285,12 +284,7 @@ const AddTaskRow = ({
                           onSelect={(date) => {
                               setDueDate(date);
                               setCalendarOpen(false);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                setCalendarOpen(false);
-                                dueDateRef.current?.focus();
-                            }
+                              dueDateRef.current?.focus();
                           }}
                           initialFocus 
                       />
@@ -306,7 +300,10 @@ const AddTaskRow = ({
           <td className="px-4 py-3 text-right">
               <div className="flex gap-2 justify-end">
                   <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-                  <Button onClick={handleSave}>Save</Button>
+                  <Button onClick={handleSave} disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save
+                  </Button>
               </div>
           </td>
       </tr>
@@ -1112,3 +1109,4 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
     </div>
   );
 }
+
