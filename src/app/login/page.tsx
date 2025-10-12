@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast'
 import { login } from './actions'
 import { Logo } from '@/components/icons'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -55,9 +56,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-2 mb-4">
-               <Logo className="h-8 w-8 text-primary" />
-               <CardTitle className="text-2xl">Falaq</CardTitle>
+            <div className="flex justify-center items-center gap-3 mb-4">
+               <Logo className="h-7 w-7 text-primary" />
+               <CardTitle className="text-xl font-bold">Falaq</CardTitle>
             </div>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>
