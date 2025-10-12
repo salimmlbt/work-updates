@@ -358,14 +358,14 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
       <td className="px-4 py-3 border-r max-w-[150px]">
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
-      <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
-            <span className="truncate">{dateText}</span>
-        </div>
-      </td>
       <td className="px-4 py-3 border-r max-w-[120px]">
          <div className="truncate" title={task.type || ''}>
             {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
+        </div>
+      </td>
+      <td className="px-4 py-3 border-r max-w-[150px]">
+        <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
+            <span className="truncate">{dateText}</span>
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[180px]">
@@ -844,8 +844,8 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                               <th className="px-4 py-2" style={{width: '50px'}}></th>
@@ -916,8 +916,8 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
                                     <th className="px-4 py-2" style={{width: '50px'}}></th>
@@ -975,7 +975,6 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon"><Search className="h-5 w-5" /></Button>
-          <Button variant="outline"><Users className="mr-2 h-4 w-4" />Group</Button>
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
           <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(!showBin)}>
             <Trash2 className="mr-2 h-4 w-4" />
@@ -1042,4 +1041,5 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     </div>
   );
 }
+
 
