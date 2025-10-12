@@ -414,16 +414,31 @@ export async function updateUserIsArchived(userId: string, isArchived: boolean) 
 }
 
 export async function deleteUserPermanently(userId: string) {
+    const supabase = createServerClient();
     const supabaseAdmin = createSupabaseAdminClient();
 
     if (!supabaseAdmin) {
         return { error: "Admin client not initialized. Cannot delete user." };
     }
 
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    // First delete from auth
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
-    if (error) {
-        return { error: `Failed to permanently delete user: ${error.message}` };
+    if (authError) {
+        return { error: `Failed to permanently delete user from auth: ${authError.message}` };
+    }
+    
+    // Then delete from profiles table. This is necessary if ON DELETE CASCADE is not set on the foreign key.
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+    if (profileError) {
+        // This is a problematic state, the auth user is gone but the profile remains.
+        // Logging it is important.
+        console.error(`CRITICAL: Auth user ${userId} deleted but profile deletion failed: ${profileError.message}`);
+        return { error: `User deleted from auth, but failed to delete profile: ${profileError.message}` };
     }
 
     revalidatePath('/teams');
