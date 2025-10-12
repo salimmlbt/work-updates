@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useForm, Controller } from 'react-hook-form'
@@ -63,7 +64,7 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
       full_name: profile?.full_name ?? '',
       contact: profile?.contact ?? '',
       instagram_username: profile?.instagram ? new URL(profile.instagram).pathname.slice(1) : '',
-      linkedin_username: profile?.linkedin ? profile.linkedin.split('/in/')[1] : '',
+      linkedin_username: profile?.linkedin ? profile.linkedin.split('/in/')[1]?.replace(/\/$/, '') : '',
       birthday_day: profile?.birthday ? new Date(profile.birthday).getDate().toString() : '',
       birthday_month: profile?.birthday ? months[new Date(profile.birthday).getMonth()] : '',
     }
@@ -74,8 +75,8 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
       reset({
         full_name: profile.full_name ?? '',
         contact: profile.contact ?? '',
-        instagram_username: profile.instagram ? new URL(profile.instagram).pathname.slice(1) : '',
-        linkedin_username: profile?.linkedin ? profile.linkedin.split('/in/')[1] : '',
+        instagram_username: profile?.instagram ? new URL(profile.instagram).pathname.slice(1) : '',
+        linkedin_username: profile?.linkedin ? profile.linkedin.split('/in/')[1]?.replace(/\/$/, '') : '',
         birthday_day: profile.birthday ? new Date(profile.birthday).getDate().toString() : '',
         birthday_month: profile.birthday ? months[new Date(profile.birthday).getMonth()] : '',
       })
@@ -131,32 +132,16 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
-            <div className="space-y-8">
-               <div className="space-y-2">
-                  <Label htmlFor="full-name">Full name</Label>
-                  <Input id="full-name" {...register('full_name')} />
-                   {errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}
-                </div>
-            </div>
-            <div className="space-y-8">
-               <div className="space-y-2">
-                  <Label htmlFor="instagram_username">Instagram</Label>
-                   <div className="flex items-center">
-                    <span className="inline-flex h-10 items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
-                      instagram.com/
-                    </span>
-                    <Input
-                      id="instagram_username"
-                      type="text"
-                      placeholder="username"
-                      className="rounded-l-none"
-                      {...register('instagram_username')}
-                    />
-                  </div>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-8">
+              <div className="space-y-2">
+                <Label htmlFor="full-name">Full name</Label>
+                <Input id="full-name" {...register('full_name')} />
+                {errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}
               </div>
             </div>
-            <div className="space-y-8">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
               <div className="space-y-2">
                 <Label htmlFor="linkedin_username">LinkedIn</Label>
                 <div className="flex items-center">
@@ -172,47 +157,62 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
                   />
                 </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
-            <div className="space-y-2">
-              <Label htmlFor="contact">Contact</Label>
-               <Controller
-                name="contact"
-                control={control}
-                render={({ field }) => (
-                  <PhoneInput
-                    {...field}
-                    defaultCountry="in"
-                    inputClassName="!h-10 !w-full !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background file:!border-0 file:!bg-transparent file:!text-sm file:!font-medium placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
-                    countrySelectorStyleProps={{
-                       buttonClassName: "!h-10 !rounded-l-md !border-input !bg-muted"
-                    }}
+              <div className="space-y-2">
+                <Label htmlFor="instagram_username">Instagram</Label>
+                <div className="flex items-center">
+                  <span className="inline-flex h-10 items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+                    instagram.com/
+                  </span>
+                  <Input
+                    id="instagram_username"
+                    type="text"
+                    placeholder="username"
+                    className="rounded-l-none"
+                    {...register('instagram_username')}
                   />
-                )}
-              />
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Birthday</Label>
-              <div className="grid grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
+              <div className="space-y-2">
+                <Label htmlFor="contact">Contact</Label>
+                <Controller
+                  name="contact"
+                  control={control}
+                  render={({ field }) => (
+                    <PhoneInput
+                      {...field}
+                      defaultCountry="in"
+                      inputClassName="!h-10 !w-full !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background file:!border-0 file:!bg-transparent file:!text-sm file:!font-medium placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                      countrySelectorStyleProps={{
+                        buttonClassName: "!h-10 !rounded-l-md !border-input !bg-muted"
+                      }}
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Birthday</Label>
+                <div className="grid grid-cols-2 gap-4">
                   <Input id="day" placeholder="Day" {...register('birthday_day')} />
                   <Controller
                     name="birthday_month"
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <SelectTrigger id="month">
-                              <SelectValue placeholder="Month" />
-                          </SelectTrigger>
-                          <SelectContent>
-                              {months.map((month) => (
-                                  <SelectItem key={month} value={month}>{month}</SelectItem>
-                              ))}
-                          </SelectContent>
+                        <SelectTrigger id="month">
+                          <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {months.map((month) => (
+                            <SelectItem key={month} value={month}>{month}</SelectItem>
+                          ))}
+                        </SelectContent>
                       </Select>
                     )}
                   />
+                </div>
               </div>
             </div>
           </div>
