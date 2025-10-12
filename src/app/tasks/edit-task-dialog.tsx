@@ -197,8 +197,22 @@ export function EditTaskDialog({
                 />
               </div>
             </div>
-
              <div className="grid grid-cols-2 gap-4">
+                 <div className="grid gap-2">
+                    <Label htmlFor="type">Type</Label>
+                     <Controller
+                        name="type"
+                        control={control}
+                        render={({ field }) => (
+                           <Select onValueChange={field.onChange} value={field.value || ''} disabled={!assigneeId || availableTaskTypes.length === 0}>
+                                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                                <SelectContent>
+                                    {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                </div>
                 <div className="grid gap-2">
                     <Label htmlFor="deadline">Due Date</Label>
                     <Controller
@@ -220,7 +234,9 @@ export function EditTaskDialog({
                     />
                     {errors.deadline && <p className="text-sm text-destructive">{errors.deadline.message}</p>}
                 </div>
-                <div className="grid gap-2">
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                 <div className="grid gap-2">
                     <Label htmlFor="assignee_id">Responsible</Label>
                     <Controller
                         name="assignee_id"
@@ -232,23 +248,6 @@ export function EditTaskDialog({
                                   {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
                               </SelectContent>
                           </Select>
-                        )}
-                    />
-                </div>
-            </div>
-             <div className="grid grid-cols-2 gap-4">
-                 <div className="grid gap-2">
-                    <Label htmlFor="type">Type</Label>
-                     <Controller
-                        name="type"
-                        control={control}
-                        render={({ field }) => (
-                           <Select onValueChange={field.onChange} value={field.value || ''} disabled={!assigneeId || availableTaskTypes.length === 0}>
-                                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                                <SelectContent>
-                                    {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
                         )}
                     />
                 </div>
