@@ -42,11 +42,11 @@ interface SidebarProps {
 
 export default function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname();
-
+  const isAdmin = profile?.email === 'admin@falaq.com';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 
-  const filteredNavItems = navItems.filter(item => userPermissions[item.id] !== 'Restricted');
-  const filteredBottomNavItems = bottomNavItems.filter(item => userPermissions[item.id] !== 'Restricted');
+  const filteredNavItems = navItems.filter(item => isAdmin || userPermissions[item.id] !== 'Restricted');
+  const filteredBottomNavItems = bottomNavItems.filter(item => isAdmin || userPermissions[item.id] !== 'Restricted');
 
   const NavLink = ({ item }: { item: typeof navItems[0] }) => {
     const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
