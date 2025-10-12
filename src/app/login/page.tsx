@@ -4,14 +4,13 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useTransition } from 'react'
-import { Loader2 } from 'lucide-react'
+import { ArrowUpRight, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { login } from './actions'
-import { Logo } from '@/components/icons'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -56,8 +55,13 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-3 mb-4">
-               <Logo className="h-5 w-5 text-primary" />
-               <CardTitle className="text-xl font-bold">Falaq Updates</CardTitle>
+               <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center">
+                <ArrowUpRight className="h-6 w-6" />
+               </div>
+               <div className="text-left">
+                    <div className="text-xl font-bold tracking-wider">FALAQ</div>
+                    <div className="text-xs text-muted-foreground">Work Updates</div>
+                </div>
             </div>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>

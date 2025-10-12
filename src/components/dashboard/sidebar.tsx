@@ -4,7 +4,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Logo,
   DashboardIcon,
   ProjectsIcon,
   TasksIcon,
@@ -18,7 +17,7 @@ import {
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
-import { LogOut } from 'lucide-react';
+import { ArrowUpRight, LogOut } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 
 const navItems = [
@@ -74,8 +73,13 @@ export default function Sidebar({ profile }: SidebarProps) {
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-20 items-center px-6 border-b border-sidebar-border">
           <Link href="/dashboard" className="flex items-center gap-3 font-semibold">
-            <Logo className="h-5 w-5 text-sidebar-foreground" />
-            <span className={cn('text-xl font-bold text-sidebar-foreground')}>Falaq Updates</span>
+            <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center">
+              <ArrowUpRight className="h-6 w-6" />
+            </div>
+            <div className="text-left">
+                <div className="text-xl font-bold tracking-wider text-sidebar-foreground">FALAQ</div>
+                <div className="text-xs text-sidebar-foreground/80">Work Updates</div>
+            </div>
           </Link>
         </div>
         <div className="flex-1 overflow-auto py-4">
