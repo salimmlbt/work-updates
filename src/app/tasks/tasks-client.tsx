@@ -24,7 +24,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { getInitials, cn } from '@/lib/utils';
 import {
   Card,
@@ -339,8 +338,7 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
     <>
       <td className="px-4 py-3 border-r max-w-[250px]">
         <div className="truncate flex items-center gap-3 whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
-          <Checkbox id={`task-${task.id}`} />
-          <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink">{task.description}</label>
+          <span className="truncate shrink">{task.description}</span>
           {task.tags?.map(tag => (
             <Badge
               key={tag}
