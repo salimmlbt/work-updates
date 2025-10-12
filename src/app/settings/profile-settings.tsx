@@ -17,6 +17,11 @@ import { getInitials } from '@/lib/utils';
 import type { Profile } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+const months = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
+
 export function ProfileSettings({ profile }: { profile: Profile | null }) {
   const nameParts = profile?.full_name?.split(' ') || [''];
   const firstName = nameParts[0] || '';
@@ -65,17 +70,18 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
         
         <div className="space-y-2">
             <Label>Birthday</Label>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
                 <Input id="day" placeholder="Day" />
                  <Select>
                     <SelectTrigger id="month">
                         <SelectValue placeholder="Month" />
                     </SelectTrigger>
                     <SelectContent>
-                        {/* Add months here */}
+                        {months.map((month) => (
+                            <SelectItem key={month} value={month}>{month}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
-                 <Input id="year" placeholder="Year" />
             </div>
         </div>
 
