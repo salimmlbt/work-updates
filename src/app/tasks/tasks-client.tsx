@@ -227,7 +227,7 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
   useEffect(() => {
     if (task.deadline) {
       const date = parseISO(task.deadline);
-      setDateText(format(date, 'dd MMM'));
+      setDateText(format(date, 'dd MMM yyyy'));
     } else {
       setDateText('No date');
     }
@@ -236,7 +236,7 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
   return (
     <>
       <td className="px-4 py-3 border-r max-w-[250px]">
-        <div className="flex items-center gap-3 truncate" title={task.description}>
+        <div className="truncate flex items-center gap-3" title={task.description}>
           <Checkbox id={`task-${task.id}`} />
           <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink">{task.description}</label>
           {task.tags?.map(tag => (
@@ -306,31 +306,33 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
         </DropdownMenu>
       </td>
       <td className="px-4 py-3 text-right">
-        <DropdownMenu onOpenChange={(isOpen) => setOpenMenuId(isOpen ? task.id : null)}>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:opacity-100"
-                >
-                    <MoreVertical
-                    className="h-4 w-4 text-gray-500 group-hover:text-blue-500 data-[state=open]:text-blue-500 transition-colors"
-                    />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-            onCloseAutoFocus={(e) => e.preventDefault()} // prevents row losing focus/hover flicker
-            className="z-50"
+        <DropdownMenu
+          onOpenChange={(open) => setOpenMenuId(open ? task.id : null)}
+        >
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:opacity-100"
             >
+              <MoreVertical
+                className="h-4 w-4 text-gray-500 group-hover:text-blue-500 data-[state=open]:text-blue-500 transition-colors"
+              />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            onCloseAutoFocus={(e) => e.preventDefault()}
+            className="z-50"
+          >
             <DropdownMenuItem onClick={() => onEdit(task)}>
-                <Pencil className="mr-2 h-4 w-4" /> Edit
+              <Pencil className="mr-2 h-4 w-4" /> Edit
             </DropdownMenuItem>
             <DropdownMenuItem className="text-red-600 focus:text-red-600">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
-            </DropdownMenuContent>
+          </DropdownMenuContent>
         </DropdownMenu>
-    </td>
+      </td>
     </>
   );
 };
@@ -376,7 +378,7 @@ const TaskTableBody = ({
               animate="visible"
               exit="hidden"
               transition={{ duration: 0.2, delay: index * 0.05 }}
-              className={`border-b group hover:bg-muted/50 transition-colors`}
+              className={`border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors`}
               data-menu-open={openMenuId === task.id}
             >
               <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} />
