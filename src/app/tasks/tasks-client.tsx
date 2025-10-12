@@ -257,7 +257,6 @@ const AddTaskRow = ({
                           ref={dueDateRef} 
                           onKeyDown={handleCalendarKeyDown}
                       >
-                          <Calendar className="mr-2 h-4 w-4" />
                           {formatDate(dueDate)}
                       </Button>
                   </PopoverTrigger>
@@ -725,6 +724,10 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
           <Button variant="ghost" size="icon"><Search className="h-5 w-5" /></Button>
           <Button variant="outline"><Users className="mr-2 h-4 w-4" />Group</Button>
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+          <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Bin
+          </Button>
         </div>
       </header>
 
