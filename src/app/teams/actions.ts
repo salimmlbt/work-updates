@@ -172,18 +172,23 @@ export async function addUser(formData: FormData) {
       return { error: "User could not be created in Auth."}
     }
     
-    // 2. Update the user profile with role
+    // 2. Manually insert the profile record
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ role_id: roleId })
-      .eq('id', authData.user.id);
+      .insert({
+        id: authData.user.id,
+        full_name: fullName,
+        email: email,
+        avatar_url: avatarUrl,
+        role_id: roleId,
+      });
       
     if (profileError) {
-        // If updating the profile fails, delete the auth user to avoid orphans.
+        // If creating the profile fails, delete the auth user to avoid orphans.
         if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
-        return { error: `Failed to set user role: ${profileError.message}` };
+        return { error: `Failed to create user profile: ${profileError.message}` };
     }
 
 
@@ -196,6 +201,9 @@ export async function addUser(formData: FormData) {
          if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
+        // Also delete the profile we just created
+        await supabase.from('profiles').delete().eq('id', authData.user.id);
+        
         return { error: `Failed to link user to teams: ${teamLinkError.message}` };
       }
     }
