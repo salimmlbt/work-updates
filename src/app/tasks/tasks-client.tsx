@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -212,8 +213,8 @@ const AddTaskRow = ({
             </td>
             <td className="px-4 py-3 text-right">
                 <div className="flex gap-2 justify-end">
-                    <Button variant="ghost" size="icon" onClick={onCancel}><X className="h-4 w-4" /></Button>
-                    <Button size="icon" onClick={handleSave}><Save className="h-4 w-4" /></Button>
+                    <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+                    <Button onClick={handleSave}>Save</Button>
                 </div>
             </td>
         </tr>
@@ -236,7 +237,7 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
   return (
     <>
       <td className="px-4 py-3 border-r max-w-[250px]">
-        <div className="truncate flex items-center gap-3" title={task.description}>
+        <div className="truncate flex items-center gap-3 whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
           <Checkbox id={`task-${task.id}`} />
           <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink">{task.description}</label>
           {task.tags?.map(tag => (
@@ -251,20 +252,20 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="truncate" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
+        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="truncate whitespace-nowrap" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
+        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="flex items-center gap-2 truncate whitespace-nowrap">
+        <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <Calendar className="h-4 w-4 shrink-0" />
             <span className="truncate">{dateText}</span>
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[180px]">
         {task.profiles ? (
-          <div className="flex items-center gap-2 truncate whitespace-nowrap" title={task.profiles.full_name ?? ''}>
+          <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
             <Avatar className="h-6 w-6 shrink-0">
               <AvatarImage src={getResponsibleAvatar(task.profiles)} />
               <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
@@ -316,7 +317,10 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
               className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:opacity-100"
             >
               <MoreVertical
-                className="h-4 w-4 text-gray-500 group-hover:text-blue-500 data-[state=open]:text-blue-500 transition-colors"
+                className={cn(
+                  "h-4 w-4 transition-colors",
+                  openMenuId === task.id ? "text-blue-500" : "text-gray-500 hover:text-blue-500"
+                )}
               />
             </Button>
           </DropdownMenuTrigger>
