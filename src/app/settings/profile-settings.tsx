@@ -23,7 +23,7 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
   const lastName = nameParts.slice(1).join(' ') || '';
 
   return (
-    <Card>
+    <Card className="border-0">
       <CardHeader>
         <CardTitle>My Profile</CardTitle>
         <CardDescription>Update your personal information.</CardDescription>
@@ -85,4 +85,3 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
     </Card>
   );
 }
-
