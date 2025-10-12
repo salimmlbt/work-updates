@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -222,11 +221,7 @@ const AddTaskRow = ({
 
 
 const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; }) => {
-    const [dateText, setDateText] = useState(() => {
-        if (!task.deadline) return 'No date';
-        const date = parseISO(task.deadline);
-        return format(date, 'dd MMM');
-    });
+    const [dateText, setDateText] = useState(() => 'No date');
 
     useEffect(() => {
         if (task.deadline) {
