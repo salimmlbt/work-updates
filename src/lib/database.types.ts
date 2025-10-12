@@ -334,5 +334,3 @@ export type Database = {
     }
   }
 }
-
-  
