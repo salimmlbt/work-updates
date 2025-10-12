@@ -75,7 +75,7 @@ export default function Sidebar({ profile }: SidebarProps) {
         <div className="flex h-20 items-center px-6 border-b border-sidebar-border">
           <Link href="/dashboard" className="flex items-center gap-3 font-semibold">
             <Logo className="h-7 w-7 text-sidebar-foreground" />
-            <span className={cn('text-xl font-bold text-sidebar-foreground')}>Falaq</span>
+            <span className={cn('text-xl font-bold text-sidebar-foreground')}>Falaq Updates</span>
           </Link>
         </div>
         <div className="flex-1 overflow-auto py-4">
