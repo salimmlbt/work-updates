@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -642,7 +643,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                     transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                     className="overflow-hidden"
                   >
-                    <table className="w-full text-left mt-2 table-fixed">
+                    <table className="text-left mt-2 min-w-full" style={{ tableLayout: 'fixed' }}>
                         <thead>
                             <tr className="border-b border-gray-200">
                                 <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
@@ -711,7 +712,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                             transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                             className="overflow-hidden"
                         >
-                            <table className="w-full text-left mt-2 table-fixed">
+                            <table className="text-left mt-2 min-w-full" style={{ tableLayout: 'fixed' }}>
                                 <thead>
                                     <tr className="border-b border-gray-200">
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
