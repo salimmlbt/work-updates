@@ -205,6 +205,34 @@ export async function addTask(formData: FormData) {
   return { success: true }
 }
 
+export async function updateTask(taskId: string, formData: FormData) {
+    const supabase = createServerClient()
+    
+    const taskData = {
+        description: formData.get('description') as string,
+        deadline: new Date(formData.get('deadline') as string).toISOString(),
+        assignee_id: formData.get('assigneeId') as string,
+        tags: (formData.get('tags') as string)?.split(',').map(tag => tag.trim()).filter(Boolean),
+        project_id: formData.get('project_id') === 'no-project' ? null : formData.get('project_id') as string,
+        client_id: formData.get('client_id') as string,
+        type: formData.get('type') as string,
+    }
+
+    const { data, error } = await supabase
+        .from('tasks')
+        .update(taskData)
+        .eq('id', taskId)
+        .select()
+        .single();
+        
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/tasks')
+    return { data }
+}
+
 export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogress' | 'done') {
   const supabase = createServerClient()
   const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId)
