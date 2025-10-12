@@ -184,12 +184,12 @@ const AddTaskRow = ({
   }
 
   const handleDueDateKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !calendarOpen) {
-          e.preventDefault();
-          handleSave();
-      } else if (e.key === 'Enter' && calendarOpen) {
-          e.preventDefault();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!calendarOpen) {
+        handleSave();
       }
+    }
   };
 
   return (
@@ -674,28 +674,33 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
     }
   }, [supabase, projects, clients, profiles]);
 
-  const allTasks = useMemo(() => {
+  const filteredTasks = useMemo(() => {
     let tasksToDisplay = tasks;
 
-    if (!canEditTasks) {
-      tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
-    } else if (taskView === 'mine') {
+    if (!canEditTasks || taskView === 'mine') {
       tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
     }
 
+    if (searchQuery) {
+        return tasksToDisplay.filter(task =>
+          task.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
     return tasksToDisplay;
-  }, [tasks, canEditTasks, currentUserProfile?.id, taskView]);
-
-  const filteredTasks = useMemo(() => {
-    return allTasks.filter(task =>
-      task.description.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [allTasks, searchQuery]);
-
+  }, [tasks, canEditTasks, currentUserProfile?.id, taskView, searchQuery]);
 
   const activeTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status !== 'done'), [filteredTasks]);
   const completedTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status === 'done'), [filteredTasks]);
-  const deletedTasks = useMemo(() => filteredTasks.filter(t => t.is_deleted), [filteredTasks]);
+  const deletedTasks = useMemo(() => {
+    // Deleted tasks should not be filtered by 'my tasks' view
+    const allDeleted = tasks.filter(t => t.is_deleted);
+    if(searchQuery){
+      return allDeleted.filter(task =>
+        task.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    return allDeleted;
+  }, [tasks, searchQuery]);
   
   const handleSaveTask = (newTask: Task) => {
     const project = projects.find(p => p.id === newTask.project_id);
@@ -1135,4 +1140,5 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
     </div>
   );
 }
+
 
