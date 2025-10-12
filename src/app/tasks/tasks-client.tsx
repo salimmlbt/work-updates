@@ -145,7 +145,7 @@ const AddTaskRow = ({
       if (!date) return <span>Pick a date</span>;
       if (isToday(date)) return 'Today';
       if (isTomorrow(date)) return 'Tomorrow';
-      return format(date, "dd MMM");
+      return format(date, "dd MMM yyyy");
     }
 
     return (
@@ -222,106 +222,106 @@ const AddTaskRow = ({
 
 
 const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; }) => {
-    const [dateText, setDateText] = useState(() => 'No date');
+  const [dateText, setDateText] = useState(() => 'No date');
 
-    useEffect(() => {
-        if (task.deadline) {
-            const date = parseISO(task.deadline);
-            setDateText(format(date, 'dd MMM'));
-        } else {
-            setDateText('No date');
-        }
-    }, [task.deadline]);
+  useEffect(() => {
+    if (task.deadline) {
+      const date = parseISO(task.deadline);
+      setDateText(format(date, 'dd MMM yyyy'));
+    } else {
+      setDateText('No date');
+    }
+  }, [task.deadline]);
   
-    return (
-        <React.Fragment>
-            <td className="px-4 py-3 text-sm font-medium text-gray-800 border-r whitespace-nowrap truncate">
-                <div className="flex items-center gap-3 truncate">
-                    <Checkbox id={`task-${task.id}`} />
-                    <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink" title={task.description}>{task.description}</label>
-                    {task.tags?.map(tag => (
-                        <Badge
-                            key={tag}
-                            variant="secondary"
-                            className={`${tag === 'ASAP' ? 'bg-red-100 text-red-700' : tag === 'Feedback' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'} font-medium`}
-                        >
-                            {tag}
-                        </Badge>
-                    ))}
+  return (
+    <React.Fragment>
+      <td className="px-4 py-3 text-sm font-medium text-gray-800 border-r whitespace-nowrap truncate">
+        <div className="flex items-center gap-3 truncate">
+          <Checkbox id={`task-${task.id}`} />
+          <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink" title={task.description}>{task.description}</label>
+          {task.tags?.map(tag => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className={`${tag === 'ASAP' ? 'bg-red-100 text-red-700' : tag === 'Feedback' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'} font-medium`}
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.clients?.name || '-'}</td>
+      <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.projects?.name || '-'}</td>
+      <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">
+        {task.deadline ? (
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span className="truncate">{dateText}</span>
+          </div>
+        ) : <div className="flex justify-center">-</div>}
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-800 border-r whitespace-nowrap truncate">
+        {task.profiles ? (
+          <div className="flex items-center gap-2 truncate whitespace-nowrap">
+            <Avatar className="h-6 w-6 shrink-0">
+              <AvatarImage src={getResponsibleAvatar(task.profiles)} />
+              <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
+            </Avatar>
+            <span className="truncate">{task.profiles.full_name}</span>
+          </div>
+        ) : <div className="flex justify-center">-</div>}
+      </td>
+      <td className="px-4 py-3 text-sm border-r whitespace-nowrap truncate">
+        {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
+      </td>
+      <td className="p-0 text-sm text-gray-600 border-r whitespace-nowrap">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                {statusIcons[task.status]}
+                <span>{statusLabels[task.status]}</span>
+              </div>
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {statusOptions.map(status => (
+              <DropdownMenuItem
+                key={status}
+                disabled={task.status === status}
+                onClick={() => onStatusChange(task.id, status)}
+                className={cn(task.status === status && 'bg-accent')}
+              >
+                <div className="flex items-center gap-2">
+                  {statusIcons[status]}
+                  <span>{statusLabels[status]}</span>
                 </div>
-            </td>
-            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.clients?.name || '-'}</td>
-            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.projects?.name || '-'}</td>
-            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">
-                {task.deadline ? (
-                    <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span className="truncate">{dateText}</span>
-                    </div>
-                ) : <div className="flex justify-center">-</div>}
-            </td>
-            <td className="px-4 py-3 text-sm text-gray-800 border-r whitespace-nowrap truncate">
-                {task.profiles ? (
-                    <div className="flex items-center gap-2 truncate">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={getResponsibleAvatar(task.profiles)} />
-                            <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
-                        </Avatar>
-                        <span className="truncate">{task.profiles.full_name}</span>
-                    </div>
-                ) : <div className="flex justify-center">-</div>}
-            </td>
-            <td className="px-4 py-3 text-sm border-r whitespace-nowrap truncate">
-                {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
-            </td>
-            <td className="p-0 text-sm text-gray-600 border-r whitespace-nowrap">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
-                            <div className="flex items-center gap-2 whitespace-nowrap">
-                                {statusIcons[task.status]}
-                                <span>{statusLabels[task.status]}</span>
-                            </div>
-                        </div>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        {statusOptions.map(status => (
-                            <DropdownMenuItem
-                                key={status}
-                                disabled={task.status === status}
-                                onClick={() => onStatusChange(task.id, status)}
-                                className={cn(task.status === status && 'bg-accent')}
-                            >
-                                <div className="flex items-center gap-2">
-                                    {statusIcons[status]}
-                                    <span>{statusLabels[status]}</span>
-                                </div>
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </td>
-            <td className="px-4 py-3">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => onEdit(task)}>
-                                <Pencil className="mr-2 h-4 w-4" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600 focus:text-red-600">
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </td>
-        </React.Fragment>
-    );
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+      <td className="px-4 py-3">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => onEdit(task)}>
+                <Pencil className="mr-2 h-4 w-4" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </td>
+    </React.Fragment>
+  );
 };
 
 
@@ -643,17 +643,17 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                     transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                     className="overflow-hidden"
                   >
-                    <table className="text-left mt-2 min-w-full" style={{ tableLayout: 'fixed' }}>
+                    <table className="text-left mt-2 min-w-[1200px]">
                         <thead>
                             <tr className="border-b border-gray-200">
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Client</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Project</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '200px'}}>Responsible</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
-                                <th className="px-4 py-2" style={{width: '50px'}}></th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[300px]">Task Name</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[180px]">Client</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[180px]">Project</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[150px]">Due date</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[200px]">Responsible</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[120px]">Type</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[120px]">Status</th>
+                                <th className="px-4 py-2 w-[50px]"></th>
                             </tr>
                         </thead>
                         <TaskTableBody
@@ -712,7 +712,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                             transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                             className="overflow-hidden"
                         >
-                            <table className="text-left mt-2 min-w-full" style={{ tableLayout: 'fixed' }}>
+                            <table className="text-left mt-2 min-w-[1200px]">
                                 <thead>
                                     <tr className="border-b border-gray-200">
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
