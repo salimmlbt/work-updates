@@ -10,7 +10,6 @@ import {
   Search,
   Users,
   Filter,
-  Calendar,
   MoreVertical,
   Save,
   X,
@@ -185,14 +184,6 @@ const AddTaskRow = ({
       }
   }
 
-  // Handle Enter specifically for Type to save task
-  const handleTypeKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-          e.preventDefault();
-          handleSave();
-      }
-  }
-
   return (
       <tr className="border-b bg-gray-50">
           <td className="px-4 py-3 border-r">
@@ -257,7 +248,7 @@ const AddTaskRow = ({
                   <SelectTrigger 
                       className="bg-white" 
                       ref={typeRef} 
-                      onKeyDown={(e) => handleKeyDown(e, dueDateRef)}
+                      onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); handleSave(); } }}
                   >
                       <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -285,7 +276,6 @@ const AddTaskRow = ({
                           onSelect={(date) => {
                               setDueDate(date);
                               setCalendarOpen(false);
-                              handleSave();
                           }} 
                           initialFocus 
                       />
@@ -983,7 +973,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tasks</h1>
-          {canEditTasks && (
+          {canEditTasks && !isAddingTask && (
             <Button onClick={() => setIsAddingTask(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add new
@@ -1013,7 +1003,6 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
         <div className="flex items-center gap-2">
            <div
             className="flex items-center"
-            onMouseEnter={() => setIsSearchOpen(true)}
             onMouseLeave={() => { if (!searchQuery && searchInputRef.current !== document.activeElement) setIsSearchOpen(false) }}
           >
             <AnimatePresence>
