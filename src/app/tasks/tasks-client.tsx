@@ -113,7 +113,7 @@ const AddTaskRow = ({
 
   const selectedAssignee = profiles.find(p => p.id === assigneeId);
   const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
-  const availableTaskTypes = assigneeTeams.flatMap(t => t.default_tasks || []);
+  const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
   const filteredProjects = clientId ? projects.filter(p => p.client_id === clientId) : [];
 
   const taskInputRef = React.useRef<HTMLInputElement>(null);
@@ -256,7 +256,7 @@ const AddTaskRow = ({
                   <SelectTrigger 
                       className="bg-white" 
                       ref={typeRef} 
-                      onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); dueDateRef.current?.focus(); dueDateRef.current?.click(); } }}
+                      onKeyDown={(e) => handleKeyDown(e, dueDateRef)}
                   >
                       <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -284,7 +284,6 @@ const AddTaskRow = ({
                           onSelect={(date) => {
                               setDueDate(date);
                               setCalendarOpen(false);
-                              dueDateRef.current?.focus();
                           }}
                           initialFocus 
                       />
