@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useTransition, useMemo } from 'react';
+import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
 import {
   ChevronDown,
   Plus,
@@ -618,6 +618,9 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
   const [taskToDeletePermanently, setTaskToDeletePermanently] = useState<TaskWithDetails | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [showBin, setShowBin] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const supabase = createClient();
 
@@ -662,9 +665,16 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     }
   }, [supabase, projects, clients, profiles]);
 
-  const activeTasks = useMemo(() => tasks.filter(t => !t.is_deleted && t.status !== 'done'), [tasks]);
-  const completedTasks = useMemo(() => tasks.filter(t => !t.is_deleted && t.status === 'done'), [tasks]);
-  const deletedTasks = useMemo(() => tasks.filter(t => t.is_deleted), [tasks]);
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task =>
+      task.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [tasks, searchQuery]);
+
+
+  const activeTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status !== 'done'), [filteredTasks]);
+  const completedTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status === 'done'), [filteredTasks]);
+  const deletedTasks = useMemo(() => filteredTasks.filter(t => t.is_deleted), [filteredTasks]);
   
   const handleSaveTask = (newTask: Task) => {
     const project = projects.find(p => p.id === newTask.project_id);
@@ -762,6 +772,13 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
             setTasks(originalTasks); // Revert on error
         }
     });
+  }
+
+  const handleSearchClick = () => {
+    setIsSearchOpen(true);
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 0);
   }
 
   const mainContent = () => {
@@ -939,7 +956,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
         )}
       </>
     ) : (
-      <KanbanBoard tasks={tasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} />
+      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} />
     )
   }
 
@@ -974,7 +991,34 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon"><Search className="h-5 w-5" /></Button>
+           <div
+            className="flex items-center"
+            onMouseEnter={() => setIsSearchOpen(true)}
+          >
+            <AnimatePresence>
+              {isSearchOpen && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 'auto', opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onBlur={() => {if(!searchQuery) setIsSearchOpen(false)}}
+                    className="h-9"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+             <Button variant="ghost" size="icon" onClick={handleSearchClick} className={cn(isSearchOpen && 'rounded-l-none')}>
+                <Search className="h-5 w-5" />
+            </Button>
+          </div>
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
           <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(!showBin)}>
             <Trash2 className="mr-2 h-4 w-4" />
@@ -1041,5 +1085,6 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     </div>
   );
 }
+
 
 
