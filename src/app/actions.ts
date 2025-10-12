@@ -1,5 +1,4 @@
 
-
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -628,6 +627,40 @@ export async function updateProfile(userId: string, formData: FormData) {
   const linkedinUsername = formData.get('linkedin_username') as string | null;
   const birthdayDay = formData.get('birthday_day') as string | null;
   const birthdayMonth = formData.get('birthday_month') as string | null;
+  const avatarFile = formData.get('avatar') as File | null;
+  
+  const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('avatar_url').eq('id', userId).single();
+  if (fetchError) {
+    return { error: 'Could not fetch current profile' };
+  }
+  let avatarUrl = currentProfile.avatar_url;
+
+  if (avatarFile && avatarFile.size > 0) {
+      if (avatarUrl && !avatarUrl.includes('pravatar.cc')) {
+          try {
+            const oldAvatarPath = new URL(avatarUrl).pathname.split('/avatars/').pop();
+            if (oldAvatarPath) {
+                await supabase.storage.from('avatars').remove([oldAvatarPath]);
+            }
+          } catch (e) {
+            console.error("Failed to parse or delete old avatar URL:", e);
+          }
+      }
+      const newFilePath = `public/${Date.now()}_${avatarFile.name}`;
+      const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(newFilePath, avatarFile);
+
+      if (uploadError) {
+          return { error: `Failed to upload new avatar: ${uploadError.message}` };
+      }
+      
+      const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(newFilePath);
+      
+      avatarUrl = publicUrlData.publicUrl;
+  }
 
   let instagramUrl = null;
   if (instagramUsername) {
@@ -644,25 +677,40 @@ export async function updateProfile(userId: string, formData: FormData) {
     const monthIndex = months.indexOf(birthdayMonth);
     if (monthIndex > -1) {
       // Use a placeholder year like 2000, since we are not storing it.
-      const date = new Date(2000, monthIndex, parseInt(birthdayDay, 10));
+      // Store as YYYY-MM-DD format in UTC
+      const date = new Date(Date.UTC(2000, monthIndex, parseInt(birthdayDay, 10)));
       birthday = date.toISOString();
     }
   }
 
-  const updates: { [key: string]: string | null } = {
+  const updates: { [key: string]: any } = {
     full_name: fullName,
     contact: contact,
     instagram: instagramUrl,
     linkedin: linkedinUrl,
     birthday,
+    avatar_url: avatarUrl
   };
 
-  const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+  const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId).select().single();
   
   if (error) {
     return { error: error.message };
   }
 
+  const supabaseAdmin = createSupabaseAdminClient();
+  if (supabaseAdmin) {
+    await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+            full_name: fullName,
+            avatar_url: avatarUrl,
+        }
+    })
+  }
+
   revalidatePath('/settings');
-  return { success: true };
+  revalidatePath('/', 'layout');
+  return { data };
 }
+
+    

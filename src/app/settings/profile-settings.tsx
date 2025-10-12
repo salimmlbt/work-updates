@@ -4,8 +4,8 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { useEffect, useTransition } from 'react'
-import { Loader2 } from 'lucide-react'
+import { useEffect, useTransition, useRef, useState } from 'react'
+import { Loader2, Pencil, User } from 'lucide-react'
 import 'react-international-phone/style.css';
 import {
   Card,
@@ -31,6 +31,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { updateProfile } from '@/app/actions'
 import { PhoneInput } from 'react-international-phone'
+import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
 
 const months = [
   "January", "February", "March", "April", "May", "June", 
@@ -44,6 +45,7 @@ const profileSchema = z.object({
   linkedin_username: z.string().optional(),
   birthday_day: z.string().optional(),
   birthday_month: z.string().optional(),
+  avatar: z.any().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -51,12 +53,16 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 export function ProfileSettings({ profile }: { profile: Profile | null }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -65,8 +71,9 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
       contact: profile?.contact ?? '',
       instagram_username: profile?.instagram ? new URL(profile.instagram).pathname.slice(1) : '',
       linkedin_username: profile?.linkedin ? profile.linkedin.split('/in/')[1]?.replace(/\/$/, '') : '',
-      birthday_day: profile?.birthday ? new Date(profile.birthday).getDate().toString() : '',
-      birthday_month: profile?.birthday ? months[new Date(profile.birthday).getMonth()] : '',
+      birthday_day: profile?.birthday ? new Date(profile.birthday).getUTCDate().toString() : '',
+      birthday_month: profile?.birthday ? months[new Date(profile.birthday).getUTCMonth()] : '',
+      avatar: profile?.avatar_url
     }
   })
 
@@ -77,11 +84,33 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
         contact: profile.contact ?? '',
         instagram_username: profile?.instagram ? new URL(profile.instagram).pathname.slice(1) : '',
         linkedin_username: profile?.linkedin ? profile.linkedin.split('/in/')[1]?.replace(/\/$/, '') : '',
-        birthday_day: profile.birthday ? new Date(profile.birthday).getDate().toString() : '',
-        birthday_month: profile.birthday ? months[new Date(profile.birthday).getMonth()] : '',
+        birthday_day: profile.birthday ? new Date(profile.birthday).getUTCDate().toString() : '',
+        birthday_month: profile.birthday ? months[new Date(profile.birthday).getUTCMonth()] : '',
+        avatar: profile.avatar_url
       })
+      setAvatarPreview(profile.avatar_url)
     }
   }, [profile, reset])
+  
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCrop(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    if (e.target) {
+      e.target.value = '';
+    }
+  };
+
+  const onCropComplete = (croppedImage: File) => {
+    setValue('avatar', croppedImage, { shouldDirty: true });
+    setAvatarPreview(URL.createObjectURL(croppedImage));
+    setImageToCrop(null);
+  };
 
 
   const onSubmit = (data: ProfileFormData) => {
@@ -95,6 +124,9 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
       if (data.linkedin_username) formData.append('linkedin_username', data.linkedin_username);
       if (data.birthday_day) formData.append('birthday_day', data.birthday_day);
       if (data.birthday_month) formData.append('birthday_month', data.birthday_month);
+      if (data.avatar instanceof File) {
+        formData.append('avatar', data.avatar)
+      }
 
       const result = await updateProfile(profile.id, formData);
 
@@ -109,11 +141,16 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
           title: "Profile Updated",
           description: "Your profile has been successfully updated."
         })
+        if (result.data?.avatar_url) {
+            setAvatarPreview(result.data.avatar_url);
+        }
+        reset(data); // to reset dirty state
       }
     });
   }
 
   return (
+    <>
     <Card className="border-0">
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardHeader>
@@ -122,10 +159,31 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
         </CardHeader>
         <CardContent className="space-y-8">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={profile?.avatar_url ?? undefined} />
-              <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
-            </Avatar>
+             <div className="relative">
+                <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleAvatarChange}
+                />
+                <Avatar
+                    className="h-24 w-24 cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <AvatarImage src={avatarPreview ?? undefined} />
+                    <AvatarFallback>
+                    <User className="h-12 w-12 text-muted-foreground" />
+                    </AvatarFallback>
+                </Avatar>
+                <button
+                    type="button"
+                    className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <Pencil className="h-4 w-4" />
+                </button>
+            </div>
             <div>
               <p className="font-bold text-lg">{profile?.full_name}</p>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
@@ -225,5 +283,14 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
         </CardContent>
       </form>
     </Card>
+      <ImageCropperDialog
+        isOpen={!!imageToCrop}
+        image={imageToCrop}
+        onClose={() => setImageToCrop(null)}
+        onCropComplete={onCropComplete}
+      />
+    </>
   );
 }
+
+    

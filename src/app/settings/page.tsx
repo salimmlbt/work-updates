@@ -7,12 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  User,
-  Palette,
-  Bell,
-  Lock,
-} from 'lucide-react';
 import { ProfileSettings } from './profile-settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -103,3 +97,5 @@ export default async function SettingsPage() {
     </div>
   );
 }
+
+  
