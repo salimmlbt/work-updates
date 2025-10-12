@@ -181,11 +181,7 @@ const AddTaskRow = ({
   const handleCalendarKeyDown = (e: React.KeyboardEvent) => {
       if (e.key === 'Enter') {
           e.preventDefault();
-          if (dueDate) {
-              setCalendarOpen(false); // Close calendar
-              assigneeRef.current?.focus();
-              assigneeRef.current?.click?.();
-          }
+          setCalendarOpen(true);
       }
   }
 
