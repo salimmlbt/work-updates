@@ -129,6 +129,8 @@ export type Database = {
           role_id: string | null
           status: string | null
           is_archived: boolean
+          contact: string | null
+          instagram: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -138,6 +140,8 @@ export type Database = {
           role_id?: string | null
           status?: string | null
           is_archived?: boolean
+          contact?: string | null
+          instagram?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -147,6 +151,8 @@ export type Database = {
           role_id?: string | null
           status?: string | null
           is_archived?: boolean
+          contact?: string | null
+          instagram?: string | null
         }
         Relationships: [
           {

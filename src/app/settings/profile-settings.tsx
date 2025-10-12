@@ -44,18 +44,16 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
             <Input id="first-name" defaultValue={firstName} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="country">Country</Label>
-            <Select>
-                <SelectTrigger id="country">
-                    <SelectValue placeholder="Country" />
-                </SelectTrigger>
-                <SelectContent>
-                    {/* Add countries here */}
-                </SelectContent>
-            </Select>
+            <Label htmlFor="contact">Contact</Label>
+            <Input id="contact" placeholder="Enter contact number" defaultValue={profile?.contact ?? ''} />
           </div>
         </div>
         
+        <div className="space-y-2">
+            <Label htmlFor="instagram">Instagram</Label>
+            <Input id="instagram" placeholder="Enter Instagram profile URL" defaultValue={profile?.instagram ?? ''} />
+        </div>
+
         <div className="space-y-2">
             <Label>Birthday</Label>
             <div className="grid grid-cols-3 gap-4">
