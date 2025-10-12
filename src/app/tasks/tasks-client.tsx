@@ -204,7 +204,7 @@ const AddTaskRow = ({
                     </SelectContent>
                 </Select>
             </td>
-            <td className="px-4 py-3 text-sm text-gray-600 border-r">
+            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">
               <div className="flex items-center gap-2">
                 {statusIcons['todo']}
                 <span>{statusLabels['todo']}</span>
@@ -222,7 +222,11 @@ const AddTaskRow = ({
 
 
 const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; }) => {
-    const [dateText, setDateText] = useState('');
+    const [dateText, setDateText] = useState(() => {
+        if (!task.deadline) return 'No date';
+        const date = parseISO(task.deadline);
+        return format(date, 'dd MMM');
+    });
 
     useEffect(() => {
         if (task.deadline) {
@@ -242,7 +246,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
     return (
         <React.Fragment>
             <td className="px-4 py-3 text-sm font-medium text-gray-800 border-r">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 truncate">
                     <Checkbox id={`task-${task.id}`} />
                     <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink" title={task.description}>{task.description}</label>
                     {task.tags?.map(tag => (
@@ -256,8 +260,8 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
                     ))}
                 </div>
             </td>
-            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">{task.clients?.name || '-'}</td>
-            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">{task.projects?.name || '-'}</td>
+            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.clients?.name || '-'}</td>
+            <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.projects?.name || '-'}</td>
             <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">
                 {task.deadline ? (
                     <div className="flex items-center gap-2">
@@ -266,7 +270,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
                     </div>
                 ) : <div className="flex justify-center">-</div>}
             </td>
-            <td className="px-4 py-3 text-sm text-gray-800 border-r whitespace-nowrap">
+            <td className="px-4 py-3 text-sm text-gray-800 border-r whitespace-nowrap truncate">
                 {task.profiles ? (
                     <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
@@ -284,7 +288,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
                                 {statusIcons[task.status]}
                                 <span>{statusLabels[task.status]}</span>
                             </div>
@@ -652,14 +656,14 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                     <table className="w-full text-left mt-2 table-fixed">
                         <thead>
                             <tr className="border-b border-gray-200">
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task Name</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Client</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
-                                <th className="px-4 py-2 w-[5%]"></th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Client</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Project</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '200px'}}>Responsible</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
+                                <th className="px-4 py-2" style={{width: '50px'}}></th>
                             </tr>
                         </thead>
                         <TaskTableBody
@@ -721,14 +725,14 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                             <table className="w-full text-left mt-2 table-fixed">
                                 <thead>
                                     <tr className="border-b border-gray-200">
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Task Name</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Client</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[12%]">Project</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Due date</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[15%]">Responsible</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Type</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[10%]">Status</th>
-                                        <th className="px-4 py-2 w-[5%]"></th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Client</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Project</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '200px'}}>Responsible</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
+                                        <th className="px-4 py-2" style={{width: '50px'}}></th>
                                     </tr>
                                 </thead>
                                 <TaskTableBody
