@@ -19,21 +19,21 @@ import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
 import { LogOut } from 'lucide-react';
-import type { Profile } from '@/lib/types';
+import type { Profile, RoleWithPermissions } from '@/lib/types';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-  { href: '/projects', label: 'Projects', icon: ProjectsIcon },
-  { href: '/tasks', label: 'Tasks', icon: TasksIcon },
-  { href: '/clients', label: 'Clients', icon: ClientsIcon },
-  { href: '/calendar', label: 'Calendar', icon: CalendarIconSvg },
-  { href: '/chat', label: 'Chat', icon: ChatIcon },
-  { href: '/billing', label: 'Billing', icon: BillingIcon },
+  { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon, id: 'dashboard' },
+  { href: '/projects', label: 'Projects', icon: ProjectsIcon, id: 'projects' },
+  { href: '/tasks', label: 'Tasks', icon: TasksIcon, id: 'tasks' },
+  { href: '/clients', label: 'Clients', icon: ClientsIcon, id: 'clients' },
+  { href: '/calendar', label: 'Calendar', icon: CalendarIconSvg, id: 'calendar' },
+  { href: '/chat', label: 'Chat', icon: ChatIcon, id: 'chat' },
+  { href: '/billing', label: 'Billing', icon: BillingIcon, id: 'billing' },
 ];
 
 const bottomNavItems = [
-  { href: '/teams', label: 'Team & Users', icon: TeamUsersIcon },
-  { href: '/settings', label: 'Settings', icon: SettingsIcon },
+  { href: '/teams', label: 'Team & Users', icon: TeamUsersIcon, id: 'teams' },
+  { href: '/settings', label: 'Settings', icon: SettingsIcon, id: 'settings' },
 ];
 
 interface SidebarProps {
@@ -42,6 +42,11 @@ interface SidebarProps {
 
 export default function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname();
+
+  const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
+
+  const filteredNavItems = navItems.filter(item => userPermissions[item.id] !== 'Restricted');
+  const filteredBottomNavItems = bottomNavItems.filter(item => userPermissions[item.id] !== 'Restricted');
 
   const NavLink = ({ item }: { item: typeof navItems[0] }) => {
     const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
@@ -85,14 +90,14 @@ export default function Sidebar({ profile }: SidebarProps) {
         </div>
         <div className="flex-1 overflow-auto py-4">
           <nav className={cn('grid items-start gap-1 px-4 text-base font-medium')}>
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <NavLink key={item.href} item={item} />
             ))}
           </nav>
         </div>
         <div className="mt-auto p-4 space-y-4">
           <nav className="grid items-start gap-1 text-base font-medium">
-            {bottomNavItems.map((item) => (
+            {filteredBottomNavItems.map((item) => (
               <NavLink key={item.href} item={item} />
             ))}
             <form action={logout}>
