@@ -64,7 +64,6 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
               <div className="flex items-center">
                 <Input
                   id="email"
@@ -82,10 +81,10 @@ export default function LoginPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
+                placeholder="password"
                 {...register('password')}
               />
               {errors.password && (
