@@ -221,13 +221,13 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; }) => {
+const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; }) => {
   const [dateText, setDateText] = useState('No date');
 
   useEffect(() => {
     if (task.deadline) {
       const date = parseISO(task.deadline);
-      setDateText(format(date, 'dd MMM yyyy'));
+      setDateText(format(date, 'dd MMM'));
     } else {
       setDateText('No date');
     }
@@ -236,7 +236,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
   return (
     <>
       <td className="px-4 py-3 border-r max-w-[250px]">
-        <div className="flex items-center gap-3 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
+        <div className="flex items-center gap-3 truncate" title={task.description}>
           <Checkbox id={`task-${task.id}`} />
           <label htmlFor={`task-${task.id}`} className="cursor-pointer truncate shrink">{task.description}</label>
           {task.tags?.map(tag => (
@@ -251,20 +251,20 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
+        <div className="truncate" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
+        <div className="truncate whitespace-nowrap" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
-        <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
+        <div className="flex items-center gap-2 truncate whitespace-nowrap">
             <Calendar className="h-4 w-4 shrink-0" />
             <span className="truncate">{dateText}</span>
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[180px]">
         {task.profiles ? (
-          <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
+          <div className="flex items-center gap-2 truncate whitespace-nowrap" title={task.profiles.full_name ?? ''}>
             <Avatar className="h-6 w-6 shrink-0">
               <AvatarImage src={getResponsibleAvatar(task.profiles)} />
               <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
@@ -274,7 +274,7 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
         ) : <div className="flex justify-center">-</div>}
       </td>
       <td className="px-4 py-3 border-r max-w-[120px]">
-         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
+         <div className="truncate" title={task.type || ''}>
             {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
         </div>
       </td>
@@ -305,25 +305,32 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
           </DropdownMenuContent>
         </DropdownMenu>
       </td>
-      <td className="px-4 py-3">
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-          <DropdownMenu>
+      <td className="px-4 py-3 text-right">
+        <DropdownMenu onOpenChange={(isOpen) => setOpenMenuId(isOpen ? task.id : null)}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:opacity-100"
+                >
+                    <MoreVertical
+                    className="h-4 w-4 text-gray-500 group-hover:text-blue-500 data-[state=open]:text-blue-500 transition-colors"
+                    />
+                </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => onEdit(task)}>
+            <DropdownMenuContent
+            onCloseAutoFocus={(e) => e.preventDefault()} // prevents row losing focus/hover flicker
+            className="z-50"
+            >
+            <DropdownMenuItem onClick={() => onEdit(task)}>
                 <Pencil className="mr-2 h-4 w-4" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600 focus:text-red-600">
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600 focus:text-red-600">
                 <Trash2 className="mr-2 h-4 w-4" /> Delete
-              </DropdownMenuItem>
+            </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </td>
+        </DropdownMenu>
+    </td>
     </>
   );
 };
@@ -352,6 +359,8 @@ const TaskTableBody = ({
   onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void
   onEdit: (task: TaskWithDetails) => void;
 }) => {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  
   return (
     <tbody>
       <AnimatePresence>
@@ -367,9 +376,10 @@ const TaskTableBody = ({
               animate="visible"
               exit="hidden"
               transition={{ duration: 0.2, delay: index * 0.05 }}
-              className="border-b hover:bg-muted/50 group"
+              className={`border-b group hover:bg-muted/50 transition-colors`}
+              data-menu-open={openMenuId === task.id}
             >
-              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} />
+              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} />
             </motion.tr>
           ))}
       </AnimatePresence>
