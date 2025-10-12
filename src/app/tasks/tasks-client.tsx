@@ -1,8 +1,7 @@
 
-
 'use client'
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useMemo } from 'react';
 import {
   ChevronDown,
   Plus,
@@ -19,10 +18,11 @@ import {
   AlertCircle,
   CheckCircle2,
   Pencil,
-  Trash2
+  Trash2,
+  RefreshCcw,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getInitials, cn } from '@/lib/utils';
@@ -40,7 +40,7 @@ import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import type { Project, Client, Profile, Team, Task, TaskWithDetails } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
-import { updateTaskStatus } from '@/app/actions';
+import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -52,7 +52,16 @@ import {
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditTaskDialog } from './edit-task-dialog';
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const statusIcons = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
@@ -306,7 +315,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; }) => {
+const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; }) => {
   const [dateText, setDateText] = useState('No date');
 
   useEffect(() => {
@@ -422,7 +431,7 @@ const TaskRow = ({ task, onStatusChange, onEdit, openMenuId, setOpenMenuId }: { 
             <DropdownMenuItem onClick={() => onEdit(task)}>
               <Pencil className="mr-2 h-4 w-4" /> Edit
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600 focus:text-red-600">
+            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -443,7 +452,8 @@ const TaskTableBody = ({
   clients,
   profiles,
   onStatusChange,
-  onEdit
+  onEdit,
+  onDelete
 }: {
   isOpen: boolean
   tasks: TaskWithDetails[]
@@ -455,6 +465,7 @@ const TaskTableBody = ({
   profiles?: Profile[],
   onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void
   onEdit: (task: TaskWithDetails) => void;
+  onDelete: (task: TaskWithDetails) => void;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -476,7 +487,7 @@ const TaskTableBody = ({
               className={`border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors`}
               data-menu-open={openMenuId === task.id}
             >
-              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} />
+              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} />
             </motion.tr>
           ))}
       </AnimatePresence>
@@ -493,7 +504,7 @@ const TaskTableBody = ({
   )
 }
 
-const KanbanCard = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void }) => {
+const KanbanCard = ({ task, onStatusChange, onEdit, onDelete }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void }) => {
   const cardColors: { [key: string]: string } = {
     "todo": "bg-blue-100",
     "inprogress": "bg-yellow-100",
@@ -522,7 +533,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails, o
                          Change to {statusLabels[status]}
                     </DropdownMenuItem>
                 ))}
-                <DropdownMenuItem className="text-red-600 focus:text-red-600">Delete</DropdownMenuItem>
+                <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>Delete</DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
@@ -556,7 +567,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails, o
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void }) => {
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void }) => {
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
@@ -571,7 +582,7 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit }: { tasks: T
             </h2>
             <div className="bg-gray-100 p-4 rounded-lg h-full">
               {tasksInStatus.map(task => (
-                <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} />
+                <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} />
               ))}
               <Button variant="ghost" className="w-full mt-2 text-gray-500">
                 <Plus className="w-4 h-4 mr-2"/> Add task
@@ -598,11 +609,16 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  
   const [activeTasksOpen, setActiveTasksOpen] = useState(true)
   const [completedTasksOpen, setCompletedTasksOpen] = useState(false)
   const [taskToEdit, setTaskToEdit] = useState<TaskWithDetails | null>(null);
   const [isEditTaskOpen, setEditTaskOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<TaskWithDetails | null>(null);
+  const [taskToRestore, setTaskToRestore] = useState<TaskWithDetails | null>(null);
+  const [taskToDeletePermanently, setTaskToDeletePermanently] = useState<TaskWithDetails | null>(null);
+  const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [showBin, setShowBin] = useState(false);
+  
   const supabase = createClient();
 
   useEffect(() => {
@@ -646,8 +662,9 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     }
   }, [supabase, projects, clients, profiles]);
 
-  const activeTasks = tasks.filter(t => t.status !== 'done');
-  const completedTasks = tasks.filter(t => t.status === 'done');
+  const activeTasks = useMemo(() => tasks.filter(t => !t.is_deleted && t.status !== 'done'), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter(t => !t.is_deleted && t.status === 'done'), [tasks]);
+  const deletedTasks = useMemo(() => tasks.filter(t => t.is_deleted), [tasks]);
   
   const handleSaveTask = (newTask: Task) => {
     const project = projects.find(p => p.id === newTask.project_id);
@@ -672,6 +689,52 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     setTaskToEdit(task);
     setEditTaskOpen(true);
   }
+
+  const handleDeleteClick = (task: TaskWithDetails) => {
+    setTaskToDelete(task);
+    setDeleteAlertOpen(true);
+  }
+
+  const handleDeleteTask = () => {
+    if (!taskToDelete) return;
+    startTransition(async () => {
+        const { error } = await deleteTask(taskToDelete.id);
+        if (error) {
+            toast({ title: "Error deleting task", description: error, variant: "destructive" });
+        } else {
+            toast({ title: "Task moved to bin" });
+            setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: true } : t));
+        }
+        setDeleteAlertOpen(false);
+        setTaskToDelete(null);
+    });
+  }
+  
+  const handleRestoreTask = (task: TaskWithDetails) => {
+      startTransition(async () => {
+          const { error } = await restoreTask(task.id);
+          if (error) {
+              toast({ title: "Error restoring task", description: error, variant: "destructive" });
+          } else {
+              toast({ title: "Task restored" });
+              setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: false } : t));
+          }
+      });
+  }
+
+  const handleDeletePermanently = () => {
+    if (!taskToDeletePermanently) return;
+    startTransition(async () => {
+        const { error } = await deleteTaskPermanently(taskToDeletePermanently.id);
+        if (error) {
+            toast({ title: "Error deleting task", description: error, variant: "destructive" });
+        } else {
+            toast({ title: "Task permanently deleted" });
+            setTasks(prev => prev.filter(t => t.id !== taskToDeletePermanently.id));
+        }
+        setTaskToDeletePermanently(null);
+    });
+  }
   
   const handleStatusChange = (taskId: string, status: 'todo' | 'inprogress' | 'done') => {
     const originalTasks = [...tasks];
@@ -688,6 +751,185 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
             setTasks(originalTasks); // Revert on error
         }
     });
+  }
+
+  const mainContent = () => {
+    if (showBin) {
+      return (
+        <div className="mb-4 overflow-x-auto">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">
+              Deleted Tasks
+              <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 ml-2">{deletedTasks.length}</span>
+            </h2>
+          </div>
+          {deletedTasks.length > 0 ? (
+            <table className="w-full text-left mt-2">
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[40%]">Task Name</th>
+                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Project</th>
+                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Assignee</th>
+                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {deletedTasks.map(task => (
+                  <tr key={task.id} className="border-b group hover:bg-muted/50">
+                    <td className="px-4 py-3">{task.description}</td>
+                    <td className="px-4 py-3">{task.projects?.name || '-'}</td>
+                    <td className="px-4 py-3">{task.profiles?.full_name || '-'}</td>
+                    <td className="px-4 py-3 text-right">
+                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleRestoreTask(task)}>
+                              <RefreshCcw className="h-4 w-4 mr-2" /> Restore
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => setTaskToDeletePermanently(task)}>
+                              <Trash2 className="h-4 w-4 mr-2" /> Delete Permanently
+                          </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-muted-foreground mt-4 text-center py-8">The bin is empty.</p>
+          )}
+        </div>
+      );
+    }
+    
+    return view === 'table' ? (
+      <>
+        <div className="mb-8 overflow-x-auto">
+          <Collapsible.Root open={activeTasksOpen} onOpenChange={setActiveTasksOpen}>
+            <div className="flex items-center gap-2">
+              <Collapsible.Trigger asChild>
+                <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
+                  <div className="flex items-center gap-2">
+                    <ChevronDown className={cn("w-5 h-5 transition-transform", !activeTasksOpen && "-rotate-90")} />
+                    Active tasks
+                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeTasks.length}</span>
+                  </div>
+                </Button>
+              </Collapsible.Trigger>
+            </div>
+            <Collapsible.Content asChild>
+              <motion.div
+                initial="collapsed"
+                animate={activeTasksOpen ? "open" : "collapsed"}
+                variants={{
+                    open: { opacity: 1, height: 'auto' },
+                    collapsed: { opacity: 0, height: 0 },
+                }}
+                transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                className="overflow-hidden"
+              >
+                <div className="inline-block align-middle">
+                  <table className="text-left mt-2" style={{minWidth: '1200px'}}>
+                      <thead>
+                          <tr className="border-b border-gray-200">
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
+                              <th className="px-4 py-2" style={{width: '50px'}}></th>
+                          </tr>
+                      </thead>
+                      <TaskTableBody
+                          isOpen={activeTasksOpen}
+                          tasks={activeTasks}
+                          isAddingTask={isAddingTask}
+                          onSaveTask={handleSaveTask}
+                          onCancelAddTask={() => setIsAddingTask(false)}
+                          projects={projects}
+                          clients={clients}
+                          profiles={profiles}
+                          onStatusChange={handleStatusChange}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                      />
+                  </table>
+                </div>
+                 <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: activeTasksOpen ? 1 : 0 }}
+                      transition={{ duration: 0.2 }}
+                  >
+                  <Button
+                      variant="ghost"
+                      className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                      onClick={() => setIsAddingTask(true)}
+                  >
+                      <Plus className="mr-2 h-4 w-4" /> Add task
+                  </Button>
+                </motion.div>
+              </motion.div>
+            </Collapsible.Content>
+          </Collapsible.Root>
+        </div>
+
+        {completedTasks.length > 0 && (
+          <div className="mb-4 overflow-x-auto">
+            <Collapsible.Root open={completedTasksOpen} onOpenChange={setCompletedTasksOpen}>
+              <div className="flex items-center gap-2">
+                <Collapsible.Trigger asChild>
+                  <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
+                      <div className="flex items-center gap-2">
+                          <ChevronDown className={cn("w-5 h-5 transition-transform", !completedTasksOpen && "-rotate-90")} />
+                          Completed tasks
+                          <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{completedTasks.length}</span>
+                      </div>
+                  </Button>
+                </Collapsible.Trigger>
+              </div>
+               <Collapsible.Content asChild>
+                    <motion.div
+                        initial="collapsed"
+                        animate={completedTasksOpen ? "open" : "collapsed"}
+                        variants={{
+                            open: { opacity: 1, height: 'auto' },
+                            collapsed: { opacity: 0, height: 0 },
+                        }}
+                        transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                        className="overflow-hidden"
+                    >
+                      <div className="inline-block align-middle">
+                        <table className="text-left mt-2" style={{minWidth: '1200px'}}>
+                            <thead>
+                                <tr className="border-b border-gray-200">
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
+                                    <th className="px-4 py-2" style={{width: '50px'}}></th>
+                                </tr>
+                            </thead>
+                            <TaskTableBody
+                                isOpen={completedTasksOpen}
+                                tasks={completedTasks}
+                                onStatusChange={handleStatusChange}
+                                onEdit={handleEditClick}
+                                onDelete={handleDeleteClick}
+                            />
+                        </table>
+                      </div>
+                    </motion.div>
+               </Collapsible.Content>
+            </Collapsible.Root>
+          </div>
+        )}
+      </>
+    ) : (
+      <KanbanBoard tasks={tasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} />
+    )
   }
 
   return (
@@ -724,7 +966,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
           <Button variant="ghost" size="icon"><Search className="h-5 w-5" /></Button>
           <Button variant="outline"><Users className="mr-2 h-4 w-4" />Group</Button>
           <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
-          <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200">
+          <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(!showBin)}>
             <Trash2 className="mr-2 h-4 w-4" />
             Bin
           </Button>
@@ -732,134 +974,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
       </header>
 
       <main>
-        {view === 'table' ? (
-          <>
-            <div className="mb-8 overflow-x-auto">
-              <Collapsible.Root open={activeTasksOpen} onOpenChange={setActiveTasksOpen}>
-                <div className="flex items-center gap-2">
-                  <Collapsible.Trigger asChild>
-                    <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
-                      <div className="flex items-center gap-2">
-                        <ChevronDown className={cn("w-5 h-5 transition-transform", !activeTasksOpen && "-rotate-90")} />
-                        Active tasks
-                        <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeTasks.length}</span>
-                      </div>
-                    </Button>
-                  </Collapsible.Trigger>
-                </div>
-                <Collapsible.Content asChild>
-                  <motion.div
-                    initial="collapsed"
-                    animate={activeTasksOpen ? "open" : "collapsed"}
-                    variants={{
-                        open: { opacity: 1, height: 'auto' },
-                        collapsed: { opacity: 0, height: 0 },
-                    }}
-                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                    className="overflow-hidden"
-                  >
-                    <div className="inline-block align-middle">
-                      <table className="text-left mt-2" style={{minWidth: '1200px'}}>
-                          <thead>
-                              <tr className="border-b border-gray-200">
-                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
-                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
-                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
-                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
-                                  <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
-                                  <th className="px-4 py-2" style={{width: '50px'}}></th>
-                              </tr>
-                          </thead>
-                          <TaskTableBody
-                              isOpen={activeTasksOpen}
-                              tasks={activeTasks}
-                              isAddingTask={isAddingTask}
-                              onSaveTask={handleSaveTask}
-                              onCancelAddTask={() => setIsAddingTask(false)}
-                              projects={projects}
-                              clients={clients}
-                              profiles={profiles}
-                              onStatusChange={handleStatusChange}
-                              onEdit={handleEditClick}
-                          />
-                      </table>
-                    </div>
-                     <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: activeTasksOpen ? 1 : 0 }}
-                          transition={{ duration: 0.2 }}
-                      >
-                      <Button
-                          variant="ghost"
-                          className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
-                          onClick={() => setIsAddingTask(true)}
-                      >
-                          <Plus className="mr-2 h-4 w-4" /> Add task
-                      </Button>
-                    </motion.div>
-                  </motion.div>
-                </Collapsible.Content>
-              </Collapsible.Root>
-            </div>
-
-            {completedTasks.length > 0 && (
-              <div className="mb-4 overflow-x-auto">
-                <Collapsible.Root open={completedTasksOpen} onOpenChange={setCompletedTasksOpen}>
-                  <div className="flex items-center gap-2">
-                    <Collapsible.Trigger asChild>
-                      <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
-                          <div className="flex items-center gap-2">
-                              <ChevronDown className={cn("w-5 h-5 transition-transform", !completedTasksOpen && "-rotate-90")} />
-                              Completed tasks
-                              <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{completedTasks.length}</span>
-                          </div>
-                      </Button>
-                    </Collapsible.Trigger>
-                  </div>
-                   <Collapsible.Content asChild>
-                        <motion.div
-                            initial="collapsed"
-                            animate={completedTasksOpen ? "open" : "collapsed"}
-                            variants={{
-                                open: { opacity: 1, height: 'auto' },
-                                collapsed: { opacity: 0, height: 0 },
-                            }}
-                            transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                            className="overflow-hidden"
-                        >
-                          <div className="inline-block align-middle">
-                            <table className="text-left mt-2" style={{minWidth: '1200px'}}>
-                                <thead>
-                                    <tr className="border-b border-gray-200">
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
-                                        <th className="px-4 py-2" style={{width: '50px'}}></th>
-                                    </tr>
-                                </thead>
-                                <TaskTableBody
-                                    isOpen={completedTasksOpen}
-                                    tasks={completedTasks}
-                                    onStatusChange={handleStatusChange}
-                                    onEdit={handleEditClick}
-                                />
-                            </table>
-                          </div>
-                        </motion.div>
-                   </Collapsible.Content>
-                </Collapsible.Root>
-              </div>
-            )}
-          </>
-        ) : (
-          <KanbanBoard tasks={tasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} />
-        )}
+        {mainContent()}
       </main>
 
       {taskToEdit && (
@@ -873,6 +988,46 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
           onTaskUpdated={handleTaskUpdated}
         />
       )}
+       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the task "{taskToDelete?.description}" to the bin. You can restore it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteTask}
+              className={cn(buttonVariants({ variant: 'destructive' }))}
+              disabled={isPending}
+            >
+              {isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+       <AlertDialog open={!!taskToDeletePermanently} onOpenChange={(open) => !open && setTaskToDeletePermanently(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone and will permanently delete the task "{taskToDeletePermanently?.description}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePermanently}
+              className={cn(buttonVariants({ variant: 'destructive' }))}
+              disabled={isPending}
+            >
+              {isPending ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

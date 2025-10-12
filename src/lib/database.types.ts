@@ -238,6 +238,7 @@ export type Database = {
           status: "todo" | "inprogress" | "done"
           tags: string[] | null
           type: string | null
+          is_deleted: boolean
         }
         Insert: {
           assignee_id?: string | null
@@ -250,6 +251,7 @@ export type Database = {
           status?: "todo" | "inprogress" | "done"
           tags?: string[] | null
           type?: string | null
+          is_deleted?: boolean
         }
         Update: {
           assignee_id?: string | null
@@ -262,6 +264,7 @@ export type Database = {
           status?: "todo" | "inprogress" | "done"
           tags?: string[] | null
           type?: string | null
+          is_deleted?: boolean
         }
         Relationships: [
           {

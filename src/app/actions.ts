@@ -195,7 +195,7 @@ export async function addTask(formData: FormData) {
     return { error: 'Missing required fields' }
   }
   
-  const { error } = await supabase.from('tasks').insert(taskData)
+  const { error } = await supabase.from('tasks').insert({ ...taskData, is_deleted: false })
 
   if (error) {
     return { error: error.message }
@@ -203,6 +203,7 @@ export async function addTask(formData: FormData) {
 
   revalidatePath('/dashboard')
   revalidatePath('/projects')
+  revalidatePath('/tasks')
   return { success: true }
 }
 
@@ -246,6 +247,43 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
   revalidatePath('/tasks')
   return { success: true }
 }
+
+export async function deleteTask(taskId: string) {
+  const supabase = createServerClient()
+  const { error } = await supabase.from('tasks').update({ is_deleted: true }).eq('id', taskId)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
+export async function restoreTask(taskId: string) {
+  const supabase = createServerClient()
+  const { error } = await supabase.from('tasks').update({ is_deleted: false }).eq('id', taskId)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
+export async function deleteTaskPermanently(taskId: string) {
+  const supabase = createServerClient()
+  const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
 
 export async function prioritizeTasks(tasks: TaskWithAssignee[]) {
   const input: PrioritizeTasksInput = {
@@ -713,5 +751,3 @@ export async function updateProfile(userId: string, formData: FormData) {
   revalidatePath('/', 'layout');
   return { data };
 }
-
-    

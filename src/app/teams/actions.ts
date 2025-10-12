@@ -472,6 +472,7 @@ export async function createTask(taskData: {
         .insert({
             ...taskData,
             status: 'todo',
+            is_deleted: false
         })
         .select()
         .single();
