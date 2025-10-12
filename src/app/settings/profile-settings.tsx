@@ -40,6 +40,7 @@ const profileSchema = z.object({
   full_name: z.string().min(1, 'Full name is required'),
   contact: z.string().optional(),
   instagram_username: z.string().optional(),
+  linkedin_username: z.string().optional(),
   birthday_day: z.string().optional(),
   birthday_month: z.string().optional(),
 });
@@ -62,6 +63,7 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
       full_name: profile?.full_name ?? '',
       contact: profile?.contact ?? '',
       instagram_username: profile?.instagram ? new URL(profile.instagram).pathname.slice(1) : '',
+      linkedin_username: profile?.linkedin ? profile.linkedin.split('/in/')[1] : '',
       birthday_day: profile?.birthday ? new Date(profile.birthday).getDate().toString() : '',
       birthday_month: profile?.birthday ? months[new Date(profile.birthday).getMonth()] : '',
     }
@@ -73,6 +75,7 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
         full_name: profile.full_name ?? '',
         contact: profile.contact ?? '',
         instagram_username: profile.instagram ? new URL(profile.instagram).pathname.slice(1) : '',
+        linkedin_username: profile?.linkedin ? profile.linkedin.split('/in/')[1] : '',
         birthday_day: profile.birthday ? new Date(profile.birthday).getDate().toString() : '',
         birthday_month: profile.birthday ? months[new Date(profile.birthday).getMonth()] : '',
       })
@@ -88,6 +91,7 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
       formData.append('full_name', data.full_name);
       if (data.contact) formData.append('contact', data.contact);
       if (data.instagram_username) formData.append('instagram_username', data.instagram_username);
+      if (data.linkedin_username) formData.append('linkedin_username', data.linkedin_username);
       if (data.birthday_day) formData.append('birthday_day', data.birthday_day);
       if (data.birthday_month) formData.append('birthday_month', data.birthday_month);
 
@@ -127,29 +131,12 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
             <div className="space-y-8">
                <div className="space-y-2">
                   <Label htmlFor="full-name">Full name</Label>
                   <Input id="full-name" {...register('full_name')} />
                    {errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contact">Contact</Label>
-                   <Controller
-                    name="contact"
-                    control={control}
-                    render={({ field }) => (
-                      <PhoneInput
-                        {...field}
-                        defaultCountry="in"
-                        inputClassName="!h-10 !w-full !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background file:!border-0 file:!bg-transparent file:!text-sm file:!font-medium placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
-                        countrySelectorStyleProps={{
-                           buttonClassName: "!h-10 !rounded-l-md !border-input !bg-muted"
-                        }}
-                      />
-                    )}
-                  />
                 </div>
             </div>
             <div className="space-y-8">
@@ -169,9 +156,44 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
                   </div>
               </div>
             </div>
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <Label htmlFor="linkedin_username">LinkedIn</Label>
+                <div className="flex items-center">
+                  <span className="inline-flex h-10 items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+                    linkedin.com/in/
+                  </span>
+                  <Input
+                    id="linkedin_username"
+                    type="text"
+                    placeholder="username"
+                    className="rounded-l-none"
+                    {...register('linkedin_username')}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
+            <div className="space-y-2">
+              <Label htmlFor="contact">Contact</Label>
+               <Controller
+                name="contact"
+                control={control}
+                render={({ field }) => (
+                  <PhoneInput
+                    {...field}
+                    defaultCountry="in"
+                    inputClassName="!h-10 !w-full !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background file:!border-0 file:!bg-transparent file:!text-sm file:!font-medium placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                    countrySelectorStyleProps={{
+                       buttonClassName: "!h-10 !rounded-l-md !border-input !bg-muted"
+                    }}
+                  />
+                )}
+              />
+            </div>
+            <div className="space-y-2">
               <Label>Birthday</Label>
               <div className="grid grid-cols-2 gap-4">
                   <Input id="day" placeholder="Day" {...register('birthday_day')} />
@@ -192,6 +214,7 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
                     )}
                   />
               </div>
+            </div>
           </div>
 
           <Separator />

@@ -625,12 +625,18 @@ export async function updateProfile(userId: string, formData: FormData) {
   const fullName = formData.get('full_name') as string;
   const contact = formData.get('contact') as string | null;
   const instagramUsername = formData.get('instagram_username') as string | null;
+  const linkedinUsername = formData.get('linkedin_username') as string | null;
   const birthdayDay = formData.get('birthday_day') as string | null;
   const birthdayMonth = formData.get('birthday_month') as string | null;
 
   let instagramUrl = null;
   if (instagramUsername) {
     instagramUrl = `https://www.instagram.com/${instagramUsername}`;
+  }
+
+  let linkedinUrl = null;
+  if (linkedinUsername) {
+    linkedinUrl = `https://www.linkedin.com/in/${linkedinUsername}`;
   }
 
   let birthday = null;
@@ -643,10 +649,11 @@ export async function updateProfile(userId: string, formData: FormData) {
     }
   }
 
-  const updates = {
+  const updates: { [key: string]: string | null } = {
     full_name: fullName,
     contact: contact,
     instagram: instagramUrl,
+    linkedin: linkedinUrl,
     birthday,
   };
 

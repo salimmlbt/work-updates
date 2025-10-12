@@ -131,6 +131,7 @@ export type Database = {
           is_archived: boolean
           contact: string | null
           instagram: string | null
+          linkedin: string | null
           birthday: string | null
         }
         Insert: {
@@ -143,6 +144,7 @@ export type Database = {
           is_archived?: boolean
           contact?: string | null
           instagram?: string | null
+          linkedin?: string | null
           birthday?: string | null
         }
         Update: {
@@ -155,6 +157,7 @@ export type Database = {
           is_archived?: boolean
           contact?: string | null
           instagram?: string | null
+          linkedin?: string | null
           birthday?: string | null
         }
         Relationships: [
