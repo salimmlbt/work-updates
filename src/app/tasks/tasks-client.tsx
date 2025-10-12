@@ -252,15 +252,13 @@ const TaskRow = ({ task, onStatusChange, onEdit }: { task: TaskWithDetails; onSt
       </td>
       <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.clients?.name || '-'}</td>
       <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap truncate">{task.projects?.name || '-'}</td>
-      <td className="px-4 py-3 text-sm text-gray-600 border-r whitespace-nowrap">
-        {task.deadline ? (
-          <div className="flex items-center gap-2 whitespace-nowrap">
+      <td className="px-4 py-3 text-sm text-gray-600 border-r">
+        <div className="flex items-center gap-2 whitespace-nowrap">
             <Calendar className="h-4 w-4 shrink-0" />
             <span className="truncate">{dateText}</span>
-          </div>
-        ) : <div className="flex justify-center">-</div>}
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-800 border-r whitespace-nowrap truncate">
+      <td className="px-4 py-3 text-sm text-gray-800 border-r">
         {task.profiles ? (
           <div className="flex items-center gap-2 truncate whitespace-nowrap">
             <Avatar className="h-6 w-6 shrink-0">
@@ -643,17 +641,17 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                     transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                     className="overflow-hidden"
                   >
-                    <table className="text-left mt-2 min-w-[1200px]">
+                    <table className="text-left mt-2 table-fixed" style={{minWidth: '1200px'}}>
                         <thead>
                             <tr className="border-b border-gray-200">
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[300px]">Task Name</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[180px]">Client</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[180px]">Project</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[150px]">Due date</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[200px]">Responsible</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[120px]">Type</th>
-                                <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[120px]">Status</th>
-                                <th className="px-4 py-2 w-[50px]"></th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Client</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Project</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '200px'}}>Responsible</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
+                                <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
+                                <th className="px-4 py-2" style={{width: '50px'}}></th>
                             </tr>
                         </thead>
                         <TaskTableBody
@@ -712,7 +710,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                             transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                             className="overflow-hidden"
                         >
-                            <table className="text-left mt-2 min-w-[1200px]">
+                            <table className="text-left mt-2 table-fixed" style={{minWidth: '1200px'}}>
                                 <thead>
                                     <tr className="border-b border-gray-200">
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '300px'}}>Task Name</th>
