@@ -359,8 +359,8 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
       <td className="px-4 py-3 border-r max-w-[120px]">
-         <div className="truncate" title={task.type || ''}>
-            {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
+        <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
+          {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
@@ -1010,7 +1010,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onBlur={() => {if(!searchQuery) setIsSearchOpen(false)}}
-                    className="h-9"
+                    className="h-9 focus-visible:ring-transparent focus-visible:ring-offset-0"
                   />
                 </motion.div>
               )}
@@ -1085,6 +1085,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
     </div>
   );
 }
+
 
 
 
