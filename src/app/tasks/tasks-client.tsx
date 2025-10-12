@@ -719,7 +719,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles 
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Due date</th>
+                                        <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
                                         <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
