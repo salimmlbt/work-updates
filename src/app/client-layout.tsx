@@ -22,6 +22,8 @@ export default function ClientLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(initialIsAuthenticated);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+
 
   useEffect(() => {
     setIsAuthenticated(initialIsAuthenticated);
@@ -68,11 +70,15 @@ export default function ClientLayout({
   return (
     <div className="flex min-h-screen w-full bg-background">
       {showNav && (
-        <Sidebar profile={profile} />
+        <Sidebar 
+            profile={profile} 
+            isCollapsed={isSidebarCollapsed}
+            setIsCollapsed={setSidebarCollapsed}
+        />
       )}
       <div className={cn(
           "flex flex-1 flex-col transition-all duration-300",
-          showNav && "ml-64"
+          showNav && (isSidebarCollapsed ? "ml-20" : "ml-64")
         )}>
         {showNav && <Header />}
         <main className="flex-1 overflow-y-auto">
