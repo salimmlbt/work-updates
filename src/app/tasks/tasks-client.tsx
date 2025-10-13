@@ -184,11 +184,9 @@ const AddTaskRow = ({
   }
 
   const handleDueDateKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !calendarOpen) {
       e.preventDefault();
-      if (!calendarOpen) {
-        handleSave();
-      }
+      handleSave();
     }
   };
 
@@ -261,7 +259,7 @@ const AddTaskRow = ({
                       <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                      {[...new Set(availableTaskTypes)].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
               </Select>
           </td>
@@ -677,9 +675,13 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
   const filteredTasks = useMemo(() => {
     let tasksToDisplay = tasks;
 
-    if (!canEditTasks || taskView === 'mine') {
+    if (canEditTasks && taskView === 'mine') {
       tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
     }
+    else if (!canEditTasks) {
+       tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
+    }
+
 
     if (searchQuery) {
         return tasksToDisplay.filter(task =>
@@ -690,7 +692,16 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
   }, [tasks, canEditTasks, currentUserProfile?.id, taskView, searchQuery]);
 
   const activeTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status !== 'done'), [filteredTasks]);
-  const completedTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status === 'done'), [filteredTasks]);
+  const completedTasks = useMemo(() => {
+    let tasksToDisplay = tasks;
+    if (canEditTasks && taskView === 'mine') {
+        tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
+    } else if (!canEditTasks) {
+        tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
+    }
+    
+    return tasksToDisplay.filter(t => !t.is_deleted && t.status === 'done')
+  }, [tasks, canEditTasks, currentUserProfile?.id, taskView]);
   const deletedTasks = useMemo(() => {
     // Deleted tasks should not be filtered by 'my tasks' view
     const allDeleted = tasks.filter(t => t.is_deleted);
@@ -880,8 +891,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                 transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                 className="overflow-hidden"
               >
-                <div className="inline-block align-middle">
-                  <table className="text-left mt-2" style={{minWidth: '1200px'}}>
+                  <table className="w-full text-left mt-2" style={{minWidth: '1200px'}}>
                       <thead>
                           <tr className="border-b border-gray-200">
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
@@ -909,7 +919,6 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                           canEdit={canEditTasks}
                       />
                   </table>
-                </div>
                  {canEditTasks && (
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -955,8 +964,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                         transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                         className="overflow-hidden"
                     >
-                      <div className="inline-block align-middle">
-                        <table className="text-left mt-2" style={{minWidth: '1200px'}}>
+                        <table className="w-full text-left mt-2" style={{minWidth: '1200px'}}>
                             <thead>
                                 <tr className="border-b border-gray-200">
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
@@ -978,7 +986,6 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                                 canEdit={canEditTasks}
                             />
                         </table>
-                      </div>
                     </motion.div>
                </Collapsible.Content>
             </Collapsible.Root>
@@ -1140,5 +1147,6 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
     </div>
   );
 }
+
 
 
