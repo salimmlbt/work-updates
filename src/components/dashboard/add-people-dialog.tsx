@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -18,24 +18,30 @@ interface AddPeopleDialogProps {
   setIsOpen: (open: boolean) => void;
   profiles: Profile[];
   currentUser: User | null;
-  selectedMembers: string[];
-  onSave: (selectedMembers: string[]) => void;
+  selectedPeople: string[];
+  onSave: (selectedPeople: string[]) => void;
+  excludeIds?: string[];
+  title: string;
 }
 
-export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, selectedMembers, onSave }: AddPeopleDialogProps) {
+export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, selectedPeople, onSave, excludeIds = [], title }: AddPeopleDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [tempSelected, setTempSelected] = useState<string[]>(selectedMembers);
+  const [tempSelected, setTempSelected] = useState<string[]>(selectedPeople);
 
   useEffect(() => {
-    setTempSelected(selectedMembers);
-  }, [isOpen, selectedMembers]);
+    setTempSelected(selectedPeople);
+  }, [isOpen, selectedPeople]);
+
+  const availableProfiles = useMemo(() => {
+    return profiles.filter(p => p.email !== 'admin@falaq.com' && !excludeIds.includes(p.id));
+  }, [profiles, excludeIds]);
 
   const filteredProfiles = useMemo(() => {
-    return profiles.filter(p =>
+    return availableProfiles.filter(p =>
       p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [profiles, searchQuery]);
+  }, [availableProfiles, searchQuery]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -60,11 +66,12 @@ export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, sele
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-2xl p-0 gap-0">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Add people</h2>
-          </div>
-          <div className="relative">
+        <DialogHeader className="p-6">
+          <DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
+          <DialogDescription>
+            Search for people to add to your project.
+          </DialogDescription>
+          <div className="relative pt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search by name or email"
@@ -73,7 +80,7 @@ export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, sele
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
+        </DialogHeader>
         
         <div className="px-6 py-4 border-y">
             <div className="flex justify-between items-center">
@@ -107,7 +114,6 @@ export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, sele
                         <Checkbox 
                             checked={tempSelected.includes(profile.id)}
                             onCheckedChange={(checked) => handleSelect(!!checked, profile.id)}
-                            disabled={currentUser?.id === profile.id}
                         />
                     </div>
                 ))}

@@ -10,10 +10,10 @@ import {
 } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Plus, ChevronDown, MoreVertical, Pencil, Copy, Trash2 } from 'lucide-react'
+import { Plus, ChevronDown, MoreVertical, Pencil, Copy, Trash2, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState, useTransition } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'
+import { useState, useTransition, useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -62,29 +62,55 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
 
+    const [modifiedPermissions, setModifiedPermissions] = useState<Record<string, PermissionLevel> | null>(null);
+
+    const sortedRoles = [...roles].sort((a, b) => {
+        if (a.name === 'Falaq Admin') return -1;
+        if (b.name === 'Falaq Admin') return 1;
+        return a.name.localeCompare(b.name);
+    });
+
     const currentRole = roles.find(r => r.name === selectedRole);
+
+    useEffect(() => {
+        setModifiedPermissions(null);
+    }, [selectedRole]);
     
     const currentPermissions = currentRole?.name === 'Falaq Admin'
         ? permissionsList.reduce((acc, p) => ({ ...acc, [p.id]: "Editor" as PermissionLevel }), {})
         : currentRole?.permissions || permissionsList.reduce((acc, p) => ({ ...acc, [p.id]: "Editor" as PermissionLevel }), {});
 
-    const handlePermissionChange = (permissionId: string, level: PermissionLevel) => {
-        if (selectedRole === 'Falaq Admin' || !currentRole || currentRole.name === 'Falaq Admin') return;
+    const displayPermissions = modifiedPermissions || currentPermissions;
+    
+    const permissionLevels: PermissionLevel[] = ["Restricted", "Viewer", "Editor"];
 
-        const newPermissions = { ...currentPermissions, [permissionId]: level };
-        
+    const handlePermissionChange = (permissionId: string, level: PermissionLevel) => {
+        if (selectedRole === 'Falaq Admin' || !currentRole) return;
+        const newPermissions = { ...displayPermissions, [permissionId]: level };
+        setModifiedPermissions(newPermissions);
+    }
+    
+    const handleSaveChanges = () => {
+        if (!currentRole || !modifiedPermissions || currentRole.name === 'Falaq Admin') return;
+
         startTransition(async () => {
-            const { error } = await updateRole(currentRole.id, currentRole.name, newPermissions);
+            const { error } = await updateRole(currentRole.id, currentRole.name, modifiedPermissions);
             if (error) {
                 toast({ title: "Error updating permissions", description: error, variant: "destructive" });
             } else {
                  setRoles(prev => prev.map(role => 
                     role.id === currentRole.id
-                        ? { ...role, permissions: newPermissions }
+                        ? { ...role, permissions: modifiedPermissions }
                         : role
                 ));
+                setModifiedPermissions(null);
+                toast({ title: "Permissions saved", description: "Changes have been saved successfully." });
             }
         });
+    }
+
+    const handleCancelChanges = () => {
+        setModifiedPermissions(null);
     }
 
     const handleCreateRole = () => {
@@ -169,13 +195,13 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
 
     return (
     <>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <aside className="md:col-span-1">
+        <div className="flex flex-col md:flex-row gap-8">
+            <aside className="w-full md:w-64">
                 <div className="space-y-4">
                     <div>
                         <h3 className="text-lg font-semibold mb-4">Role</h3>
                         <nav className="space-y-2">
-                            {roles.map(role => (
+                            {sortedRoles.map(role => (
                                 <div key={role.id} className="relative group flex items-center">
                                     <div
                                         role="button"
@@ -244,44 +270,59 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                     </div>
                 </div>
             </aside>
-            <main className="md:col-span-3">
+            <main className="flex-1">
                 <div className="space-y-6">
                     <div>
                         <Button variant="ghost" className="text-lg font-semibold p-0 mb-4 hover:bg-transparent">
                             <ChevronDown className="mr-2 h-5 w-5" />
                             Permissions
                         </Button>
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             {permissionsList.map((permission) => (
-                                <div key={permission.id} className="flex justify-between items-center p-4 border rounded-lg">
-                                    <p>{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
+                                <div key={permission.id} className="flex items-center gap-4">
+                                    <div className="w-80">
+                                        <p className="truncate">{permission.label.replace('{ROLE_NAME}', `"${selectedRole}"`)}</p>
+                                    </div>
                                     <div className="flex gap-2">
-                                        <Select
-                                            value={currentPermissions[permission.id]}
-                                            onValueChange={(value: PermissionLevel) => handlePermissionChange(permission.id, value)}
-                                            disabled={selectedRole === 'Falaq Admin' || isPending}
-                                        >
-                                            <SelectTrigger className="w-[120px]">
-                                                <SelectValue placeholder="Select level" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Restricted">Restricted</SelectItem>
-                                                <SelectItem value="Viewer">Viewer</SelectItem>
-                                                <SelectItem value="Editor">Editor</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                         {permissionLevels.map((level) => (
+                                            <Button
+                                                key={level}
+                                                variant={displayPermissions[permission.id] === level ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => handlePermissionChange(permission.id, level)}
+                                                disabled={selectedRole === 'Falaq Admin'}
+                                                className={cn(
+                                                    "w-24",
+                                                    displayPermissions[permission.id] === level
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'bg-transparent text-foreground'
+                                                )}
+                                            >
+                                                {level}
+                                            </Button>
+                                        ))}
                                     </div>
                                 </div>
                             ))}
                         </div>
+                        {modifiedPermissions && selectedRole !== 'Falaq Admin' && (
+                            <div className="mt-6 flex justify-end gap-2">
+                                <Button variant="ghost" onClick={handleCancelChanges} disabled={isPending}>Cancel</Button>
+                                <Button onClick={handleSaveChanges} disabled={isPending}>
+                                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
         </div>
         <Dialog open={isCreateRoleOpen} onOpenChange={setCreateRoleOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Create role</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold">Create role</DialogTitle>
+                    <DialogDescription>Enter a name for the new role.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                     <Label htmlFor="create-role-name" className="sr-only">Role name</Label>
@@ -296,14 +337,18 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                     <DialogClose asChild>
                         <Button variant="ghost">Cancel</Button>
                     </DialogClose>
-                    <Button onClick={handleCreateRole} disabled={isPending}>Create role</Button>
+                    <Button onClick={handleCreateRole} disabled={isPending || !newRoleName.trim()}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Create role
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
         <Dialog open={isRenameRoleOpen} onOpenChange={setRenameRoleOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Rename role</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold">Rename role</DialogTitle>
+                    <DialogDescription>Enter a new name for the role.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                     <Label htmlFor="rename-role-name" className="sr-only">Role name</Label>
@@ -318,7 +363,10 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
                     <DialogClose asChild>
                         <Button variant="ghost">Cancel</Button>
                     </DialogClose>
-                    <Button onClick={handleRenameRole} disabled={isPending}>Save changes</Button>
+                    <Button onClick={handleRenameRole} disabled={isPending || !newRoleName.trim() || newRoleName.trim() === roleToEdit?.name}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save changes
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -326,9 +374,4 @@ export default function RolesClient({ initialRoles, permissionsList }: RolesClie
   )
 }
     
-
-    
-
-
-
     

@@ -11,11 +11,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { login } from './actions'
-import { Logo } from '@/components/icons'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import { Logo } from '@/components/icons'
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address.'),
+  email: z.string().min(1, 'Username is required.'),
   password: z.string().min(1, 'Password is required.'),
 })
 
@@ -54,31 +55,41 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-2 mb-4">
-               <Logo className="h-8 w-8 text-primary" />
-               <CardTitle className="text-2xl">TaskFlow</CardTitle>
+            <div className="flex justify-center items-center gap-3 mb-4">
+               <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center">
+                <Logo className="h-6 w-6 text-white" />
+               </div>
+               <div className="text-left">
+                    <div className="text-xl font-bold tracking-wider">FALAQ</div>
+                    <div className="text-xs text-muted-foreground">Work Updates</div>
+                </div>
             </div>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                {...register('email')}
-              />
+              <div className="flex items-center">
+                <Input
+                  id="email"
+                  type="text"
+                  placeholder="username"
+                  className="rounded-r-none"
+                  {...register('email')}
+                />
+                <span className="inline-flex h-10 items-center rounded-r-md border border-l-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+                  @falaq.com
+                </span>
+              </div>
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
+                placeholder="password"
                 {...register('password')}
               />
               {errors.password && (

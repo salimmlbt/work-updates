@@ -16,7 +16,6 @@ export const predefinedTasks = [
   "Highlite Cover",
   "Ad Post",
   "Shooting",
-  "Editing",
   "Meeting",
   "Connect",
   "Followup",

@@ -1,9 +1,9 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  WorkUpdatesIcon,
   DashboardIcon,
   ProjectsIcon,
   TasksIcon,
@@ -13,161 +13,119 @@ import {
   BillingIcon,
   TeamUsersIcon,
   SettingsIcon,
+  Logo,
 } from '@/components/icons';
-import { cn } from '@/lib/utils';
-import {
-  TooltipProvider,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@/components/ui/tooltip';
+import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
 import { logout } from '@/app/login/actions';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
-
+import { LogOut } from 'lucide-react';
+import type { Profile, RoleWithPermissions } from '@/lib/types';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-  { href: '/projects', label: 'Projects', icon: ProjectsIcon },
-  { href: '/tasks', label: 'Tasks', icon: TasksIcon },
-  { href: '/clients', label: 'Clients', icon: ClientsIcon },
-  { href: '/calendar', label: 'Calendar', icon: CalendarIconSvg },
-  { href: '/chat', label: 'Chat', icon: ChatIcon },
-  { href: '/billing', label: 'Billing', icon: BillingIcon },
+  { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon, id: 'dashboard' },
+  { href: '/projects', label: 'Projects', icon: ProjectsIcon, id: 'projects' },
+  { href: '/tasks', label: 'Tasks', icon: TasksIcon, id: 'tasks' },
+  { href: '/clients', label: 'Clients', icon: ClientsIcon, id: 'clients' },
+  { href: '/calendar', label: 'Calendar', icon: CalendarIconSvg, id: 'calendar' },
+  { href: '/chat', label: 'Chat', icon: ChatIcon, id: 'chat' },
+  { href: '/billing', label: 'Billing', icon: BillingIcon, id: 'billing' },
 ];
 
 const bottomNavItems = [
-  { href: '/teams', label: 'Team & Users', icon: TeamUsersIcon },
-  { href: '/settings', label: 'Settings', icon: SettingsIcon },
+  { href: '/teams', label: 'Team & Users', icon: TeamUsersIcon, id: 'teams' },
+  { href: '/settings', label: 'Settings', icon: SettingsIcon, id: 'settings' },
 ];
 
 interface SidebarProps {
-  isCollapsed: boolean;
-  setCollapsed: (isCollapsed: boolean) => void;
+    profile: Profile | null;
 }
 
-export default function Sidebar({ isCollapsed, setCollapsed }: SidebarProps) {
+export default function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
+  const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
+  const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const supabase = createClient();
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-    };
-    fetchUser();
-  }, []);
+  const hasAccess = (itemId: string) => {
+    if (isFalaqAdmin) {
+      return true;
+    }
+    return userPermissions[itemId] !== 'Restricted';
+  };
 
-  const NavLink = ({ item }: { item: typeof navItems[0] }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Link
-          href={item.href}
-          className={cn(
-            'flex items-center gap-3 rounded-md px-3 py-2 text-sidebar-foreground transition-all relative',
-            {
-              'bg-sidebar-accent text-sidebar-accent-foreground font-semibold': pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard'),
-              'text-sidebar-icon-unselected hover:bg-sidebar-accent/50': !(pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')),
-              'justify-center': isCollapsed,
-            }
-          )}
-        >
-            <span className="flex items-center gap-3">
-              <item.icon className="h-5 w-5 shrink-0" />
-              <span className={cn('truncate text-sidebar-foreground', { 'sr-only': isCollapsed })}>{item.label}</span>
-            </span>
-          
-        </Link>
-      </TooltipTrigger>
-      {isCollapsed && (
-        <TooltipContent side="right">
-          <p>{item.label}</p>
-        </TooltipContent>
-      )}
-    </Tooltip>
-  );
+  const filteredNavItems = navItems.filter(item => hasAccess(item.id));
+  const filteredBottomNavItems = bottomNavItems.filter(item => hasAccess(item.id));
+
+  const NavLink = ({ item }: { item: typeof navItems[0] }) => {
+    const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
+    return (
+      <Link
+        href={item.href}
+        className={cn(
+          'flex items-center gap-4 rounded-lg px-4 py-2 transition-all',
+          {
+            'bg-sidebar-accent font-semibold': isActive,
+            'hover:bg-sidebar-accent/50': !isActive,
+          }
+        )}
+      >
+        <item.icon className={cn(
+            "h-5 w-5 shrink-0",
+            isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-icon-muted'
+          )} />
+        <span className="truncate text-sidebar-foreground">{item.label}</span>
+      </Link>
+    );
+  };
 
   return (
-    <TooltipProvider>
-      <div className="fixed left-0 top-0 z-20 h-full">
-        <div
-          className={cn(
-            'relative h-screen bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out transform',
-            {
-              'w-52 translate-x-0': !isCollapsed,
-              'w-0 -translate-x-full': isCollapsed,
-            }
-          )}
-        >
-          <div className="absolute right-0 top-0 h-full w-full flex flex-col">
-            <div className="flex h-16 items-center px-4 lg:px-6">
-              <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
-                <WorkUpdatesIcon className="h-6 w-6" />
-                <span className="text-lg text-sidebar-foreground whitespace-nowrap">Work Updates</span>
-              </Link>
+    <div
+      className={cn(
+        'hidden bg-sidebar text-sidebar-foreground md:fixed md:inset-y-0 md:left-0 md:flex md:flex-col transition-all duration-300 z-40 w-64'
+      )}
+    >
+      <div className="flex h-full max-h-screen flex-col gap-2">
+        <div className="flex h-20 items-center px-6 border-b border-sidebar-border">
+          <Link href="/dashboard" className="flex items-center gap-3 font-semibold">
+            <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center">
+              <Logo className="h-7 w-7 text-white" />
             </div>
-
-            <div className="flex-1 overflow-auto py-2">
-              <nav className="grid items-start gap-1 px-0 text-sm font-medium lg:px-4">
-                {navItems.map((item) => (
-                  <NavLink key={item.href} item={item} />
-                ))}
-              </nav>
+            <div className="text-left">
+                <div className="text-xl font-bold tracking-wider text-sidebar-foreground">FALAQ</div>
+                <div className="text-xs text-sidebar-foreground/80">Work Updates</div>
             </div>
-
-            <div className="mt-auto p-2 lg:p-4">
-              <nav className="grid items-start gap-1 text-sm font-medium">
-                {bottomNavItems.map((item) => (
-                  <NavLink key={item.href} item={item} />
-                ))}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <form action={logout}>
-                      <button
-                        className={cn(
-                          'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all',
-                          'hover:bg-sidebar-accent/50'
-                        )}
-                      >
-                        <LogOut className="h-5 w-5 shrink-0" />
-                        <span>Log out</span>
-                      </button>
-                    </form>
-                  </TooltipTrigger>
-                  {isCollapsed && (
-                    <TooltipContent side="right">
-                      <p>Log out</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </nav>
-
-              <div className="mt-4 border-t border-sidebar-border pt-4">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-3 px-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={user?.user_metadata.avatar_url} alt={user?.user_metadata.full_name} />
-                        <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-sidebar-foreground">{user?.user_metadata.full_name}</span>
-                        <span className="text-xs text-sidebar-foreground">{user?.email}</span>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  {isCollapsed && (
-                    <TooltipContent side="right">
-                      <p>{user?.user_metadata.full_name}</p>
-                      <p>{user?.email}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
+          </Link>
+        </div>
+        <div className="flex-1 overflow-auto py-4">
+          <nav className={cn('grid items-start gap-1 px-4 text-base font-medium')}>
+            {filteredNavItems.map((item) => (
+              <NavLink key={item.href} item={item} />
+            ))}
+          </nav>
+        </div>
+        <div className="mt-auto p-4 space-y-4">
+          <nav className="grid items-start gap-1 text-base font-medium">
+            {filteredBottomNavItems.map((item) => (
+              <NavLink key={item.href} item={item} />
+            ))}
+            <form action={logout}>
+              <button className={cn(
+                'flex w-full items-center gap-4 rounded-lg px-4 py-2 transition-all',
+                'hover:bg-sidebar-accent/50'
+              )}>
+                <LogOut className="h-5 w-5 shrink-0 text-sidebar-icon-muted" />
+                <span className="text-white">Log out</span>
+              </button>
+            </form>
+          </nav>
+          <div className="border-t border-sidebar-border pt-4">
+            <div className={cn("flex items-center gap-3 px-3")}>
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={profile?.avatar_url ?? undefined} alt={profile?.full_name ?? ''} />
+                <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
+              </Avatar>
+              <div className={cn("flex flex-col")}>
+                <span className="text-sm font-bold text-sidebar-foreground">{profile?.full_name}</span>
+                <span className="text-xs text-sidebar-foreground/80">{profile?.email}</span>
               </div>
             </div>
           </div>
@@ -192,6 +150,6 @@ export default function Sidebar({ isCollapsed, setCollapsed }: SidebarProps) {
           )}
         </Button>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }

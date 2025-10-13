@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -15,6 +15,7 @@ import {
   Calendar as CalendarIcon,
   Loader2,
   Plus,
+  PauseCircle,
   ChevronDown,
 } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
@@ -39,33 +40,35 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { useToast } from '@/hooks/use-toast'
-import { addProject } from '@/app/actions'
+import { updateProject } from '@/app/actions'
 import { cn, getInitials } from '@/lib/utils'
 import type { Client, Profile, Project, ProjectType } from '@/lib/types'
-import { AddPeopleDialog } from './add-people-dialog'
+import { AddPeopleDialog } from '@/components/dashboard/add-people-dialog'
 import type { User } from '@supabase/supabase-js'
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   leaders: z.array(z.string()),
-  members: z.array(z.string()).min(1, 'At least one member is required'),
+  members: z.array(z.string()),
+  status: z.string().min(1, 'Status is required'),
   priority: z.string().min(1, 'Priority is required'),
   start_date: z.date().optional(),
-  due_date: z.date({ required_error: 'Due date is required.' }),
-  client_id: z.string().min(1, 'Client is required').refine(val => val !== 'no-client', { message: 'Client is required' }),
+  due_date: z.date().optional(),
+  client_id: z.string().nullable().optional(),
   type: z.string().optional(),
 })
 
 type ProjectFormData = z.infer<typeof projectSchema>
 
-interface AddProjectDialogProps {
+interface EditProjectDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
+  project: Project
   clients: Client[]
   profiles: Profile[]
   currentUser: User | null
-  onProjectAdded: (newProject: Project) => void
+  onProjectUpdated: (updatedProject: Project) => void
   projectTypes: ProjectType[]
 }
 
@@ -75,17 +78,26 @@ const priorityOptions = [
     { value: 'Medium', label: 'Medium', icon: Equal, color: 'text-yellow-500' },
     { value: 'Low', label: 'Low', icon: ArrowDown, color: 'text-blue-500' },
     { value: 'Lowest', label: 'Lowest', icon: ChevronsDown, color: 'text-gray-500' },
+    { value: 'None', label: 'None', icon: Equal, color: 'text-gray-400' },
 ]
 
-export function AddProjectDialog({
+const statusOptions = [
+  { value: 'New', label: 'New', icon: Plus },
+  { value: 'On Hold', label: 'On Hold', icon: PauseCircle },
+  { value: 'In Progress', label: 'In Progress', icon: Loader2 },
+  { value: 'Done', label: 'Done', icon: ChevronsUp },
+]
+
+export function EditProjectDialog({
   isOpen,
   setIsOpen,
+  project,
   clients,
   profiles,
   currentUser,
-  onProjectAdded,
+  onProjectUpdated,
   projectTypes
-}: AddProjectDialogProps) {
+}: EditProjectDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
   const [isAddLeadersOpen, setAddLeadersOpen] = useState(false)
@@ -98,60 +110,75 @@ export function AddProjectDialog({
     reset,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
-    defaultValues: {
-      leaders: [],
-      members: [],
-      priority: 'Medium',
-      client_id: undefined,
-      type: undefined,
-    },
   })
+
+  useEffect(() => {
+    if (project) {
+        reset({
+            name: project.name,
+            leaders: project.leaders || [],
+            members: project.members || [],
+            status: project.status || 'New',
+            priority: project.priority || 'None',
+            start_date: project.start_date ? new Date(project.start_date) : undefined,
+            due_date: project.due_date ? new Date(project.due_date) : undefined,
+            client_id: project.client_id,
+            type: project.type || undefined
+        });
+    }
+  }, [project, reset]);
 
   const selectedLeaders = watch('leaders', [])
   const selectedMembers = watch('members', [])
-  
+
   const onSubmit = async (data: ProjectFormData) => {
     startTransition(async () => {
       const formData = new FormData()
       formData.append('name', data.name)
       data.leaders.forEach(id => formData.append('leaders', id))
       data.members.forEach(id => formData.append('members', id))
+      formData.append('status', data.status)
       formData.append('priority', data.priority)
       if (data.start_date) formData.append('start_date', data.start_date.toISOString())
       if (data.due_date) formData.append('due_date', data.due_date.toISOString())
       if (data.client_id) formData.append('client_id', data.client_id)
       if (data.type) formData.append('type', data.type)
       
-      const result = await addProject(formData)
+      const result = await updateProject(project.id, formData)
 
       if (result.error) {
         toast({
-          title: 'Error creating project',
+          title: 'Error updating project',
           description: result.error,
           variant: 'destructive',
         })
-      } else if (result.data) {
+      } else {
         toast({
-          title: 'Project Created',
-          description: `The project "${result.data.name}" has been created successfully.`,
+          title: 'Project Updated',
+          description: `The project "${data.name}" has been updated successfully.`,
         })
-        onProjectAdded(result.data as Project)
+        const updatedProject = {
+          ...project,
+          ...data,
+          start_date: data.start_date?.toISOString() ?? null,
+          due_date: data.due_date?.toISOString() ?? null,
+        }
+        onProjectUpdated(updatedProject)
         setIsOpen(false)
-        reset()
       }
     })
   }
 
   const handleSaveLeaders = (newLeaders: string[]) => {
-    setValue('leaders', newLeaders, { shouldValidate: true })
+    setValue('leaders', newLeaders, { shouldValidate: true, shouldDirty: true })
     setAddLeadersOpen(false)
   }
 
   const handleSaveMembers = (newMembers: string[]) => {
-    setValue('members', newMembers, { shouldValidate: true })
+    setValue('members', newMembers, { shouldValidate: true, shouldDirty: true })
     setAddMembersOpen(false)
   }
 
@@ -170,9 +197,9 @@ export function AddProjectDialog({
             <div className="grid grid-cols-[2fr_1fr] min-h-[500px]">
               <div className="flex flex-col">
                  <DialogHeader className="p-6 pb-0">
-                    <DialogTitle className="text-2xl font-bold">Create new project</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold">Edit project</DialogTitle>
                     <DialogDescription>
-                      Fill in the details below to create a new project.
+                      Update the details below for your project.
                     </DialogDescription>
                   </DialogHeader>
                  <div className="p-6 space-y-6 flex-1">
@@ -180,13 +207,13 @@ export function AddProjectDialog({
                         id="name"
                         placeholder="Project name"
                         {...register('name')}
-                        className={cn(
+                         className={cn(
                             "text-xl font-bold p-2 h-auto",
                             errors.name ? "border-destructive focus-visible:ring-destructive" : "border-input"
                         )}
                     />
                     {errors.name && <p className="text-sm text-destructive -mt-4">{errors.name.message}</p>}
-                    
+
                     <div className="space-y-2">
                         <Label className="text-sm text-muted-foreground">Leaders</Label>
                          <div className="space-y-2">
@@ -222,7 +249,7 @@ export function AddProjectDialog({
 
                     <div className="space-y-2">
                         <Label className="text-sm text-muted-foreground">Members</Label>
-                        <div className="space-y-2">
+                         <div className="space-y-2">
                         {selectedMembers.length > 0 ? (
                             selectedMembers.map(id => {
                             const profile = profiles.find(p => p.id === id);
@@ -255,21 +282,21 @@ export function AddProjectDialog({
                 </div>
                 <div className="px-6 py-4 border-t flex justify-end gap-2">
                    <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                    <Button type="submit" disabled={isPending}>
+                    <Button type="submit" disabled={isPending || !isDirty}>
                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Project
+                        Save Changes
                     </Button>
                 </div>
               </div>
               
               <div className="bg-[#f5f8fa] p-6 space-y-8 border-l">
-                <div>
+                 <div>
                   <Label className="text-sm text-muted-foreground">Client</Label>
                   <Controller
                     name="client_id"
                     control={control}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                      <Select onValueChange={(value) => { field.onChange(value); setValue('client_id', value, { shouldDirty: true }); }} value={field.value ?? undefined}>
                         <SelectTrigger className="h-12 py-2 px-3 justify-between font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select a client" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
@@ -285,7 +312,6 @@ export function AddProjectDialog({
                       </Select>
                     )}
                   />
-                  {errors.client_id && <p className="text-sm text-destructive mt-1">{errors.client_id.message}</p>}
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Type</Label>
@@ -293,7 +319,7 @@ export function AddProjectDialog({
                     name="type"
                     control={control}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={(value) => { field.onChange(value); setValue('type', value, { shouldDirty: true }); }} value={field.value}>
                         <SelectTrigger className="h-12 py-2 px-3 justify-between font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                           <SelectValue placeholder="Select project type" />
                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
@@ -310,12 +336,40 @@ export function AddProjectDialog({
                   />
                 </div>
                 <div>
+                  <Label className="text-sm text-muted-foreground">Status</Label>
+                   <Controller
+                    name="status"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={(value) => { field.onChange(value); setValue('status', value, { shouldDirty: true }); }} value={field.value}>
+                        <SelectTrigger className="h-12 py-2 px-3 justify-between w-full font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
+                           <SelectValue />
+                           <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map(option => {
+                            const Icon = option.icon;
+                            return (
+                              <SelectItem key={option.value} value={option.value}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="h-4 w-4" />
+                                  {option.label}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div>
                   <Label className="text-sm text-muted-foreground">Priority</Label>
                   <Controller
                     name="priority"
                     control={control}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={(value) => { field.onChange(value); setValue('priority', value, { shouldDirty: true }); }} value={field.value}>
                         <SelectTrigger className="h-12 py-2 px-3 justify-between w-full font-medium text-base group bg-transparent border-0 shadow-none hover:bg-accent data-[state=open]:bg-accent">
                            <SelectValue />
                            <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-50 group-data-[state=open]:opacity-50" />
@@ -335,7 +389,6 @@ export function AddProjectDialog({
                       </Select>
                     )}
                   />
-                  {errors.priority && <p className="text-sm text-destructive mt-1">{errors.priority.message}</p>}
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Start date</Label>
@@ -353,7 +406,7 @@ export function AddProjectDialog({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
-                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                          <Calendar mode="single" selected={field.value} onSelect={(date) => { field.onChange(date); setValue('start_date', date, { shouldDirty: true }); }} initialFocus />
                         </PopoverContent>
                       </Popover>
                     )}
@@ -378,14 +431,13 @@ export function AddProjectDialog({
                           <Calendar
                             mode="single"
                             selected={field.value}
-                            onSelect={field.onChange}
+                            onSelect={(date) => { field.onChange(date); setValue('due_date', date, { shouldDirty: true }); }}
                             disabled={(date) => (watch('start_date') ? date < watch('start_date')! : false) || date < new Date('1900-01-01')}
                           />
                         </PopoverContent>
                       </Popover>
                     )}
                   />
-                   {errors.due_date && <p className="text-sm text-destructive mt-1">{errors.due_date.message}</p>}
                 </div>
               </div>
             </div>

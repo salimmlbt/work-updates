@@ -12,18 +12,19 @@ import type { Role, Profile, Team } from '@/lib/types';
 import RolesClient from './roles-client';
 import TeamsClient from './teams-client';
 
+async function getRoles(supabase: ReturnType<typeof createServerClient>) {
+    return await supabase.from('roles').select('*');
+}
+
 export default async function TeamsPage() {
   const supabase = createServerClient();
   
-  // Ensure "Falaq Admin" role exists
-  const { data: adminRole, error: adminRoleError } = await supabase
-    .from('roles')
-    .select('id')
-    .eq('name', 'Falaq Admin')
-    .single();
+  let { data: rolesData } = await getRoles(supabase);
 
-  if (!adminRole && (!adminRoleError || adminRoleError.code === 'PGRST116')) { // PGRST116: "exact one row not found"
-    await supabase.from('roles').insert({
+  const adminRoleExists = rolesData?.some(r => r.name === 'Falaq Admin');
+
+  if (!adminRoleExists) {
+    const { error: insertError } = await supabase.from('roles').insert({
       name: 'Falaq Admin',
       permissions: {
         dashboard: "Editor",
@@ -37,11 +38,20 @@ export default async function TeamsPage() {
         settings: "Editor",
       }
     });
+    
+    if (!insertError) {
+      // Re-fetch roles after creating the admin role
+      const { data: updatedRolesData } = await getRoles(supabase);
+      rolesData = updatedRolesData;
+    }
   }
   
-  const { data: roles } = await supabase.from('roles').select('*');
-  const { data: profiles } = await supabase.from('profiles').select('*, teams(*), roles(*)');
-  const { data: teams } = await supabase.from('teams').select('*');
+  const { data: profilesData } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))');
+  const { data: teamsData } = await supabase.from('teams').select('*');
+
+  const roles = rolesData as Role[] ?? [];
+  const profiles = profilesData as Profile[] ?? [];
+  const teams = teamsData as Team[] ?? [];
 
   const permissionsList = [
     { id: 'dashboard', label: 'Can the "{ROLE_NAME}" Access Dashboard?' },
@@ -93,13 +103,13 @@ export default async function TeamsPage() {
         </TabsContent>
         <TabsContent value="teams" className="mt-6">
           <TeamsClient 
-            initialUsers={profiles as Profile[] ?? []} 
-            initialRoles={roles as Role[] ?? []} 
-            initialTeams={teams as Team[] ?? []}
+            initialUsers={profiles} 
+            initialRoles={roles} 
+            initialTeams={teams}
           />
         </TabsContent>
         <TabsContent value="roles" className="mt-6">
-          <RolesClient initialRoles={roles as Role[] ?? []} permissionsList={permissionsList} />
+          <RolesClient initialRoles={roles} permissionsList={permissionsList} />
         </TabsContent>
       </Tabs>
     </div>

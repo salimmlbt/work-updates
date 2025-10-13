@@ -1,73 +1,183 @@
+
+
 'use server'
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
 import type { TaskWithAssignee } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export async function addProject(formData: FormData) {
   const supabase = createServerClient()
   
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'You must be logged in to create a project.' }
-
   const rawFormData = {
     name: formData.get('name') as string,
-    client_id: null,
+    client_id: formData.get('client_id') as string | null,
     start_date: formData.get('start_date') as string | null,
     due_date: formData.get('due_date') as string | null,
-    status: formData.get('status') as string,
     priority: formData.get('priority') as string,
-    members: (formData.get('members') as string).split(','),
+    leaders: formData.getAll('leaders') as string[],
+    members: formData.getAll('members') as string[],
+    type: formData.get('type') as string | null,
   }
 
   if (!rawFormData.name) {
     return { error: 'Project name is required.' }
   }
+   if (!rawFormData.members || rawFormData.members.length === 0) {
+    return { error: 'At least one member is required.' };
+  }
+  if (!rawFormData.client_id || rawFormData.client_id === 'no-client') {
+    return { error: 'Client is required.' };
+  }
+  if (!rawFormData.due_date) {
+    return { error: 'Due date is required.' };
+  }
+  if (!rawFormData.priority) {
+    return { error: 'Priority is required.' };
+  }
 
-  // 1. Insert the project
+
   const { data: project, error: projectError } = await supabase
     .from('projects')
     .insert({
       name: rawFormData.name,
-      owner_id: user.id,
-      client_id: rawFormData.client_id,
+      client_id: rawFormData.client_id === 'no-client' ? null : rawFormData.client_id,
       start_date: rawFormData.start_date ? new Date(rawFormData.start_date).toISOString() : null,
       due_date: rawFormData.due_date ? new Date(rawFormData.due_date).toISOString() : null,
-      status: rawFormData.status,
+      status: 'New',
       priority: rawFormData.priority,
+      leaders: rawFormData.leaders,
+      members: rawFormData.members,
+      type: rawFormData.type,
+      is_deleted: false,
     })
     .select()
-    .single()
+    .maybeSingle()
 
   if (projectError) {
     console.error('Error creating project:', projectError)
     return { error: projectError.message }
   }
-
-  // 2. Insert members into the project_members table
-  if (rawFormData.members && rawFormData.members.length > 0) {
-    const membersToInsert = rawFormData.members.map(memberId => ({
-      project_id: project.id,
-      user_id: memberId,
-    }))
-
-    const { error: membersError } = await supabase
-      .from('project_members')
-      .insert(membersToInsert)
-
-    if (membersError) {
-      // If adding members fails, we should probably roll back the project creation
-      // For now, we'll just log it and return the error.
-      console.error('Error adding project members:', membersError)
-      await supabase.from('projects').delete().eq('id', project.id); // Rollback
-      return { error: `Failed to add members: ${membersError.message}` }
-    }
+  if (!project) {
+    return { error: "Could not create project." }
   }
 
   revalidatePath('/dashboard')
   revalidatePath('/projects')
   return { data: project }
+}
+
+export async function updateProject(projectId: string, formData: FormData) {
+    const supabase = createServerClient()
+    
+    const rawFormData = {
+        name: formData.get('name') as string,
+        client_id: formData.get('client_id') as string | null,
+        start_date: formData.get('start_date') as string | null,
+        due_date: formData.get('due_date') as string | null,
+        status: formData.get('status') as string,
+        priority: formData.get('priority') as string,
+        leaders: formData.getAll('leaders') as string[],
+        members: formData.getAll('members') as string[],
+        type: formData.get('type') as string | null,
+    }
+
+    if (!rawFormData.name) {
+        return { error: 'Project name is required.' }
+    }
+
+    const { error: projectError } = await supabase
+        .from('projects')
+        .update({
+            name: rawFormData.name,
+            client_id: rawFormData.client_id === 'no-client' ? null : rawFormData.client_id,
+            start_date: rawFormData.start_date ? new Date(rawFormData.start_date).toISOString() : null,
+            due_date: rawFormData.due_date ? new Date(rawFormData.due_date).toISOString() : null,
+            status: rawFormData.status,
+            priority: rawFormData.priority,
+            leaders: rawFormData.leaders,
+            members: rawFormData.members,
+            type: rawFormData.type,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', projectId)
+
+    if (projectError) {
+        console.error('Error updating project:', projectError)
+        return { error: projectError.message }
+    }
+    
+    revalidatePath('/dashboard')
+    revalidatePath('/projects')
+    return { data: { success: true } }
+}
+
+export async function updateProjectStatus(projectId: string, status: string) {
+    const supabase = createServerClient();
+    const { error } = await supabase
+        .from('projects')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', projectId);
+
+    if (error) {
+        console.error('Error updating project status:', error)
+        return { error: `Failed to update project status: ${error.message}` };
+    }
+
+    revalidatePath('/projects')
+    return { success: true };
+}
+
+
+export async function deleteProject(projectId: string) {
+    const supabase = createServerClient()
+
+    const { error } = await supabase
+        .from('projects')
+        .update({ is_deleted: true })
+        .eq('id', projectId);
+
+    if (error) {
+        return { error: `Failed to delete project: ${error.message}` };
+    }
+
+    revalidatePath('/dashboard');
+    revalidatePath('/projects');
+    return { success: true };
+}
+
+export async function restoreProject(projectId: string) {
+    const supabase = createServerClient()
+
+    const { error } = await supabase
+        .from('projects')
+        .update({ is_deleted: false })
+        .eq('id', projectId);
+
+    if (error) {
+        return { error: `Failed to restore project: ${error.message}` };
+    }
+
+    revalidatePath('/projects');
+    return { success: true };
+}
+
+export async function deleteProjectPermanently(projectId: string) {
+    const supabase = createServerClient()
+    
+    const { error } = await supabase.rpc('delete_project_and_tasks', {
+      p_id: projectId,
+    })
+
+    if (error) {
+        console.error("Error calling delete_project_and_tasks RPC:", error)
+        return { error: `Failed to permanently delete project: ${error.message}` };
+    }
+
+    revalidatePath('/projects');
+    return { success: true };
 }
 
 export async function addTask(formData: FormData) {
@@ -85,14 +195,44 @@ export async function addTask(formData: FormData) {
     return { error: 'Missing required fields' }
   }
   
-  const { error } = await supabase.from('tasks').insert(taskData)
+  const { error } = await supabase.from('tasks').insert({ ...taskData, is_deleted: false })
 
   if (error) {
     return { error: error.message }
   }
 
   revalidatePath('/dashboard')
+  revalidatePath('/projects')
+  revalidatePath('/tasks')
   return { success: true }
+}
+
+export async function updateTask(taskId: string, formData: FormData) {
+    const supabase = createServerClient()
+    
+    const taskData = {
+        description: formData.get('description') as string,
+        deadline: new Date(formData.get('deadline') as string).toISOString(),
+        assignee_id: formData.get('assigneeId') as string,
+        tags: (formData.get('tags') as string)?.split(',').map(tag => tag.trim()).filter(Boolean),
+        project_id: formData.get('project_id') === 'no-project' ? null : formData.get('project_id') as string,
+        client_id: formData.get('client_id') as string,
+        type: formData.get('type') as string,
+    }
+
+    const { data, error } = await supabase
+        .from('tasks')
+        .update(taskData)
+        .eq('id', taskId)
+        .select()
+        .single();
+        
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/tasks')
+    return { data }
 }
 
 export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogress' | 'done') {
@@ -100,12 +240,50 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
   const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId)
   
   if (error) {
+    console.error('Error updating task status:', error);
     return { error: error.message }
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath('/tasks')
   return { success: true }
 }
+
+export async function deleteTask(taskId: string) {
+  const supabase = createServerClient()
+  const { error } = await supabase.from('tasks').update({ is_deleted: true }).eq('id', taskId)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
+export async function restoreTask(taskId: string) {
+  const supabase = createServerClient()
+  const { error } = await supabase.from('tasks').update({ is_deleted: false }).eq('id', taskId)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
+export async function deleteTaskPermanently(taskId: string) {
+  const supabase = createServerClient()
+  const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
 
 export async function prioritizeTasks(tasks: TaskWithAssignee[]) {
   const input: PrioritizeTasksInput = {
@@ -280,14 +458,18 @@ export async function deleteClient(clientId: string) {
 
 export async function createTeam(name: string, defaultTasks: string[]) {
   const supabase = createServerClient()
-  const placeholderUserId = '00000000-0000-0000-0000-000000000000';
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to create a team.' };
+  }
 
   const { data, error } = await supabase
     .from('teams')
     .insert({ 
       name, 
       default_tasks: defaultTasks,
-      owner_id: placeholderUserId 
+      owner_id: user.id 
     })
     .select()
     .single()
@@ -344,17 +526,19 @@ export async function deleteRole(id: string) {
 }
 
 export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id' | 'roles' | 'teams'> & {password: string, role_id: string, team_id: string}) {
-    const supabase = createServerClient()
+    const supabaseAdmin = createSupabaseAdminClient()
+    if (!supabaseAdmin) {
+        return { error: "Admin client not initialized. Cannot create user." }
+    }
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email!,
       password: userData.password,
-      options: {
-        data: {
+      user_metadata: {
           full_name: userData.full_name,
           avatar_url: userData.avatar_url,
-        }
-      }
+      },
+      email_confirm: true,
     })
 
     if (authError) {
@@ -365,7 +549,7 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
       return { error: "User could not be created in Auth."}
     }
     
-    const { data: profileData, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await createServerClient()
       .from('profiles')
       .insert({
         id: authData.user.id,
@@ -373,13 +557,12 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
         email: userData.email,
         avatar_url: userData.avatar_url,
         role_id: userData.role_id,
-        team_id: userData.team_id,
       })
       .select('*, roles(*), teams(*)')
       .single();
 
     if (profileError) {
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         return { error: `Failed to create user profile: ${profileError.message}` };
     }
 
@@ -413,4 +596,158 @@ export async function updateUserTeam(userId: string, teamId: string) {
   }
   revalidatePath('/teams')
   return { success: true }
+}
+
+export async function createProjectType(name: string) {
+    const supabase = createServerClient();
+    const { data, error } = await supabase.from('project_types').insert({ name }).select().single();
+    if (error) {
+        return { error: error.message };
+    }
+    revalidatePath('/projects');
+    return { data };
+}
+
+export async function renameProjectType(id: string, oldName: string, newName: string) {
+    const supabase = createServerClient();
+
+    // First update all projects with the old type name
+    const { error: projectsError } = await supabase
+        .from('projects')
+        .update({ type: newName })
+        .eq('type', oldName);
+    
+    if (projectsError) {
+        console.error('Error updating projects with new type name:', projectsError);
+        return { error: `Failed to update projects: ${projectsError.message}` };
+    }
+
+    // Then update the project type itself
+    const { data, error } = await supabase
+        .from('project_types')
+        .update({ name: newName })
+        .eq('id', id)
+        .select()
+        .single();
+        
+    if (error) {
+        console.error('Error renaming project type:', error);
+        return { error: `Failed to rename project type: ${error.message}` };
+    }
+    
+    revalidatePath('/projects');
+    return { data };
+}
+
+export async function deleteProjectType(id: string) {
+    const supabase = createServerClient();
+    const { error } = await supabase.from('project_types').delete().eq('id', id);
+
+    if (error) {
+        console.error('Error deleting project type:', error);
+        return { error: `Failed to delete project type: ${error.message}` };
+    }
+    
+    revalidatePath('/projects');
+    return { success: true };
+}
+
+const months = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
+
+export async function updateProfile(userId: string, formData: FormData) {
+  const supabase = createServerClient();
+
+  const fullName = formData.get('full_name') as string;
+  const contact = formData.get('contact') as string | null;
+  const instagramUsername = formData.get('instagram_username') as string | null;
+  const linkedinUsername = formData.get('linkedin_username') as string | null;
+  const birthdayDay = formData.get('birthday_day') as string | null;
+  const birthdayMonth = formData.get('birthday_month') as string | null;
+  const avatarFile = formData.get('avatar') as File | null;
+  
+  const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('avatar_url').eq('id', userId).single();
+  if (fetchError) {
+    return { error: 'Could not fetch current profile' };
+  }
+  let avatarUrl = currentProfile.avatar_url;
+
+  if (avatarFile && avatarFile.size > 0) {
+      if (avatarUrl && !avatarUrl.includes('pravatar.cc')) {
+          try {
+            const oldAvatarPath = new URL(avatarUrl).pathname.split('/avatars/').pop();
+            if (oldAvatarPath) {
+                await supabase.storage.from('avatars').remove([oldAvatarPath]);
+            }
+          } catch (e) {
+            console.error("Failed to parse or delete old avatar URL:", e);
+          }
+      }
+      const newFilePath = `public/${Date.now()}_${avatarFile.name}`;
+      const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(newFilePath, avatarFile);
+
+      if (uploadError) {
+          return { error: `Failed to upload new avatar: ${uploadError.message}` };
+      }
+      
+      const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(newFilePath);
+      
+      avatarUrl = publicUrlData.publicUrl;
+  }
+
+  let instagramUrl = null;
+  if (instagramUsername) {
+    instagramUrl = `https://www.instagram.com/${instagramUsername}`;
+  }
+
+  let linkedinUrl = null;
+  if (linkedinUsername) {
+    linkedinUrl = `https://www.linkedin.com/in/${linkedinUsername}`;
+  }
+
+  let birthday = null;
+  if (birthdayDay && birthdayMonth) {
+    const monthIndex = months.indexOf(birthdayMonth);
+    if (monthIndex > -1) {
+      // Use a placeholder year like 2000, since we are not storing it.
+      // Store as YYYY-MM-DD format in UTC
+      const date = new Date(Date.UTC(2000, monthIndex, parseInt(birthdayDay, 10)));
+      birthday = date.toISOString();
+    }
+  }
+
+  const updates: { [key: string]: any } = {
+    full_name: fullName,
+    contact: contact,
+    instagram: instagramUrl,
+    linkedin: linkedinUrl,
+    birthday,
+    avatar_url: avatarUrl
+  };
+
+  const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId).select().single();
+  
+  if (error) {
+    return { error: error.message };
+  }
+
+  const supabaseAdmin = createSupabaseAdminClient();
+  if (supabaseAdmin) {
+    await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+            full_name: fullName,
+            avatar_url: avatarUrl,
+        }
+    })
+  }
+
+  revalidatePath('/settings');
+  revalidatePath('/', 'layout');
+  return { data };
 }
