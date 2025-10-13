@@ -203,13 +203,13 @@ const AddTaskRow = ({
                   ref={taskInputRef}
                   onChange={(e) => setTaskName(e.target.value)} 
                   onKeyDown={(e) => handleKeyDown(e, clientRef)}
-                  className="bg-white"
+                  className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
               />
           </td>
           <td className="px-4 py-3 border-r">
               <Select onValueChange={handleClientChange} value={clientId}>
                   <SelectTrigger 
-                      className="bg-white" 
+                      className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
                       ref={clientRef} 
                       onKeyDown={(e) => handleKeyDown(e, projectRef)}
                   >
@@ -223,7 +223,7 @@ const AddTaskRow = ({
            <td className="px-4 py-3 border-r">
               <Select onValueChange={setProjectId} value={projectId} disabled={!clientId}>
                   <SelectTrigger 
-                      className="bg-white" 
+                      className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
                       ref={projectRef} 
                       onKeyDown={(e) => handleKeyDown(e, assigneeRef)}
                   >
@@ -238,7 +238,7 @@ const AddTaskRow = ({
            <td className="px-4 py-3 border-r">
               <Select onValueChange={setAssigneeId} value={assigneeId}>
                   <SelectTrigger 
-                      className="bg-white" 
+                      className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
                       ref={assigneeRef} 
                       onKeyDown={(e) => handleKeyDown(e, typeRef)}
                   >
@@ -256,7 +256,7 @@ const AddTaskRow = ({
                   disabled={!assigneeId || availableTaskTypes.length === 0}
               >
                   <SelectTrigger 
-                      className="bg-white" 
+                      className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
                       ref={typeRef} 
                       onKeyDown={(e) => handleKeyDown(e, dueDateRef)}
                   >
@@ -272,7 +272,7 @@ const AddTaskRow = ({
                   <PopoverTrigger asChild>
                       <Button 
                           variant="outline" 
-                          className="w-full justify-start text-left font-normal bg-white"
+                          className="w-full justify-start text-left font-normal bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
                           ref={dueDateRef} 
                           onKeyDown={handleDueDateKeyDown}
                       >
@@ -1101,7 +1101,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
         </div>
       </header>
 
-      <main className="flex-1">
+      <main className="flex-1 overflow-auto">
         {mainContent()}
       </main>
 
