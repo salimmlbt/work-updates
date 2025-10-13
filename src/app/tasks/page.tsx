@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import TasksClient from './tasks-client';
 import type { Task, Profile, Client, Project, TaskWithDetails } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
 
 export default async function TasksPage() {
     const supabase = createServerClient();
@@ -57,4 +58,3 @@ export default async function TasksPage() {
         currentUserProfile={userProfile}
     />
 }
-

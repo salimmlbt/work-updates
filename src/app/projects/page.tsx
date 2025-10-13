@@ -4,6 +4,8 @@ import ProjectsClient from './projects-client';
 import type { Profile, Client, Project, ProjectType } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 type ProjectWithOwner = Project & {
     owner: {
         id: string;
