@@ -124,6 +124,10 @@ const AddTaskRow = ({
   const typeRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    taskInputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
       if (projectId && projectId !== 'no-project') {
           const project = projects.find(p => p.id === projectId);
           if (project?.client_id && project.client_id !== clientId) {
@@ -692,16 +696,24 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
   }, [tasks, canEditTasks, currentUserProfile?.id, taskView, searchQuery]);
 
   const activeTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status !== 'done'), [filteredTasks]);
+  
   const completedTasks = useMemo(() => {
-    let tasksToDisplay = tasks;
-    if (canEditTasks && taskView === 'mine') {
-        tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
-    } else if (!canEditTasks) {
-        tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
+    let tasksToFilter = tasks;
+    if (taskView === 'mine') {
+      tasksToFilter = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
     }
     
-    return tasksToDisplay.filter(t => !t.is_deleted && t.status === 'done')
-  }, [tasks, canEditTasks, currentUserProfile?.id, taskView]);
+    let completed = tasksToFilter.filter(t => !t.is_deleted && t.status === 'done');
+
+    if (searchQuery) {
+      completed = completed.filter(task =>
+        task.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    return completed;
+  }, [tasks, taskView, currentUserProfile?.id, searchQuery]);
+
   const deletedTasks = useMemo(() => {
     // Deleted tasks should not be filtered by 'my tasks' view
     const allDeleted = tasks.filter(t => t.is_deleted);
@@ -998,7 +1010,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg h-full w-full">
+    <div className="bg-white p-6 rounded-lg h-full w-full flex flex-col">
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tasks</h1>
@@ -1089,7 +1101,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
         </div>
       </header>
 
-      <main>
+      <main className="flex-1">
         {mainContent()}
       </main>
 
@@ -1150,3 +1162,6 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
 
 
 
+
+
+    
