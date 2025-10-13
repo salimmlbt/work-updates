@@ -76,10 +76,27 @@ const statusLabels = {
 const statusOptions: ('todo' | 'inprogress' | 'done')[] = ['todo', 'inprogress', 'done'];
 
 
-const typeColors = {
-  Operational: 'bg-blue-100 text-blue-800',
-  Design: 'bg-orange-100 text-orange-800',
-  Important: 'bg-red-100 text-red-800',
+const typeColors: { [key: string]: string } = {
+  "Poster": "bg-blue-100 text-blue-800",
+  "Video": "bg-orange-100 text-orange-800",
+  "Story": "bg-purple-100 text-purple-800",
+  "Motion Graphics": "bg-pink-100 text-pink-800",
+  "Animation": "bg-indigo-100 text-indigo-800",
+  "Grid": "bg-green-100 text-green-800",
+  "Posting": "bg-yellow-100 text-yellow-800",
+  "Account Creation": "bg-red-100 text-red-800",
+  "Flyer": "bg-teal-100 text-teal-800",
+  "Profile": "bg-cyan-100 text-cyan-800",
+  "Menu": "bg-lime-100 text-lime-800",
+  "FB Cover": "bg-sky-100 text-sky-800",
+  "Whatsapp Cover": "bg-emerald-100 text-emerald-800",
+  "Profile Picture": "bg-fuchsia-100 text-fuchsia-800",
+  "Highlite Cover": "bg-rose-100 text-rose-800",
+  "Ad Post": "bg-amber-100 text-amber-800",
+  "Shooting": "bg-violet-100 text-violet-800",
+  "Meeting": "bg-gray-100 text-gray-800",
+  "Connect": "bg-slate-100 text-slate-800",
+  "Followup": "bg-stone-100 text-stone-800",
 };
 
 
@@ -193,7 +210,7 @@ const AddTaskRow = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       if (!calendarOpen) {
-        handleKeyDown(e); // This will trigger save
+        handleSave();
       }
     }
   };
@@ -374,7 +391,7 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
       )}
       <td className="px-4 py-3 border-r max-w-[120px]">
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
-          {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
+          {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
@@ -1107,7 +1124,9 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
       </header>
 
       <main className="flex-1 overflow-auto">
-        {mainContent()}
+        <div className="min-w-full inline-block align-middle">
+          {mainContent()}
+        </div>
       </main>
 
       {taskToEdit && canEditTasks && (
