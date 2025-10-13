@@ -109,7 +109,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
         <Button
             variant="ghost"
             size="icon"
-            className="absolute -right-5 top-1/2 -translate-y-1/2 rounded-full bg-sidebar-accent text-sidebar-accent-foreground h-7 w-7 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 hover:bg-sidebar-primary"
+            className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-sidebar-accent text-sidebar-accent-foreground h-7 w-7 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 hover:bg-sidebar-primary"
             onClick={() => setIsCollapsed(!isCollapsed)}
         >
             <ChevronLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
