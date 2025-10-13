@@ -144,7 +144,7 @@ const AddTaskRow = ({
   const handleSave = async () => {
       if (isSaving) return;
       if (!taskName || !clientId || !dueDate || !assigneeId || !taskType) {
-          toast({ title: "Missing fields", description: "Task Name, Client, Due Date, Assignee, and Type are all required.", variant: "destructive" });
+          toast({ title: "Missing fields", description: "Task Details, Client, Due Date, Assignee, and Type are all required.", variant: "destructive" });
           return;
       }
       setIsSaving(true);
@@ -188,17 +188,24 @@ const AddTaskRow = ({
   }
 
   const handleDueDateKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !calendarOpen) {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      handleSave();
+      if (!calendarOpen) {
+        handleSave();
+      } else {
+        // This part could be improved if we can programmatically "select" the highlighted date in the calendar
+        // For now, it just closes the calendar. The user must press Enter again to save.
+        setCalendarOpen(false);
+      }
     }
   };
+
 
   return (
       <tr className="border-b bg-gray-50">
           <td className="px-4 py-3 border-r">
               <Input 
-                  placeholder="Type Task name" 
+                  placeholder="Type Task Details" 
                   value={taskName} 
                   ref={taskInputRef}
                   onChange={(e) => setTaskName(e.target.value)} 
@@ -286,6 +293,7 @@ const AddTaskRow = ({
                           onSelect={(date) => {
                               setDueDate(date);
                               setCalendarOpen(false);
+                              dueDateRef.current?.focus();
                           }}
                           initialFocus 
                       />
@@ -300,7 +308,7 @@ const AddTaskRow = ({
           </td>
           <td className="px-4 py-3 text-right">
               <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+                  <Button variant="ghost" onClick={onCancel} disabled={isSaving}>Cancel</Button>
                   <Button onClick={handleSave} disabled={isSaving}>
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save
@@ -844,7 +852,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
             <table className="w-full text-left mt-2">
               <thead>
                 <tr className="border-b">
-                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[40%]">Task Name</th>
+                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[40%]">Task Details</th>
                   <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Project</th>
                   <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Assignee</th>
                   <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]"></th>
@@ -903,10 +911,10 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                 transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                 className="overflow-hidden"
               >
-                  <table className="w-full text-left mt-2" style={{minWidth: '1200px'}}>
+                  <table className="w-full text-left mt-2">
                       <thead>
                           <tr className="border-b border-gray-200">
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
+                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Details</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                               <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
                               {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
@@ -976,10 +984,10 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                         transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                         className="overflow-hidden"
                     >
-                        <table className="w-full text-left mt-2" style={{minWidth: '1200px'}}>
+                        <table className="w-full text-left mt-2">
                             <thead>
                                 <tr className="border-b border-gray-200">
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Name</th>
+                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Details</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
                                     <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
                                     {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
