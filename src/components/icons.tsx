@@ -135,3 +135,5 @@ export function FilterIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export * from './work-updates-icon';
