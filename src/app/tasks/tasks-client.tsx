@@ -183,6 +183,8 @@ const AddTaskRow = ({
           if (nextRef?.current) {
               nextRef.current.focus();
               nextRef.current.click?.(); // Open dropdowns
+          } else {
+             handleSave();
           }
       }
   }
@@ -191,15 +193,10 @@ const AddTaskRow = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       if (!calendarOpen) {
-        handleSave();
-      } else {
-        // This part could be improved if we can programmatically "select" the highlighted date in the calendar
-        // For now, it just closes the calendar. The user must press Enter again to save.
-        setCalendarOpen(false);
+        handleKeyDown(e); // This will trigger save
       }
     }
   };
-
 
   return (
       <tr className="border-b bg-gray-50">
@@ -308,8 +305,8 @@ const AddTaskRow = ({
           </td>
           <td className="px-4 py-3 text-right">
               <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" onClick={onCancel} disabled={isSaving}>Cancel</Button>
-                  <Button onClick={handleSave} disabled={isSaving}>
+                  <Button variant="ghost" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">Cancel</Button>
+                  <Button onClick={handleSave} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save
                   </Button>
