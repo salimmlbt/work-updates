@@ -78,7 +78,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
                 "h-5 w-5 shrink-0",
                 isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-icon-muted'
             )} />
-            <span className={cn("truncate text-sidebar-foreground", isCollapsed && "hidden")}>{item.label}</span>
+            <span className={cn(
+              "truncate text-sidebar-foreground transition-all duration-300", 
+              isCollapsed ? "w-0 opacity-0 p-0" : "w-auto opacity-100"
+            )}>{item.label}</span>
         </span>
     );
     
@@ -107,12 +110,12 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
         )}
         >
         <Button
-            variant="ghost"
-            size="icon"
-            className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-sidebar-accent text-sidebar-accent-foreground h-7 w-7 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 hover:bg-sidebar-primary"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+          variant="ghost"
+          size="icon"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-sidebar-accent text-sidebar-accent-foreground h-7 w-7 opacity-0 group-hover:opacity-100 transition-all focus-visible:ring-0"
+          onClick={() => setIsCollapsed(!isCollapsed)}
         >
-            <ChevronLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
+          <ChevronLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
         </Button>
 
         <div className="flex h-full max-h-screen flex-col gap-2">
@@ -121,7 +124,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
                 <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center shrink-0">
                 <Logo className="h-7 w-7 text-white" />
                 </div>
-                <div className={cn("text-left", isCollapsed && "hidden")}>
+                 <div className={cn(
+                  "text-left transition-all duration-300", 
+                  isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                )}>
                     <div className="text-xl font-bold tracking-wider text-sidebar-foreground">FALAQ</div>
                     <div className="text-xs text-sidebar-foreground/80">Work Updates</div>
                 </div>
@@ -148,7 +154,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
                             isCollapsed && 'justify-center'
                         )}>
                             <LogOut className="h-5 w-5 shrink-0 text-sidebar-icon-muted" />
-                            <span className={cn("text-white", isCollapsed && "hidden")}>Log out</span>
+                            <span className={cn(
+                              "text-white transition-all duration-300", 
+                              isCollapsed ? "w-0 opacity-0 p-0" : "w-auto opacity-100"
+                            )}>Log out</span>
                         </button>
                         </form>
                     </TooltipTrigger>
@@ -163,7 +172,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
                             <AvatarImage src={profile?.avatar_url ?? undefined} alt={profile?.full_name ?? ''} />
                             <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
                         </Avatar>
-                        <div className={cn("flex flex-col", isCollapsed && "hidden")}>
+                         <div className={cn(
+                          "flex flex-col transition-all duration-300", 
+                          isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                        )}>
                             <span className="text-sm font-bold text-sidebar-foreground">{profile?.full_name}</span>
                             <span className="text-xs text-sidebar-foreground/80">{profile?.email}</span>
                         </div>
