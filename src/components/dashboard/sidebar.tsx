@@ -9,6 +9,7 @@ import {
   ClientsIcon,
   CalendarIconSvg,
   ChatIcon,
+  AttendanceIcon,
   BillingIcon,
   TeamUsersIcon,
   SettingsIcon,
@@ -29,6 +30,7 @@ const navItems = [
   { href: '/clients', label: 'Clients', icon: ClientsIcon, id: 'clients' },
   { href: '/calendar', label: 'Calendar', icon: CalendarIconSvg, id: 'calendar' },
   { href: '/chat', label: 'Chat', icon: ChatIcon, id: 'chat' },
+  { href: '/attendance', label: 'Attendance', icon: AttendanceIcon, id: 'attendance' },
   { href: '/billing', label: 'Billing', icon: BillingIcon, id: 'billing' },
 ];
 
@@ -121,7 +123,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
         <Button
           variant="ghost"
           size="icon"
-          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-sidebar-accent text-sidebar-accent-foreground h-7 w-7 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 hover:bg-sidebar-primary"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-sidebar-accent text-sidebar-accent-foreground h-7 w-7 opacity-0 group-hover:opacity-100 transition-all hover:bg-sidebar-primary"
           onClick={(e) => {
             e.currentTarget.blur();
             setIsCollapsed(!isCollapsed);
