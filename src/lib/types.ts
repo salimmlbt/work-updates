@@ -29,8 +29,15 @@ export type RoleWithPermissions = Omit<Role, 'permissions'> & {
     permissions: Record<string, PermissionLevel>;
 };
 
+export type Attachment = {
+  id: string;
+  name: string;
+  webViewLink: string;
+}
+
 export type TaskWithDetails = Task & {
   profiles: Profile | null;
   projects: Project | null;
   clients: Client | null;
+  attachments: Attachment[] | null;
 }

@@ -4,6 +4,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
+import { uploadFileToDrive, type FileUploadInput, type FileUploadOutput } from '@/ai/flows/google-drive-upload';
 import type { TaskWithAssignee } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -750,4 +751,29 @@ export async function updateProfile(userId: string, formData: FormData) {
   revalidatePath('/settings');
   revalidatePath('/', 'layout');
   return { data };
+}
+
+export async function uploadAttachment(formData: FormData): Promise<{ data: FileUploadOutput | null, error: string | null }> {
+  try {
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return { data: null, error: 'No file provided.' };
+    }
+
+    const fileBuffer = await file.arrayBuffer();
+    const fileDataUri = `data:${file.type};base64,${Buffer.from(fileBuffer).toString('base64')}`;
+
+    const input: FileUploadInput = {
+      fileDataUri,
+      fileName: file.name,
+      mimeType: file.type,
+    };
+    
+    const result = await uploadFileToDrive(input);
+    return { data: result, error: null };
+  } catch (error: any) {
+    console.error('Error uploading attachment:', error);
+    return { data: null, error: error.message || 'Failed to upload attachment.' };
+  }
 }

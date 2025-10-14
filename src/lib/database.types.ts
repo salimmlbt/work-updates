@@ -239,6 +239,7 @@ export type Database = {
           tags: string[] | null
           type: string | null
           is_deleted: boolean
+          attachments: Json | null
         }
         Insert: {
           assignee_id?: string | null
@@ -252,6 +253,7 @@ export type Database = {
           tags?: string[] | null
           type?: string | null
           is_deleted?: boolean
+          attachments?: Json | null
         }
         Update: {
           assignee_id?: string | null
@@ -265,6 +267,7 @@ export type Database = {
           tags?: string[] | null
           type?: string | null
           is_deleted?: boolean
+          attachments?: Json | null
         }
         Relationships: [
           {

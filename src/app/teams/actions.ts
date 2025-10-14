@@ -3,7 +3,7 @@
 
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import type { RoleWithPermissions, PermissionLevel, Profile, Task } from '@/lib/types'
+import type { RoleWithPermissions, PermissionLevel, Profile, Task, Attachment } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 
 export async function createTeam(name: string, defaultTasks: string[]) {
@@ -465,6 +465,7 @@ export async function createTask(taskData: {
     deadline: string;
     assignee_id: string;
     type: string | null;
+    attachments?: Attachment[] | null;
 }) {
     const supabase = createServerClient();
     const { data, error } = await supabase
