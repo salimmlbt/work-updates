@@ -33,7 +33,7 @@ async function getGoogleAuth() {
     serviceAccountKey.client_email,
     undefined,
     serviceAccountKey.private_key,
-    ['https://www.googleapis.com/auth/drive.file']
+    ['https://www.googleapis.com/auth/drive']
   );
   await jwtClient.authorize();
   return jwtClient;
@@ -71,6 +71,7 @@ const uploadFileFlow = ai.defineFlow(
       requestBody: fileMetadata,
       media: media,
       fields: 'id, webViewLink, name',
+      supportsAllDrives: true,
     });
 
     const file = response.data;
@@ -84,7 +85,8 @@ const uploadFileFlow = ai.defineFlow(
         requestBody: {
             role: 'reader',
             type: 'anyone'
-        }
+        },
+        supportsAllDrives: true,
     });
 
     return {
