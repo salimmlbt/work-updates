@@ -473,7 +473,8 @@ export async function createTask(taskData: {
         .insert({
             ...taskData,
             status: 'todo',
-            is_deleted: false
+            is_deleted: false,
+            attachments: taskData.attachments ? JSON.stringify(taskData.attachments) : null,
         })
         .select()
         .single();

@@ -20,6 +20,7 @@ import {
   Trash2,
   RefreshCcw,
   Loader2,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -37,9 +38,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns';
 import { Input } from '@/components/ui/input';
-import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions } from '@/lib/types';
+import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
-import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently } from '@/app/actions';
+import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -110,13 +111,6 @@ const AttachIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const LinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" id="Outline" viewBox="0 0 24 24" {...props}>
-        <path d="M13.845,17.267l-3.262,3.262A5.028,5.028,0,0,1,3.472,13.42l3.262-3.265A1,1,0,0,0,5.319,8.741L2.058,12.006A7.027,7.027,0,0,0,12,21.943l3.262-3.262a1,1,0,0,0-1.414-1.414Z"/><path d="M21.944,2.061A6.979,6.979,0,0,0,16.975,0h0a6.983,6.983,0,0,0-4.968,2.057L8.74,5.32a1,1,0,0,0,1.414,1.415l3.265-3.262A4.993,4.993,0,0,1,16.973,2h0a5.028,5.028,0,0,1,3.554,8.583l-3.262,3.262A1,1,0,1,0,18.68,15.26L21.942,12A7.037,7.037,0,0,0,21.944,2.061Z"/><path d="M14.293,8.293l-6,6a1,1,0,1,0,1.414,1.414l6-6a1,1,0,0,0-1.414-1.414Z"/>
-    </svg>
-);
-
-
 const AddTaskRow = ({ 
   onSave, 
   onCancel,
@@ -138,6 +132,9 @@ const AddTaskRow = ({
   const [taskType, setTaskType] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
 
@@ -171,6 +168,26 @@ const AddTaskRow = ({
       setProjectId(''); // Reset project when client changes
   }
 
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data, error } = await uploadAttachment(formData);
+    
+    setIsUploading(false);
+    if (error) {
+      toast({ title: "Upload failed", description: error, variant: "destructive" });
+    } else if (data) {
+      setAttachments(prev => [...prev, data]);
+      toast({ title: "File attached", description: `${file.name} has been attached.` });
+    }
+  };
+
+
   const handleSave = async () => {
       if (isSaving) return;
       if (!taskName || !clientId || !dueDate || !assigneeId || !taskType) {
@@ -186,6 +203,7 @@ const AddTaskRow = ({
             deadline: dueDate.toISOString(),
             assignee_id: assigneeId,
             type: taskType || null,
+            attachments: attachments.length > 0 ? attachments : null,
         });
 
         if (result.error) {
@@ -239,6 +257,16 @@ const AddTaskRow = ({
                   onKeyDown={(e) => handleKeyDown(e, clientRef)}
                   className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
               />
+               {attachments.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {attachments.map((att, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <LinkIcon className="h-3 w-3" />
+                      <a href={att.webViewLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate" title={att.name}>{att.name}</a>
+                    </div>
+                  ))}
+                </div>
+              )}
           </td>
           <td className="px-4 py-3 border-r">
               <Select onValueChange={handleClientChange} value={clientId}>
@@ -335,14 +363,23 @@ const AddTaskRow = ({
           </td>
           <td className="px-4 py-3 text-right">
               <div className="flex items-center justify-end gap-2">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0">
-                      <AttachIcon className="h-5 w-5" fill="currentColor"/>
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0">
-                      <LinkIcon className="h-5 w-5" fill="currentColor"/>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <AttachIcon className="h-5 w-5" fill="currentColor"/>}
                   </Button>
                   <Button variant="ghost" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">Cancel</Button>
-                  <Button onClick={handleSave} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">
+                  <Button onClick={handleSave} disabled={isSaving || isUploading} className="focus-visible:ring-0 focus-visible:ring-offset-0">
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save
                   </Button>
@@ -355,6 +392,7 @@ const AddTaskRow = ({
 
 const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean }) => {
   const [dateText, setDateText] = useState('No date');
+  const attachments = (task.attachments || []) as Attachment[];
 
   useEffect(() => {
     if (task.deadline) {
@@ -376,17 +414,20 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
   return (
     <>
       <td className="px-4 py-3 border-r max-w-[250px]">
-        <div className="truncate flex items-center gap-3 whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
-          <span className="truncate shrink">{task.description}</span>
-          {task.tags?.map(tag => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className={`${tag === 'ASAP' ? 'bg-red-100 text-red-700' : tag === 'Feedback' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'} font-medium`}
-            >
-              {tag}
-            </Badge>
-          ))}
+        <div className="flex items-center gap-3">
+          {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-muted-foreground shrink-0" fill="currentColor"/>}
+          <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
+            <span className="truncate shrink">{task.description}</span>
+            {task.tags?.map(tag => (
+              <Badge
+                key={tag}
+                variant="secondary"
+                className={`${tag === 'ASAP' ? 'bg-red-100 text-red-700' : tag === 'Feedback' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'} font-medium ml-2`}
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
         </div>
       </td>
       <td className="px-4 py-3 border-r max-w-[150px]">
@@ -694,6 +735,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                     profiles: profiles.find(p => p.id === newTask.assignee_id) || null,
                     projects: projects.find(p => p.id === newTask.project_id) || null,
                     clients: clients.find(c => c.id === newTask.client_id) || null,
+                    attachments: newTask.attachments as Attachment[] | null,
                 };
                 setTasks(current => [newFullTask, ...current])
            } else if (payload.eventType === 'UPDATE') {
@@ -703,6 +745,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                     profiles: profiles.find(p => p.id === updatedTask.assignee_id) || null,
                     projects: projects.find(p => p.id === updatedTask.project_id) || null,
                     clients: clients.find(c => c.id === updatedTask.client_id) || null,
+                    attachments: updatedTask.attachments as Attachment[] | null,
                 };
                 setTasks(current => current.map(t => t.id === updatedTask.id ? updatedFullTask : t));
            } else if (payload.eventType === 'DELETE') {
@@ -1202,9 +1245,3 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
     </div>
   );
 }
-
-
-
-
-
-    
