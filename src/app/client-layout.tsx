@@ -21,9 +21,8 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(initialIsAuthenticated);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState<boolean | null>(null);
-
 
   useEffect(() => {
     setIsAuthenticated(initialIsAuthenticated);
