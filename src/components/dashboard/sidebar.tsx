@@ -123,7 +123,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
         <Button
           variant="ghost"
           size="icon"
-          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-sidebar-accent text-sidebar-accent-foreground h-7 w-7 opacity-0 group-hover:opacity-100 transition-all hover:bg-sidebar-primary"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-[#0e1944] text-sidebar-accent-foreground h-7 w-7 opacity-0 group-hover:opacity-100 transition-all hover:bg-sidebar-primary"
           onClick={(e) => {
             e.currentTarget.blur();
             setIsCollapsed(!isCollapsed);
