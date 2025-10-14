@@ -22,7 +22,7 @@ export default function ClientLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(initialIsAuthenticated);
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState<boolean | null>(null);
 
 
   useEffect(() => {
@@ -56,10 +56,15 @@ export default function ClientLayout({
       authListener.subscription.unsubscribe();
     };
   }, [router]);
+
+  useEffect(() => {
+    // Set initial state on the client to avoid hydration mismatch
+    setSidebarCollapsed(false);
+  }, []);
   
   const showNav = isAuthenticated && pathname !== '/login';
 
-  if (isAuthenticated === null) {
+  if (isAuthenticated === null || isSidebarCollapsed === null) {
       return (
           <div className="min-h-screen bg-background flex items-center justify-center">
               <div>Loading...</div>
