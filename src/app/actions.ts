@@ -9,15 +9,6 @@ import type { TaskWithAssignee } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '200mb',
-    },
-  },
-};
-
-
 export async function addProject(formData: FormData) {
   const supabase = createServerClient()
   
