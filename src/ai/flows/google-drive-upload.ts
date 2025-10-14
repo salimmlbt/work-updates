@@ -7,8 +7,6 @@ import { z } from 'genkit';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
-const a = 1;
-
 const FileUploadInputSchema = z.object({
   fileDataUri: z.string().describe("The file to upload, as a data URI."),
   fileName: z.string().describe("The name of the file."),
@@ -29,14 +27,14 @@ async function getGoogleAuth() {
     throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON environment variable not set.');
   }
   const serviceAccountKey = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
-  const jwtClient = new google.auth.JWT(
-    serviceAccountKey.client_email,
-    undefined,
-    serviceAccountKey.private_key,
-    ['https://www.googleapis.com/auth/drive']
-  );
-  await jwtClient.authorize();
-  return jwtClient;
+  const auth = new google.auth.GoogleAuth({
+    credentials: {
+      client_email: serviceAccountKey.client_email,
+      private_key: serviceAccountKey.private_key,
+    },
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+  return auth;
 }
 
 const uploadFileFlow = ai.defineFlow(
