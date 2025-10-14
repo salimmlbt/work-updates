@@ -21,7 +21,7 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(initialIsAuthenticated);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function ClientLayout({
   
   const showNav = isAuthenticated && pathname !== '/login';
 
-  if (isAuthenticated === null || isSidebarCollapsed === null) {
+  if (isSidebarCollapsed === null) {
       return (
           <div className="min-h-screen bg-background flex items-center justify-center">
               <div>Loading...</div>
