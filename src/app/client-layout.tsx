@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
 import type { Profile } from '@/lib/types';
+import { Toaster } from "@/components/ui/toaster";
 
 export default function ClientLayout({
   children,
@@ -76,6 +77,7 @@ export default function ClientLayout({
           {children}
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }
