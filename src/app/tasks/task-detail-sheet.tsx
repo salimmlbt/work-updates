@@ -10,14 +10,13 @@ import {
 } from '@/components/ui/sheet'
 import {
   MoreVertical,
-  Link as LinkIconLucide,
   Calendar,
   User,
-  Tag,
   Paperclip,
   Clock,
   CheckSquare,
   Pencil,
+  AlignLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -26,6 +25,7 @@ import type { TaskWithDetails } from '@/lib/types'
 import { cn, getInitials } from '@/lib/utils'
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
+import { LinkIcon } from '@/components/icons'
 
 interface TaskDetailSheetProps {
   task: TaskWithDetails
@@ -34,22 +34,31 @@ interface TaskDetailSheetProps {
   onEdit: (task: TaskWithDetails) => void
 }
 
-const statusLabels = {
-    'todo': 'To Do',
-    'inprogress': 'In Progress',
-    'done': 'Done'
-}
+const typeColors: { [key: string]: string } = {
+  "Poster": "bg-pink-100 text-pink-800",
+  "Video": "bg-orange-100 text-orange-800",
+  "Story": "bg-purple-100 text-purple-800",
+  "Motion Graphics": "bg-pink-100 text-pink-800",
+  "Animation": "bg-indigo-100 text-indigo-800",
+  "Grid": "bg-green-100 text-green-800",
+  "Posting": "bg-yellow-100 text-yellow-800",
+  "Account Creation": "bg-red-100 text-red-800",
+  "Flyer": "bg-teal-100 text-teal-800",
+  "Profile": "bg-cyan-100 text-cyan-800",
+  "Menu": "bg-lime-100 text-lime-800",
+  "FB Cover": "bg-sky-100 text-sky-800",
+  "Whatsapp Cover": "bg-emerald-100 text-emerald-800",
+  "Profile Picture": "bg-fuchsia-100 text-fuchsia-800",
+  "Highlite Cover": "bg-rose-100 text-rose-800",
+  "Ad Post": "bg-amber-100 text-amber-800",
+  "Shooting": "bg-violet-100 text-violet-800",
+  "Meeting": "bg-gray-100 text-gray-800",
+  "Connect": "bg-slate-100 text-slate-800",
+  "Followup": "bg-stone-100 text-stone-800",
+};
+
 
 export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDetailSheetProps) {
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-        case 'todo': return 'bg-gray-200 text-gray-800';
-        case 'inprogress': return 'bg-purple-200 text-purple-800';
-        case 'done': return 'bg-green-200 text-green-800';
-        default: return 'bg-gray-200 text-gray-800';
-    }
-  }
 
   const formatDate = (date: string | null) => {
     if (!date) return 'No due date';
@@ -63,80 +72,102 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent 
-        className="w-[500px] sm:w-[540px] p-0 flex flex-col"
+        className="w-[640px] sm:w-[640px] p-0 flex flex-col"
         onInteractOutside={(e) => {
           e.preventDefault();
         }}
       >
-        <SheetHeader className="p-6 pb-0">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{task.clients?.name || 'No Client'}</span>
-                    <span>/</span>
-                    <span>{task.projects?.name || 'No Project'}</span>
-                </div>
-                <div className="flex items-center">
-                    <Button variant="ghost" size="icon"><LinkIconLucide className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                </div>
-            </div>
-            <SheetTitle className="text-2xl font-bold pt-4">{task.description}</SheetTitle>
-        </SheetHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-            <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground w-20">Status</span>
-                    <Badge className={cn('font-medium', getStatusColor(task.status))}>{statusLabels[task.status]}</Badge>
-                </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground w-20">Type</span>
-                    {task.type ? <Badge variant="outline">{task.type}</Badge> : <span>-</span>}
-                </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground w-20">Due date</span>
-                    <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{formatDate(task.deadline)}</span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground w-20">Assignee</span>
+        <div className="flex-1 overflow-y-auto p-8 space-y-8">
+            <SheetHeader className="text-left">
+                <SheetTitle className="text-3xl font-bold">{task.description}</SheetTitle>
+                <SheetDescription>
+                    {task.clients?.name || 'No Client'} / {task.projects?.name || 'No Project'}
+                </SheetDescription>
+            </SheetHeader>
+        
+            <div className="space-y-4 text-sm">
+                <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                    <span className="text-muted-foreground">Responsible</span>
                     {task.profiles ? (
                         <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={task.profiles.avatar_url ?? undefined} />
-                            <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
-                        </Avatar>
-                        <span>{task.profiles.full_name}</span>
+                            <Avatar className="h-6 w-6">
+                                <AvatarImage src={task.profiles.avatar_url ?? undefined} />
+                                <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
+                            </Avatar>
+                            <span>{task.profiles.full_name}</span>
                         </div>
                     ) : (
                         <span>-</span>
                     )}
                 </div>
-                 <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground w-20">Priority</span>
-                    <span>-</span>
+                 <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                    <span className="text-muted-foreground">Type</span>
+                    {task.type ? <Badge variant="outline" className={cn(`border-0 font-medium`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge> : <span>-</span>}
+                </div>
+                 <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                    <span className="text-muted-foreground">Due Date</span>
+                    <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>{formatDate(task.deadline)}</span>
+                    </div>
+                </div>
+                 <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                    <span className="text-muted-foreground">Priority</span>
+                    <span>None</span>
+                </div>
+                 <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                    <div></div>
+                    <Button variant="outline" size="sm" className="w-fit">
+                        <Paperclip className="mr-2 h-4 w-4" /> Attach file
+                    </Button>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm"><CheckSquare className="mr-2 h-4 w-4" /> Add subtask</Button>
-                <Button variant="outline" size="sm"><Paperclip className="mr-2 h-4 w-4" /> Attach file</Button>
-                <Button variant="outline" size="sm"><Clock className="mr-2 h-4 w-4" /> Start timer</Button>
-            </div>
-            
             <Separator />
             
             <div>
-                <h3 className="font-semibold mb-2">Description</h3>
-                <div 
-                    className="text-muted-foreground text-sm"
-                    dangerouslySetInnerHTML={{ __html: 'No description provided.' }}
-                />
+                <div className="flex items-center gap-2 mb-4">
+                    <AlignLeft className="h-5 w-5 text-muted-foreground"/>
+                    <h3 className="font-semibold text-lg">Description</h3>
+                </div>
+                {/* Placeholder for rich text editor */}
+                <div className="p-4 border rounded-md min-h-[150px] text-muted-foreground text-sm">
+                   No description provided.
+                </div>
+            </div>
+            
+             <div>
+                <div className="flex items-center gap-2 mb-4">
+                    <LinkIcon className="h-5 w-5 text-muted-foreground" fill="currentColor"/>
+                    <h3 className="font-semibold text-lg">Files</h3>
+                    <Badge variant="secondary">{task.attachments?.length || 0}</Badge>
+                </div>
+                {task.attachments && task.attachments.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-4">
+                        {task.attachments.map((att, index) => (
+                             <a key={index} href={att.publicUrl} target="_blank" rel="noopener noreferrer">
+                                {att.name.match(/\.(jpeg|jpg|gif|png)$/) != null ? (
+                                    <img src={att.publicUrl} alt={att.name} className="rounded-md object-cover h-32 w-full" />
+                                ) : (
+                                    <div className="border rounded-md h-32 flex flex-col items-center justify-center p-2">
+                                        <Paperclip className="h-8 w-8 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground text-center truncate w-full mt-2" title={att.name}>{att.name}</span>
+                                    </div>
+                                )}
+                            </a>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-sm text-muted-foreground">No files attached.</div>
+                )}
+                 <Button variant="ghost" className="mt-2 p-0 h-auto text-primary hover:text-primary">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Attach file
+                 </Button>
             </div>
 
         </div>
-        <div className="p-4 border-t bg-background">
+        <div className="p-4 border-t bg-background mt-auto">
             <Button onClick={() => onEdit(task)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit Task
