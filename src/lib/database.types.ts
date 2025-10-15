@@ -325,12 +325,42 @@ export type Database = {
           }
         ]
       }
+      app_settings: {
+        Row: {
+          id: number
+          key: string
+          value: Json | null
+        }
+        Insert: {
+          id?: number
+          key: string
+          value?: Json | null
+        }
+        Update: {
+          id?: number
+          key?: string
+          value?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_task_status: {
+        Args: {
+          task_id: string
+          new_status: string
+        }
+        Returns: undefined
+      }
+      delete_task_attachments: {
+        Args: {
+          task_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

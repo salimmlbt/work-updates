@@ -13,6 +13,8 @@ export type Role = DB['public']['Tables']['roles']['Row'];
 export type Team = DB['public']['Tables']['teams']['Row'];
 export type Client = DB['public']['Tables']['clients']['Row'];
 export type ProjectType = DB['public']['Tables']['project_types']['Row'];
+export type AppSettings = DB['public']['Tables']['app_settings']['Row'];
+
 
 export type TaskWithAssignee = Task & {
   profiles: DB['public']['Tables']['profiles']['Row'] | null;
@@ -30,9 +32,9 @@ export type RoleWithPermissions = Omit<Role, 'permissions'> & {
 };
 
 export type Attachment = {
-  id: string;
+  path: string;
+  publicUrl: string;
   name: string;
-  webViewLink: string;
 }
 
 export type TaskWithDetails = Task & {

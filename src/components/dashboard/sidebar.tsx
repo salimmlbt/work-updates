@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -18,7 +19,7 @@ import {
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
-import { LogOut, ChevronLeft } from 'lucide-react';
+import { LogOut, ChevronLeft, ShieldQuestion } from 'lucide-react';
 import type { Profile, RoleWithPermissions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -36,6 +37,7 @@ const navItems = [
 
 const bottomNavItems = [
   { href: '/teams', label: 'Team & Users', icon: TeamUsersIcon, id: 'teams' },
+  { href: '/accessibility', label: 'Accessibility', icon: ShieldQuestion, id: 'accessibility' },
   { href: '/settings', label: 'Settings', icon: SettingsIcon, id: 'settings' },
 ];
 
@@ -52,13 +54,15 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
   const hasAccess = (itemId: string) => {
     if (isFalaqAdmin) return true;
+    // Grant access to accessibility page for all users
+    if (itemId === 'accessibility') return true;
     return userPermissions[itemId] !== 'Restricted';
   };
 
   const filteredNavItems = navItems.filter(item => hasAccess(item.id));
   const filteredBottomNavItems = bottomNavItems.filter(item => hasAccess(item.id));
 
-  const NavLink = ({ item }: { item: typeof navItems[0] }) => {
+  const NavLink = ({ item }: { item: typeof navItems[0] | typeof bottomNavItems[0] }) => {
     const isActive =
       pathname.startsWith(item.href) &&
       (item.href !== '/dashboard' || pathname === '/dashboard');

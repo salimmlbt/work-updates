@@ -4,8 +4,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
-import { uploadFileToDrive, type FileUploadInput, type FileUploadOutput } from '@/ai/flows/google-drive-upload';
-import type { TaskWithAssignee } from '@/lib/types'
+import type { TaskWithAssignee, Attachment } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
@@ -238,7 +237,10 @@ export async function updateTask(taskId: string, formData: FormData) {
 
 export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogress' | 'done') {
   const supabase = createServerClient()
-  const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId)
+  const { error } = await supabase.rpc('update_task_status', {
+    task_id: taskId,
+    new_status: status
+  });
   
   if (error) {
     console.error('Error updating task status:', error);
@@ -753,27 +755,63 @@ export async function updateProfile(userId: string, formData: FormData) {
   return { data };
 }
 
-export async function uploadAttachment(formData: FormData): Promise<{ data: FileUploadOutput | null, error: string | null }> {
-  try {
-    const file = formData.get('file') as File;
+export async function uploadAttachment(formData: FormData): Promise<{ data: Attachment | null, error: string | null }> {
+  const supabase = createServerClient();
+  const file = formData.get('file') as File;
 
-    if (!file) {
-      return { data: null, error: 'No file provided.' };
-    }
-
-    const fileBuffer = await file.arrayBuffer();
-    const fileDataUri = `data:${file.type};base64,${Buffer.from(fileBuffer).toString('base64')}`;
-
-    const input: FileUploadInput = {
-      fileDataUri,
-      fileName: file.name,
-      mimeType: file.type,
-    };
-    
-    const result = await uploadFileToDrive(input);
-    return { data: result, error: null };
-  } catch (error: any) {
-    console.error('Error uploading attachment:', error);
-    return { data: null, error: error.message || 'Failed to upload attachment.' };
+  if (!file) {
+    return { data: null, error: 'No file provided.' };
   }
+
+  const filePath = `public/${Date.now()}_${file.name}`;
+  
+  const { error: uploadError } = await supabase.storage
+    .from('attachments')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    console.error('Error uploading attachment:', uploadError);
+    return { data: null, error: uploadError.message };
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from('attachments')
+    .getPublicUrl(filePath);
+
+  if (!publicUrlData) {
+    return { data: null, error: 'Could not get public URL for attachment.' };
+  }
+
+  const attachment: Attachment = {
+    path: filePath,
+    publicUrl: publicUrlData.publicUrl,
+    name: file.name
+  };
+
+  return { data: attachment, error: null };
+}
+
+export async function getAttachmentDeletionDelay(): Promise<number> {
+    const supabase = createServerClient();
+    const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'attachment_deletion_delay')
+        .single();
+    
+    // Default to 5 minutes (300 seconds) if not set
+    return data?.value ? parseInt(data.value as string, 10) : 300;
+}
+
+export async function setAttachmentDeletionDelay(delayInSeconds: number) {
+    const supabase = createServerClient();
+    const { error } = await supabase
+        .from('app_settings')
+        .upsert({ key: 'attachment_deletion_delay', value: delayInSeconds.toString() });
+
+    if (error) {
+        return { error: error.message };
+    }
+    revalidatePath('/accessibility');
+    return { success: true };
 }
