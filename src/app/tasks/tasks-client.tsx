@@ -62,6 +62,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
+import { TaskDetailSheet } from './task-detail-sheet';
 
 const statusIcons = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
@@ -384,7 +385,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean }) => {
+const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; }) => {
   const [dateText, setDateText] = useState('No date');
   const attachments = (task.attachments || []) as Attachment[];
 
@@ -404,10 +405,19 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
       setDateText('No date');
     }
   }, [task.deadline]);
+
+  const handleRowClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Prevent sheet from opening if a button, dropdown or interactive element was clicked
+    if (target.closest('button, [role="menuitem"], a')) {
+      return;
+    }
+    onTaskClick(task);
+  }
   
   return (
     <>
-      <td className="px-4 py-3 border-r max-w-[250px]">
+      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[250px] cursor-pointer">
         <div className="flex items-center gap-3">
           {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-muted-foreground shrink-0" fill="currentColor"/>}
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
@@ -424,14 +434,14 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 border-r max-w-[150px]">
+      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
       </td>
-      <td className="px-4 py-3 border-r max-w-[150px]">
+      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
       {canEdit && (
-        <td className="px-4 py-3 border-r max-w-[180px]">
+        <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[180px] cursor-pointer">
           {task.profiles ? (
             <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
               <Avatar className="h-6 w-6 shrink-0">
@@ -443,12 +453,12 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
           ) : <div className="flex justify-center">-</div>}
         </td>
       )}
-      <td className="px-4 py-3 border-r max-w-[120px]">
+      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[120px] cursor-pointer">
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
           {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
         </div>
       </td>
-      <td className="px-4 py-3 border-r max-w-[150px]">
+      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dateText}</span>
         </div>
@@ -530,7 +540,8 @@ const TaskTableBody = ({
   onStatusChange,
   onEdit,
   onDelete,
-  canEdit
+  canEdit,
+  onTaskClick,
 }: {
   isOpen: boolean
   tasks: TaskWithDetails[]
@@ -544,6 +555,7 @@ const TaskTableBody = ({
   onEdit: (task: TaskWithDetails) => void;
   onDelete: (task: TaskWithDetails) => void;
   canEdit: boolean;
+  onTaskClick: (task: TaskWithDetails) => void;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -565,7 +577,7 @@ const TaskTableBody = ({
               className={`border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors`}
               data-menu-open={openMenuId === task.id}
             >
-              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} canEdit={canEdit} />
+              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} canEdit={canEdit} onTaskClick={onTaskClick} />
             </motion.tr>
           ))}
       </AnimatePresence>
@@ -582,15 +594,23 @@ const TaskTableBody = ({
   )
 }
 
-const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean }) => {
+const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskClick }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void }) => {
   const cardColors: { [key: string]: string } = {
     "todo": "bg-blue-100",
     "inprogress": "bg-yellow-100",
     "done": "bg-gray-100",
   };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, [role="menuitem"], a')) {
+      return;
+    }
+    onTaskClick(task);
+  }
   
   return (
-    <Card className={`mb-4 ${cardColors[task.status] ?? 'bg-gray-100'}`}>
+    <Card className={`mb-4 ${cardColors[task.status] ?? 'bg-gray-100'}`} onClick={handleCardClick}>
       <CardHeader className="p-4 flex flex-row items-start justify-between">
         <CardTitle className="text-sm font-medium">{task.description}</CardTitle>
          {canEdit && (
@@ -647,7 +667,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit }: { task:
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean }) => {
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit, onTaskClick }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void }) => {
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
@@ -662,7 +682,7 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
             </h2>
             <div className="bg-gray-100 p-4 rounded-lg h-full">
               {tasksInStatus.map(task => (
-                <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit}/>
+                <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} onTaskClick={onTaskClick}/>
               ))}
               {canEdit && (
                 <Button variant="ghost" className="w-full mt-2 text-gray-500">
@@ -705,6 +725,8 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
   const [searchQuery, setSearchQuery] = useState('');
   const [taskView, setTaskView] = useState<'all' | 'mine'>('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   
   const supabase = createClient();
 
@@ -820,6 +842,9 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
 
   const handleTaskUpdated = (updatedTask: TaskWithDetails) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    if (selectedTask?.id === updatedTask.id) {
+        setSelectedTask(updatedTask);
+    }
   };
 
   const handleEditClick = (task: TaskWithDetails) => {
@@ -1007,6 +1032,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                           onEdit={handleEditClick}
                           onDelete={handleDeleteClick}
                           canEdit={canEditTasks}
+                          onTaskClick={setSelectedTask}
                       />
                   </table>
                  {canEditTasks && (
@@ -1074,6 +1100,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                                 onEdit={handleEditClick}
                                 onDelete={handleDeleteClick}
                                 canEdit={canEditTasks}
+                                onTaskClick={setSelectedTask}
                             />
                         </table>
                     </motion.div>
@@ -1083,7 +1110,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
         )}
       </>
     ) : (
-      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} />
+      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask}/>
     )
   }
 
@@ -1184,6 +1211,18 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
           {mainContent()}
         </div>
       </main>
+
+      {selectedTask && (
+        <TaskDetailSheet 
+            task={selectedTask}
+            isOpen={!!selectedTask}
+            onOpenChange={(isOpen) => !isOpen && setSelectedTask(null)}
+            onEdit={() => {
+                setEditTaskOpen(true);
+                setTaskToEdit(selectedTask);
+            }}
+        />
+      )}
 
       {taskToEdit && canEditTasks && (
         <EditTaskDialog
