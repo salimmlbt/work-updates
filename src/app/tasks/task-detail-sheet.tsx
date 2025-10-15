@@ -62,7 +62,12 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[500px] sm:w-[540px] p-0 flex flex-col">
+      <SheetContent 
+        className="w-[500px] sm:w-[540px] p-0 flex flex-col"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
         <SheetHeader className="p-6 pb-0">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
