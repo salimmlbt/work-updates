@@ -807,7 +807,7 @@ export async function setAttachmentDeletionDelay(delayInSeconds: number) {
     const supabase = createServerClient();
     const { error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'attachment_deletion_delay', value: delayInSeconds.toString() });
+        .upsert({ key: 'attachment_deletion_delay', value: delayInSeconds.toString() }, { onConflict: 'key' });
 
     if (error) {
         return { error: error.message };
