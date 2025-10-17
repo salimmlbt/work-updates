@@ -86,7 +86,7 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent 
-        className="w-[640px] sm:w-[640px] p-0 flex flex-col"
+        className="w-[800px] sm:w-[800px] p-0 flex flex-col"
         onInteractOutside={(e) => {
           e.preventDefault();
         }}
