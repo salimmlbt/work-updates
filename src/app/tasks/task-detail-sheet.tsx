@@ -9,12 +9,7 @@ import {
     SheetDescription,
 } from '@/components/ui/sheet'
 import {
-  MoreVertical,
   Calendar,
-  User,
-  Paperclip,
-  Clock,
-  CheckSquare,
   Pencil,
   AlignLeft,
   Plus,
@@ -27,6 +22,7 @@ import { cn, getInitials } from '@/lib/utils'
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { LinkIcon } from '@/components/icons'
+import { RichTextEditor } from '@/components/rich-text-editor/rich-text-editor'
 
 interface TaskDetailSheetProps {
   task: TaskWithDetails
@@ -71,17 +67,16 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
   };
 
   let attachments: Attachment[] = [];
-    if (task.attachments) {
-        try {
-            // attachments might be a JSON string, so we try to parse it.
-            const parsed = typeof task.attachments === 'string' ? JSON.parse(task.attachments) : task.attachments;
-            if (Array.isArray(parsed)) {
-                attachments = parsed;
-            }
-        } catch (e) {
-            console.error("Failed to parse attachments:", e);
-        }
-    }
+  if (task.attachments) {
+      try {
+          const parsed = typeof task.attachments === 'string' ? JSON.parse(task.attachments) : task.attachments;
+          if (Array.isArray(parsed)) {
+              attachments = parsed;
+          }
+      } catch (e) {
+          console.error("Failed to parse attachments:", e);
+      }
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -129,12 +124,6 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
                     <span className="text-muted-foreground">Priority</span>
                     <span>None</span>
                 </div>
-                 <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                    <div></div>
-                    <Button variant="outline" size="sm" className="w-fit">
-                        <Paperclip className="mr-2 h-4 w-4" /> Attach file
-                    </Button>
-                </div>
             </div>
 
             <Separator />
@@ -144,10 +133,11 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
                     <AlignLeft className="h-5 w-5 text-muted-foreground"/>
                     <h3 className="font-semibold text-lg">Description</h3>
                 </div>
-                {/* Placeholder for rich text editor */}
-                <div className="p-4 border rounded-md min-h-[150px] text-muted-foreground text-sm">
-                   No description provided.
-                </div>
+                <RichTextEditor 
+                  taskId={task.id}
+                  initialContent={task.rich_description as any}
+                  userProfile={task.profiles}
+                />
             </div>
             
              <div>
@@ -164,8 +154,7 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
                                     <img src={att.publicUrl} alt={att.name} className="rounded-md object-cover h-32 w-full" />
                                 ) : (
                                     <div className="border rounded-md h-32 flex flex-col items-center justify-center p-2">
-                                        <Paperclip className="h-8 w-8 text-muted-foreground" />
-                                        <span className="text-xs text-muted-foreground text-center truncate w-full mt-2" title={att.name}>{att.name}</span>
+                                        <p className="text-xs text-muted-foreground text-center truncate w-full mt-2" title={att.name}>{att.name}</p>
                                     </div>
                                 )}
                             </a>
