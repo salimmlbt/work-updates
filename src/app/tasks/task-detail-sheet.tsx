@@ -71,17 +71,17 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
   };
 
   let attachments: Attachment[] = [];
-  if (task.attachments) {
-    try {
-        // attachments might be a JSON string, so we try to parse it.
-        const parsed = typeof task.attachments === 'string' ? JSON.parse(task.attachments) : task.attachments;
-        if (Array.isArray(parsed)) {
-            attachments = parsed;
+    if (task.attachments) {
+        try {
+            // attachments might be a JSON string, so we try to parse it.
+            const parsed = typeof task.attachments === 'string' ? JSON.parse(task.attachments) : task.attachments;
+            if (Array.isArray(parsed)) {
+                attachments = parsed;
+            }
+        } catch (e) {
+            console.error("Failed to parse attachments:", e);
         }
-    } catch (e) {
-        console.error("Failed to parse attachments:", e);
     }
-  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -116,7 +116,7 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
                 </div>
                  <div className="grid grid-cols-[120px_1fr] items-center gap-4">
                     <span className="text-muted-foreground">Type</span>
-                    {task.type ? <Badge variant="outline" className={cn(`border-0 font-medium`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge> : <span>-</span>}
+                    {task.type ? <Badge variant="outline" className={cn(`border-0 font-medium w-fit`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge> : <span>-</span>}
                 </div>
                  <div className="grid grid-cols-[120px_1fr] items-center gap-4">
                     <span className="text-muted-foreground">Due Date</span>
