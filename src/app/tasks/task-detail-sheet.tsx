@@ -17,18 +17,20 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { TaskWithDetails, Attachment } from '@/lib/types'
+import type { TaskWithDetails, Attachment, Profile } from '@/lib/types'
 import { cn, getInitials } from '@/lib/utils'
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { LinkIcon } from '@/components/icons'
 import { RichTextEditor } from '@/components/rich-text-editor/rich-text-editor'
+import { useMemo } from 'react'
 
 interface TaskDetailSheetProps {
   task: TaskWithDetails
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
   onEdit: (task: TaskWithDetails) => void
+  userProfile: Profile | null
 }
 
 const typeColors: { [key: string]: string } = {
@@ -55,7 +57,7 @@ const typeColors: { [key: string]: string } = {
 };
 
 
-export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDetailSheetProps) {
+export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit, userProfile }: TaskDetailSheetProps) {
 
   const formatDate = (date: string | null) => {
     if (!date) return 'No due date';
@@ -66,17 +68,20 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
     return format(d, "d MMM yyyy");
   };
 
-  let attachments: Attachment[] = [];
-  if (task.attachments) {
-      try {
-          const parsed = typeof task.attachments === 'string' ? JSON.parse(task.attachments) : task.attachments;
-          if (Array.isArray(parsed)) {
-              attachments = parsed;
-          }
-      } catch (e) {
-          console.error("Failed to parse attachments:", e);
+  const attachments = useMemo(() => {
+    if (!task.attachments) return [];
+    try {
+      if (typeof task.attachments === 'string') {
+        return JSON.parse(task.attachments) as Attachment[];
       }
-  }
+      if (Array.isArray(task.attachments)) {
+        return task.attachments;
+      }
+    } catch (e) {
+      console.error("Failed to parse attachments:", e);
+    }
+    return [];
+  }, [task.attachments]);
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -136,7 +141,7 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
                 <RichTextEditor 
                   taskId={task.id}
                   initialContent={task.rich_description as any}
-                  userProfile={task.profiles}
+                  userProfile={userProfile}
                 />
             </div>
             

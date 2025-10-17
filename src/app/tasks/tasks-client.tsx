@@ -387,7 +387,21 @@ const AddTaskRow = ({
 
 const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; }) => {
   const [dateText, setDateText] = useState('No date');
-  const attachments = (task.attachments || []) as Attachment[];
+  
+  const attachments = useMemo(() => {
+    if (!task.attachments) return [];
+    try {
+      if (typeof task.attachments === 'string') {
+        return JSON.parse(task.attachments) as Attachment[];
+      }
+      if (Array.isArray(task.attachments)) {
+        return task.attachments;
+      }
+    } catch (e) {
+      console.error("Failed to parse attachments in TaskRow:", e);
+    }
+    return [];
+  }, [task.attachments]);
 
   useEffect(() => {
     if (task.deadline) {
@@ -1234,6 +1248,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                 setEditTaskOpen(true);
                 setTaskToEdit(selectedTask);
             }}
+            userProfile={currentUserProfile}
         />
       )}
 
