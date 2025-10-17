@@ -650,7 +650,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
             ))}
           </div>
         )}
-        {task.deadline && <p className="text-xs text-gray-600">{format(new Date(task.deadline), 'dd MMM yyyy')}</p>}
+        {task.deadline && <p className="text-xs text-gray-600">{format(parseISO(task.deadline), 'dd MMM yyyy')}</p>}
       </CardContent>
       <CardFooter className="p-4 pt-0 flex justify-between items-center">
         <div className="flex items-center">

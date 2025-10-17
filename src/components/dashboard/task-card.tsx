@@ -1,6 +1,7 @@
+
 'use client'
 
-import { format, isPast } from 'date-fns'
+import { format, isPast, parseISO } from 'date-fns'
 import { CalendarIcon, UserCircle, Tag, ChevronDown } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -34,7 +35,7 @@ const priorityColors = {
 
 export function TaskCard({ task }: TaskCardProps) {
   const { toast } = useToast();
-  const deadline = new Date(task.deadline)
+  const deadline = parseISO(task.deadline)
   const isOverdue = isPast(deadline)
 
   const handleStatusChange = async (status: 'todo' | 'inprogress' | 'done') => {
