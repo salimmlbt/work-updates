@@ -705,6 +705,19 @@ interface TasksClientProps {
   currentUserProfile: Profile | null;
 }
 
+const processTaskAttachments = (task: Task): Attachment[] | null => {
+  if (!task.attachments) return null;
+  try {
+    const parsed = typeof task.attachments === 'string' 
+      ? JSON.parse(task.attachments) 
+      : task.attachments;
+    return Array.isArray(parsed) ? parsed : null;
+  } catch (e) {
+    console.error("Failed to parse attachments:", e);
+    return null;
+  }
+};
+
 export default function TasksClient({ initialTasks, projects, clients, profiles, currentUserProfile }: TasksClientProps) {
   const [view, setView] = useState('table');
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
@@ -751,7 +764,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                     profiles: profiles.find(p => p.id === newTask.assignee_id) || null,
                     projects: projects.find(p => p.id === newTask.project_id) || null,
                     clients: clients.find(c => c.id === newTask.client_id) || null,
-                    attachments: newTask.attachments as Attachment[] | null,
+                    attachments: processTaskAttachments(newTask),
                 };
                 setTasks(current => [newFullTask, ...current])
            } else if (payload.eventType === 'UPDATE') {
@@ -761,7 +774,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                     profiles: profiles.find(p => p.id === updatedTask.assignee_id) || null,
                     projects: projects.find(p => p.id === updatedTask.project_id) || null,
                     clients: clients.find(c => c.id === updatedTask.client_id) || null,
-                    attachments: updatedTask.attachments as Attachment[] | null,
+                    attachments: processTaskAttachments(updatedTask),
                 };
                 setTasks(current => current.map(t => t.id === updatedTask.id ? updatedFullTask : t));
            } else if (payload.eventType === 'DELETE') {

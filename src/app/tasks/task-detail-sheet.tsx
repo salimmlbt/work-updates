@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { TaskWithDetails } from '@/lib/types'
+import type { TaskWithDetails, Attachment } from '@/lib/types'
 import { cn, getInitials } from '@/lib/utils'
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
@@ -69,6 +69,19 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
     if (isYesterday(d)) return 'Yesterday';
     return format(d, "d MMM yyyy");
   };
+
+  let attachments: Attachment[] = [];
+  if (task.attachments) {
+    try {
+        // attachments might be a JSON string, so we try to parse it.
+        const parsed = typeof task.attachments === 'string' ? JSON.parse(task.attachments) : task.attachments;
+        if (Array.isArray(parsed)) {
+            attachments = parsed;
+        }
+    } catch (e) {
+        console.error("Failed to parse attachments:", e);
+    }
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -141,11 +154,11 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit }: TaskDeta
                 <div className="flex items-center gap-2 mb-4">
                     <LinkIcon className="h-5 w-5 text-muted-foreground" fill="currentColor"/>
                     <h3 className="font-semibold text-lg">Files</h3>
-                    <Badge variant="secondary">{task.attachments?.length || 0}</Badge>
+                    <Badge variant="secondary">{attachments.length}</Badge>
                 </div>
-                {task.attachments && task.attachments.length > 0 ? (
+                {attachments && attachments.length > 0 ? (
                     <div className="grid grid-cols-3 gap-4">
-                        {task.attachments.map((att, index) => (
+                        {attachments.map((att, index) => (
                              <a key={index} href={att.publicUrl} target="_blank" rel="noopener noreferrer">
                                 {att.name.match(/\.(jpeg|jpg|gif|png)$/) != null ? (
                                     <img src={att.publicUrl} alt={att.name} className="rounded-md object-cover h-32 w-full" />
