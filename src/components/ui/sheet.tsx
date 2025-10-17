@@ -35,12 +35,12 @@ const sheetVariants = cva(
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+        top: "inset-x-0 top-0 border-b data-[state=closed]:animate-slide-out-top data-[state=open]:slide-in-from-top",
         bottom:
-          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+          "inset-x-0 bottom-0 border-t data-[state=closed]:animate-slide-out-bottom data-[state=open]:slide-in-from-bottom",
+        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:animate-slide-out-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         right:
-          "inset-y-0 right-0 h-full w-[800px] max-w-[95vw] border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+          "inset-y-0 right-0 h-full w-[800px] max-w-[95vw] border-l data-[state=closed]:animate-slide-out-right data-[state=open]:slide-in-from-right",
 
       },
     },
@@ -66,12 +66,10 @@ const SheetContent = React.forwardRef<
       {...props}
     >
       {children}
-      <SheetPrimitive.Close
-  className="absolute -left-4 top-4 rounded-l-full rounded-r-none bg-background p-2 pr-1 text-muted-foreground hover:text-blue-500 transition-colors focus:outline-none"
->
-  <X className="h-5 w-5" />
-  <span className="sr-only">Close</span>
-</SheetPrimitive.Close>
+      <SheetPrimitive.Close className="absolute -left-4 top-[calc(50%-14px)] rounded-l-full rounded-r-none bg-background p-2 pr-1 text-muted-foreground hover:text-blue-500 transition-colors focus:outline-none h-14 w-8 flex items-center justify-start">
+        <X className="h-5 w-5" />
+        <span className="sr-only">Close</span>
+      </SheetPrimitive.Close>
     </SheetPrimitive.Content>
   </SheetPortal>
 ))
