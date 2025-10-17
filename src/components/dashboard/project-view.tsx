@@ -195,7 +195,7 @@ export default function ProjectView({
         <div className="flex-1 p-4 md:p-8">
             <Tabs defaultValue="table" value={view}>
               <TabsContent value="table">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                     {statusColumns.map(column => (
                         <div key={column.id} className="bg-muted/30 rounded-lg p-4 h-full">
                         <h2 className="text-lg font-semibold mb-4 text-foreground">{column.title}</h2>
