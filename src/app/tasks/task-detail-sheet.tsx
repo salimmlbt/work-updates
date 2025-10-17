@@ -87,9 +87,6 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit, userProfil
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent 
         className="w-[800px] sm:w-[800px] p-0 flex flex-col"
-        onInteractOutside={(e) => {
-          e.preventDefault();
-        }}
       >
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
             <SheetHeader className="text-left">
