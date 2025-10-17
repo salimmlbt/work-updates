@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { format, isToday, isTomorrow, isYesterday } from 'date-fns'
+import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { Calendar, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -82,7 +82,7 @@ export function EditTaskDialog({
 
   const selectedAssignee = profiles.find(p => p.id === assigneeId);
   const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
-  const availableTaskTypes = assigneeTeams.flatMap(t => t.default_tasks || []);
+  const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
   const filteredProjects = clientId ? projects.filter(p => p.client_id === clientId) : [];
 
   useEffect(() => {
@@ -91,7 +91,7 @@ export function EditTaskDialog({
         description: task.description,
         client_id: task.client_id || undefined,
         project_id: task.project_id,
-        deadline: new Date(task.deadline),
+        deadline: parseISO(task.deadline),
         assignee_id: task.assignee_id,
         type: task.type,
         tags: task.tags?.join(', '),
