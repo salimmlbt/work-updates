@@ -240,6 +240,7 @@ export type Database = {
           type: string | null
           is_deleted: boolean
           attachments: Json | null
+          rich_description: Json | null
         }
         Insert: {
           assignee_id?: string | null
@@ -254,6 +255,7 @@ export type Database = {
           type?: string | null
           is_deleted?: boolean
           attachments?: Json | null
+          rich_description?: Json | null
         }
         Update: {
           assignee_id?: string | null
@@ -268,6 +270,7 @@ export type Database = {
           type?: string | null
           is_deleted?: boolean
           attachments?: Json | null
+          rich_description?: Json | null
         }
         Relationships: [
           {
