@@ -42,7 +42,7 @@ export default async function TasksPage() {
 
     const projectMap = new Map<string, Project>();
     if (tasksData) {
-      tasksData.forEach(task => {
+      (tasksData as any[]).forEach(task => {
         if (task.projects && !projectMap.has(task.projects.id)) {
           projectMap.set(task.projects.id, task.projects as Project);
         }
