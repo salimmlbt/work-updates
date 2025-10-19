@@ -469,10 +469,10 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleStatusChange = (projectId: string, newStatus: string) => {
     const originalProjects = [...projects];
-    const newProjects = projects.map(p => 
+    const optimisticProjects = projects.map(p => 
       p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
     );
-    setProjects(newProjects);
+    setProjects(optimisticProjects);
 
     startTransition(async () => {
         const { error } = await updateProjectStatus(projectId, newStatus);
@@ -837,3 +837,5 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
+
+    
