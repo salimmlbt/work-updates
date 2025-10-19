@@ -396,9 +396,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         if (p.id === updatedProjectData.id) {
             const client = clients.find(c => c.id === updatedProjectData.client_id) || p.client;
             return {
-                ...p, // Keep existing full data
-                ...updatedProjectData, // Overwrite with updated fields
-                client, // Ensure client is correctly set
+                ...p, 
+                ...updatedProjectData, 
+                client,
             } as ProjectWithOwner;
         }
         return p;
@@ -471,10 +471,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleStatusChange = (projectId: string, newStatus: string) => {
     const originalProjects = [...projects];
-    const projectToUpdate = projects.find(p => p.id === projectId);
-    if (!projectToUpdate) return;
-    
-    // Optimistically update UI
     const optimisticProjects = projects.map(p => 
         p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
     );
@@ -486,7 +482,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             toast({ title: "Error updating status", description: error, variant: "destructive" });
             setProjects(originalProjects); // Revert on error
         } else if (data) {
-             // Confirm update with server data
             setProjects(currentProjects => currentProjects.map(p =>
                 p.id === data.id ? { ...p, status: data.status, updated_at: data.updated_at } : p
             ));
