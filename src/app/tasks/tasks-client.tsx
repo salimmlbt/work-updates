@@ -1203,12 +1203,12 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
             </Button>
           </div>
           {canEditTasks ? (
-            <div className="flex items-center rounded-lg bg-gray-100 p-1">
+            <div className="flex items-center rounded-full bg-gray-100 p-1">
               <Button
                 variant={taskView === 'all' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setTaskView('all')}
-                className={taskView === 'all' ? 'bg-white shadow' : ''}
+                className={cn('rounded-full', taskView === 'all' ? 'bg-white shadow' : '')}
               >
                 All Tasks
               </Button>
@@ -1216,7 +1216,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                 variant={taskView === 'mine' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setTaskView('mine')}
-                className={taskView === 'mine' ? 'bg-white shadow' : ''}
+                className={cn('rounded-full', taskView === 'mine' ? 'bg-white shadow' : '')}
               >
                 My Tasks
               </Button>
@@ -1225,7 +1225,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
             <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
           )}
           {canEditTasks && (
-            <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(!showBin)}>
+            <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200 rounded-full" onClick={() => setShowBin(!showBin)}>
               <Trash2 className="mr-2 h-4 w-4" />
               Bin
             </Button>
