@@ -236,15 +236,15 @@ export async function updateTask(taskId: string, formData: FormData) {
 }
 
 export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogress' | 'done') {
-  const supabase = createServerClient()
+  const supabase = createServerClient();
   const { error } = await supabase
     .from('tasks')
     .update({ status })
-    .eq('id', taskId)
+    .eq('id', taskId);
   
   if (error) {
     console.error('Error updating task status:', error);
-    return { error: error.message }
+    return { error: error.message };
   }
 
   if (status === 'done') {
@@ -252,24 +252,27 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
       .from('tasks')
       .select('attachments')
       .eq('id', taskId)
-      .single()
+      .single();
 
-    if (task?.attachments && (task.attachments as any[]).length > 0) {
-      const delayInSeconds = await getAttachmentDeletionDelay()
+    const attachments = task?.attachments as any;
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      const delayInSeconds = await getAttachmentDeletionDelay();
       const { error: rpcError } = await supabase.rpc('schedule_task_attachment_deletion', {
         p_task_id: taskId,
         p_delay_seconds: delayInSeconds,
-      })
+      });
+
       if (rpcError) {
-        console.error('Error scheduling attachment deletion:', rpcError)
+        console.error('Error scheduling attachment deletion:', rpcError);
         // We don't return the error here, as the status update itself was successful
+        // but this log is important for debugging.
       }
     }
   }
 
-  revalidatePath('/tasks')
-  revalidatePath('/dashboard')
-  return { success: true }
+  revalidatePath('/tasks');
+  revalidatePath('/dashboard');
+  return { success: true };
 }
 
 export async function deleteTask(taskId: string) {
@@ -836,3 +839,5 @@ export async function setAttachmentDeletionDelay(delayInSeconds: number) {
     revalidatePath('/accessibility');
     return { success: true };
 }
+
+    

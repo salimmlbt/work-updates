@@ -37,7 +37,6 @@ const navItems = [
 
 const bottomNavItems = [
   { href: '/teams', label: 'Team & Users', icon: TeamUsersIcon, id: 'teams' },
-  { href: '/accessibility', label: 'Accessibility', icon: ShieldQuestion, id: 'accessibility' },
   { href: '/settings', label: 'Settings', icon: SettingsIcon, id: 'settings' },
 ];
 
@@ -114,6 +113,9 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
     return <Link href={item.href}>{linkContent}</Link>;
   };
+  
+    const accessibilityItem = { href: '/accessibility', label: 'Accessibility', icon: ShieldQuestion, id: 'accessibility' };
+
 
   return (
     <TooltipProvider>
@@ -176,6 +178,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
+              
+              {hasAccess(accessibilityItem.id) && <NavLink item={accessibilityItem} />}
 
               {/* Logout */}
               <Tooltip>
@@ -239,3 +243,5 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
     </TooltipProvider>
   );
 }
+
+    
