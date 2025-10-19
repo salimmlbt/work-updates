@@ -247,27 +247,6 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
     return { error: error.message };
   }
 
-  if (status === 'done') {
-    const { data: task } = await supabase
-      .from('tasks')
-      .select('attachments')
-      .eq('id', taskId)
-      .single();
-
-    if (task?.attachments && Array.isArray(task.attachments) && task.attachments.length > 0) {
-      const delayInSeconds = await getAttachmentDeletionDelay();
-      const { error: rpcError } = await supabase.rpc('schedule_task_attachment_deletion', {
-        p_task_id: taskId,
-        p_delay_seconds: delayInSeconds,
-      });
-
-      if (rpcError) {
-        console.error('Error scheduling attachment deletion:', rpcError);
-        // Do not return error to client, but log it.
-      }
-    }
-  }
-
   revalidatePath('/tasks');
   revalidatePath('/dashboard');
   return { success: true };
@@ -835,6 +814,6 @@ export async function setAttachmentDeletionDelay(delayInSeconds: number) {
     if (error) {
         return { error: error.message };
     }
-    revalidatePath('/accessibility');
+    revalidatePath('/settings');
     return { success: true };
 }
