@@ -792,28 +792,3 @@ export async function uploadAttachment(formData: FormData): Promise<{ data: Atta
 
   return { data: attachment, error: null };
 }
-
-export async function getAttachmentDeletionDelay(): Promise<number> {
-    const supabase = createServerClient();
-    const { data } = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', 'attachment_deletion_delay')
-        .single();
-    
-    // Default to 5 minutes (300 seconds) if not set
-    return data?.value ? parseInt(data.value as string, 10) : 300;
-}
-
-export async function setAttachmentDeletionDelay(delayInSeconds: number) {
-    const supabase = createServerClient();
-    const { error } = await supabase
-        .from('app_settings')
-        .upsert({ key: 'attachment_deletion_delay', value: delayInSeconds.toString() }, { onConflict: 'key' });
-
-    if (error) {
-        return { error: error.message };
-    }
-    revalidatePath('/settings');
-    return { success: true };
-}

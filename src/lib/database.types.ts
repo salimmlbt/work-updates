@@ -351,13 +351,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      schedule_task_attachment_deletion: {
-        Args: {
-          p_task_id: string
-          p_delay_seconds: number
-        }
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
