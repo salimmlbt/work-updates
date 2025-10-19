@@ -351,18 +351,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      update_task_status: {
-        Args: {
-          task_id: string
-          new_status: string
-        }
-        Returns: undefined
-      }
       delete_task_attachments: {
         Args: {
           task_id: string
+          delay: string
         }
-        Returns: undefined
+        Returns: number
       }
     }
     Enums: {

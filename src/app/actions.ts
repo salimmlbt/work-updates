@@ -247,7 +247,29 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
     return { error: error.message }
   }
 
+  if (status === 'done') {
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('attachments')
+      .eq('id', taskId)
+      .single()
+
+    if (task?.attachments && (task.attachments as any[]).length > 0) {
+      const delayInSeconds = await getAttachmentDeletionDelay()
+      const delayInterval = `${delayInSeconds} seconds`
+      const { error: rpcError } = await supabase.rpc('delete_task_attachments', {
+        task_id: taskId,
+        delay: delayInterval,
+      })
+      if (rpcError) {
+        console.error('Error scheduling attachment deletion:', rpcError)
+        // We don't return the error here, as the status update itself was successful
+      }
+    }
+  }
+
   revalidatePath('/tasks')
+  revalidatePath('/dashboard')
   return { success: true }
 }
 
