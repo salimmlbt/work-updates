@@ -53,24 +53,16 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
   const hasAccess = (itemId: string) => {
     if (isFalaqAdmin) return true;
-    // Grant access to accessibility page for all users
-    if (itemId === 'accessibility') return true;
     return userPermissions[itemId] !== 'Restricted';
   };
-
-  const filteredNavItems = navItems.filter(item => hasAccess(item.id));
-  const bottomNavs = bottomNavItems.filter(item => hasAccess(item.id));
   
   const accessibilityItem = { href: '/accessibility', label: 'Accessibility', icon: ShieldQuestion, id: 'accessibility' };
-  if (hasAccess(accessibilityItem.id)) {
-      const settingsIndex = bottomNavs.findIndex(item => item.id === 'settings');
-      if (settingsIndex !== -1) {
-          bottomNavs.splice(settingsIndex + 1, 0, accessibilityItem);
-      } else {
-          bottomNavs.push(accessibilityItem);
-      }
-  }
 
+  const filteredNavItems = navItems.filter(item => hasAccess(item.id));
+  const filteredBottomNavItems = [
+    ...bottomNavItems.filter(item => hasAccess(item.id)),
+    ...(hasAccess(accessibilityItem.id) ? [accessibilityItem] : [])
+  ];
 
   const NavLink = ({ item }: { item: typeof navItems[0] | typeof bottomNavItems[0] }) => {
     const isActive =
@@ -183,10 +175,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
           {/* Bottom nav + profile */}
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
-              {bottomNavs.map((item) => (
+              {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
-              
+
               {/* Logout */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -249,3 +241,4 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
     </TooltipProvider>
   );
 }
+

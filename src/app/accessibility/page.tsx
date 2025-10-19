@@ -19,6 +19,7 @@ async function getSettings() {
         .eq('key', 'attachment_deletion_delay')
         .single();
     
+    // Default to 5 minutes (300 seconds) if not set
     const delay = delayData?.value ? parseInt(delayData.value as string, 10) : 300;
 
     return {

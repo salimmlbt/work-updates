@@ -254,8 +254,7 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
       .eq('id', taskId)
       .single();
 
-    const attachments = task?.attachments as any;
-    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+    if (task?.attachments && Array.isArray(task.attachments) && task.attachments.length > 0) {
       const delayInSeconds = await getAttachmentDeletionDelay();
       const { error: rpcError } = await supabase.rpc('schedule_task_attachment_deletion', {
         p_task_id: taskId,
@@ -264,8 +263,7 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
 
       if (rpcError) {
         console.error('Error scheduling attachment deletion:', rpcError);
-        // We don't return the error here, as the status update itself was successful
-        // but this log is important for debugging.
+        // Do not return error to client, but log it.
       }
     }
   }
@@ -274,6 +272,7 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
   revalidatePath('/dashboard');
   return { success: true };
 }
+
 
 export async function deleteTask(taskId: string) {
   const supabase = createServerClient()
@@ -839,5 +838,3 @@ export async function setAttachmentDeletionDelay(delayInSeconds: number) {
     revalidatePath('/accessibility');
     return { success: true };
 }
-
-    

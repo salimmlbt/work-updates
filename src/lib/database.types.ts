@@ -353,7 +353,7 @@ export type Database = {
     Functions: {
       schedule_task_attachment_deletion: {
         Args: {
-          p_task_id: string,
+          p_task_id: string
           p_delay_seconds: number
         }
         Returns: number
