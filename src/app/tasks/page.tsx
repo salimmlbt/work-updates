@@ -29,7 +29,7 @@ export default async function TasksPage() {
         .select('*, teams:profile_teams(teams(*))');
 
     if (tasksError || clientsError || profilesError) {
-        console.error('Error fetching data:', tasksError || clientsError || profilesError);
+        console.error('Error fetching data:', tasksError, clientsError, profilesError);
     }
     
     const tasks = (tasksData as any[] || []).map(task => {
