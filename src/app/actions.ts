@@ -53,8 +53,8 @@ export async function addProject(formData: FormData) {
       type: rawFormData.type,
       is_deleted: false,
     })
-    .select()
-    .maybeSingle()
+    .select('*, client:clients(*)')
+    .single()
 
   if (projectError) {
     console.error('Error creating project:', projectError)
@@ -88,7 +88,7 @@ export async function updateProject(projectId: string, formData: FormData) {
         return { error: 'Project name is required.' }
     }
 
-    const { error: projectError } = await supabase
+    const { data: project, error: projectError } = await supabase
         .from('projects')
         .update({
             name: rawFormData.name,
@@ -103,6 +103,8 @@ export async function updateProject(projectId: string, formData: FormData) {
             updated_at: new Date().toISOString()
         })
         .eq('id', projectId)
+        .select('*, client:clients(*)')
+        .single();
 
     if (projectError) {
         console.error('Error updating project:', projectError)
@@ -111,7 +113,7 @@ export async function updateProject(projectId: string, formData: FormData) {
     
     revalidatePath('/dashboard')
     revalidatePath('/projects')
-    return { data: { success: true } }
+    return { data: project }
 }
 
 export async function updateProjectStatus(projectId: string, status: string) {
@@ -564,7 +566,7 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
         avatar_url: userData.avatar_url,
         role_id: userData.role_id,
       })
-      .select('*, roles(*), teams(*)')
+      .select('*, roles(*), teams:profile_teams(teams(*))')
       .single();
 
     if (profileError) {
@@ -797,8 +799,8 @@ export async function uploadAttachment(formData: FormData): Promise<{ data: Atta
 export async function schedule_task_attachment_deletion(task_id: string, delay_seconds: number) {
     const supabase = createServerClient()
     const { error } = await supabase.rpc('schedule_task_attachment_deletion', {
-        task_id,
-        delay_seconds
+        p_task_id: task_id,
+        p_delay_seconds: delay_seconds
     })
     if (error) {
         console.error('Error scheduling attachment deletion:', error)

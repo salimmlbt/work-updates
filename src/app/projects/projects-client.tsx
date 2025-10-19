@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -382,26 +383,25 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleProjectAdded = (newProject: Project) => {
     const newProjectWithOwner = {
-      ...newProject,
-      owner: profiles.find(p => p.id === currentUser?.id) || null,
-      client: clients.find(c => c.id === newProject.client_id) || null,
-      tasks_count: 0
+        ...newProject,
+        owner: profiles.find(p => p.id === currentUser?.id) || null,
+        client: clients.find(c => c.id === newProject.client_id) || null,
+        tasks_count: 0
     };
     setProjects(prev => [newProjectWithOwner as ProjectWithOwner, ...prev]);
-  }
+  };
 
-  const handleProjectUpdated = (updatedProject: Project) => {
+  const handleProjectUpdated = (updatedProjectData: any) => {
     setProjects(prev => prev.map(p => {
-      if (p.id === updatedProject.id) {
-        return {
-          ...p,
-          ...updatedProject,
-          client: clients.find(c => c.id === updatedProject.client_id) || null,
-        } as ProjectWithOwner;
-      }
-      return p;
+        if (p.id === updatedProjectData.id) {
+            return {
+                ...p,
+                ...updatedProjectData,
+            } as ProjectWithOwner;
+        }
+        return p;
     }));
-  }
+  };
   
   const handleTypeCreated = (newType: ProjectType) => {
       setProjectTypes(prev => [...prev, newType]);
@@ -469,6 +469,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleStatusChange = (projectId: string, newStatus: string) => {
     const originalProjects = [...projects];
+    const projectToUpdate = originalProjects.find(p => p.id === projectId);
+    if (!projectToUpdate) return;
+
     const optimisticProjects = projects.map(p => 
       p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
     );
