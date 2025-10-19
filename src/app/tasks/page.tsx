@@ -18,7 +18,7 @@ export default async function TasksPage() {
 
     const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('*, profiles(*), projects(*)');
+        .select('*, profiles(*), projects(id, name, client_id)');
 
     const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
