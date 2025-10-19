@@ -1022,62 +1022,62 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                 </Button>
               </Collapsible.Trigger>
             </div>
-            <Collapsible.Content asChild>
-              <motion.div
-                initial="collapsed"
-                animate={activeTasksOpen ? "open" : "collapsed"}
-                variants={{
-                    open: { opacity: 1, height: 'auto' },
-                    collapsed: { opacity: 0, height: 0 },
-                }}
-                transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                className="overflow-hidden"
-              >
-                  <table className="w-full text-left mt-2">
+            <Collapsible.Content>
+              <AnimatePresence initial={false}>
+                {activeTasksOpen && (
+                  <motion.div
+                    key="content"
+                    initial="collapsed"
+                    animate="open"
+                    exit="collapsed"
+                    variants={{
+                      open: { opacity: 1, height: 'auto' },
+                      collapsed: { opacity: 0, height: 0 },
+                    }}
+                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                    className="overflow-hidden"
+                  >
+                    <table className="w-full text-left mt-2">
                       <thead>
-                          <tr className="border-b border-gray-200">
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Details</th>
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                              {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
-                              <th className="px-4 py-2" style={{width: '50px'}}></th>
-                          </tr>
+                        <tr className="border-b border-gray-200">
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '250px' }}>Task Details</th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Client</th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Project</th>
+                          {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '180px' }}>Responsible</th>}
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '120px' }}>Type</th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Due date</th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '120px' }}>Status</th>
+                          <th className="px-4 py-2" style={{ width: '50px' }}></th>
+                        </tr>
                       </thead>
                       <TaskTableBody
-                          isOpen={activeTasksOpen}
-                          tasks={activeTasks}
-                          isAddingTask={canEditTasks && isAddingTask}
-                          onSaveTask={handleSaveTask}
-                          onCancelAddTask={() => setIsAddingTask(false)}
-                          projects={projects}
-                          clients={clients}
-                          profiles={profiles}
-                          onStatusChange={handleStatusChange}
-                          onEdit={handleEditClick}
-                          onDelete={handleDeleteClick}
-                          canEdit={canEditTasks}
-                          onTaskClick={setSelectedTask}
+                        isOpen={activeTasksOpen}
+                        tasks={activeTasks}
+                        isAddingTask={canEditTasks && isAddingTask}
+                        onSaveTask={handleSaveTask}
+                        onCancelAddTask={() => setIsAddingTask(false)}
+                        projects={projects}
+                        clients={clients}
+                        profiles={profiles}
+                        onStatusChange={handleStatusChange}
+                        onEdit={handleEditClick}
+                        onDelete={handleDeleteClick}
+                        canEdit={canEditTasks}
+                        onTaskClick={setSelectedTask}
                       />
-                  </table>
-                 {canEditTasks && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: activeTasksOpen ? 1 : 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                    <Button
+                    </table>
+                    {canEditTasks && (
+                      <Button
                         variant="ghost"
                         className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
                         onClick={() => setIsAddingTask(true)}
-                    >
+                      >
                         <Plus className="mr-2 h-4 w-4" /> Add task
-                    </Button>
-                    </motion.div>
-                 )}
-              </motion.div>
+                      </Button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Collapsible.Content>
           </Collapsible.Root>
         </div>
@@ -1096,42 +1096,48 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                   </Button>
                 </Collapsible.Trigger>
               </div>
-               <Collapsible.Content asChild>
+              <Collapsible.Content>
+                <AnimatePresence initial={false}>
+                  {completedTasksOpen && (
                     <motion.div
-                        initial="collapsed"
-                        animate={completedTasksOpen ? "open" : "collapsed"}
-                        variants={{
-                            open: { opacity: 1, height: 'auto' },
-                            collapsed: { opacity: 0, height: 0 },
-                        }}
-                        transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                        className="overflow-hidden"
+                      key="content"
+                      initial="collapsed"
+                      animate="open"
+                      exit="collapsed"
+                      variants={{
+                        open: { opacity: 1, height: 'auto' },
+                        collapsed: { opacity: 0, height: 0 },
+                      }}
+                      transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                      className="overflow-hidden"
                     >
-                        <table className="w-full text-left mt-2">
-                            <thead>
-                                <tr className="border-b border-gray-200">
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '250px'}}>Task Details</th>
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Client</th>
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Project</th>
-                                    {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '180px'}}>Responsible</th>}
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Type</th>
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '150px'}}>Due date</th>
-                                    <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{width: '120px'}}>Status</th>
-                                    <th className="px-4 py-2" style={{width: '50px'}}></th>
-                                </tr>
-                            </thead>
-                            <TaskTableBody
-                                isOpen={completedTasksOpen}
-                                tasks={completedTasks}
-                                onStatusChange={handleStatusChange}
-                                onEdit={handleEditClick}
-                                onDelete={handleDeleteClick}
-                                canEdit={canEditTasks}
-                                onTaskClick={setSelectedTask}
-                            />
-                        </table>
+                      <table className="w-full text-left mt-2">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '250px' }}>Task Details</th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Client</th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Project</th>
+                            {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '180px' }}>Responsible</th>}
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '120px' }}>Type</th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Due date</th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '120px' }}>Status</th>
+                            <th className="px-4 py-2" style={{ width: '50px' }}></th>
+                          </tr>
+                        </thead>
+                        <TaskTableBody
+                          isOpen={completedTasksOpen}
+                          tasks={completedTasks}
+                          onStatusChange={handleStatusChange}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                          canEdit={canEditTasks}
+                          onTaskClick={setSelectedTask}
+                        />
+                      </table>
                     </motion.div>
-               </Collapsible.Content>
+                  )}
+                </AnimatePresence>
+              </Collapsible.Content>
             </Collapsible.Root>
           </div>
         )}
