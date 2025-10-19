@@ -256,10 +256,9 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
 
     if (task?.attachments && (task.attachments as any[]).length > 0) {
       const delayInSeconds = await getAttachmentDeletionDelay()
-      const delayInterval = `${delayInSeconds} seconds`
-      const { error: rpcError } = await supabase.rpc('delete_task_attachments', {
-        task_id: taskId,
-        delay: delayInterval,
+      const { error: rpcError } = await supabase.rpc('schedule_task_attachment_deletion', {
+        p_task_id: taskId,
+        p_delay_seconds: delayInSeconds,
       })
       if (rpcError) {
         console.error('Error scheduling attachment deletion:', rpcError)

@@ -351,10 +351,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      delete_task_attachments: {
+      schedule_task_attachment_deletion: {
         Args: {
           task_id: string
-          delay: string
+          delay_seconds: number
         }
         Returns: number
       }
