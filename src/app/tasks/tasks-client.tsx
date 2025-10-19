@@ -138,7 +138,7 @@ const AddTaskRow = ({
   const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
   
   const filteredProjects = useMemo(() => {
-    if (!clientId) return [];
+    if (!clientId || !projects) return [];
     return projects.filter(p => p.client_id === clientId);
   }, [clientId, projects]);
 
