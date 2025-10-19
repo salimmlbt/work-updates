@@ -103,7 +103,7 @@ export async function updateProject(projectId: string, formData: FormData) {
             updated_at: new Date().toISOString()
         })
         .eq('id', projectId)
-        .select('*, client:clients(*)')
+        .select('*')
         .single();
 
     if (projectError) {
