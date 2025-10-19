@@ -1147,7 +1147,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tasks</h1>
           {canEditTasks && !isAddingTask && (
-            <Button onClick={() => setIsAddingTask(true)}>
+            <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
               <Plus className="mr-2 h-4 w-4" />
               Add new
             </Button>
@@ -1243,7 +1243,11 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
         <TaskDetailSheet 
             task={selectedTask}
             isOpen={!!selectedTask}
-            onOpenChange={(isOpen) => !isOpen && setSelectedTask(null)}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                setSelectedTask(null)
+              }
+            }}
             onEdit={() => {
                 setEditTaskOpen(true);
                 setTaskToEdit(selectedTask);
