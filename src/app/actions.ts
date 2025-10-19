@@ -53,7 +53,7 @@ export async function addProject(formData: FormData) {
       type: rawFormData.type,
       is_deleted: false,
     })
-    .select('*, client:clients(*)')
+    .select('*')
     .single()
 
   if (projectError) {
@@ -141,7 +141,7 @@ export async function deleteProject(projectId: string) {
 
     const { error } = await supabase
         .from('projects')
-        .update({ is_deleted: true })
+        .update({ is_deleted: true, updated_at: new Date().toISOString() })
         .eq('id', projectId);
 
     if (error) {
@@ -158,7 +158,7 @@ export async function restoreProject(projectId: string) {
 
     const { error } = await supabase
         .from('projects')
-        .update({ is_deleted: false })
+        .update({ is_deleted: false, updated_at: new Date().toISOString() })
         .eq('id', projectId);
 
     if (error) {

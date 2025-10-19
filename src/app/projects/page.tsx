@@ -6,41 +6,36 @@ import type { User } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-type ProjectWithOwner = Project & {
-    owner: {
-        id: string;
-        full_name: string | null;
-        avatar_url: string | null;
-    } | null;
-    client: {
-        id: string;
-        name: string;
-    } | null;
-};
-
-
 export default async function ProjectsPage() {
     const supabase = createServerClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     
-    // Only fetch non-deleted projects
-    const { data: projectsData } = await supabase
-        .from('projects')
-        .select('*, owner:profiles(*), client:clients(*)')
-        .eq('is_deleted', false);
+    // Fetch all required data in parallel
+    const [
+        { data: projectsData, error: projectsError },
+        { data: profilesData, error: profilesError },
+        { data: clientsData, error: clientsError },
+        { data: projectTypesData, error: projectTypesError }
+    ] = await Promise.all([
+        supabase.from('projects').select('*'),
+        supabase.from('profiles').select('*'),
+        supabase.from('clients').select('*'),
+        supabase.from('project_types').select('*')
+    ]);
 
-    const { data: profiles } = await supabase.from('profiles').select('*');
-    const { data: clients } = await supabase.from('clients').select('*');
-    const { data: projectTypes } = await supabase.from('project_types').select('*');
-    
+    if (projectsError) console.error("Error fetching projects:", projectsError);
+    if (profilesError) console.error("Error fetching profiles:", profilesError);
+    if (clientsError) console.error("Error fetching clients:", clientsError);
+    if (projectTypesError) console.error("Error fetching project types:", projectTypesError);
+
     return (
         <ProjectsClient 
-            initialProjects={projectsData as ProjectWithOwner[] ?? []} 
+            initialProjects={projectsData ?? []} 
             currentUser={user} 
-            profiles={profiles as Profile[] ?? []}
-            clients={clients as Client[] ?? []}
-            initialProjectTypes={projectTypes as ProjectType[] ?? []}
+            profiles={profilesData as Profile[] ?? []}
+            clients={clientsData as Client[] ?? []}
+            initialProjectTypes={projectTypesData as ProjectType[] ?? []}
         />
     );
 }

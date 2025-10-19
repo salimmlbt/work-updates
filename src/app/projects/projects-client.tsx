@@ -33,21 +33,14 @@ import { EditProjectDialog } from './edit-project-dialog';
 import { RenameTypeDialog } from './rename-type-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type ProjectWithOwner = Project & {
-    owner: {
-        id: string;
-        full_name: string | null;
-        avatar_url: string | null;
-    } | null;
-    client: {
-        id: string;
-        name: string;
-    } | null;
+type ProjectWithOwnerAndClient = Project & {
+    owner: Profile | null;
+    client: Client | null;
     tasks_count: number | null;
 };
 
 interface ProjectsClientProps {
-  initialProjects: ProjectWithOwner[];
+  initialProjects: Project[];
   currentUser: User | null;
   profiles: Profile[];
   clients: Client[];
@@ -177,7 +170,7 @@ const ProjectSidebar = ({
     )
 }
 
-const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onStatusChange, isCompleted }: { project: ProjectWithOwner, profiles: Profile[], handleEditClick: (project: ProjectWithOwner) => void, handleDeleteClick: (project: ProjectWithOwner) => void, onStatusChange: (projectId: string, newStatus: string) => void, isCompleted: boolean }) => {
+const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onStatusChange, isCompleted }: { project: ProjectWithOwnerAndClient, profiles: Profile[], handleEditClick: (project: ProjectWithOwnerAndClient) => void, handleDeleteClick: (project: ProjectWithOwnerAndClient) => void, onStatusChange: (projectId: string, newStatus: string) => void, isCompleted: boolean }) => {
     const formatDate = (dateString: string | null | undefined) => {
         if (!dateString) return '-';
         try {
@@ -292,10 +285,10 @@ const ProjectTableBody = ({
     ...rest 
 } : { 
     isOpen: boolean; 
-    projects: ProjectWithOwner[];
+    projects: ProjectWithOwnerAndClient[];
     profiles: Profile[]; 
-    handleEditClick: (project: ProjectWithOwner) => void;
-    handleDeleteClick: (project: ProjectWithOwner) => void;
+    handleEditClick: (project: ProjectWithOwnerAndClient) => void;
+    handleDeleteClick: (project: ProjectWithOwnerAndClient) => void;
     onStatusChange: (projectId: string, newStatus: string) => void;
     isCompleted: boolean;
 }) => {
@@ -324,19 +317,16 @@ const ProjectTableBody = ({
 }
 
 export default function ProjectsClient({ initialProjects, currentUser, profiles, clients, initialProjectTypes }: ProjectsClientProps) {
-  const [projects, setProjects] = useState(initialProjects);
-  const [deletedProjects, setDeletedProjects] = useState<ProjectWithOwner[]>([]);
+  const [projects, setProjects] = useState<ProjectWithOwnerAndClient[]>([]);
   const [isAddProjectOpen, setAddProjectOpen] = useState(false);
   const [activeView, setActiveView] = useState('general');
   const [projectTypes, setProjectTypes] = useState(initialProjectTypes);
   const [isCreateTypeOpen, setCreateTypeOpen] = useState(false);
   
-  const [projectToEdit, setProjectToEdit] = useState<ProjectWithOwner | null>(null);
+  const [projectToEdit, setProjectToEdit] = useState<ProjectWithOwnerAndClient | null>(null);
   const [isEditProjectOpen, setEditProjectOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<ProjectWithOwner | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectWithOwnerAndClient | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  const [projectToRestore, setProjectToRestore] = useState<ProjectWithOwner | null>(null);
-  const [projectToDeletePermanently, setProjectToDeletePermanently] = useState<ProjectWithOwner | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   
@@ -351,10 +341,24 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [isRenameTypeOpen, setRenameTypeOpen] = useState(false);
   const [typeToDelete, setTypeToDelete] = useState<ProjectType | null>(null);
   const [isDeleteTypeAlertOpen, setDeleteTypeAlertOpen] = useState(false);
+  const [projectToDeletePermanently, setProjectToDeletePermanently] = useState<ProjectWithOwnerAndClient | null>(null);
+
+  useEffect(() => {
+    const projectsWithData = initialProjects.map(p => ({
+        ...p,
+        owner: profiles.find(profile => profile.id === currentUser?.id) || null,
+        client: clients.find(c => c.id === p.client_id) || null,
+        tasks_count: p.tasks_count || 0,
+    }));
+    setProjects(projectsWithData);
+  }, [initialProjects, profiles, clients, currentUser]);
+
+  const activeRawProjects = useMemo(() => projects.filter(p => !p.is_deleted), [projects]);
+  const deletedRawProjects = useMemo(() => projects.filter(p => p.is_deleted), [projects]);
 
   const projectTypeCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    projects.forEach(p => {
+    activeRawProjects.forEach(p => {
         if (p.type) {
             counts.set(p.type, (counts.get(p.type) || 0) + 1);
         }
@@ -364,40 +368,39 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         ...pt,
         count: counts.get(pt.name) || 0,
     })).sort((a,b) => a.name.localeCompare(b.name));
-  }, [projects, projectTypes]);
+  }, [activeRawProjects, projectTypes]);
 
   const filteredProjects = useMemo(() => {
     if (activeView === 'general') {
-        return projects;
+        return activeRawProjects;
     }
     if (activeView === 'deleted') {
-        return []; // Deleted projects are handled separately
+        return deletedRawProjects;
     }
-    return projects.filter(p => p.type === activeView);
-  }, [projects, activeView]);
+    return activeRawProjects.filter(p => p.type === activeView);
+  }, [activeRawProjects, deletedRawProjects, activeView]);
 
-  const activeProjects = filteredProjects.filter(p => (p.status ?? 'New') !== 'Done');
-  const closedProjects = filteredProjects.filter(p => p.status === 'Done');
+  const activeProjects = filteredProjects.filter(p => (p.status ?? 'New') !== 'Done' && !p.is_deleted);
+  const closedProjects = filteredProjects.filter(p => p.status === 'Done' && !p.is_deleted);
 
   const handleProjectAdded = (newProjectData: Project) => {
-    const newProjectWithOwner = {
+    const newProjectWithOwnerAndClient = {
         ...newProjectData,
         owner: profiles.find(p => p.id === currentUser?.id) || null,
         client: clients.find(c => c.id === newProjectData.client_id) || null,
         tasks_count: 0
     };
-    setProjects(prev => [newProjectWithOwner as ProjectWithOwner, ...prev]);
+    setProjects(prev => [newProjectWithOwnerAndClient, ...prev]);
   };
 
   const handleProjectUpdated = (updatedProjectData: Project) => {
     setProjects(prev => prev.map(p => {
         if (p.id === updatedProjectData.id) {
-            const client = clients.find(c => c.id === updatedProjectData.client_id) || p.client;
             return {
-                ...p, 
-                ...updatedProjectData, 
-                client,
-            } as ProjectWithOwner;
+                ...p, // Keep existing client/owner/task_count
+                ...updatedProjectData, // Override with new data from server
+                client: clients.find(c => c.id === updatedProjectData.client_id) || p.client,
+            };
         }
         return p;
     }));
@@ -415,12 +418,12 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     }
   }
 
-  const handleEditClick = (project: ProjectWithOwner) => {
+  const handleEditClick = (project: ProjectWithOwnerAndClient) => {
     setProjectToEdit(project);
     setEditProjectOpen(true);
   }
 
-  const handleDeleteClick = (project: ProjectWithOwner) => {
+  const handleDeleteClick = (project: ProjectWithOwnerAndClient) => {
     setProjectToDelete(project);
     setDeleteAlertOpen(true);
   }
@@ -434,23 +437,21 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
         } else {
             toast({ title: "Project moved to bin", description: `Project "${projectToDelete.name}" has been deleted.` });
-            setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
-            setDeletedProjects(prev => [projectToDelete, ...prev]);
+            setProjects(prev => prev.map(p => p.id === projectToDelete.id ? {...p, is_deleted: true, updated_at: new Date().toISOString() } : p));
         }
         setDeleteAlertOpen(false);
         setProjectToDelete(null);
     });
   }
 
-  const handleRestoreProject = (project: ProjectWithOwner) => {
+  const handleRestoreProject = (project: ProjectWithOwnerAndClient) => {
       startTransition(async () => {
           const { error } = await restoreProject(project.id);
           if (error) {
               toast({ title: "Error restoring project", description: error, variant: "destructive" });
           } else {
               toast({ title: "Project restored" });
-              setDeletedProjects(prev => prev.filter(p => p.id !== project.id));
-              setProjects(prev => [{...project, is_deleted: false}, ...prev]);
+              setProjects(prev => prev.map(p => p.id === project.id ? {...p, is_deleted: false, updated_at: new Date().toISOString()} : p));
           }
       });
   }
@@ -463,7 +464,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
               toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
           } else {
               toast({ title: "Project permanently deleted" });
-              setDeletedProjects(prev => prev.filter(p => p.id !== projectToDeletePermanently.id));
+              setProjects(prev => prev.filter(p => p.id !== projectToDeletePermanently.id));
           }
           setProjectToDeletePermanently(null);
       });
@@ -471,20 +472,18 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleStatusChange = (projectId: string, newStatus: string) => {
     const originalProjects = [...projects];
-    const optimisticProjects = projects.map(p => 
-        p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
+    
+    setProjects(prevProjects =>
+        prevProjects.map(p =>
+            p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
+        )
     );
-    setProjects(optimisticProjects);
 
     startTransition(async () => {
-        const { data, error } = await updateProjectStatus(projectId, newStatus);
+        const { error, data } = await updateProjectStatus(projectId, newStatus);
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
             setProjects(originalProjects); // Revert on error
-        } else if (data) {
-            setProjects(currentProjects => currentProjects.map(p =>
-                p.id === data.id ? { ...p, status: data.status, updated_at: data.updated_at } : p
-            ));
         }
     });
   }
@@ -541,7 +540,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         return (
             <div className="mb-8">
                 <div className="overflow-x-auto">
-                    {deletedProjects.length > 0 ? (
+                    {deletedRawProjects.length > 0 ? (
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b">
@@ -552,7 +551,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                 </tr>
                             </thead>
                             <tbody>
-                                {deletedProjects.map(project => (
+                                {deletedRawProjects.map(project => (
                                 <tr key={project.id} className="border-b hover:bg-muted/50 group">
                                     <td className="px-4 py-3 font-medium">{project.name}</td>
                                     <td className="px-4 py-3">{project.status ?? "New"}</td>
@@ -739,7 +738,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             onAddTypeClick={() => setCreateTypeOpen(true)}
             onRenameType={(type) => { setTypeToRename(type); setRenameTypeOpen(true); }}
             onDeleteType={(type) => { setTypeToDelete(type); setDeleteTypeAlertOpen(true); }}
-            deletedCount={deletedProjects.length}
+            deletedCount={deletedRawProjects.length}
         />
         <main className="md:col-span-4">
             {mainContent()}
