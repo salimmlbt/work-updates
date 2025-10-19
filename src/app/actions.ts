@@ -237,10 +237,10 @@ export async function updateTask(taskId: string, formData: FormData) {
 
 export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogress' | 'done') {
   const supabase = createServerClient()
-  const { error } = await supabase.rpc('update_task_status', {
-    task_id: taskId,
-    new_status: status
-  });
+  const { error } = await supabase
+    .from('tasks')
+    .update({ status })
+    .eq('id', taskId)
   
   if (error) {
     console.error('Error updating task status:', error);
