@@ -1152,12 +1152,12 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
               Add new
             </Button>
           )}
-          <div className="flex items-center rounded-lg bg-gray-100 p-1">
+          <div className="flex items-center rounded-full bg-gray-100 p-1">
             <Button
               variant={view === 'table' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setView('table')}
-              className={view === 'table' ? 'bg-white shadow' : ''}
+              className={cn('rounded-full', view === 'table' ? 'bg-white shadow' : '')}
             >
               <Table className="mr-2 h-4 w-4" />
               Table view
@@ -1166,7 +1166,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
               variant={view === 'kanban' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setView('kanban')}
-              className={view === 'kanban' ? 'bg-white shadow' : ''}
+              className={cn('rounded-full', view === 'kanban' ? 'bg-white shadow' : '')}
             >
               <LayoutGrid className="mr-2 h-4 w-4" />
               Kanban board
