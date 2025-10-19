@@ -126,7 +126,8 @@ export async function updateProjectStatus(projectId: string, status: string) {
         return { error: `Failed to update project status: ${error.message}` };
     }
 
-    revalidatePath('/projects')
+    revalidatePath('/projects');
+    revalidatePath('/dashboard');
     return { success: true };
 }
 
@@ -793,3 +794,41 @@ export async function uploadAttachment(formData: FormData): Promise<{ data: Atta
   return { data: attachment, error: null };
 }
 
+export async function schedule_task_attachment_deletion(task_id: string, delay_seconds: number) {
+    const supabase = createServerClient()
+    const { error } = await supabase.rpc('schedule_task_attachment_deletion', {
+        task_id,
+        delay_seconds
+    })
+    if (error) {
+        console.error('Error scheduling attachment deletion:', error)
+        return { error: error.message }
+    }
+    return { success: true }
+}
+
+export async function delete_task_attachments(task_id: string) {
+    const supabase = createServerClient();
+    const { data: task, error: fetchError } = await supabase
+        .from('tasks')
+        .select('attachments')
+        .eq('id', task_id)
+        .single();
+
+    if (fetchError || !task) {
+        console.error('Could not fetch task to delete attachments:', fetchError);
+        return { error: 'Could not fetch task to delete attachments' };
+    }
+
+    const attachments = task.attachments as Attachment[] | null;
+    if (attachments && attachments.length > 0) {
+        const paths = attachments.map(att => att.path);
+        const { error: deleteError } = await supabase.storage.from('attachments').remove(paths);
+        if (deleteError) {
+            console.error('Error deleting attachments from storage:', deleteError);
+            return { error: 'Failed to delete attachments from storage' };
+        }
+    }
+
+    return { success: true };
+}
