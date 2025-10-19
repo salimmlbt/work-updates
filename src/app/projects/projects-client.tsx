@@ -325,6 +325,7 @@ const ProjectTableBody = ({
 
 export default function ProjectsClient({ initialProjects, currentUser, profiles, clients, initialProjectTypes }: ProjectsClientProps) {
   const [projects, setProjects] = useState(initialProjects);
+  const [deletedProjects, setDeletedProjects] = useState<ProjectWithOwner[]>([]);
   const [isAddProjectOpen, setAddProjectOpen] = useState(false);
   const [activeView, setActiveView] = useState('general');
   const [projectTypes, setProjectTypes] = useState(initialProjectTypes);
@@ -351,12 +352,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [typeToDelete, setTypeToDelete] = useState<ProjectType | null>(null);
   const [isDeleteTypeAlertOpen, setDeleteTypeAlertOpen] = useState(false);
 
-  const nonDeletedProjects = useMemo(() => projects.filter(p => !p.is_deleted), [projects]);
-  const deletedProjects = useMemo(() => projects.filter(p => p.is_deleted), [projects]);
-
   const projectTypeCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    nonDeletedProjects.forEach(p => {
+    projects.forEach(p => {
         if (p.type) {
             counts.set(p.type, (counts.get(p.type) || 0) + 1);
         }
@@ -366,17 +364,17 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         ...pt,
         count: counts.get(pt.name) || 0,
     })).sort((a,b) => a.name.localeCompare(b.name));
-  }, [nonDeletedProjects, projectTypes]);
+  }, [projects, projectTypes]);
 
   const filteredProjects = useMemo(() => {
     if (activeView === 'general') {
-        return nonDeletedProjects;
+        return projects;
     }
     if (activeView === 'deleted') {
-        return deletedProjects;
+        return []; // Deleted projects are handled separately
     }
-    return nonDeletedProjects.filter(p => p.type === activeView);
-  }, [nonDeletedProjects, deletedProjects, activeView]);
+    return projects.filter(p => p.type === activeView);
+  }, [projects, activeView]);
 
   const activeProjects = filteredProjects.filter(p => (p.status ?? 'New') !== 'Done');
   const closedProjects = filteredProjects.filter(p => p.status === 'Done');
@@ -436,7 +434,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
         } else {
             toast({ title: "Project moved to bin", description: `Project "${projectToDelete.name}" has been deleted.` });
-            setProjects(prev => prev.map(p => p.id === projectToDelete.id ? { ...p, is_deleted: true } : p));
+            setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+            setDeletedProjects(prev => [projectToDelete, ...prev]);
         }
         setDeleteAlertOpen(false);
         setProjectToDelete(null);
@@ -450,7 +449,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
               toast({ title: "Error restoring project", description: error, variant: "destructive" });
           } else {
               toast({ title: "Project restored" });
-              setProjects(prev => prev.map(p => p.id === project.id ? { ...p, is_deleted: false } : p));
+              setDeletedProjects(prev => prev.filter(p => p.id !== project.id));
+              setProjects(prev => [{...project, is_deleted: false}, ...prev]);
           }
       });
   }
@@ -463,7 +463,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
               toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
           } else {
               toast({ title: "Project permanently deleted" });
-              setProjects(prev => prev.filter(p => p.id !== projectToDeletePermanently.id));
+              setDeletedProjects(prev => prev.filter(p => p.id !== projectToDeletePermanently.id));
           }
           setProjectToDeletePermanently(null);
       });
@@ -843,5 +843,3 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
-
-    

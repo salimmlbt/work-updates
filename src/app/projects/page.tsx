@@ -23,17 +23,20 @@ export default async function ProjectsPage() {
     const supabase = createServerClient();
 
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: projectsData } = await supabase.from('projects').select('*, owner:profiles(*), client:clients(*)').eq('is_deleted', false);
+    
+    // Only fetch non-deleted projects
+    const { data: projectsData } = await supabase
+        .from('projects')
+        .select('*, owner:profiles(*), client:clients(*)')
+        .eq('is_deleted', false);
+
     const { data: profiles } = await supabase.from('profiles').select('*');
     const { data: clients } = await supabase.from('clients').select('*');
     const { data: projectTypes } = await supabase.from('project_types').select('*');
-    const { data: deletedProjectsData } = await supabase.from('projects').select('*, owner:profiles(*), client:clients(*)').eq('is_deleted', true);
-
-    const allProjects = [...(projectsData || []), ...(deletedProjectsData || [])];
-
+    
     return (
         <ProjectsClient 
-            initialProjects={allProjects as ProjectWithOwner[] ?? []} 
+            initialProjects={projectsData as ProjectWithOwner[] ?? []} 
             currentUser={user} 
             profiles={profiles as Profile[] ?? []}
             clients={clients as Client[] ?? []}
