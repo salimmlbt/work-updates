@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -137,6 +136,7 @@ const AddTaskRow = ({
   const selectedAssignee = profiles.find(p => p.id === assigneeId);
   const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
   const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
+  
   const filteredProjects = useMemo(() => {
     if (!clientId) return [];
     return projects.filter(p => p.client_id === clientId);
@@ -153,8 +153,8 @@ const AddTaskRow = ({
     taskInputRef.current?.focus();
   }, []);
 
-  const handleClientChange = (selectedClientId: string) => {
-    setClientId(selectedClientId);
+  const handleClientChange = (newClientId: string) => {
+    setClientId(newClientId);
     setProjectId(''); // Reset project when client changes
   }
 
