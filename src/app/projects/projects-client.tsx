@@ -381,22 +381,24 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const activeProjects = filteredProjects.filter(p => (p.status ?? 'New') !== 'Done');
   const closedProjects = filteredProjects.filter(p => p.status === 'Done');
 
-  const handleProjectAdded = (newProject: Project) => {
+  const handleProjectAdded = (newProjectData: Project) => {
     const newProjectWithOwner = {
-        ...newProject,
+        ...newProjectData,
         owner: profiles.find(p => p.id === currentUser?.id) || null,
-        client: clients.find(c => c.id === newProject.client_id) || null,
+        client: clients.find(c => c.id === newProjectData.client_id) || null,
         tasks_count: 0
     };
     setProjects(prev => [newProjectWithOwner as ProjectWithOwner, ...prev]);
   };
 
-  const handleProjectUpdated = (updatedProjectData: any) => {
+  const handleProjectUpdated = (updatedProjectData: Project) => {
     setProjects(prev => prev.map(p => {
         if (p.id === updatedProjectData.id) {
+            const client = clients.find(c => c.id === updatedProjectData.client_id) || p.client;
             return {
-                ...p,
-                ...updatedProjectData,
+                ...p, // Keep existing full data
+                ...updatedProjectData, // Overwrite with updated fields
+                client, // Ensure client is correctly set
             } as ProjectWithOwner;
         }
         return p;
@@ -469,19 +471,25 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleStatusChange = (projectId: string, newStatus: string) => {
     const originalProjects = [...projects];
-    const projectToUpdate = originalProjects.find(p => p.id === projectId);
+    const projectToUpdate = projects.find(p => p.id === projectId);
     if (!projectToUpdate) return;
-
+    
+    // Optimistically update UI
     const optimisticProjects = projects.map(p => 
-      p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
+        p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
     );
     setProjects(optimisticProjects);
 
     startTransition(async () => {
-        const { error } = await updateProjectStatus(projectId, newStatus);
+        const { data, error } = await updateProjectStatus(projectId, newStatus);
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
             setProjects(originalProjects); // Revert on error
+        } else if (data) {
+             // Confirm update with server data
+            setProjects(currentProjects => currentProjects.map(p =>
+                p.id === data.id ? { ...p, status: data.status, updated_at: data.updated_at } : p
+            ));
         }
     });
   }

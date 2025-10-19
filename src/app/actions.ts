@@ -118,10 +118,12 @@ export async function updateProject(projectId: string, formData: FormData) {
 
 export async function updateProjectStatus(projectId: string, status: string) {
     const supabase = createServerClient();
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('projects')
         .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', projectId);
+        .eq('id', projectId)
+        .select('id, status, updated_at')
+        .single();
 
     if (error) {
         console.error('Error updating project status:', error)
@@ -130,7 +132,7 @@ export async function updateProjectStatus(projectId: string, status: string) {
 
     revalidatePath('/projects');
     revalidatePath('/dashboard');
-    return { success: true };
+    return { data };
 }
 
 
