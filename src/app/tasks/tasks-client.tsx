@@ -1009,45 +1009,66 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
     
     return view === 'table' ? (
       <>
+        {/* Active Tasks */}
         <div className="mb-8 overflow-x-auto">
           <Collapsible.Root open={activeTasksOpen} onOpenChange={setActiveTasksOpen}>
             <div className="flex items-center gap-2">
               <Collapsible.Trigger asChild>
                 <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
                   <div className="flex items-center gap-2">
-                    <ChevronDown className={cn("w-5 h-5 transition-transform", !activeTasksOpen && "-rotate-90")} />
+                    {/* Chevron with lead rotation */}
+                    <motion.div
+                      animate={{ rotate: activeTasksOpen ? 0 : -90 }}
+                      transition={{
+                        duration: activeTasksOpen ? 0.55 : 0.65,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                    >
+                      <ChevronDown className="w-5 h-5" />
+                    </motion.div>
+    
                     Active tasks
-                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeTasks.length}</span>
+                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
+                      {activeTasks.length}
+                    </span>
                   </div>
                 </Button>
               </Collapsible.Trigger>
             </div>
-            <Collapsible.Content>
-              <AnimatePresence initial={false}>
-                {activeTasksOpen && (
+    
+            {/* AnimatePresence with fade + height delay */}
+            <AnimatePresence initial={false}>
+              {activeTasksOpen && (
+                <Collapsible.Content forceMount>
                   <motion.div
-                    key="content"
-                    initial="collapsed"
-                    animate="open"
-                    exit="collapsed"
-                    variants={{
-                      open: { opacity: 1, height: 'auto' },
-                      collapsed: { opacity: 0, height: 0 },
+                    key="activeTasks"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{
+                      ease: [0.16, 1, 0.3, 1],
+                      opacity: {
+                        delay: activeTasksOpen ? 0.1 : 0,
+                        duration: activeTasksOpen ? 0.45 : 0.5,
+                      },
+                      height: {
+                        delay: activeTasksOpen ? 0.1 : 0,
+                        duration: activeTasksOpen ? 0.55 : 0.65,
+                      },
                     }}
-                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                     className="overflow-hidden"
                   >
                     <table className="w-full text-left mt-2">
                       <thead>
                         <tr className="border-b border-gray-200">
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '250px' }}>Task Details</th>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Client</th>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Project</th>
-                          {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '180px' }}>Responsible</th>}
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '120px' }}>Type</th>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Due date</th>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '120px' }}>Status</th>
-                          <th className="px-4 py-2" style={{ width: '50px' }}></th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "250px" }}>Task Details</th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Client</th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
+                          {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "180px" }}>Responsible</th>}
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Type</th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Due date</th>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
+                          <th className="px-4 py-2" style={{ width: "50px" }}></th>
                         </tr>
                       </thead>
                       <TaskTableBody
@@ -1066,6 +1087,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                         onTaskClick={setSelectedTask}
                       />
                     </table>
+    
                     {canEditTasks && (
                       <Button
                         variant="ghost"
@@ -1076,52 +1098,72 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                       </Button>
                     )}
                   </motion.div>
-                )}
-              </AnimatePresence>
-            </Collapsible.Content>
+                </Collapsible.Content>
+              )}
+            </AnimatePresence>
           </Collapsible.Root>
         </div>
-
+    
+        {/* Completed Tasks */}
         {completedTasks.length > 0 && (
           <div className="mb-4 overflow-x-auto">
             <Collapsible.Root open={completedTasksOpen} onOpenChange={setCompletedTasksOpen}>
               <div className="flex items-center gap-2">
                 <Collapsible.Trigger asChild>
                   <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
-                      <div className="flex items-center gap-2">
-                          <ChevronDown className={cn("w-5 h-5 transition-transform", !completedTasksOpen && "-rotate-90")} />
-                          Completed tasks
-                          <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{completedTasks.length}</span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      {/* Chevron with lead rotation */}
+                      <motion.div
+                        animate={{ rotate: completedTasksOpen ? 0 : -90 }}
+                        transition={{
+                          duration: completedTasksOpen ? 0.55 : 0.65,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                      >
+                        <ChevronDown className="w-5 h-5" />
+                      </motion.div>
+    
+                      Completed tasks
+                      <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
+                        {completedTasks.length}
+                      </span>
+                    </div>
                   </Button>
                 </Collapsible.Trigger>
               </div>
-              <Collapsible.Content>
-                <AnimatePresence initial={false}>
-                  {completedTasksOpen && (
+    
+              <AnimatePresence initial={false}>
+                {completedTasksOpen && (
+                  <Collapsible.Content forceMount>
                     <motion.div
-                      key="content"
-                      initial="collapsed"
-                      animate="open"
-                      exit="collapsed"
-                      variants={{
-                        open: { opacity: 1, height: 'auto' },
-                        collapsed: { opacity: 0, height: 0 },
+                      key="completedTasks"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{
+                        ease: [0.16, 1, 0.3, 1],
+                        opacity: {
+                          delay: completedTasksOpen ? 0.1 : 0,
+                          duration: completedTasksOpen ? 0.45 : 0.5,
+                        },
+                        height: {
+                          delay: completedTasksOpen ? 0.1 : 0,
+                          duration: completedTasksOpen ? 0.55 : 0.65,
+                        },
                       }}
-                      transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                       className="overflow-hidden"
                     >
                       <table className="w-full text-left mt-2">
                         <thead>
                           <tr className="border-b border-gray-200">
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '250px' }}>Task Details</th>
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Client</th>
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Project</th>
-                            {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '180px' }}>Responsible</th>}
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '120px' }}>Type</th>
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '150px' }}>Due date</th>
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: '120px' }}>Status</th>
-                            <th className="px-4 py-2" style={{ width: '50px' }}></th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "250px" }}>Task Details</th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Client</th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
+                            {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "180px" }}>Responsible</th>}
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Type</th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Due date</th>
+                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
+                            <th className="px-4 py-2" style={{ width: "50px" }}></th>
                           </tr>
                         </thead>
                         <TaskTableBody
@@ -1135,14 +1177,14 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                         />
                       </table>
                     </motion.div>
-                  )}
-                </AnimatePresence>
-              </Collapsible.Content>
+                  </Collapsible.Content>
+                )}
+              </AnimatePresence>
             </Collapsible.Root>
           </div>
         )}
       </>
-    ) : (
+    ):(
       <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask}/>
     )
   }
