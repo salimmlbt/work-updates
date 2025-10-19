@@ -354,7 +354,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_status: "todo" | "inprogress" | "done"
     }
     CompositeTypes: {
       [_ in never]: never
