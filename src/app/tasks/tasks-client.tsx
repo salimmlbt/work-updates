@@ -136,10 +136,12 @@ const AddTaskRow = ({
   const selectedAssignee = profiles.find(p => p.id === assigneeId);
   const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
   const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
-  
+
   const filteredProjects = useMemo(() => {
-    if (!clientId || !projects) return [];
-    return projects.filter(p => p.client_id === clientId);
+    if (!clientId) {
+      return projects; // If no client is selected, show all projects
+    }
+    return projects.filter(p => String(p.client_id) === String(clientId));
   }, [clientId, projects]);
 
   const taskInputRef = React.useRef<HTMLInputElement>(null);
@@ -156,7 +158,7 @@ const AddTaskRow = ({
   const handleClientChange = (newClientId: string) => {
     setClientId(newClientId);
     setProjectId(''); // Reset project when client changes
-  }
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -177,55 +179,57 @@ const AddTaskRow = ({
     }
   };
 
-
   const handleSave = async () => {
-      if (isSaving) return;
-      if (!taskName || !clientId || !dueDate || !assigneeId || !taskType) {
-          toast({ title: "Missing fields", description: "Task Details, Client, Due Date, Assignee, and Type are all required.", variant: "destructive" });
-          return;
-      }
-      setIsSaving(true);
-      try {
-        const result = await createTask({
-            description: taskName,
-            project_id: projectId === 'no-project' ? null : projectId,
-            client_id: clientId || null,
-            deadline: dueDate.toISOString(),
-            assignee_id: assigneeId,
-            type: taskType || null,
-            attachments: attachments.length > 0 ? attachments : null,
-        });
+    if (isSaving) return;
+    if (!taskName || !clientId || !dueDate || !assigneeId || !taskType) {
+      toast({ 
+        title: "Missing fields", 
+        description: "Task Details, Client, Due Date, Assignee, and Type are all required.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const result = await createTask({
+        description: taskName,
+        project_id: projectId === 'no-project' ? null : projectId,
+        client_id: clientId || null,
+        deadline: dueDate.toISOString(),
+        assignee_id: assigneeId,
+        type: taskType || null,
+        attachments: attachments.length > 0 ? attachments : null,
+      });
 
-        if (result.error) {
-            toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
-        } else if (result.data) {
-            onSave(result.data);
-        }
-      } finally {
-        setIsSaving(false);
+      if (result.error) {
+        toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
+      } else if (result.data) {
+        onSave(result.data);
       }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const formatDate = (date: Date | undefined) => {
     if (!date) return <span>Pick a date</span>;
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
-    if (isYesterday(date)) return 'Yesterday'
+    if (isYesterday(date)) return 'Yesterday';
     return format(date, "dd MMM");
-  }
+  };
 
-  // Handle Enter key navigation
   const handleKeyDown = (e: React.KeyboardEvent, nextRef?: React.RefObject<any>) => {
-      if (e.key === 'Enter') {
-          e.preventDefault();
-          if (nextRef?.current) {
-              nextRef.current.focus();
-              nextRef.current.click?.(); // Open dropdowns
-          } else {
-             handleSave();
-          }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (nextRef?.current) {
+        nextRef.current.focus();
+        nextRef.current.click?.(); // Open dropdowns
+      } else {
+        handleSave();
       }
-  }
+    }
+  };
 
   const handleDueDateKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -237,145 +241,163 @@ const AddTaskRow = ({
   };
 
   return (
-      <tr className="border-b bg-gray-50">
-          <td className="px-4 py-3 border-r">
-              <Input 
-                  placeholder="Type Task Details" 
-                  value={taskName} 
-                  ref={taskInputRef}
-                  onChange={(e) => setTaskName(e.target.value)} 
-                  onKeyDown={(e) => handleKeyDown(e, clientRef)}
-                  className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-               {attachments.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {attachments.map((att, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      <LinkIcon className="h-3 w-3" fill="currentColor" />
-                      <a href={att.publicUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate" title={att.name}>{att.name}</a>
-                    </div>
-                  ))}
-                </div>
-              )}
-          </td>
-          <td className="px-4 py-3 border-r">
-              <Select onValueChange={handleClientChange} value={clientId}>
-                  <SelectTrigger 
-                      className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
-                      ref={clientRef} 
-                      onKeyDown={(e) => handleKeyDown(e, projectRef)}
-                  >
-                      <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-              </Select>
-          </td>
-           <td className="px-4 py-3 border-r">
-              <Select onValueChange={setProjectId} value={projectId} disabled={!clientId}>
-                  <SelectTrigger 
-                      className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
-                      ref={projectRef} 
-                      onKeyDown={(e) => handleKeyDown(e, assigneeRef)}
-                  >
-                      <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="no-project">No project</SelectItem>
-                      {filteredProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                  </SelectContent>
-              </Select>
-          </td>
-           <td className="px-4 py-3 border-r">
-              <Select onValueChange={setAssigneeId} value={assigneeId}>
-                  <SelectTrigger 
-                      className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
-                      ref={assigneeRef} 
-                      onKeyDown={(e) => handleKeyDown(e, typeRef)}
-                  >
-                      <SelectValue placeholder="Select assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
-                  </SelectContent>
-              </Select>
-          </td>
-          <td className="px-4 py-3 border-r">
-              <Select 
-                  onValueChange={setTaskType} 
-                  value={taskType} 
-                  disabled={!assigneeId || availableTaskTypes.length === 0}
-              >
-                  <SelectTrigger 
-                      className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
-                      ref={typeRef} 
-                      onKeyDown={(e) => handleKeyDown(e, dueDateRef)}
-                  >
-                      <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
-              </Select>
-          </td>
-          <td className="px-4 py-3 border-r">
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                  <PopoverTrigger asChild>
-                      <Button 
-                          variant="outline" 
-                          className="w-full justify-start text-left font-normal bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
-                          ref={dueDateRef} 
-                          onKeyDown={handleDueDateKeyDown}
-                      >
-                          {formatDate(dueDate)}
-                      </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                      <CalendarComponent 
-                          mode="single" 
-                          selected={dueDate} 
-                          onSelect={(date) => {
-                              setDueDate(date);
-                              setCalendarOpen(false);
-                              dueDateRef.current?.focus();
-                          }}
-                          initialFocus 
-                      />
-                  </PopoverContent>
-              </Popover>
-          </td>
-          <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-            <div className="flex items-center gap-2">
-              {statusIcons['todo']}
-              <span>{statusLabels['todo']}</span>
-            </div>
-          </td>
-          <td className="px-4 py-3 text-right">
-              <div className="flex items-center justify-end gap-2">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <AttachIcon className="h-5 w-5" fill="currentColor"/>}
-                  </Button>
-                  <Button variant="ghost" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">Cancel</Button>
-                  <Button onClick={handleSave} disabled={isSaving || isUploading} className="focus-visible:ring-0 focus-visible:ring-offset-0">
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save
-                  </Button>
+    <tr className="border-b bg-gray-50">
+      <td className="px-4 py-3 border-r">
+        <Input 
+          placeholder="Type Task Details" 
+          value={taskName} 
+          ref={taskInputRef}
+          onChange={(e) => setTaskName(e.target.value)} 
+          onKeyDown={(e) => handleKeyDown(e, clientRef)}
+          className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
+        />
+        {attachments.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {attachments.map((att, index) => (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <LinkIcon className="h-3 w-3" fill="currentColor" />
+                <a href={att.publicUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate" title={att.name}>{att.name}</a>
               </div>
-          </td>
-      </tr>
+            ))}
+          </div>
+        )}
+      </td>
+
+      <td className="px-4 py-3 border-r">
+        <Select onValueChange={handleClientChange} value={clientId}>
+          <SelectTrigger 
+            className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
+            ref={clientRef} 
+            onKeyDown={(e) => handleKeyDown(e, projectRef)}
+          >
+            <SelectValue placeholder="Select client" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </td>
+
+      <td className="px-4 py-3 border-r">
+        <Select 
+          onValueChange={setProjectId} 
+          value={projectId} 
+          key={clientId} // Force re-render when client changes
+        >
+          <SelectTrigger 
+            className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
+            ref={projectRef} 
+            onKeyDown={(e) => handleKeyDown(e, assigneeRef)}
+          >
+            <SelectValue placeholder="Select project" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="no-project">No project</SelectItem>
+            {filteredProjects.map(p => (
+              <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
+
+      {/* Assignee */}
+      <td className="px-4 py-3 border-r">
+        <Select onValueChange={setAssigneeId} value={assigneeId}>
+          <SelectTrigger 
+            className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
+            ref={assigneeRef} 
+            onKeyDown={(e) => handleKeyDown(e, typeRef)}
+          >
+            <SelectValue placeholder="Select assignee" />
+          </SelectTrigger>
+          <SelectContent>
+            {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </td>
+
+      {/* Task Type */}
+      <td className="px-4 py-3 border-r">
+        <Select 
+          onValueChange={setTaskType} 
+          value={taskType} 
+          disabled={!assigneeId || availableTaskTypes.length === 0}
+        >
+          <SelectTrigger 
+            className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
+            ref={typeRef} 
+            onKeyDown={(e) => handleKeyDown(e, dueDateRef)}
+          >
+            <SelectValue placeholder="Select type" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </td>
+
+      {/* Due Date */}
+      <td className="px-4 py-3 border-r">
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start text-left font-normal bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
+              ref={dueDateRef} 
+              onKeyDown={handleDueDateKeyDown}
+            >
+              {formatDate(dueDate)}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <CalendarComponent 
+              mode="single" 
+              selected={dueDate} 
+              onSelect={(date) => {
+                setDueDate(date);
+                setCalendarOpen(false);
+                dueDateRef.current?.focus();
+              }}
+              initialFocus 
+            />
+          </PopoverContent>
+        </Popover>
+      </td>
+
+      {/* Status */}
+      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+        <div className="flex items-center gap-2">
+          {statusIcons['todo']}
+          <span>{statusLabels['todo']}</span>
+        </div>
+      </td>
+
+      {/* Actions */}
+      <td className="px-4 py-3 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <AttachIcon className="h-5 w-5" fill="currentColor"/>}
+          </Button>
+          <Button variant="ghost" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">Cancel</Button>
+          <Button onClick={handleSave} disabled={isSaving || isUploading} className="focus-visible:ring-0 focus-visible:ring-offset-0">
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save
+          </Button>
+        </div>
+      </td>
+    </tr>
   );
 };
 
@@ -727,7 +749,7 @@ const processTaskAttachments = (task: Task): Attachment[] | null => {
   }
 };
 
-export default function TasksClient({ initialTasks, projects, clients, profiles, currentUserProfile }: TasksClientProps) {
+export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile }: TasksClientProps) {
   const [view, setView] = useState('table');
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -771,7 +793,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                 const newFullTask: TaskWithDetails = {
                     ...newTask,
                     profiles: profiles.find(p => p.id === newTask.assignee_id) || null,
-                    projects: projects.find(p => p.id === newTask.project_id) || null,
+                    projects: allProjects.find(p => p.id === newTask.project_id) || null,
                     clients: clients.find(c => c.id === newTask.client_id) || null,
                     attachments: processTaskAttachments(newTask),
                 };
@@ -781,7 +803,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                 const updatedFullTask: TaskWithDetails = {
                      ...updatedTask,
                     profiles: profiles.find(p => p.id === updatedTask.assignee_id) || null,
-                    projects: projects.find(p => p.id === updatedTask.project_id) || null,
+                    projects: allProjects.find(p => p.id === updatedTask.project_id) || null,
                     clients: clients.find(c => c.id === updatedTask.client_id) || null,
                     attachments: processTaskAttachments(updatedTask),
                 };
@@ -796,7 +818,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [supabase, projects, clients, profiles]);
+  }, [supabase, allProjects, clients, profiles]);
 
   const filteredTasks = useMemo(() => {
     let tasksToDisplay = tasks;
@@ -848,7 +870,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
   }, [tasks, searchQuery]);
   
   const handleSaveTask = (newTask: Task) => {
-    const project = projects.find(p => p.id === newTask.project_id);
+    const project = allProjects.find(p => p.id === newTask.project_id);
     const client = project ? clients.find(c => c.id === project.client_id) : clients.find(c => c.id === newTask.client_id);
 
      const newTaskWithDetails = {
@@ -1072,7 +1094,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
                         isAddingTask={canEditTasks && isAddingTask}
                         onSaveTask={handleSaveTask}
                         onCancelAddTask={() => setIsAddingTask(false)}
-                        projects={projects}
+                        projects={allProjects}
                         clients={clients}
                         profiles={profiles}
                         onStatusChange={handleStatusChange}
@@ -1304,7 +1326,7 @@ export default function TasksClient({ initialTasks, projects, clients, profiles,
           isOpen={isEditTaskOpen}
           setIsOpen={setEditTaskOpen}
           task={taskToEdit}
-          projects={projects}
+          projects={allProjects}
           clients={clients}
           profiles={profiles}
           onTaskUpdated={handleTaskUpdated}
