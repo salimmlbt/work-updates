@@ -35,8 +35,11 @@ const priorityColors = {
 
 export function TaskCard({ task }: TaskCardProps) {
   const { toast } = useToast();
-  const deadline = parseISO(task.deadline)
-  const isOverdue = isPast(deadline)
+  
+  // The deadline is a string like "2024-08-15T05:00:00.000Z".
+  // To avoid timezone issues, we create a date object that represents the UTC date.
+  const deadline = new Date(task.deadline);
+  const isOverdue = isPast(deadline) && task.status !== 'done';
 
   const handleStatusChange = async (status: 'todo' | 'inprogress' | 'done') => {
     const { error } = await updateTaskStatus(task.id, status)
