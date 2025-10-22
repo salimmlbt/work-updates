@@ -23,7 +23,8 @@ type AttendanceWithProfile = Attendance & {
 function formatTime(time: string | null): string {
   if (!time) return '-';
   try {
-    return format(parseISO(time), 'hh:mm a');
+    // Parse the UTC time from the database and format it in the user's local timezone.
+    return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   } catch (e) {
     return '-';
   }
