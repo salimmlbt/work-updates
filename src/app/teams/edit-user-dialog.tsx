@@ -77,7 +77,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
       setFormState({
           name: user.full_name || '',
           roleId: user.roles?.id || '',
-          teamIds: (Array.isArray(user.teams) ? user.teams.map(t => t.teams?.id).filter(Boolean) : []) as string[],
+          teamIds: (Array.isArray(user.teams) ? user.teams.map(t => t.teams?.id).filter((id): id is string => !!id) : []),
           password: '',
           confirmPassword: '',
           avatar: null,
