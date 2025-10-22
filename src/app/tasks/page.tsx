@@ -16,20 +16,21 @@ export default async function TasksPage() {
         userProfile = profileData as Profile;
     }
 
-    const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*, profiles(*), projects(id, name, client_id)');
+    const [
+        { data: tasksData, error: tasksError },
+        { data: clientsData, error: clientsError },
+        { data: profilesData, error: profilesError },
+        { data: allProjectsData, error: allProjectsError }
+    ] = await Promise.all([
+        supabase.from('tasks').select('*, profiles(*), projects(id, name, client_id)'),
+        supabase.from('clients').select('*'),
+        supabase.from('profiles').select('*, teams:profile_teams(teams(*))'),
+        supabase.from('projects').select('*').eq('is_deleted', false) // Fetch all active projects
+    ]);
 
-    const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('*');
 
-    const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*, teams:profile_teams(teams(*))');
-
-    if (tasksError || clientsError || profilesError) {
-        console.error('Error fetching data:', tasksError, clientsError, profilesError);
+    if (tasksError || clientsError || profilesError || allProjectsError) {
+        console.error('Error fetching data:', tasksError, clientsError, profilesError, allProjectsError);
     }
     
     const tasks = (tasksData as any[] || []).map(task => {
@@ -40,19 +41,9 @@ export default async function TasksPage() {
         return { ...task, clients: client || null };
     });
 
-    const projectMap = new Map<string, Project>();
-    if (tasksData) {
-      (tasksData as any[]).forEach(task => {
-        if (task.projects && !projectMap.has(task.projects.id)) {
-          projectMap.set(task.projects.id, task.projects as Project);
-        }
-      });
-    }
-    const projects = Array.from(projectMap.values());
-
     return <TasksLoader 
         initialTasks={tasks as TaskWithDetails[]} 
-        projects={projects}
+        projects={allProjectsData as Project[] || []}
         clients={clientsData as Client[] || []}
         profiles={profilesData as Profile[] || []}
         currentUserProfile={userProfile}
