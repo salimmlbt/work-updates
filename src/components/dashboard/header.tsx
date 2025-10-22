@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckInIcon, CheckOutIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
-import { checkIn, checkOut } from '@/app/actions';
+import { checkIn, checkOut, lunchIn, lunchOut } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import {
@@ -23,15 +23,18 @@ import { Skeleton } from '../ui/skeleton';
 
 export default function Header() {
   const [isLoading, setIsLoading] = useState(true);
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [isSessionComplete, setIsSessionComplete] = useState(false);
+  const [status, setStatus] = useState<'checked-out' | 'checked-in' | 'on-lunch' | 'lunch-complete' | 'session-complete'>('checked-out');
   const [isPending, setIsPending] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [alertType, setAlertType] = useState<'checkout' | 'lunch'>('checkout');
   const { toast } = useToast();
 
   const containerRef = useRef<HTMLElement | null>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const [translatePx, setTranslatePx] = useState(0);
+  const [showLunchButton, setShowLunchButton] = useState(false);
+  
+  const isCheckedIn = status === 'checked-in' || status === 'on-lunch' || status === 'lunch-complete';
 
   useEffect(() => {
     const fetchAttendanceStatus = async () => {
@@ -47,24 +50,28 @@ export default function Header() {
           .single();
         
         if (data) {
-          if (data.check_in && !data.check_out) {
-            setIsCheckedIn(true);
-            setIsSessionComplete(false);
-          } else if (data.check_in && data.check_out) {
-            setIsCheckedIn(false);
-            setIsSessionComplete(true);
-          } else {
-            setIsCheckedIn(false);
-            setIsSessionComplete(false);
-          }
+          if (data.check_in && !data.lunch_out) setStatus('checked-in');
+          if (data.lunch_out && !data.lunch_in) setStatus('on-lunch');
+          if (data.lunch_in && !data.check_out) setStatus('lunch-complete');
+          if (data.check_out) setStatus('session-complete');
         } else {
-            setIsCheckedIn(false);
-            setIsSessionComplete(false);
+            setStatus('checked-out');
         }
       }
       setIsLoading(false);
     };
+
+    const checkTime = () => {
+      const now = new Date();
+      if (now.getHours() >= 13) {
+          setShowLunchButton(true);
+      }
+    };
+    
     fetchAttendanceStatus();
+    checkTime();
+    const interval = setInterval(checkTime, 60000); // Check every minute
+    return () => clearInterval(interval);
   }, []);
 
   const measure = () => {
@@ -92,67 +99,87 @@ export default function Header() {
         window.removeEventListener('resize', measure);
       };
     }
-  }, [isLoading]);
+  }, [isLoading, status]);
 
-  const handleCheckIn = async () => {
-    if (isPending) return;
-    setIsPending(true);
-    
-    // Optimistic UI update
-    const previousState = { isCheckedIn, isSessionComplete };
-    setIsCheckedIn(true);
-
-    const { error } = await checkIn();
-    
-    setIsPending(false);
-
-    if (error) {
-      // Revert UI on error
-      setIsCheckedIn(previousState.isCheckedIn);
-      toast({
-        title: 'Error checking in',
-        description: error,
-        variant: 'destructive',
-      });
-    } else {
-      toast({ title: 'Successfully checked in' });
-    }
-  }
-
-  const handleCheckOut = async () => {
+  const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn') => {
     if (isPending) return;
     setIsPending(true);
     setIsAlertOpen(false);
 
-    // Optimistic UI update
-    const previousState = { isCheckedIn, isSessionComplete };
-    setIsCheckedIn(false);
-    setIsSessionComplete(true);
+    const optimisticStateMap = {
+      checkIn: 'checked-in',
+      lunchOut: 'on-lunch',
+      lunchIn: 'lunch-complete',
+      checkOut: 'session-complete',
+    } as const;
 
-    const { error } = await checkOut();
+    const actionMap = {
+      checkIn,
+      checkOut,
+      lunchOut,
+      lunchIn,
+    };
 
+    const toastMessages = {
+      checkIn: 'Successfully checked in',
+      checkOut: 'Successfully checked out',
+      lunchOut: 'Successfully started lunch',
+      lunchIn: 'Successfully ended lunch',
+    }
+
+    const originalStatus = status;
+    setStatus(optimisticStateMap[action]);
+
+    const { error } = await actionMap[action]();
+    
     setIsPending(false);
 
     if (error) {
-      // Revert UI on error
-      setIsCheckedIn(previousState.isCheckedIn);
-      setIsSessionComplete(previousState.isSessionComplete);
+      setStatus(originalStatus);
       toast({
-        title: 'Error checking out',
+        title: `Error performing action`,
         description: error,
         variant: 'destructive',
       });
     } else {
-      toast({ title: 'Successfully checked out' });
+      toast({ title: toastMessages[action] });
     }
   };
 
-  const handleCheckInToggle = () => {
-    if (isCheckedIn) {
+  const handleMainButtonClick = () => {
+    if (status === 'checked-in' && showLunchButton) {
+        setAlertType('lunch');
         setIsAlertOpen(true);
-    } else {
-        handleCheckIn();
+    } else if (status === 'checked-in' || status === 'lunch-complete') {
+        setAlertType('checkout');
+        setIsAlertOpen(true);
+    } else if (status === 'checked-out') {
+        handleAction('checkIn');
+    } else if (status === 'on-lunch') {
+        handleAction('lunchIn');
     }
+  };
+
+  const getButtonContent = () => {
+      switch (status) {
+          case 'checked-out':
+              return { text: 'Check In', icon: <CheckInIcon className="ml-2 h-4 w-4 rotate-180" />, color: '#16a34a' };
+          case 'checked-in':
+              return { text: showLunchButton ? 'Lunch Out' : 'Check Out', icon: <CheckOutIcon className="ml-2 h-4 w-4" />, color: showLunchButton ? '#ca8a04' : '#dc2626' };
+          case 'on-lunch':
+              return { text: 'Lunch In', icon: <CheckInIcon className="ml-2 h-4 w-4 rotate-180" />, color: '#16a34a' };
+          case 'lunch-complete':
+              return { text: 'Check Out', icon: <CheckOutIcon className="ml-2 h-4 w-4" />, color: '#dc2626' };
+          default:
+              return null;
+      }
+  }
+  
+  const buttonContent = getButtonContent();
+  const getTranslateX = () => {
+    if (status === 'on-lunch') return translatePx;
+    if (isCheckedIn) return 0;
+    return 0;
   }
 
   if (isLoading) {
@@ -165,7 +192,7 @@ export default function Header() {
     );
   }
 
-  if (isSessionComplete) {
+  if (status === 'session-complete') {
     return (
       <header
         ref={containerRef}
@@ -186,52 +213,52 @@ export default function Header() {
           aria-hidden="false"
           className="absolute left-4 inset-y-0 flex items-center"
           style={{
-            transform: `translateX(${isCheckedIn ? translatePx : 0}px)`,
+            transform: `translateX(${getTranslateX()}px)`,
             transition: 'transform 500ms cubic-bezier(.22,.9,.3,1)',
             willChange: 'transform',
           }}
         >
-          <Button
-            ref={btnRef}
-            onClick={handleCheckInToggle}
-            disabled={isPending}
-            className="rounded-full px-6 py-2 font-medium text-white transition-colors duration-500"
-            style={{
-              backgroundColor: isCheckedIn ? '#dc2626' : '#16a34a', // red-600 / green-600
-            }}
-          >
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 
-              isCheckedIn ? (
+          {buttonContent && (
+            <Button
+              ref={btnRef}
+              onClick={handleMainButtonClick}
+              disabled={isPending}
+              className="rounded-full px-6 py-2 font-medium text-white transition-colors duration-500"
+              style={{ backgroundColor: buttonContent.color }}
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 
                 <>
-                  <span>Check Out</span>
-                  <CheckOutIcon className="ml-2 h-4 w-4" />
+                  <span>{buttonContent.text}</span>
+                  {buttonContent.icon}
                 </>
-              ) : (
-                <>
-                  <span>Check In</span>
-                  <CheckInIcon className="ml-2 h-4 w-4 rotate-180" />
-                </>
-              )
-            }
-          </Button>
+              }
+            </Button>
+          )}
         </div>
       </header>
 
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to check out?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {alertType === 'checkout' ? 'Are you sure you want to check out?' : 'What would you like to do?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will end your current work session for today. You will not be able to check in again until tomorrow.
+              {alertType === 'checkout'
+                ? 'This will end your current work session for today. You will not be able to check in again until tomorrow.'
+                : 'You can either start your lunch break or end your work day.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {alertType === 'lunch' && (
+                <AlertDialogAction onClick={() => handleAction('lunchOut')} className={cn("bg-yellow-500 hover:bg-yellow-600")}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Lunch Out'}
+                </AlertDialogAction>
+            )}
             <AlertDialogAction 
-              onClick={handleCheckOut}
-              className={cn(
-                  "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              )}
+              onClick={() => handleAction('checkOut')}
+              className={cn("bg-destructive text-destructive-foreground hover:bg-destructive/90")}
               disabled={isPending}
             >
               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Check Out'}

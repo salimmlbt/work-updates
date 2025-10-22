@@ -47,6 +47,8 @@ export default async function UserAttendancePage({ params, searchParams }: { par
       date: dayString,
       check_in: record?.check_in || null,
       check_out: record?.check_out || null,
+      lunch_in: record?.lunch_in || null,
+      lunch_out: record?.lunch_out || null,
       total_hours: record?.total_hours || 0,
     };
   });

@@ -354,6 +354,8 @@ export type Database = {
           check_in: string | null
           check_out: string | null
           total_hours: number | null
+          lunch_in: string | null
+          lunch_out: string | null
         }
         Insert: {
           id?: string
@@ -362,6 +364,8 @@ export type Database = {
           check_in?: string | null
           check_out?: string | null
           total_hours?: number | null
+          lunch_in?: string | null
+          lunch_out?: string | null
         }
         Update: {
           id?: string
@@ -370,6 +374,8 @@ export type Database = {
           check_in?: string | null
           check_out?: string | null
           total_hours?: number | null
+          lunch_in?: string | null
+          lunch_out?: string | null
         }
         Relationships: [
           {

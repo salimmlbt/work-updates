@@ -97,6 +97,62 @@ export async function checkOut() {
   return { data };
 }
 
+export async function lunchOut() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in.' };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({
+      lunch_out: new Date().toISOString(),
+    })
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .select('id')
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+  
+  revalidatePath('/attendance');
+  return { data };
+}
+
+export async function lunchIn() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in.' };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({
+      lunch_in: new Date().toISOString(),
+    })
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .select('id')
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+  
+  revalidatePath('/attendance');
+  return { data };
+}
+
 
 export async function addProject(formData: FormData) {
   const supabase = createServerClient()

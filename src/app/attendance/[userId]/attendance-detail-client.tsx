@@ -27,6 +27,8 @@ interface MonthlyAttendance {
     date: string;
     check_in: string | null;
     check_out: string | null;
+    lunch_in: string | null;
+    lunch_out: string | null;
     total_hours: number;
 }
 
@@ -134,6 +136,8 @@ export default function AttendanceDetailClient({
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Check In</TableHead>
+              <TableHead>Lunch Out</TableHead>
+              <TableHead>Lunch In</TableHead>
               <TableHead>Check Out</TableHead>
               <TableHead>Total Hours</TableHead>
             </TableRow>
@@ -146,6 +150,8 @@ export default function AttendanceDetailClient({
                   <div className="text-sm text-muted-foreground">{format(parseISO(item.date), 'EEEE')}</div>
                 </TableCell>
                 <TableCell>{formatTime(item.check_in)}</TableCell>
+                <TableCell>{formatTime(item.lunch_out)}</TableCell>
+                <TableCell>{formatTime(item.lunch_in)}</TableCell>
                 <TableCell>{formatTime(item.check_out)}</TableCell>
                 <TableCell>{formatHours(item.total_hours)}</TableCell>
               </TableRow>
