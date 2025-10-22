@@ -19,9 +19,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
+import { Skeleton } from '../ui/skeleton';
 
 export default function Header() {
-  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -33,7 +34,6 @@ export default function Header() {
   const [translatePx, setTranslatePx] = useState(0);
 
   useEffect(() => {
-    setIsMounted(true);
     const fetchAttendanceStatus = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -62,6 +62,7 @@ export default function Header() {
             setIsSessionComplete(false);
         }
       }
+      setIsLoading(false);
     };
     fetchAttendanceStatus();
   }, []);
@@ -81,15 +82,17 @@ export default function Header() {
   };
 
   useLayoutEffect(() => {
-    measure();
-    const ro = new ResizeObserver(measure);
-    if (containerRef.current) ro.observe(containerRef.current);
-    window.addEventListener('resize', measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-  }, []);
+    if (!isLoading) {
+      measure();
+      const ro = new ResizeObserver(measure);
+      if (containerRef.current) ro.observe(containerRef.current);
+      window.addEventListener('resize', measure);
+      return () => {
+        ro.disconnect();
+        window.removeEventListener('resize', measure);
+      };
+    }
+  }, [isLoading]);
 
   const handleCheckIn = async () => {
     if (isPending) return;
@@ -152,16 +155,12 @@ export default function Header() {
     }
   }
 
-  if (!isMounted) {
+  if (isLoading) {
     return (
       <header
-        ref={containerRef}
         className="bg-background border-b p-4 md:p-6 relative h-20 flex items-center"
       >
-        <Button variant="success" className="rounded-full px-6 py-2" disabled>
-          <span>Check In</span>
-          <CheckInIcon className="ml-2 h-4 w-4 rotate-180" />
-        </Button>
+        <Skeleton className="h-10 w-32 rounded-full" />
       </header>
     );
   }
