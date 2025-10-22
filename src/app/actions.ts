@@ -1,5 +1,4 @@
 
-
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -7,6 +6,97 @@ import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows
 import type { TaskWithAssignee, Attachment } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+
+export async function checkIn() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to check in.' };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: existing, error: fetchError } = await supabase
+    .from('attendance')
+    .select('id, check_in')
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .single();
+
+  if (fetchError && fetchError.code !== 'PGRST116') {
+     return { error: `Database error: ${fetchError.message}` };
+  }
+  
+  if (existing && existing.check_in) {
+    return { error: 'You have already checked in today.' };
+  }
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .insert({
+      user_id: user.id,
+      date: today,
+      check_in: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/attendance');
+  return { data };
+}
+
+export async function checkOut() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to check out.' };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: attendance, error: fetchError } = await supabase
+    .from('attendance')
+    .select('id, check_in, check_out')
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .single();
+  
+  if (fetchError || !attendance) {
+    return { error: 'You have not checked in today.' };
+  }
+  
+  if (attendance.check_out) {
+    return { error: 'You have already checked out today.' };
+  }
+
+  const checkInTime = new Date(attendance.check_in!).getTime();
+  const checkOutTime = new Date().getTime();
+  const totalHours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({
+      check_out: new Date().toISOString(),
+      total_hours: totalHours,
+    })
+    .eq('id', attendance.id)
+    .select()
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+  
+  revalidatePath('/attendance');
+  return { data };
+}
+
 
 export async function addProject(formData: FormData) {
   const supabase = createServerClient()

@@ -346,6 +346,41 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          check_in: string | null
+          check_out: string | null
+          total_hours: number | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          check_in?: string | null
+          check_out?: string | null
+          total_hours?: number | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          check_in?: string | null
+          check_out?: string | null
+          total_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

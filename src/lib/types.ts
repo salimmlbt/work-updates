@@ -14,6 +14,7 @@ export type Team = DB['public']['Tables']['teams']['Row'];
 export type Client = DB['public']['Tables']['clients']['Row'];
 export type ProjectType = DB['public']['Tables']['project_types']['Row'];
 export type AppSettings = DB['public']['Tables']['app_settings']['Row'];
+export type Attendance = DB['public']['Tables']['attendance']['Row'];
 
 
 export type TaskWithAssignee = Task & {
