@@ -131,6 +131,8 @@ export async function addUser(formData: FormData) {
     const roleId = formData.get('role_id') as string;
     const teamIds = (formData.get('team_ids') as string).split(',').filter(Boolean);
     const avatarFile = formData.get('avatar') as File | null;
+    const workStartTime = formData.get('work_start_time') as string;
+    const workEndTime = formData.get('work_end_time') as string;
     
     let avatarUrl = `https://i.pravatar.cc/150?u=${email}`;
 
@@ -184,6 +186,8 @@ export async function addUser(formData: FormData) {
         email: email,
         avatar_url: avatarUrl,
         role_id: roleId,
+        work_start_time: workStartTime,
+        work_end_time: workEndTime,
       });
       
     if (profileError) {
@@ -232,6 +236,8 @@ export async function updateUser(userId: string, formData: FormData) {
     const teamIds = (formData.get('team_ids')as string).split(',').filter(Boolean);
     const newPassword = formData.get('password') as string | null;
     const avatarFile = formData.get('avatar') as File | null;
+    const workStartTime = formData.get('work_start_time') as string;
+    const workEndTime = formData.get('work_end_time') as string;
     
     const { data: currentProfile, error: fetchError } = await supabase
         .from('profiles')
@@ -279,6 +285,8 @@ export async function updateUser(userId: string, formData: FormData) {
             full_name: fullName,
             role_id: roleId,
             avatar_url: avatarUrl,
+            work_start_time: workStartTime,
+            work_end_time: workEndTime,
         })
         .eq('id', userId)
         .select('full_name, avatar_url, roles(*)')

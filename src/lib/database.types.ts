@@ -133,6 +133,8 @@ export type Database = {
           instagram: string | null
           linkedin: string | null
           birthday: string | null
+          work_start_time: string | null
+          work_end_time: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -146,6 +148,8 @@ export type Database = {
           instagram?: string | null
           linkedin?: string | null
           birthday?: string | null
+          work_start_time?: string | null
+          work_end_time?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -159,6 +163,8 @@ export type Database = {
           instagram?: string | null
           linkedin?: string | null
           birthday?: string | null
+          work_start_time?: string | null
+          work_end_time?: string | null
         }
         Relationships: [
           {

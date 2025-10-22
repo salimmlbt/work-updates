@@ -52,6 +52,8 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     password: '',
     confirmPassword: '',
     avatar: null as File | null,
+    workStartTime: user.work_start_time || '',
+    workEndTime: user.work_end_time || '',
   });
   const [isFormValid, setIsFormValid] = useState(false);
   const { toast } = useToast();
@@ -60,10 +62,12 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
   useEffect(() => {
-    const { name, roleId, password, confirmPassword } = formState;
+    const { name, roleId, password, confirmPassword, workStartTime, workEndTime } = formState;
     const isPasswordValid = (!password && !confirmPassword) || (password.length >= 6 && password === confirmPassword);
     const isValid = name.trim() !== '' &&
                     roleId !== '' &&
+                    workStartTime.trim() !== '' &&
+                    workEndTime.trim() !== '' &&
                     isPasswordValid;
     setIsFormValid(isValid);
   }, [formState]);
@@ -77,6 +81,8 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
           password: '',
           confirmPassword: '',
           avatar: null,
+          workStartTime: user.work_start_time || '',
+          workEndTime: user.work_end_time || '',
       });
       setAvatarPreview(user.avatar_url);
     }
@@ -128,6 +134,8 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     formData.append('full_name', formState.name);
     formData.append('role_id', formState.roleId);
     formData.append('team_ids', formState.teamIds.join(','));
+    formData.append('work_start_time', formState.workStartTime);
+    formData.append('work_end_time', formState.workEndTime);
     if (formState.password) {
       formData.append('password', formState.password);
     }
@@ -234,6 +242,16 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                             </ScrollArea>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="workStartTime">Check In Time</Label>
+                      <Input id="workStartTime" name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="workEndTime">Check Out Time</Label>
+                      <Input id="workEndTime" name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} required />
                     </div>
                   </div>
                   <div className="space-y-2">
