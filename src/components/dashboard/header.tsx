@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -22,7 +23,7 @@ export default function Header() {
       <Button
         onClick={handleCheckInToggle}
         variant={isCheckedIn ? 'destructive' : 'success'}
-        className="transition-all duration-300"
+        className="transition-all duration-300 rounded-full"
       >
         {isCheckedIn ? (
           <>
