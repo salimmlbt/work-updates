@@ -267,7 +267,7 @@ const AddTaskRow = ({
       <td className="px-4 py-3 border-r">
         <Select onValueChange={handleClientChange} value={clientId}>
           <SelectTrigger 
-            className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
+            className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             ref={clientRef} 
             onKeyDown={(e) => handleKeyDown(e, projectRef)}
           >
@@ -286,7 +286,7 @@ const AddTaskRow = ({
           key={clientId} // Force re-render when client changes
         >
           <SelectTrigger 
-            className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
+            className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             ref={projectRef} 
             onKeyDown={(e) => handleKeyDown(e, assigneeRef)}
           >
@@ -305,7 +305,7 @@ const AddTaskRow = ({
       <td className="px-4 py-3 border-r">
         <Select onValueChange={setAssigneeId} value={assigneeId}>
           <SelectTrigger 
-            className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
+            className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             ref={assigneeRef} 
             onKeyDown={(e) => handleKeyDown(e, typeRef)}
           >
@@ -325,7 +325,7 @@ const AddTaskRow = ({
           disabled={!assigneeId || availableTaskTypes.length === 0}
         >
           <SelectTrigger 
-            className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0" 
+            className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             ref={typeRef} 
             onKeyDown={(e) => handleKeyDown(e, dueDateRef)}
           >
@@ -342,8 +342,8 @@ const AddTaskRow = ({
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
             <Button 
-              variant="outline" 
-              className="w-full justify-start text-left font-normal bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
+              variant="ghost" 
+              className="w-full justify-start text-left font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent"
               ref={dueDateRef} 
               onKeyDown={handleDueDateKeyDown}
             >
@@ -1376,4 +1376,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
