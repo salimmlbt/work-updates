@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useTransition, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckInIcon, CheckOutIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
@@ -23,7 +24,7 @@ export default function Header() {
   const [isMounted, setIsMounted] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
 
@@ -90,42 +91,57 @@ export default function Header() {
     };
   }, []);
 
-  const handleCheckIn = () => {
-     startTransition(async () => {
-      const { data, error } = await checkIn();
-      if (error) {
-        toast({
-          title: 'Error checking in',
-          description: error,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Successfully checked in',
-        });
-        setIsCheckedIn(true);
-      }
-    });
+  const handleCheckIn = async () => {
+    if (isPending) return;
+    setIsPending(true);
+    
+    // Optimistic UI update
+    const previousState = { isCheckedIn, isSessionComplete };
+    setIsCheckedIn(true);
+
+    const { error } = await checkIn();
+    
+    setIsPending(false);
+
+    if (error) {
+      // Revert UI on error
+      setIsCheckedIn(previousState.isCheckedIn);
+      toast({
+        title: 'Error checking in',
+        description: error,
+        variant: 'destructive',
+      });
+    } else {
+      toast({ title: 'Successfully checked in' });
+    }
   }
 
-  const handleCheckOut = () => {
-     startTransition(async () => {
-      const { data, error } = await checkOut();
-       setIsAlertOpen(false);
-      if (error) {
-        toast({
-          title: 'Error checking out',
-          description: error,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Successfully checked out',
-        });
-        setIsCheckedIn(false);
-        setIsSessionComplete(true);
-      }
-    });
+  const handleCheckOut = async () => {
+    if (isPending) return;
+    setIsPending(true);
+    setIsAlertOpen(false);
+
+    // Optimistic UI update
+    const previousState = { isCheckedIn, isSessionComplete };
+    setIsCheckedIn(false);
+    setIsSessionComplete(true);
+
+    const { error } = await checkOut();
+
+    setIsPending(false);
+
+    if (error) {
+      // Revert UI on error
+      setIsCheckedIn(previousState.isCheckedIn);
+      setIsSessionComplete(previousState.isSessionComplete);
+      toast({
+        title: 'Error checking out',
+        description: error,
+        variant: 'destructive',
+      });
+    } else {
+      toast({ title: 'Successfully checked out' });
+    }
   };
 
   const handleCheckInToggle = () => {
