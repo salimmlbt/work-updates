@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -139,7 +140,7 @@ const AddTaskRow = ({
 
   const filteredProjects = useMemo(() => {
     if (!clientId) {
-      return projects; // If no client is selected, show all projects
+      return projects;
     }
     return projects.filter(p => String(p.client_id) === String(clientId));
   }, [clientId, projects]);
@@ -249,7 +250,7 @@ const AddTaskRow = ({
           ref={taskInputRef}
           onChange={(e) => setTaskName(e.target.value)} 
           onKeyDown={(e) => handleKeyDown(e, clientRef)}
-          className="bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         {attachments.length > 0 && (
           <div className="mt-2 space-y-1">
@@ -1375,3 +1376,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
