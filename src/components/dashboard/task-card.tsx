@@ -37,8 +37,8 @@ export function TaskCard({ task }: TaskCardProps) {
   const { toast } = useToast();
   
   // The deadline is a string like "2024-08-15T05:00:00.000Z".
-  // To avoid timezone issues, we create a date object that represents the UTC date.
-  const deadline = new Date(task.deadline);
+  // parseISO correctly handles this as a UTC date.
+  const deadline = parseISO(task.deadline);
   const isOverdue = isPast(deadline) && task.status !== 'done';
 
   const handleStatusChange = async (status: 'todo' | 'inprogress' | 'done') => {
