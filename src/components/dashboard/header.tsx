@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckInIcon, CheckOutIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
@@ -177,7 +177,7 @@ export default function Header() {
       <header className="bg-background border-b px-4 md:px-6 relative h-20 flex items-center overflow-hidden">
         <div
           className={cn(
-            'flex w-full transition-transform duration-700 ease-in-out',
+            'flex w-full transition-all duration-700 ease-in-out',
             isRightSide ? 'justify-end' : 'justify-start'
            )}
         >
