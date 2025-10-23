@@ -178,7 +178,6 @@ export default function Header() {
   const buttonContent = getButtonContent();
   const getTranslateX = () => {
     if (status === 'on-lunch') return translatePx;
-    if (isCheckedIn) return 0;
     return 0;
   }
 
