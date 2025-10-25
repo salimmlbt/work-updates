@@ -55,10 +55,14 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
     if (isFalaqAdmin) return true;
     return userPermissions[itemId] !== 'Restricted';
   };
+  
+  const accessibilityItem = { href: '/accessibility', label: 'Accessibility', icon: ShieldQuestion, id: 'accessibility' };
 
   const filteredNavItems = navItems.filter(item => hasAccess(item.id));
-  const filteredBottomNavItems = bottomNavItems.filter(item => hasAccess(item.id));
-
+  const filteredBottomNavItems = [
+    ...bottomNavItems.filter(item => hasAccess(item.id)),
+    ...(hasAccess(accessibilityItem.id) ? [accessibilityItem] : [])
+  ];
 
   const NavLink = ({ item }: { item: typeof navItems[0] | typeof bottomNavItems[0] }) => {
     const isActive =
@@ -174,7 +178,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
-              
+
               {/* Logout */}
               <Tooltip>
                 <TooltipTrigger asChild>

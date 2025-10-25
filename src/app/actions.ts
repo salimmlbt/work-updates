@@ -982,3 +982,37 @@ export async function delete_task_attachments(task_id: string) {
 
     return { success: true };
 }
+
+export async function updateSetting(key: string, value: any) {
+  const supabase = createServerClient();
+  
+  const { data, error } = await supabase
+    .from('app_settings')
+    .update({ value: value })
+    .eq('key', key)
+    .select()
+    .single();
+
+  if (error) {
+    // If the setting doesn't exist, create it.
+    if (error.code === 'PGRST116') {
+      const { data: insertData, error: insertError } = await supabase
+        .from('app_settings')
+        .insert({ key, value })
+        .select()
+        .single();
+      
+      if (insertError) {
+        return { error: `Failed to create setting: ${insertError.message}` };
+      }
+      revalidatePath('/accessibility');
+      revalidatePath('/dashboard', 'layout'); // Revalidate layout to update header
+      return { data: insertData };
+    }
+    return { error: `Failed to update setting: ${error.message}` };
+  }
+
+  revalidatePath('/accessibility');
+  revalidatePath('/dashboard', 'layout'); // Revalidate layout to update header
+  return { data };
+}
