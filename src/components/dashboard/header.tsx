@@ -101,23 +101,23 @@ export default function Header() {
     };
 
     const originalStatus = status;
-    setStatus(optimisticStateMap[action]);
+    const originalIsRightSide = isRightSide;
     
-    // Update side based on the action being taken
-    if (action === 'checkIn') setIsRightSide(true); // -> Show Check Out (right)
-    if (action === 'lunchOut') setIsRightSide(false); // -> Show Lunch In (left)
-    if (action === 'lunchIn') setIsRightSide(true); // -> Show Check Out (right)
+    // Optimistic update
+    setStatus(optimisticStateMap[action]);
+    if (action === 'checkIn') setIsRightSide(true);
+    if (action === 'lunchOut') setIsRightSide(false);
+    if (action === 'lunchIn') setIsRightSide(true);
+    if (action === 'checkOut') setIsRightSide(false);
 
     const { error } = await actionMap[action]();
+    
     setIsPending(false);
 
     if (error) {
       // Revert UI on error
       setStatus(originalStatus);
-      if (action === 'checkIn') setIsRightSide(false);
-      if (action === 'lunchOut') setIsRightSide(true);
-      if (action === 'lunchIn') setIsRightSide(false);
-
+      setIsRightSide(originalIsRightSide);
       toast({ title: 'Error performing action', description: error, variant: 'destructive' });
     } else {
       toast({ title: toastMessages[action] });
