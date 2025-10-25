@@ -46,19 +46,21 @@ export default function Header() {
           .single();
 
         if (data) {
-          if (data.check_in && !data.lunch_out) {
+          if (data.check_in && !data.lunch_out && !data.check_out) {
             setStatus('checked-in');
-            setIsRightSide(false);
-          }
-          if (data.lunch_out && !data.lunch_in) {
+            setIsRightSide(true); // Check Out button on right
+          } else if (data.lunch_out && !data.lunch_in) {
             setStatus('on-lunch');
-            setIsRightSide(true);
-          }
-          if (data.lunch_in && !data.check_out) {
+            setIsRightSide(false); // Lunch In button on left
+          } else if (data.lunch_in && !data.check_out) {
             setStatus('lunch-complete');
-            setIsRightSide(false);
+            setIsRightSide(true); // Check Out button on right
+          } else if (data.check_out) {
+            setStatus('session-complete');
+          } else {
+             setStatus('checked-out'); // Default if something is off
+             setIsRightSide(false);
           }
-          if (data.check_out) setStatus('session-complete');
         } else {
           setStatus('checked-out');
           setIsRightSide(false);
@@ -101,19 +103,20 @@ export default function Header() {
     const originalStatus = status;
     setStatus(optimisticStateMap[action]);
     
-    if (action === 'lunchOut') {
-      setIsRightSide(true);
-    } else if (action === 'checkIn' || action === 'lunchIn') {
-      setIsRightSide(false);
-    }
+    // Update side based on the action being taken
+    if (action === 'checkIn') setIsRightSide(true); // -> Show Check Out (right)
+    if (action === 'lunchOut') setIsRightSide(false); // -> Show Lunch In (left)
+    if (action === 'lunchIn') setIsRightSide(true); // -> Show Check Out (right)
 
     const { error } = await actionMap[action]();
     setIsPending(false);
 
     if (error) {
+      // Revert UI on error
       setStatus(originalStatus);
-      if (action === 'lunchOut') setIsRightSide(false);
-      else if (action === 'checkIn' || action === 'lunchIn') setIsRightSide(true);
+      if (action === 'checkIn') setIsRightSide(false);
+      if (action === 'lunchOut') setIsRightSide(true);
+      if (action === 'lunchIn') setIsRightSide(false);
 
       toast({ title: 'Error performing action', description: error, variant: 'destructive' });
     } else {
@@ -137,13 +140,13 @@ export default function Header() {
 
   const getButtonContent = () => {
     switch (status) {
-      case 'checked-out':
+      case 'checked-out': // Shows "Check In"
         return { text: 'Check In', icon: <CheckInIcon className="ml-2 h-4 w-4 rotate-180" />, color: '#16a34a' };
-      case 'checked-in':
+      case 'checked-in': // Can show "Lunch Out" or "Check Out"
         return { text: showLunchButton ? 'Lunch Out' : 'Check Out', icon: <CheckOutIcon className="ml-2 h-4 w-4" />, color: showLunchButton ? '#ca8a04' : '#dc2626' };
-      case 'on-lunch':
+      case 'on-lunch': // Shows "Lunch In"
         return { text: 'Lunch In', icon: <CheckInIcon className="ml-2 h-4 w-4 rotate-180" />, color: '#16a34a' };
-      case 'lunch-complete':
+      case 'lunch-complete': // Shows "Check Out"
         return { text: 'Check Out', icon: <CheckOutIcon className="ml-2 h-4 w-4" />, color: '#dc2626' };
       default:
         return null;
