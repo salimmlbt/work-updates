@@ -81,7 +81,7 @@ export default function Header() {
       .channel('app-settings-changes')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'app_settings', filter: `key=eq.lunch_start_time` },
+        { event: '*', schema: 'public', table: 'app_settings', filter: `key=eq.lunch_start_time` },
         (payload) => {
           const newTime = (payload.new.value as string | undefined) || '13:00';
           setLunchTimeSetting(newTime);
