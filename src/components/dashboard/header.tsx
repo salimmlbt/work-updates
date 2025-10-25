@@ -86,21 +86,21 @@ export default function Header() {
       const [hours, minutes] = lunchTimeSetting.split(':').map(Number);
       const now = new Date();
       if (now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= minutes)) {
-        if (!showLunchButton) {
-          setShowLunchButton(true);
-        }
+        setShowLunchButton(true);
       } else {
-        if (showLunchButton) {
-          setShowLunchButton(false);
-        }
+        setShowLunchButton(false);
       }
     };
 
+    // Initial check
     checkTime(); 
+    
+    // Set up an interval to check the time periodically
     const interval = setInterval(checkTime, 30000); // Check every 30 seconds
 
+    // Clean up the interval when the component unmounts
     return () => clearInterval(interval);
-  }, [isLoading, lunchTimeSetting, showLunchButton]);
+  }, [isLoading, lunchTimeSetting]);
   
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn') => {
     setIsAlertOpen(false);
