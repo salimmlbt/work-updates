@@ -15,20 +15,35 @@ import { Badge } from '@/components/ui/badge';
 import { getInitials } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import type { Attendance, Profile } from '@/lib/types';
+import { useState, useEffect } from 'react';
 
 type AttendanceWithProfile = Attendance & {
   profiles: Profile;
 };
 
-function formatTime(time: string | null): string {
-  if (!time) return '-';
-  try {
-    // Parse the UTC time from the database and format it in the user's local timezone.
-    return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-  } catch (e) {
-    return '-';
-  }
+function TimeDisplay({ time }: { time: string | null }) {
+  const [formattedTime, setFormattedTime] = useState('-');
+
+  useEffect(() => {
+    if (time) {
+      try {
+        const localTime = new Date(time).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+        setFormattedTime(localTime);
+      } catch (e) {
+        setFormattedTime('-');
+      }
+    } else {
+      setFormattedTime('-');
+    }
+  }, [time]);
+
+  return <>{formattedTime}</>;
 }
+
 
 function formatHours(hours: number | null): string {
   if (hours === null || typeof hours === 'undefined') return '-';
@@ -85,8 +100,8 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
                     {item.profiles.full_name}
                   </div>
                 </TableCell>
-                <TableCell>{formatTime(item.check_in)}</TableCell>
-                <TableCell>{formatTime(item.check_out)}</TableCell>
+                <TableCell><TimeDisplay time={item.check_in} /></TableCell>
+                <TableCell><TimeDisplay time={item.check_out} /></TableCell>
                 <TableCell>{formatHours(item.total_hours)}</TableCell>
                 <TableCell>{getStatus(item)}</TableCell>
               </TableRow>
