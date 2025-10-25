@@ -30,11 +30,10 @@ export default function Header() {
   const [showLunchButton, setShowLunchButton] = useState(false);
   const [isRightSide, setIsRightSide] = useState(false);
   const [lunchTimeSetting, setLunchTimeSetting] = useState('13:00');
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const supabase = createClient();
-      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -77,7 +76,24 @@ export default function Header() {
     };
 
     fetchInitialData();
-  }, []);
+
+    const channel = supabase
+      .channel('app-settings-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'app_settings', filter: `key=eq.lunch_start_time` },
+        (payload) => {
+          const newTime = (payload.new.value as string | undefined) || '13:00';
+          setLunchTimeSetting(newTime);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
+  }, [supabase]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -92,13 +108,9 @@ export default function Header() {
       }
     };
 
-    // Initial check
     checkTime(); 
-    
-    // Set up an interval to check the time periodically
-    const interval = setInterval(checkTime, 30000); // Check every 30 seconds
+    const interval = setInterval(checkTime, 30000); 
 
-    // Clean up the interval when the component unmounts
     return () => clearInterval(interval);
   }, [isLoading, lunchTimeSetting]);
   
