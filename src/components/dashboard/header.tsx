@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckInIcon, CheckOutIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
@@ -18,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
 
 export default function Header() {
@@ -28,11 +26,28 @@ export default function Header() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [alertType, setAlertType] = useState<'checkout' | 'lunch'>('checkout');
   const { toast } = useToast();
-  
+
+  const containerRef = useRef<HTMLElement | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const [translatePx, setTranslatePx] = useState(0);
   const [showLunchButton, setShowLunchButton] = useState(false);
-  
-  // control left/right side state
   const [isRightSide, setIsRightSide] = useState(false);
+
+  const safeMargin = 12; // consistent spacing
+
+  const measure = () => {
+    const container = containerRef.current;
+    const btn = btnRef.current;
+    if (!container || !btn) return;
+
+    const cs = getComputedStyle(container);
+    const padLeft = parseFloat(cs.paddingLeft || '0');
+    const padRight = parseFloat(cs.paddingRight || '0');
+    const containerInnerWidth = container.clientWidth - padLeft - padRight;
+    const btnWidth = btn.offsetWidth;
+    const distance = Math.max(0, containerInnerWidth - btnWidth - safeMargin * 2);
+    setTranslatePx(Math.round(distance));
+  };
 
   useEffect(() => {
     const fetchAttendanceStatus = async () => {
@@ -50,15 +65,15 @@ export default function Header() {
         if (data) {
           if (data.check_in && !data.lunch_out) {
             setStatus('checked-in');
-            setIsRightSide(false);
+            setIsRightSide(true);
           }
           if (data.lunch_out && !data.lunch_in) {
             setStatus('on-lunch');
-            setIsRightSide(true);
+            setIsRightSide(false);
           }
           if (data.lunch_in && !data.check_out) {
             setStatus('lunch-complete');
-            setIsRightSide(false);
+            setIsRightSide(true);
           }
           if (data.check_out) setStatus('session-complete');
         } else {
@@ -80,6 +95,19 @@ export default function Header() {
     return () => clearInterval(interval);
   }, []);
 
+  useLayoutEffect(() => {
+    if (!isLoading) {
+      measure();
+      const ro = new ResizeObserver(measure);
+      if (containerRef.current) ro.observe(containerRef.current);
+      window.addEventListener('resize', measure);
+      return () => {
+        ro.disconnect();
+        window.removeEventListener('resize', measure);
+      };
+    }
+  }, [isLoading, status]);
+
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn') => {
     if (isPending) return;
     setIsPending(true);
@@ -93,7 +121,6 @@ export default function Header() {
     } as const;
 
     const actionMap = { checkIn, checkOut, lunchOut, lunchIn };
-
     const toastMessages = {
       checkIn: 'Successfully checked in',
       checkOut: 'Successfully checked out',
@@ -102,28 +129,22 @@ export default function Header() {
     };
 
     const originalStatus = status;
-    
-    // Optimistic UI update for position
-    if (action === 'checkIn' || action === 'lunchIn') {
-        setIsRightSide(false);
-    } else if (action === 'lunchOut') {
-        setIsRightSide(true);
-    }
-    
     setStatus(optimisticStateMap[action]);
-
     const { error } = await actionMap[action]();
     setIsPending(false);
 
     if (error) {
-      // Revert UI on error
       setStatus(originalStatus);
-      if (action === 'checkIn' || action === 'lunchIn') setIsRightSide(true);
-      if (action === 'lunchOut') setIsRightSide(false);
-
       toast({ title: 'Error performing action', description: error, variant: 'destructive' });
     } else {
       toast({ title: toastMessages[action] });
+      if (action === 'checkIn' || action === 'lunchIn') {
+        setIsRightSide(true);
+        requestAnimationFrame(() => measure()); // ✅ proper timing
+      } else if (action === 'lunchOut') {
+        setIsRightSide(false);
+        requestAnimationFrame(() => measure()); // ✅ proper timing
+      }      
     }
   };
 
@@ -157,6 +178,7 @@ export default function Header() {
   };
 
   const buttonContent = getButtonContent();
+  const getTranslateX = () => (isRightSide ? translatePx - safeMargin : 0);
 
   if (isLoading) {
     return (
@@ -168,32 +190,41 @@ export default function Header() {
 
   if (status === 'session-complete') {
     return (
-      <header className="bg-background border-b p-4 md:p-6 relative h-20 flex items-center overflow-hidden" />
+      <header ref={containerRef} className="bg-background border-b p-4 md:p-6 relative h-20 flex items-center overflow-hidden" />
     );
   }
 
   return (
     <>
-      <header className="bg-background border-b px-4 md:px-6 relative h-20 flex items-center overflow-hidden">
+      <header
+        ref={containerRef}
+        className="bg-background border-b p-4 md:p-6 relative h-20 flex items-center overflow-hidden"
+      >
         <div
-          className={cn(
-            'flex w-full transition-all duration-700 ease-in-out',
-            isRightSide ? 'justify-end' : 'justify-start'
-           )}
+          className="absolute inset-y-0 flex items-center"
+          style={{
+            left: `${safeMargin}px`,
+            transform: `translateX(${getTranslateX()}px)`,
+            transition: 'transform 700ms cubic-bezier(.22,.9,.3,1)',
+            willChange: 'transform',
+          }}
         >
           {buttonContent && (
             <Button
+              ref={btnRef}
               onClick={handleMainButtonClick}
               disabled={isPending}
               className="rounded-full px-6 py-2 font-medium text-white transition-colors duration-500"
               style={{ backgroundColor: buttonContent.color }}
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> :
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <>
                   <span>{buttonContent.text}</span>
                   {buttonContent.icon}
                 </>
-              }
+              )}
             </Button>
           )}
         </div>
