@@ -1,13 +1,12 @@
 
 'use client';
 
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckInIcon, CheckOutIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { checkIn, checkOut, lunchIn, lunchOut } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +19,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
-import type { AppSettings } from '@/lib/types';
 
 export default function Header() {
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +29,7 @@ export default function Header() {
   
   const [showLunchButton, setShowLunchButton] = useState(false);
   const [isRightSide, setIsRightSide] = useState(false);
+  const [lunchTimeSetting, setLunchTimeSetting] = useState('13:00');
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -43,13 +42,11 @@ export default function Header() {
         return;
       }
       
-      // Fetch attendance and settings in parallel
       const [attendanceRes, settingsRes] = await Promise.all([
         supabase.from('attendance').select('*').eq('user_id', user.id).eq('date', new Date().toISOString().split('T')[0]).single(),
         supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single()
       ]);
 
-      // Process attendance
       const { data: attendanceData } = attendanceRes;
       if (attendanceData) {
         if (attendanceData.check_in && !attendanceData.lunch_out && !attendanceData.check_out) {
@@ -60,7 +57,7 @@ export default function Header() {
           setIsRightSide(true);
         } else if (attendanceData.lunch_in && !attendanceData.check_out) {
           setStatus('lunch-complete');
-          setIsRightSide(true);
+          setIsRightSide(false);
         } else if (attendanceData.check_out) {
           setStatus('session-complete');
         } else {
@@ -72,28 +69,38 @@ export default function Header() {
         setIsRightSide(false);
       }
 
-      // Process settings
       const { data: settingsData } = settingsRes;
-      const lunchTimeSetting = (settingsData?.value as string | undefined) || '13:00';
-      const [hours, minutes] = lunchTimeSetting.split(':').map(Number);
-      
-      const checkTime = () => {
-          const now = new Date();
-          if (now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= minutes)) {
-              setShowLunchButton(true);
-          }
-      };
-      
-      checkTime();
-      const interval = setInterval(checkTime, 60000);
+      const fetchedLunchTime = (settingsData?.value as string | undefined) || '13:00';
+      setLunchTimeSetting(fetchedLunchTime);
       
       setIsLoading(false);
-      
-      return () => clearInterval(interval);
     };
 
     fetchInitialData();
   }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const checkTime = () => {
+      const [hours, minutes] = lunchTimeSetting.split(':').map(Number);
+      const now = new Date();
+      if (now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= minutes)) {
+        if (!showLunchButton) {
+          setShowLunchButton(true);
+        }
+      } else {
+        if (showLunchButton) {
+          setShowLunchButton(false);
+        }
+      }
+    };
+
+    checkTime(); 
+    const interval = setInterval(checkTime, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isLoading, lunchTimeSetting, showLunchButton]);
   
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn') => {
     setIsAlertOpen(false);
@@ -116,7 +123,6 @@ export default function Header() {
     const originalStatus = status;
     const originalIsRightSide = isRightSide;
     
-    // Optimistic update
     setStatus(optimisticStateMap[action]);
     if (action === 'checkIn') setIsRightSide(false);
     if (action === 'lunchOut') setIsRightSide(true);
@@ -126,7 +132,6 @@ export default function Header() {
     const { error } = await actionMap[action]();
     
     if (error) {
-      // Revert UI on error
       setStatus(originalStatus);
       setIsRightSide(originalIsRightSide);
       toast({ title: 'Error performing action', description: error, variant: 'destructive' });
@@ -184,7 +189,7 @@ export default function Header() {
     <>
       <header
         className={cn(
-            "bg-background border-b p-4 md:p-6 relative h-20 flex items-center transition-all duration-700",
+            "bg-background border-b p-4 md:p-6 relative h-20 flex items-center transition-all duration-700 ease-in-out",
             isRightSide ? "justify-end" : "justify-start"
         )}
       >
@@ -200,7 +205,6 @@ export default function Header() {
           )}
       </header>
 
-      {/* Alert Dialog */}
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
