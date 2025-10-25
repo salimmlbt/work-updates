@@ -32,6 +32,7 @@ export default function Header() {
   const [lunchTimeSetting, setLunchTimeSetting] = useState('13:00');
   const supabase = createClient();
 
+  // Effect for fetching initial data and setting up real-time subscription
   useEffect(() => {
     const fetchInitialData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -92,9 +93,9 @@ export default function Header() {
     return () => {
       supabase.removeChannel(channel);
     };
-
   }, [supabase]);
 
+  // Effect for checking the time against the lunch setting
   useEffect(() => {
     if (isLoading) return;
 
@@ -108,11 +109,11 @@ export default function Header() {
       }
     };
 
-    checkTime(); 
-    const interval = setInterval(checkTime, 30000); 
+    checkTime(); // Initial check
+    const interval = setInterval(checkTime, 30000); // Check every 30 seconds
 
-    return () => clearInterval(interval);
-  }, [isLoading, lunchTimeSetting]);
+    return () => clearInterval(interval); // Cleanup interval on re-render
+  }, [isLoading, lunchTimeSetting]); // Re-run this effect when lunchTimeSetting changes
   
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn') => {
     setIsAlertOpen(false);
