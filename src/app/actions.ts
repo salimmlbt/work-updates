@@ -1,4 +1,5 @@
 
+
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -544,7 +545,7 @@ export async function updateClient(clientId: string, formData: FormData) {
             return { error: `Failed to upload new avatar: ${uploadError.message}` };
         }
 
-        const { data: publicUrlData } = supabase.storage
+        const { data: publicUrlData } = await supabase.storage
             .from('avatars')
             .getPublicUrl(newFilePath);
         
@@ -1021,9 +1022,16 @@ export async function updateSetting(key: string, value: any) {
 export async function getPublicHolidays(year: number, countryCode: string) {
     try {
         const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch public holidays');
+        
+        if (response.status === 204) {
+            return { data: [] };
         }
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to fetch public holidays: ${response.status} ${response.statusText} - ${errorBody}`);
+        }
+        
         const data = await response.json();
         return { data };
     } catch (error: any) {
