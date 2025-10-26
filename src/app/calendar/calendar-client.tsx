@@ -1,13 +1,10 @@
-
 'use client'
 
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { format, parseISO, startOfDay, getDay } from 'date-fns';
 import type { OfficialHoliday } from '@/lib/types';
 import { AddHolidayDialog } from './add-holiday-dialog';
@@ -23,6 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarDay } from './calendar-day';
 import { cn } from '@/lib/utils';
 
 interface PublicHoliday {
@@ -41,16 +40,12 @@ interface CalendarClientProps {
     publicHolidays: PublicHoliday[];
     officialHolidays: OfficialHoliday[];
     selectedDate: string;
-    prevMonth: string;
-    nextMonth: string;
 }
 
 export default function CalendarClient({ 
     publicHolidays: initialPublicHolidays, 
     officialHolidays: initialOfficialHolidays,
     selectedDate,
-    prevMonth,
-    nextMonth,
 }: CalendarClientProps) {
     const router = useRouter();
     const [currentDate, setCurrentDate] = useState(() => parseISO(selectedDate));
@@ -61,43 +56,27 @@ export default function CalendarClient({
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
-    const allHolidays = useMemo(() => {
-        const holidays = new Map<string, { name: string, type: 'public' | 'official', id?: number }>();
-        
-        publicHolidays.forEach(h => {
-            const day = startOfDay(parseISO(h.date));
-            holidays.set(day.toISOString(), { name: h.localName, type: 'public' });
-        });
-        
-        officialHolidays.forEach(h => {
-            const day = startOfDay(parseISO(h.date));
-            holidays.set(day.toISOString(), { name: h.name, type: 'official', id: h.id });
-        });
-        
-        return holidays;
-    }, [publicHolidays, officialHolidays]);
+    const allHolidaysByDate = useMemo(() => {
+      const holidays = new Map<string, Array<{ name: string; type: 'public' | 'official'; id?: number, description: string | null }>>();
+      
+      const addHolidayToMap = (dateStr: string, holiday: { name: string; type: 'public' | 'official'; id?: number, description: string | null }) => {
+          const day = startOfDay(parseISO(dateStr)).toISOString();
+          if (!holidays.has(day)) {
+              holidays.set(day, []);
+          }
+          holidays.get(day)?.push(holiday);
+      }
 
-    const sundays = (date: Date) => getDay(date) === 0;
-    
-    const modifiers = {
-        sunday: sundays,
-        public: publicHolidays.map(h => startOfDay(parseISO(h.date))),
-        official: officialHolidays.map(h => startOfDay(parseISO(h.date))),
-    };
-
-    const modifiersClassNames = {
-        sunday: 'text-red-500',
-        public: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full',
-        official: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full',
-    };
-
-    const handlePrevMonth = () => {
-        router.push(`/calendar?month=${prevMonth}`);
-    };
-
-    const handleNextMonth = () => {
-        router.push(`/calendar?month=${nextMonth}`);
-    };
+      publicHolidays.forEach(h => {
+          addHolidayToMap(h.date, { name: h.localName, type: 'public', description: h.name });
+      });
+      
+      officialHolidays.forEach(h => {
+          addHolidayToMap(h.date, { name: h.name, type: 'official', id: h.id, description: h.description });
+      });
+      
+      return holidays;
+  }, [publicHolidays, officialHolidays]);
 
     const onHolidayAdded = (newHoliday: OfficialHoliday) => {
         setOfficialHolidays(prev => [...prev, newHoliday]);
@@ -118,92 +97,91 @@ export default function CalendarClient({
         });
     }
 
+    const handleMonthChange = (month: Date) => {
+        setCurrentDate(month);
+        router.push(`/calendar?month=${format(month, 'yyyy-MM')}`);
+    }
+
     return (
-        <div className="p-4 md:p-8 lg:p-10">
+        <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
             <header className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={handlePrevMonth}>
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-lg font-semibold w-32 text-center">
+               <div className="flex items-center gap-4">
+                  <Popover>
+                      <PopoverTrigger asChild>
+                          <Button variant="outline" className="text-lg font-semibold w-48 justify-between">
+                            <CalendarIcon className="h-4 w-4 mr-2" />
                             {format(currentDate, 'MMMM yyyy')}
-                        </span>
-                        <Button variant="outline" size="icon" onClick={handleNextMonth}>
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    <Button onClick={() => setAddHolidayOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4"/>
-                        Add Holiday
-                    </Button>
-                </div>
+                            <ChevronDown className="h-4 w-4 ml-2" />
+                          </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                          <Calendar
+                              mode="single"
+                              month={currentDate}
+                              onMonthChange={handleMonthChange}
+                              initialFocus
+                              className="p-0"
+                              classNames={{
+                                  caption_label: "hidden",
+                                  head_row: 'hidden',
+                                  row: 'flex w-full mt-2',
+                                  cell: 'w-10 h-10 text-center text-sm p-0 relative',
+                                  day: 'w-10 h-10 p-0',
+                              }}
+                              components={{
+                                Day: () => <Fragment />,
+                                Month: (props) => {
+                                  const { ...monthProps } = props;
+                                  return (
+                                    <div className="grid grid-cols-4 gap-2 p-2">
+                                        {Array.from({ length: 12 }).map((_, i) => (
+                                            <Button
+                                                key={i}
+                                                variant={currentDate.getMonth() === i ? 'default' : 'ghost'}
+                                                onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), i, 1))}
+                                            >
+                                                {format(new Date(currentDate.getFullYear(), i, 1), 'MMM')}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                  )
+                                }
+                              }}
+                          />
+                      </PopoverContent>
+                  </Popover>
+               </div>
+                <Button onClick={() => setAddHolidayOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4"/>
+                    Create Event
+                </Button>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <main className="lg:col-span-2">
-                    <Card>
-                        <CardContent className="p-0">
-                            <Calendar
-                                mode="single"
-                                selected={currentDate}
-                                onSelect={(date) => date && setCurrentDate(date)}
-                                modifiers={modifiers}
-                                modifiersClassNames={modifiersClassNames}
-                                className="p-4"
-                                month={currentDate}
-                                onMonthChange={(month) => router.push(`/calendar?month=${format(month, 'yyyy-MM')}`)}
-                                components={{
-                                    DayContent: ({ date }) => {
-                                        const holiday = allHolidays.get(startOfDay(date).toISOString());
-                                        return (
-                                            <div className="relative w-full h-full flex items-center justify-center">
-                                                <span>{format(date, 'd')}</span>
-                                                {holiday && (
-                                                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full" 
-                                                        style={{ backgroundColor: holiday.type === 'public' ? 'hsl(var(--primary))' : 'hsl(var(--success))' }}
-                                                    />
-                                                )}
-                                            </div>
-                                        )
-                                    }
-                                }}
-                            />
-                        </CardContent>
-                    </Card>
-                </main>
-                <aside>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Holidays & Events</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="space-y-4">
-                                {Array.from(allHolidays.entries())
-                                    .filter(([dateStr]) => parseISO(dateStr).getMonth() === currentDate.getMonth())
-                                    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-                                    .map(([dateStr, holiday]) => (
-                                    <div key={dateStr} className="flex items-center justify-between group">
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn("w-2 h-2 rounded-full", holiday.type === 'public' ? 'bg-blue-500' : 'bg-green-500')} />
-                                            <div>
-                                                <p className="font-medium">{holiday.name}</p>
-                                                <p className="text-sm text-muted-foreground">{format(parseISO(dateStr), 'EEEE, MMMM d')}</p>
-                                            </div>
-                                        </div>
-                                        {holiday.type === 'official' && (
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600" onClick={() => setHolidayToDelete(officialHolidays.find(h => h.id === holiday.id)!)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </aside>
-            </div>
+            <main className="flex-1">
+                <Calendar
+                    month={currentDate}
+                    onMonthChange={handleMonthChange}
+                    className="h-full"
+                    classNames={{
+                        months: 'h-full',
+                        month: 'h-full flex flex-col',
+                        table: 'w-full h-full border-collapse',
+                        head_row: 'flex',
+                        head_cell: 'text-muted-foreground font-normal text-sm p-2 w-[14.28%] text-center border',
+                        row: 'flex w-full h-[16.66%]',
+                        cell: 'p-2 border relative w-[14.28%]',
+                        day: 'h-full w-full',
+                        day_today: 'bg-transparent',
+                        day_outside: 'text-muted-foreground opacity-50',
+                    }}
+                    components={{
+                        DayContent: (props) => (
+                            <CalendarDay {...props} holidays={allHolidaysByDate.get(startOfDay(props.date).toISOString()) || []} />
+                        )
+                    }}
+                />
+            </main>
+           
             <AddHolidayDialog 
                 isOpen={isAddHolidayOpen}
                 setIsOpen={setAddHolidayOpen}

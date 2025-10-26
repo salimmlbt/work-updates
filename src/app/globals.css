@@ -90,6 +90,13 @@
   }
 }
 
+@layer components {
+  .rdp-day_sunday {
+    @apply text-red-500;
+  }
+}
+
+
 .cropper-controls {
   @apply p-4 flex flex-col gap-4;
 }

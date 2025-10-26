@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useTransition } from 'react'
@@ -37,14 +36,14 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onHolidayAdded }: AddHolid
       const result = await addHoliday(formData);
       if (result.error) {
         toast({
-          title: "Error adding holiday",
+          title: "Error adding event",
           description: result.error,
           variant: "destructive",
         })
       } else {
         toast({
-          title: "Holiday Added",
-          description: "The new holiday has been added successfully.",
+          title: "Event Added",
+          description: "The new event has been added successfully.",
         })
         onHolidayAdded(result.data as OfficialHoliday)
         setIsOpen(false)
@@ -57,14 +56,14 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onHolidayAdded }: AddHolid
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Official Holiday</DialogTitle>
+            <DialogTitle>Create Event</DialogTitle>
             <DialogDescription>
-              Mark a new official leave day for the team.
+              Mark a new official leave day or event for the team.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Holiday Name</Label>
+              <Label htmlFor="name">Event Name</Label>
               <Input
                 id="name"
                 name="name"
@@ -86,7 +85,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onHolidayAdded }: AddHolid
               <Textarea
                 id="description"
                 name="description"
-                placeholder="Briefly describe the holiday or event."
+                placeholder="Briefly describe the event."
               />
             </div>
           </div>
@@ -100,7 +99,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onHolidayAdded }: AddHolid
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Add Holiday
+              Create Event
             </Button>
           </DialogFooter>
         </form>
