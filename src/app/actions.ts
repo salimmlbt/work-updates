@@ -7,7 +7,7 @@ import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows
 import type { TaskWithAssignee, Attachment, OfficialHoliday } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import fetch from 'node-fetch'
+import { google } from 'googleapis';
 
 export async function checkIn() {
   const supabase = createServerClient();
@@ -1021,32 +1021,39 @@ export async function updateSetting(key: string, value: any) {
 
 
 export async function getPublicHolidays(year: number, countryCode: string): Promise<{ data?: any[], error?: string }> {
-  try {
-    const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
-
-    if (response.status === 204) {
-      return { data: [] }; // No content, which is a valid success response
-    }
-    
-    if (!response.ok) {
-        let errorBody = 'An unknown error occurred';
-        try {
-            errorBody = await response.text();
-        } catch (e) {
-            // ignore
+    try {
+        const API_KEY = process.env.GOOGLE_API_KEY;
+        if (!API_KEY) {
+          const msg = 'Google API Key is not set in environment variables (GOOGLE_API_KEY)';
+          console.error(msg);
+          return { error: msg };
         }
-        const errorMessage = `Failed to fetch holidays: ${response.status} ${response.statusText}. Details: ${errorBody}`;
-        console.error(errorMessage);
-        return { error: errorMessage };
-    }
 
-    const holidays = await response.json() as any[];
-    return { data: holidays };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Error in getPublicHolidays:', errorMessage);
-    return { error: `An unexpected error occurred: ${errorMessage}` };
-  }
+        const calendar = google.calendar({ version: 'v3', auth: API_KEY });
+        const calendarId = `en.${countryCode}#holiday@group.v.calendar.google.com`;
+
+        const response = await calendar.events.list({
+            calendarId,
+            timeMin: `${year}-01-01T00:00:00Z`,
+            timeMax: `${year}-12-31T23:59:59Z`,
+            singleEvents: true,
+            orderBy: 'startTime',
+        });
+        
+        const holidays = response.data.items?.map(item => ({
+            date: item.start?.date,
+            localName: item.summary,
+            name: item.summary,
+            countryCode: countryCode,
+        })) || [];
+        
+        return { data: holidays as any[] };
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('Error fetching public holidays from Google Calendar:', errorMessage);
+        return { error: `An unexpected error occurred while fetching holidays: ${errorMessage}` };
+    }
 }
 
 export async function addHoliday(formData: FormData) {
