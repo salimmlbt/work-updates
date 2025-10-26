@@ -97,9 +97,9 @@ export default function BillingClient({ initialSalaryData }: { initialSalaryData
 
 
   return (
-    <div className="flex h-full">
+    <div className="flex flex-1 h-full">
        <div className="relative border-r">
-        <aside className={cn("bg-muted/50 transition-all duration-300 group z-10", isCollapsed ? 'w-20' : 'w-64')}>
+        <aside className={cn("bg-muted/50 transition-all duration-300 group z-10 h-full", isCollapsed ? 'w-20' : 'w-64')}>
            <Button
               variant="ghost"
               size="icon"
