@@ -2,10 +2,9 @@
 
 import { useState, useMemo, useTransition, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
-import { format, parseISO, startOfDay, getDay } from 'date-fns';
+import { Plus, Trash2, Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, parseISO, isToday } from 'date-fns';
 import type { OfficialHoliday } from '@/lib/types';
 import { AddHolidayDialog } from './add-holiday-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -21,31 +20,41 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarDay } from './calendar-day';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface PublicHoliday {
   date: string;
   localName: string;
   name: string;
   countryCode: string;
-  fixed: boolean;
-  global: boolean;
-  counties: string[] | null;
-  launchYear: number | null;
-  types: string[];
 }
 
 interface CalendarClientProps {
     publicHolidays: PublicHoliday[];
     officialHolidays: OfficialHoliday[];
+    daysInMonth: {
+        date: string;
+        isCurrentMonth: boolean;
+    }[];
     selectedDate: string;
+    prevMonth: string;
+    nextMonth: string;
+}
+
+const typeColorMap = {
+    public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
+    official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
 }
 
 export default function CalendarClient({ 
     publicHolidays: initialPublicHolidays, 
     officialHolidays: initialOfficialHolidays,
+    daysInMonth,
     selectedDate,
+    prevMonth,
+    nextMonth
 }: CalendarClientProps) {
     const router = useRouter();
     const [currentDate, setCurrentDate] = useState(() => parseISO(selectedDate));
@@ -60,7 +69,7 @@ export default function CalendarClient({
       const holidays = new Map<string, Array<{ name: string; type: 'public' | 'official'; id?: number, description: string | null }>>();
       
       const addHolidayToMap = (dateStr: string, holiday: { name: string; type: 'public' | 'official'; id?: number, description: string | null }) => {
-          const day = startOfDay(parseISO(dateStr)).toISOString();
+          const day = format(parseISO(dateStr), 'yyyy-MM-dd');
           if (!holidays.has(day)) {
               holidays.set(day, []);
           }
@@ -105,7 +114,10 @@ export default function CalendarClient({
     return (
         <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
             <header className="flex items-center justify-between mb-8">
-               <div className="flex items-center gap-4">
+               <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => handleMonthChange(parseISO(prevMonth))}>
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
                   <Popover>
                       <PopoverTrigger asChild>
                           <Button variant="outline" className="text-lg font-semibold w-48 justify-between">
@@ -118,38 +130,15 @@ export default function CalendarClient({
                           <Calendar
                               mode="single"
                               month={currentDate}
-                              onMonthChange={handleMonthChange}
+                              onMonthChange={(month) => month && handleMonthChange(month)}
                               initialFocus
                               className="p-0"
-                              classNames={{
-                                  caption_label: "hidden",
-                                  head_row: 'hidden',
-                                  row: 'flex w-full mt-2',
-                                  cell: 'w-10 h-10 text-center text-sm p-0 relative',
-                                  day: 'w-10 h-10 p-0',
-                              }}
-                              components={{
-                                Day: () => <Fragment />,
-                                Month: (props) => {
-                                  const { ...monthProps } = props;
-                                  return (
-                                    <div className="grid grid-cols-4 gap-2 p-2">
-                                        {Array.from({ length: 12 }).map((_, i) => (
-                                            <Button
-                                                key={i}
-                                                variant={currentDate.getMonth() === i ? 'default' : 'ghost'}
-                                                onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), i, 1))}
-                                            >
-                                                {format(new Date(currentDate.getFullYear(), i, 1), 'MMM')}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                  )
-                                }
-                              }}
                           />
                       </PopoverContent>
                   </Popover>
+                  <Button variant="outline" size="icon" onClick={() => handleMonthChange(parseISO(nextMonth))}>
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
                </div>
                 <Button onClick={() => setAddHolidayOpen(true)}>
                     <Plus className="mr-2 h-4 w-4"/>
@@ -157,30 +146,33 @@ export default function CalendarClient({
                 </Button>
             </header>
 
-            <main className="flex-1">
-                <Calendar
-                    month={currentDate}
-                    onMonthChange={handleMonthChange}
-                    className="h-full"
-                    classNames={{
-                        months: 'h-full',
-                        month: 'h-full flex flex-col',
-                        table: 'w-full h-full border-collapse',
-                        head_row: 'flex',
-                        head_cell: 'text-muted-foreground font-normal text-sm p-2 w-[14.28%] text-center border',
-                        row: 'flex w-full h-[16.66%]',
-                        cell: 'p-2 border relative w-[14.28%]',
-                        day: 'h-full w-full',
-                        day_today: 'bg-transparent',
-                        day_outside: 'text-muted-foreground opacity-50',
-                    }}
-                    components={{
-                        DayContent: (props) => (
-                            <CalendarDay {...props} holidays={allHolidaysByDate.get(startOfDay(props.date).toISOString()) || []} />
+            <ScrollArea className="flex-1 -mx-8">
+                <div className="flex px-8">
+                    {daysInMonth.map(({ date, isCurrentMonth }) => {
+                        const dayDate = parseISO(date);
+                        const dayKey = format(dayDate, 'yyyy-MM-dd');
+                        const events = allHolidaysByDate.get(dayKey) || [];
+
+                        return (
+                            <div key={dayKey} className={cn("w-64 flex-shrink-0 border-r last:border-r-0", !isCurrentMonth && 'opacity-50 bg-muted/30')}>
+                                <div className={cn("text-center py-2 border-b font-semibold sticky top-0 bg-background/80 backdrop-blur-sm z-10", isToday(dayDate) && "text-primary")}>
+                                    <p className="text-sm">{format(dayDate, 'EEE')}</p>
+                                    <p className="text-2xl">{format(dayDate, 'd')}</p>
+                                </div>
+                                <div className="p-2 space-y-2 h-full">
+                                    {events.map((event, index) => (
+                                        <div key={index} className={cn("p-3 rounded-lg shadow-sm text-sm", typeColorMap[event.type])}>
+                                            <p className="font-semibold">{event.name}</p>
+                                            {event.description && event.description !== event.name && <p className="text-xs">{event.description}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         )
-                    }}
-                />
-            </main>
+                    })}
+                </div>
+                <ScrollBar orientation="horizontal" />
+            </ScrollArea>
            
             <AddHolidayDialog 
                 isOpen={isAddHolidayOpen}
