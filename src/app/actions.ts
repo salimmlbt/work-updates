@@ -7,6 +7,7 @@ import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows
 import type { TaskWithAssignee, Attachment, OfficialHoliday } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { google } from 'googleapis';
 import fetch from 'node-fetch'
 
 export async function checkIn() {
@@ -1021,31 +1022,46 @@ export async function updateSetting(key: string, value: any) {
 
 
 export async function getPublicHolidays(year: number, countryCode: string): Promise<{ data?: any[], error?: string }> {
-    try {
-        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
-        
-        if (response.status === 204) {
-            return { data: [] };
-        }
+  try {
+    const calendar = google.calendar({ version: 'v3' });
+    const API_KEY = process.env.GOOGLE_API_KEY;
 
-        if (!response.ok) {
-            let errorBody = 'Could not read error body';
-            try {
-                errorBody = await response.text();
-            } catch (e) {
-                // Ignore if can't read body
-            }
-            console.error(`Holiday API Error (${response.status}): ${errorBody}`);
-            return { error: `Failed to fetch public holidays: ${response.status} ${response.statusText}. ${errorBody}` };
-        }
-        
-        const data = await response.json();
-        return { data: data as any[] };
-    } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : String(e);
-        console.error('Fetch error in getPublicHolidays:', errorMessage);
-        return { error: `An unknown error occurred while fetching holidays: ${errorMessage}` };
+    if (!API_KEY) {
+      const msg = 'Google API Key is not set in environment variables (GOOGLE_API_KEY)';
+      console.error(msg);
+      return { error: msg };
     }
+
+    const calendarId = `en.${countryCode}#holiday@group.v.calendar.google.com`;
+    
+    const response = await calendar.events.list({
+      key: API_KEY,
+      calendarId: calendarId,
+      timeMin: new Date(year, 0, 1).toISOString(),
+      timeMax: new Date(year, 11, 31).toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime'
+    });
+
+    const holidays = response.data.items?.map(event => ({
+      date: event.start?.date,
+      localName: event.summary,
+      name: event.summary,
+    })) || [];
+    
+    return { data: holidays as any[] };
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    console.error('Error fetching holidays from Google Calendar:', errorMessage);
+    // Check for common API errors
+    if (errorMessage.includes('API key not valid')) {
+      return { error: "The provided Google API key is not valid. Please check your environment variables." };
+    }
+    if (errorMessage.includes('Not Found')) {
+      return { error: `Could not find the holiday calendar for country code "${countryCode}". Please check if it's a valid code.`};
+    }
+    return { error: `An unknown error occurred while fetching holidays: ${errorMessage}` };
+  }
 }
 
 export async function addHoliday(formData: FormData) {

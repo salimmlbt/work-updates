@@ -1,4 +1,5 @@
 
+
 import { createServerClient } from '@/lib/supabase/server';
 import CalendarClient from './calendar-client';
 import { getPublicHolidays } from '@/app/actions';
@@ -12,7 +13,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const year = selectedDate.getFullYear();
   // Fetching for India. This can be made dynamic later.
-  const { data: publicHolidays, error: publicHolidaysError } = await getPublicHolidays(year, 'IN');
+  const { data: publicHolidays, error: publicHolidaysError } = await getPublicHolidays(year, 'in');
 
   const { data: officialHolidays, error: officialHolidaysError } = await supabase
     .from('official_holidays')
