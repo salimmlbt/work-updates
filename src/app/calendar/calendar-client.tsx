@@ -41,8 +41,8 @@ const typeColorMap: { [key: string]: string } = {
 };
 
 const CalendarView = ({ days, events, title }: { days: any[], events: any[], title: string }) => (
-    <ScrollArea className="flex-1 -mx-8">
-        <div className="flex px-8">
+    <ScrollArea className="flex-1">
+        <div className="flex h-full">
             {days.map(({ date, isCurrentMonth }) => {
                 const dayDate = parseISO(date);
                 const dayKey = format(dayDate, 'yyyy-MM-dd');
@@ -139,7 +139,7 @@ export default function CalendarClient({
 
     return (
         <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
-             <header className="flex items-center justify-between mb-4">
+             <header className="flex items-center justify-between mb-8">
                <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleMonthChange(parseISO(prevMonth))}>
                         <ChevronLeft className="h-4 w-4" />
@@ -207,7 +207,7 @@ export default function CalendarClient({
                 </div>
             </header>
 
-            <Tabs value={activeCalendarView} onValueChange={setActiveCalendarView} className="flex flex-col flex-1 mt-6">
+            <Tabs value={activeCalendarView} onValueChange={setActiveCalendarView} className="flex flex-col flex-1">
                 <TabsContent value="holidays" className="mt-0 flex-1 flex flex-col">
                     <CalendarView days={daysInMonth} events={holidayEvents} title="Holidays" />
                 </TabsContent>
