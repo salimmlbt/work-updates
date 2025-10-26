@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -74,7 +73,7 @@ const statusIcons = {
 const statusLabels = {
     'todo': 'New task',
     'inprogress': 'In progress',
-    'done': 'Scheduled'
+    'done': 'Completed'
 }
 const statusOptions: ('todo' | 'inprogress' | 'done')[] = ['todo', 'inprogress', 'done'];
 
@@ -1405,3 +1404,5 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   );
 }
 
+
+    
