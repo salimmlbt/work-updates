@@ -629,7 +629,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
   const cardColors: { [key: string]: string } = {
     "todo": "bg-cyan-100/50",
     "inprogress": "bg-blue-100/50",
-    "done": "bg-red-100/50",
+    "done": "bg-gray-100",
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -643,6 +643,9 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
   const getRemainingTime = (deadline: string) => {
     const now = new Date();
     const deadDate = parseISO(deadline);
+
+    if (task.status === 'done') return `Completed on ${format(deadDate, 'dd MMM')}`;
+
     if (isToday(deadDate)) return 'Due today';
     if (isTomorrow(deadDate)) return 'Due tomorrow';
     if (isPast(deadDate)) return formatDistanceToNowStrict(deadDate, { addSuffix: true });
@@ -656,7 +659,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
 
   return (
     <Card 
-      className={cn("mb-4 group cursor-pointer", cardColors[task.status] ?? 'bg-gray-100')} 
+      className={cn("mb-4 group cursor-pointer border-0", cardColors[task.status] ?? 'bg-gray-100')} 
       onClick={handleCardClick}
     >
       <CardHeader className="p-4 flex flex-row items-start justify-between">
@@ -1403,6 +1406,5 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
 
     
