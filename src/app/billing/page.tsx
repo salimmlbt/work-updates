@@ -95,9 +95,9 @@ export default function BillingPage() {
 
 
   return (
-    <div className="p-4 md:p-8 lg:p-10">
+    <div className="flex h-full">
        <div className="relative">
-        <aside className={cn("absolute top-0 left-0 h-full bg-background transition-all duration-300 group z-10", isCollapsed ? 'w-20' : 'w-64')}>
+        <aside className={cn("bg-background transition-all duration-300 group z-10 border-r", isCollapsed ? 'w-20' : 'w-64')}>
            <Button
               variant="ghost"
               size="icon"
@@ -116,10 +116,10 @@ export default function BillingPage() {
             </nav>
           </TooltipProvider>
         </aside>
-        <main className={cn("transition-all duration-300", isCollapsed ? 'ml-20' : 'ml-64')}>
+       </div>
+        <main className="flex-1 p-4 md:p-8 lg:p-10">
             {renderContent()}
         </main>
-      </div>
     </div>
   );
 }
