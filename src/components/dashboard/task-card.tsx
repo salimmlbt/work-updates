@@ -1,8 +1,9 @@
 
 'use client'
 
+import { useState, useEffect } from 'react';
 import { format, isPast, parseISO } from 'date-fns'
-import { CalendarIcon, UserCircle, Tag, ChevronDown } from 'lucide-react'
+import { CalendarIcon, ChevronDown } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -35,11 +36,18 @@ const priorityColors = {
 
 export function TaskCard({ task }: TaskCardProps) {
   const { toast } = useToast();
-  
-  // The deadline is a string like "2024-08-15T05:00:00.000Z".
-  // parseISO correctly handles this as a UTC date.
-  const deadline = parseISO(task.deadline);
-  const isOverdue = isPast(deadline) && task.status !== 'done';
+  const [formattedDate, setFormattedDate] = useState<string | null>(null);
+  const [isOverdue, setIsOverdue] = useState(false);
+
+  useEffect(() => {
+    try {
+      const deadline = parseISO(task.deadline);
+      setFormattedDate(format(deadline, 'MMM d, yyyy'));
+      setIsOverdue(isPast(deadline) && task.status !== 'done');
+    } catch(e) {
+      //
+    }
+  }, [task.deadline, task.status]);
 
   const handleStatusChange = async (status: 'todo' | 'inprogress' | 'done') => {
     const { error } = await updateTaskStatus(task.id, status)
@@ -60,10 +68,14 @@ export function TaskCard({ task }: TaskCardProps) {
       <CardContent className="space-y-3 text-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
           <CalendarIcon className="h-4 w-4" />
-          <span className={cn(isOverdue && 'text-destructive font-semibold')}>
-            {format(deadline, 'MMM d, yyyy')}
-            {isOverdue && " (Overdue)"}
-          </span>
+          {formattedDate ? (
+            <span className={cn(isOverdue && 'text-destructive font-semibold')}>
+              {formattedDate}
+              {isOverdue && " (Overdue)"}
+            </span>
+          ) : (
+             <span>-</span>
+          )}
         </div>
         {task.profiles && (
           <div className="flex items-center gap-2">
@@ -78,7 +90,6 @@ export function TaskCard({ task }: TaskCardProps) {
         )}
         {task.tags && task.tags.length > 0 && (
            <div className="flex items-center gap-2 flex-wrap">
-             <Tag className="h-4 w-4 text-muted-foreground" />
              {task.tags.map((tag, i) => (
                 <Badge key={i} variant="secondary">{tag}</Badge>
              ))}
