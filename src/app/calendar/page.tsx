@@ -15,15 +15,19 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const countryCode = 'in';
 
   const [
-    { data: publicHolidays, error: publicHolidaysError },
-    { data: officialHolidays, error: officialHolidaysError }
+    publicHolidaysResult,
+    officialHolidaysResult
   ] = await Promise.all([
     getPublicHolidays(year, countryCode),
     supabase.from('official_holidays').select('*')
   ]);
+  
+  const { data: publicHolidays, error: publicHolidaysError } = publicHolidaysResult;
+  const { data: officialHolidays, error: officialHolidaysError } = officialHolidaysResult;
 
   if (publicHolidaysError || officialHolidaysError) {
-    console.error('Error fetching holidays:', publicHolidaysError, officialHolidaysError);
+    if(publicHolidaysError) console.error('Error fetching public holidays:', publicHolidaysError);
+    if(officialHolidaysError) console.error('Error fetching official holidays:', officialHolidaysError);
   }
   
   return (
