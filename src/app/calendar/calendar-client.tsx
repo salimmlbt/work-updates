@@ -41,39 +41,50 @@ const typeColorMap: { [key: string]: string } = {
 };
 
 const CalendarView = ({ days, events, title }: { days: any[], events: any[], title: string }) => (
-    <ScrollArea className="flex-1">
-        <div className="flex h-full">
-            {days.map(({ date, isCurrentMonth }) => {
+    <div className="flex flex-col h-full">
+        <div className="flex flex-shrink-0">
+             {days.map(({ date, isCurrentMonth }) => {
                 const dayDate = parseISO(date);
-                const dayKey = format(dayDate, 'yyyy-MM-dd');
-                const dayEvents = events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === dayKey);
-
                 return (
-                    <div key={dayKey} className={cn("w-64 flex-shrink-0 border-r last:border-r-0", !isCurrentMonth && 'opacity-50 bg-muted/30')}>
-                        <div className={cn("text-center py-2 border-b font-semibold sticky top-0 bg-background/80 backdrop-blur-sm z-10", isToday(dayDate) && "text-primary")}>
+                    <div key={`header-${date}`} className={cn("w-64 flex-shrink-0 border-r last:border-r-0", !isCurrentMonth && 'opacity-50 bg-muted/30')}>
+                         <div className={cn("text-center py-2 border-b font-semibold", isToday(dayDate) && "text-primary")}>
                             <p className="text-sm">{format(dayDate, 'EEE')}</p>
                             <p className="text-2xl">{format(dayDate, 'd')}</p>
                         </div>
-                        <div className="p-2 space-y-2 h-full">
-                            {dayEvents.map((event, index) => (
-                                <div key={index} className={cn("p-3 rounded-lg shadow-sm text-sm", typeColorMap[event.type] || 'bg-gray-100')}>
-                                    <div className="font-semibold flex items-center gap-2">
-                                        {event.type === 'task' && <CheckSquare className="h-4 w-4" />}
-                                        {event.type === 'project' && <Briefcase className="h-4 w-4" />}
-                                        {event.type === 'personal' && <User className="h-4 w-4" />}
-                                        {(event.type === 'public' || event.type === 'official' || event.type === 'weekend') && <Flag className="h-4 w-4" />}
-                                        <span className="truncate">{event.name}</span>
-                                    </div>
-                                    {event.description && event.description !== event.name && <p className="text-xs mt-1 truncate">{event.description}</p>}
-                                </div>
-                            ))}
-                        </div>
                     </div>
                 )
-            })}
+             })}
         </div>
-        <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+        <ScrollArea className="flex-1">
+            <div className="flex h-full">
+                {days.map(({ date, isCurrentMonth }) => {
+                    const dayDate = parseISO(date);
+                    const dayKey = format(dayDate, 'yyyy-MM-dd');
+                    const dayEvents = events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === dayKey);
+
+                    return (
+                        <div key={dayKey} className={cn("w-64 flex-shrink-0 border-r last:border-r-0", !isCurrentMonth && 'opacity-50 bg-muted/30')}>
+                            <div className="p-2 space-y-2 h-full">
+                                {dayEvents.map((event, index) => (
+                                    <div key={index} className={cn("p-3 rounded-lg shadow-sm text-sm", typeColorMap[event.type] || 'bg-gray-100')}>
+                                        <div className="font-semibold flex items-center gap-2">
+                                            {event.type === 'task' && <CheckSquare className="h-4 w-4" />}
+                                            {event.type === 'project' && <Briefcase className="h-4 w-4" />}
+                                            {event.type === 'personal' && <User className="h-4 w-4" />}
+                                            {(event.type === 'public' || event.type === 'official' || event.type === 'weekend') && <Flag className="h-4 w-4" />}
+                                            <span className="truncate">{event.name}</span>
+                                        </div>
+                                        {event.description && event.description !== event.name && <p className="text-xs mt-1 truncate">{event.description}</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+            <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+    </div>
 )
 
 
