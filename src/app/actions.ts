@@ -1030,7 +1030,11 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
         }
 
         const calendar = google.calendar({ version: 'v3', auth: API_KEY });
-        const calendarId = `en.${countryCode}#holiday@group.v.calendar.google.com`;
+        
+        let calendarId = `en.${countryCode}#holiday@group.v.calendar.google.com`;
+        if (countryCode === 'in') {
+          calendarId = `en.indian#holiday@group.v.calendar.google.com`;
+        }
 
         const response = await calendar.events.list({
             calendarId,
