@@ -730,15 +730,15 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit, onTaskClick, onAddTask }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onAddTask: () => void }) => {
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit, onTaskClick }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void }) => {
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {statuses.map(status => {
         const tasksInStatus = allTasksProp.filter(task => task.status === status);
         return (
-          <div key={status}>
+          <div key={status} className="px-3 border-r last:border-r-0">
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               {statusLabels[status as keyof typeof statusLabels]}
               <Badge variant="secondary" className="ml-2 bg-gray-200 text-gray-700">{tasksInStatus.length}</Badge>
@@ -1229,7 +1229,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         )}
       </>
     ):(
-      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onAddTask={() => setIsAddingTask(true)} />
+      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} />
     )
   }
 
