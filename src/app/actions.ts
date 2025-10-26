@@ -1029,13 +1029,18 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
         }
 
         if (!response.ok) {
-            const errorBody = await response.text();
+            let errorBody = 'Could not read error body';
+            try {
+                errorBody = await response.text();
+            } catch (e) {
+                // Ignore if can't read body
+            }
             console.error(`Holiday API Error (${response.status}): ${errorBody}`);
             return { error: `Failed to fetch public holidays: ${response.status} ${response.statusText}. ${errorBody}` };
         }
         
         const data = await response.json();
-        return { data };
+        return { data: data as any[] };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
         console.error('Fetch error in getPublicHolidays:', errorMessage);
