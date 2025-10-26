@@ -139,7 +139,7 @@ export default function CalendarClient({
 
     return (
         <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
-            <header className="flex items-center justify-between mb-4">
+             <header className="flex items-center justify-between mb-4">
                <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleMonthChange(parseISO(prevMonth))}>
                         <ChevronLeft className="h-4 w-4" />
@@ -167,10 +167,7 @@ export default function CalendarClient({
                     </Button>
                </div>
                 
-            </header>
-
-            <Tabs value={activeCalendarView} onValueChange={setActiveCalendarView} className="flex flex-col flex-1">
-                <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
                     <div className="flex items-center rounded-full bg-muted p-1">
                         <Button
                             variant={activeCalendarView === 'holidays' ? 'secondary' : 'ghost'}
@@ -208,14 +205,16 @@ export default function CalendarClient({
                     </Button>
                    </div>
                 </div>
+            </header>
 
-                <TabsContent value="holidays" className="mt-6 flex-1 flex flex-col">
+            <Tabs value={activeCalendarView} onValueChange={setActiveCalendarView} className="flex flex-col flex-1 mt-6">
+                <TabsContent value="holidays" className="mt-0 flex-1 flex flex-col">
                     <CalendarView days={daysInMonth} events={holidayEvents} title="Holidays" />
                 </TabsContent>
-                <TabsContent value="my-calendar" className="mt-6 flex-1 flex flex-col">
+                <TabsContent value="my-calendar" className="mt-0 flex-1 flex flex-col">
                     <CalendarView days={daysInMonth} events={myCalendarEvents} title="My Calendar" />
                 </TabsContent>
-                <TabsContent value="falaq-calendar" className="mt-6 flex-1 flex flex-col">
+                <TabsContent value="falaq-calendar" className="mt-0 flex-1 flex flex-col">
                     <CalendarView days={daysInMonth} events={falaqCalendarEvents} title="Falaq Calendar" />
                 </TabsContent>
             </Tabs>
