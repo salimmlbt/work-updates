@@ -628,8 +628,8 @@ const TaskTableBody = ({
 
 const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskClick }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void }) => {
   const cardColors: { [key: string]: string } = {
-    "todo": "bg-cyan-100/50",
-    "inprogress": "bg-blue-100/50",
+    "todo": "bg-blue-100/50",
+    "inprogress": "bg-purple-100/50",
     "done": "bg-gray-100",
   };
 
@@ -735,15 +735,15 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      {statuses.map(status => {
+      {statuses.map((status, index) => {
         const tasksInStatus = allTasksProp.filter(task => task.status === status);
         return (
-          <div key={status} className="px-3 border-r last:border-r-0">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
+          <div key={status} className={cn("px-3", index < statuses.length - 1 && "border-r")}>
+            <h2 className="text-lg font-semibold mb-4 flex items-center border-b pb-4">
               {statusLabels[status as keyof typeof statusLabels]}
               <Badge variant="secondary" className="ml-2 bg-gray-200 text-gray-700">{tasksInStatus.length}</Badge>
             </h2>
-            <div className="rounded-lg h-full">
+            <div className="rounded-lg h-full pt-4">
               {tasksInStatus.map(task => (
                 <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} onTaskClick={onTaskClick}/>
               ))}
@@ -1148,7 +1148,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           </Collapsible.Root>
         </div>
     
-        {/* Completed Tasks */}
         {completedTasks.length > 0 && (
           <div className="mb-4 overflow-x-auto">
             <Collapsible.Root open={completedTasksOpen} onOpenChange={setCompletedTasksOpen}>
