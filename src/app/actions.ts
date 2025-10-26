@@ -1029,13 +1029,15 @@ export async function getPublicHolidays(year: number, countryCode: string) {
 
         if (!response.ok) {
             const errorBody = await response.text();
-            throw new Error(`Failed to fetch public holidays: ${response.status} ${response.statusText} - ${errorBody}`);
+            console.error(`Holiday API Error (${response.status}): ${errorBody}`);
+            return { error: `Failed to fetch public holidays: ${response.status} ${response.statusText}` };
         }
         
         const data = await response.json();
         return { data };
     } catch (error: any) {
-        return { error: error.message };
+        console.error('Fetch error in getPublicHolidays:', error);
+        return { error: error.message || 'An unknown error occurred while fetching holidays.' };
     }
 }
 
@@ -1070,3 +1072,5 @@ export async function deleteHoliday(id: number) {
     revalidatePath('/calendar');
     return { success: true };
 }
+
+    
