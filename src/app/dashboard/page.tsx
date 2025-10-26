@@ -84,6 +84,7 @@ export default async function DashboardPage() {
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
     ?.filter(t => {
+        if (!t.deadline) return false;
         const zonedDeadline = toZonedTime(t.deadline, 'UTC');
         return t.status !== 'done' && !isBefore(zonedDeadline, today);
     })
