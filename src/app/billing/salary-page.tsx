@@ -4,8 +4,6 @@ import type { Profile } from '@/lib/types';
 import SalaryClient from './salary-client';
 import { startOfMonth, endOfMonth, getDaysInMonth, differenceInHours, parse } from 'date-fns';
 
-export const dynamic = 'force-dynamic';
-
 interface SalaryData {
     user: Profile;
     totalWorkingDays: number;
