@@ -1020,7 +1020,7 @@ export async function updateSetting(key: string, value: any) {
 }
 
 
-export async function getPublicHolidays(year: number, countryCode: string): Promise<{ data?: any[], error?: string }> {
+export async function getPublicHolidays(year: number, countryCode: string): Promise<{ data?: any[], error?: string | null }> {
     try {
         const API_KEY = process.env.GOOGLE_API_KEY;
         if (!API_KEY) {
@@ -1051,7 +1051,7 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
             countryCode: countryCode,
         })) || [];
         
-        return { data: holidays as any[] };
+        return { data: holidays as any[], error: null };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
