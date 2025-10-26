@@ -1,7 +1,7 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 import DashboardClient from './dashboard-client';
 
 export default async function DashboardPage() {
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
     ?.filter(t => {
-        const zonedDeadline = utcToZonedTime(t.deadline, 'UTC');
+        const zonedDeadline = toZonedTime(t.deadline, 'UTC');
         return t.status !== 'done' && !isBefore(zonedDeadline, today);
     })
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
