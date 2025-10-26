@@ -5,10 +5,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format as formatInTimeZone } from 'date-fns-tz';
 import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown } from 'lucide-react';
 import type { Profile, Task, Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
 
 const STATUS_COLORS: { [key: string]: string } = {
   'New': '#3b82f6', // blue-500
@@ -240,8 +241,8 @@ export default function DashboardClient({
                           upcomingDeadlines.map(task => (
                             <div key={task.id} className="flex items-start gap-4">
                                 <div className="flex-shrink-0 mt-1 h-8 w-8 rounded-lg bg-primary/10 text-primary flex flex-col items-center justify-center font-bold">
-                                    <span className="text-xs -mb-1">{format(new Date(task.deadline), 'MMM')}</span>
-                                    <span className="text-lg leading-tight">{format(new Date(task.deadline), 'dd')}</span>
+                                    <span className="text-xs -mb-1">{formatInTimeZone(task.deadline, 'UTC', 'MMM')}</span>
+                                    <span className="text-lg leading-tight">{formatInTimeZone(task.deadline, 'UTC', 'dd')}</span>
                                 </div>
                                 <div>
                                     <p className="font-medium leading-snug">{task.description}</p>
