@@ -660,7 +660,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
 
   return (
     <Card 
-      className={cn("mb-4 group cursor-pointer border-0", cardColors[task.status] ?? 'bg-gray-100')} 
+      className={cn("mb-4 group cursor-pointer border-0 shadow-none", cardColors[task.status] ?? 'bg-gray-100')} 
       onClick={handleCardClick}
     >
       <CardHeader className="p-4 flex flex-row items-start justify-between">
@@ -730,7 +730,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit, onTaskClick }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void }) => {
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit, onTaskClick, onAddTask }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onAddTask: () => void }) => {
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
@@ -1229,7 +1229,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         )}
       </>
     ):(
-      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask}/>
+      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onAddTask={() => setIsAddingTask(true)} />
     )
   }
 
@@ -1403,4 +1403,5 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   );
 }
 
+    
     
