@@ -25,9 +25,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const { data: publicHolidays, error: publicHolidaysError } = publicHolidaysResult;
   const { data: officialHolidays, error: officialHolidaysError } = officialHolidaysResult;
 
-  if (publicHolidaysError || officialHolidaysError) {
-    if(publicHolidaysError) console.error('Error fetching public holidays:', publicHolidaysError);
-    if(officialHolidaysError) console.error('Error fetching official holidays:', officialHolidaysError);
+  if (publicHolidaysError && Object.keys(publicHolidaysError).length > 0) {
+    console.error('Error fetching public holidays:', publicHolidaysError);
+  }
+  if (officialHolidaysError && Object.keys(officialHolidaysError).length > 0) {
+    console.error('Error fetching official holidays:', officialHolidaysError);
   }
   
   return (
