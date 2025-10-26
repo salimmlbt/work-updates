@@ -26,14 +26,29 @@ const sidebarNavItems = [
   { id: 'petty-book', label: 'Petty Book', icon: Book },
 ];
 
-export default function BillingClient({ initialSalaryData }: { initialSalaryData: SalaryData[] }) {
+export default function BillingClient({ 
+    initialSalaryData,
+    selectedDate,
+    prevMonth,
+    nextMonth,
+}: { 
+    initialSalaryData: SalaryData[],
+    selectedDate: string,
+    prevMonth: string,
+    nextMonth: string
+}) {
   const [activeView, setActiveView] = useState('salary');
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const renderContent = () => {
     switch (activeView) {
       case 'salary':
-        return <SalaryPage initialData={initialSalaryData} />;
+        return <SalaryPage 
+            initialData={initialSalaryData} 
+            selectedDate={selectedDate}
+            prevMonth={prevMonth}
+            nextMonth={nextMonth}
+        />;
       case 'invoice':
         return (
           <Card>
@@ -98,8 +113,8 @@ export default function BillingClient({ initialSalaryData }: { initialSalaryData
 
   return (
     <div className="flex flex-1 h-full">
-       <div className="relative border-r">
-        <aside className={cn("bg-muted/50 transition-all duration-300 group z-10 h-full", isCollapsed ? 'w-20' : 'w-64')}>
+       <div className="relative border-r bg-muted/50">
+        <aside className={cn("transition-all duration-300 group z-10 h-full", isCollapsed ? 'w-20' : 'w-64')}>
            <Button
               variant="ghost"
               size="icon"

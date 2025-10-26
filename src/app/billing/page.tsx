@@ -2,7 +2,7 @@
 import { createServerClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import BillingClient from './billing-client';
-import { startOfMonth, endOfMonth, getDaysInMonth, differenceInHours, parse } from 'date-fns';
+import { startOfMonth, endOfMonth, getDaysInMonth, differenceInHours, parse, format, subMonths, addMonths } from 'date-fns';
 
 interface SalaryData {
     user: Profile;
@@ -14,12 +14,15 @@ interface SalaryData {
     payableSalary: number;
 }
 
-export default async function BillingPage() {
+export default async function BillingPage({ searchParams }: { searchParams: { month?: string } }) {
     const supabase = createServerClient();
-    const today = new Date();
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
-    const daysInMonth = getDaysInMonth(today);
+    const selectedDate = searchParams.month ? new Date(searchParams.month) : new Date();
+
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+    const daysInMonth = getDaysInMonth(selectedDate);
+    const prevMonth = format(subMonths(selectedDate, 1), 'yyyy-MM');
+    const nextMonth = format(addMonths(selectedDate, 1), 'yyyy-MM');
 
     const { data: users, error: usersError } = await supabase
         .from('profiles')
@@ -79,5 +82,10 @@ export default async function BillingPage() {
         };
     });
 
-    return <BillingClient initialSalaryData={salaryData} />;
+    return <BillingClient 
+        initialSalaryData={salaryData} 
+        selectedDate={format(selectedDate, 'yyyy-MM-dd')}
+        prevMonth={prevMonth}
+        nextMonth={nextMonth}
+    />;
 }

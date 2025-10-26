@@ -1,6 +1,8 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -14,7 +16,8 @@ import { getInitials } from '@/lib/utils';
 import type { Profile } from '@/lib/types';
 import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 interface SalaryData {
     user: Profile;
@@ -28,6 +31,9 @@ interface SalaryData {
 
 interface SalaryClientProps {
   initialData: SalaryData[];
+  selectedDate: string;
+  prevMonth: string;
+  nextMonth: string;
 }
 
 const formatCurrency = (amount: number) => {
@@ -38,7 +44,21 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
-export default function SalaryClient({ initialData }: SalaryClientProps) {
+export default function SalaryClient({ initialData, selectedDate, prevMonth, nextMonth }: SalaryClientProps) {
+  const router = useRouter();
+  const [currentDate, setCurrentDate] = useState(new Date(selectedDate));
+
+  useEffect(() => {
+    setCurrentDate(new Date(selectedDate));
+  }, [selectedDate]);
+
+  const handlePrevMonth = () => {
+    router.push(`/billing?month=${prevMonth}`);
+  };
+
+  const handleNextMonth = () => {
+    router.push(`/billing?month=${nextMonth}`);
+  };
 
   return (
     <div>
@@ -46,16 +66,29 @@ export default function SalaryClient({ initialData }: SalaryClientProps) {
         <div className="flex justify-between items-center">
             <div>
                 <CardTitle>Salary</CardTitle>
-                <CardDescription>Manage employee salaries and payments for the current month.</CardDescription>
+                <CardDescription>Manage employee salaries and payments.</CardDescription>
             </div>
-            <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Export Data
-            </Button>
+            <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-lg font-semibold w-32 text-center">
+                        {format(currentDate, 'MMMM yyyy')}
+                    </span>
+                    <Button variant="outline" size="icon" onClick={handleNextMonth}>
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+                <Button variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
+                    Export Data
+                </Button>
+            </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div>
+        <div className="border rounded-lg">
             <Table>
             <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
