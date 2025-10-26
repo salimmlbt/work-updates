@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Wallet, FileText, Book, ChevronLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import SalaryPage from './salary-page';
 
 const sidebarNavItems = [
   { id: 'salary', label: 'Salary', icon: Wallet },
@@ -21,17 +22,7 @@ export default function BillingPage() {
   const renderContent = () => {
     switch (activeView) {
       case 'salary':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Salary</CardTitle>
-              <CardDescription>Manage employee salaries and payments.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Salary management content will be displayed here.</p>
-            </CardContent>
-          </Card>
-        );
+        return <SalaryPage />;
       case 'invoice':
         return (
           <Card>
