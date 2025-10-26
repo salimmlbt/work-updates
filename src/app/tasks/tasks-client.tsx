@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -746,11 +747,6 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
               {tasksInStatus.map(task => (
                 <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} onTaskClick={onTaskClick}/>
               ))}
-              {canEdit && (
-                <Button variant="ghost" className="w-full mt-2 text-gray-500">
-                    <Plus className="w-4 h-4 mr-2"/> Add task
-                </Button>
-              )}
             </div>
           </div>
         );
