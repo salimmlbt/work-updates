@@ -119,7 +119,7 @@ export default function BillingClient({ initialSalaryData }: { initialSalaryData
           </TooltipProvider>
         </aside>
        </div>
-        <main className="flex-1 p-4 md:p-8 lg:p-10">
+        <main className="flex-1">
             {renderContent()}
         </main>
     </div>
