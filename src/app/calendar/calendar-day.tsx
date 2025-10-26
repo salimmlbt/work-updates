@@ -15,8 +15,7 @@ const typeColorMap = {
     official: 'bg-purple-100 text-purple-800',
 }
 
-export function CalendarDay({ date, activeModifiers }: DayContentProps & { holidays: Holiday[] }) {
-    const { holidays } = (props as any);
+export function CalendarDay({ date, activeModifiers, holidays }: DayContentProps & { holidays: Holiday[] }) {
     const dayNumber = format(date, 'd');
 
     return (
