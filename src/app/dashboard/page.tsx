@@ -84,11 +84,14 @@ export default async function DashboardPage() {
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
     ?.filter(t => {
-        if (!t.deadline) return false;
+        // Ensure deadline exists and is a valid date before proceeding
+        if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
+          return false;
+        }
         const zonedDeadline = toZonedTime(t.deadline, 'UTC');
         return t.status !== 'done' && !isBefore(zonedDeadline, today);
     })
-    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+    .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5) ?? [];
 
   // Project Status Pie Chart
