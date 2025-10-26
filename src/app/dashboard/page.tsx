@@ -1,7 +1,6 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 import DashboardClient from './dashboard-client';
 
 export default async function DashboardPage() {
@@ -16,6 +15,7 @@ export default async function DashboardPage() {
 
   // --- Data Fetching ---
   const today = new Date();
+  const todayDateString = format(today, 'yyyy-MM-dd');
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const monthStart = startOfMonth(today);
@@ -84,13 +84,12 @@ export default async function DashboardPage() {
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
     ?.filter(t => {
-        // Ensure deadline is a valid, non-null date string before proceeding
-        const deadlineDate = new Date(t.deadline);
-        if (!t.deadline || isNaN(deadlineDate.getTime())) {
+        // Ensure deadline is a valid, non-null date string and is in the future
+        if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
           return false;
         }
-        const zonedDeadline = toZonedTime(t.deadline, 'UTC');
-        return t.status !== 'done' && !isBefore(zonedDeadline, today);
+        const deadlineDateString = format(new Date(t.deadline), 'yyyy-MM-dd');
+        return t.status !== 'done' && deadlineDateString >= todayDateString;
     })
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5) ?? [];
