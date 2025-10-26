@@ -58,20 +58,20 @@ export default function SalaryClient({ initialData }: SalaryClientProps) {
         <div className="border rounded-lg overflow-hidden">
             <Table>
             <TableHeader>
-                <TableRow className="bg-muted/50">
-                <TableHead className="w-[200px]">User</TableHead>
-                <TableHead>Total Working Days</TableHead>
-                <TableHead>Total Full Days</TableHead>
-                <TableHead>Total Half Days</TableHead>
-                <TableHead>Total Absent Days</TableHead>
-                <TableHead>Monthly Salary</TableHead>
-                <TableHead>Payable Salary</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableHead className="w-[250px]">User</TableHead>
+                    <TableHead className="text-center">Total Working Days</TableHead>
+                    <TableHead className="text-center">Total Full Days</TableHead>
+                    <TableHead className="text-center">Total Half Days</TableHead>
+                    <TableHead className="text-center">Total Absent Days</TableHead>
+                    <TableHead className="text-right">Monthly Salary</TableHead>
+                    <TableHead className="text-right">Payable Salary</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {initialData.map((data) => (
-                <TableRow key={data.user.id}>
-                    <TableCell className="font-medium">
+                <TableRow key={data.user.id} className="group">
+                    <TableCell>
                         <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
                                 <AvatarImage src={data.user.avatar_url ?? undefined} alt={data.user.full_name ?? ''} />
@@ -83,12 +83,12 @@ export default function SalaryClient({ initialData }: SalaryClientProps) {
                             </div>
                         </div>
                     </TableCell>
-                    <TableCell>{data.totalWorkingDays}</TableCell>
-                    <TableCell className="text-green-600 font-medium">{data.totalFullDays}</TableCell>
-                    <TableCell className="text-yellow-600 font-medium">{data.totalHalfDays}</TableCell>
-                    <TableCell className="text-red-600 font-medium">{data.totalAbsentDays}</TableCell>
-                    <TableCell>{formatCurrency(data.monthlySalary)}</TableCell>
-                    <TableCell className="font-semibold text-primary">{formatCurrency(data.payableSalary)}</TableCell>
+                    <TableCell className="text-center">{data.totalWorkingDays}</TableCell>
+                    <TableCell className="text-center text-green-600 font-medium">{data.totalFullDays}</TableCell>
+                    <TableCell className="text-center text-yellow-600 font-medium">{data.totalHalfDays}</TableCell>
+                    <TableCell className="text-center text-red-600 font-medium">{data.totalAbsentDays}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(data.monthlySalary)}</TableCell>
+                    <TableCell className="text-right font-semibold text-primary">{formatCurrency(data.payableSalary)}</TableCell>
                 </TableRow>
                 ))}
             </TableBody>
