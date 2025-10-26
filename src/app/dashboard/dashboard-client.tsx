@@ -9,6 +9,7 @@ import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown } fr
 import type { Profile, Task, Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
+import { useState, useEffect } from 'react';
 
 const STATUS_COLORS: { [key: string]: string } = {
   'New': '#3b82f6', // blue-500
@@ -60,6 +61,12 @@ export default function DashboardClient({
     upcomingDeadlines,
     monthlyAttendanceData,
 }: DashboardClientProps) {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-muted/20 min-h-full">
       <header className="mb-8">
@@ -195,7 +202,7 @@ export default function DashboardClient({
                     <CardTitle className="flex items-center gap-2">
                         % Of Attendance
                     </CardTitle>
-                    <CardDescription>{format(new Date(), 'MMMM yyyy')}</CardDescription>
+                    <CardDescription>{hasMounted ? format(new Date(), 'MMMM yyyy') : ''}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ResponsiveContainer width="100%" height={200}>
@@ -240,8 +247,14 @@ export default function DashboardClient({
                           upcomingDeadlines.map(task => (
                             <div key={task.id} className="flex items-start gap-4">
                                 <div className="flex-shrink-0 mt-1 h-8 w-8 rounded-lg bg-primary/10 text-primary flex flex-col items-center justify-center font-bold">
-                                    <span className="text-xs -mb-1">{format(new Date(task.deadline), 'MMM')}</span>
-                                    <span className="text-lg leading-tight">{format(new Date(task.deadline), 'dd')}</span>
+                                    {hasMounted ? (
+                                      <>
+                                        <span className="text-xs -mb-1">{format(new Date(task.deadline), 'MMM')}</span>
+                                        <span className="text-lg leading-tight">{format(new Date(task.deadline), 'dd')}</span>
+                                      </>
+                                    ) : (
+                                      <div className="h-full w-full bg-muted animate-pulse rounded-lg" />
+                                    )}
                                 </div>
                                 <div>
                                     <p className="font-medium leading-snug">{task.description}</p>
@@ -262,3 +275,5 @@ export default function DashboardClient({
     </div>
   );
 }
+
+    
