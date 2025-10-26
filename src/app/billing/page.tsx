@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Wallet, FileText, Book } from 'lucide-react';
+import { Wallet, FileText, Book, ChevronLeft } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const sidebarNavItems = [
   { id: 'salary', label: 'Salary', icon: Wallet },
@@ -15,6 +16,7 @@ const sidebarNavItems = [
 
 export default function BillingPage() {
   const [activeView, setActiveView] = useState('salary');
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const renderContent = () => {
     switch (activeView) {
@@ -59,30 +61,62 @@ export default function BillingPage() {
     }
   };
 
+  const NavItem = ({ item }: { item: typeof sidebarNavItems[0] }) => {
+    const linkContent = (
+      <Button
+        variant="ghost"
+        onClick={() => setActiveView(item.id)}
+        className={cn(
+          'w-full justify-start gap-2',
+          activeView === item.id
+            ? 'bg-muted font-semibold text-primary'
+            : 'hover:bg-accent'
+        )}
+      >
+        <item.icon className="h-5 w-5 flex-shrink-0" />
+        <span className={cn('truncate transition-opacity duration-300', isCollapsed && 'opacity-0 hidden')}>{item.label}</span>
+      </Button>
+    );
+
+    if (isCollapsed) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {linkContent}
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {item.label}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    return linkContent;
+  };
+
+
   return (
     <div className="p-4 md:p-8 lg:p-10">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start">
-        <aside className="md:col-span-1">
-          <nav className="space-y-1">
-            {sidebarNavItems.map(item => (
-              <Button
-                key={item.id}
-                variant="ghost"
-                onClick={() => setActiveView(item.id)}
-                className={cn(
-                  'w-full justify-start',
-                  activeView === item.id
-                    ? 'bg-muted font-semibold text-primary'
-                    : 'hover:bg-accent'
-                )}
-              >
-                <item.icon className="mr-2 h-4 w-4" />
-                {item.label}
-              </Button>
-            ))}
-          </nav>
+       <div className="relative">
+        <aside className={cn("absolute top-0 left-0 h-full bg-background transition-all duration-300 group z-10", isCollapsed ? 'w-20' : 'w-64')}>
+           <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -right-4 top-1/2 -translate-y-1/2 rounded-full border bg-background h-8 w-8 opacity-0 group-hover:opacity-100 transition-all hover:bg-muted"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+            >
+              <ChevronLeft
+                className={cn('h-4 w-4 transition-transform', isCollapsed && 'rotate-180')}
+              />
+            </Button>
+          <TooltipProvider>
+            <nav className={cn("space-y-1 p-2", isCollapsed && "flex flex-col items-center")}>
+              {sidebarNavItems.map(item => (
+                <NavItem key={item.id} item={item} />
+              ))}
+            </nav>
+          </TooltipProvider>
         </aside>
-        <main className="md:col-span-4">
+        <main className={cn("transition-all duration-300", isCollapsed ? 'ml-20' : 'ml-64')}>
             {renderContent()}
         </main>
       </div>
