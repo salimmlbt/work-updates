@@ -7,6 +7,7 @@ import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows
 import type { TaskWithAssignee, Attachment, OfficialHoliday } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import fetch from 'node-fetch'
 
 export async function checkIn() {
   const supabase = createServerClient();
@@ -1019,7 +1020,7 @@ export async function updateSetting(key: string, value: any) {
 }
 
 
-export async function getPublicHolidays(year: number, countryCode: string) {
+export async function getPublicHolidays(year: number, countryCode: string): Promise<{ data?: any[], error?: string }> {
     try {
         const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
         
@@ -1030,14 +1031,15 @@ export async function getPublicHolidays(year: number, countryCode: string) {
         if (!response.ok) {
             const errorBody = await response.text();
             console.error(`Holiday API Error (${response.status}): ${errorBody}`);
-            return { error: `Failed to fetch public holidays: ${response.status} ${response.statusText}` };
+            return { error: `Failed to fetch public holidays: ${response.status} ${response.statusText}. ${errorBody}` };
         }
         
         const data = await response.json();
         return { data };
-    } catch (error: any) {
-        console.error('Fetch error in getPublicHolidays:', error);
-        return { error: error.message || 'An unknown error occurred while fetching holidays.' };
+    } catch (e: any) {
+        console.error('Fetch error in getPublicHolidays:', e);
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        return { error: `An unknown error occurred while fetching holidays: ${errorMessage}` };
     }
 }
 
