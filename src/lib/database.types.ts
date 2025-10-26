@@ -105,6 +105,30 @@ export type Database = {
         }
         Relationships: []
       }
+      official_holidays: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       profile_teams: {
         Row: {
           profile_id: string

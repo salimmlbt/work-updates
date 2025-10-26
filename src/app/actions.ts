@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
-import type { TaskWithAssignee, Attachment } from '@/lib/types'
+import type { TaskWithAssignee, Attachment, OfficialHoliday } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
@@ -1015,4 +1015,50 @@ export async function updateSetting(key: string, value: any) {
   revalidatePath('/accessibility');
   revalidatePath('/dashboard', 'layout'); // Revalidate layout to update header
   return { data };
+}
+
+
+export async function getPublicHolidays(year: number, countryCode: string) {
+    try {
+        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch public holidays');
+        }
+        const data = await response.json();
+        return { data };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+export async function addHoliday(formData: FormData) {
+    const supabase = createServerClient();
+    const name = formData.get('name') as string;
+    const date = formData.get('date') as string;
+    const description = formData.get('description') as string;
+
+    const { data, error } = await supabase
+        .from('official_holidays')
+        .insert({ name, date, description })
+        .select()
+        .single();
+    
+    if (error) {
+        return { error: error.message };
+    }
+    
+    revalidatePath('/calendar');
+    return { data: data as OfficialHoliday };
+}
+
+export async function deleteHoliday(id: number) {
+    const supabase = createServerClient();
+    const { error } = await supabase.from('official_holidays').delete().eq('id', id);
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    revalidatePath('/calendar');
+    return { success: true };
 }

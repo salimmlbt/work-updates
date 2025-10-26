@@ -1,8 +1,37 @@
 
-export default function CalendarPage() {
+import { createServerClient } from '@/lib/supabase/server';
+import CalendarClient from './calendar-client';
+import { getPublicHolidays } from '@/app/actions';
+import { format, subMonths, addMonths } from 'date-fns';
+
+export const dynamic = 'force-dynamic';
+
+export default async function CalendarPage({ searchParams }: { searchParams: { month?: string } }) {
+  const supabase = createServerClient();
+  const selectedDate = searchParams.month ? new Date(searchParams.month) : new Date();
+
+  const prevMonth = format(subMonths(selectedDate, 1), 'yyyy-MM');
+  const nextMonth = format(addMonths(selectedDate, 1), 'yyyy-MM');
+
+  const year = selectedDate.getFullYear();
+  // Fetching for India. This can be made dynamic later.
+  const { data: publicHolidays, error: publicHolidaysError } = await getPublicHolidays(year, 'IN');
+
+  const { data: officialHolidays, error: officialHolidaysError } = await supabase
+    .from('official_holidays')
+    .select('*');
+
+  if (publicHolidaysError || officialHolidaysError) {
+    console.error('Error fetching holidays:', publicHolidaysError, officialHolidaysError);
+  }
+  
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      
-    </div>
+    <CalendarClient 
+        publicHolidays={publicHolidays || []}
+        officialHolidays={officialHolidays || []}
+        selectedDate={format(selectedDate, 'yyyy-MM-dd')}
+        prevMonth={prevMonth}
+        nextMonth={nextMonth}
+    />
   );
 }
