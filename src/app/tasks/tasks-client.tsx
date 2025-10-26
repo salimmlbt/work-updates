@@ -36,7 +36,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns';
+import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isFuture, isPast } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
@@ -72,9 +72,9 @@ const statusIcons = {
 };
 
 const statusLabels = {
-    'todo': 'To Do',
-    'inprogress': 'In Progress',
-    'done': 'Done'
+    'todo': 'New task',
+    'inprogress': 'In progress',
+    'done': 'Scheduled'
 }
 const statusOptions: ('todo' | 'inprogress' | 'done')[] = ['todo', 'inprogress', 'done'];
 
@@ -628,9 +628,9 @@ const TaskTableBody = ({
 
 const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskClick }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void }) => {
   const cardColors: { [key: string]: string } = {
-    "todo": "bg-blue-100",
-    "inprogress": "bg-yellow-100",
-    "done": "bg-gray-100",
+    "todo": "bg-cyan-100/50",
+    "inprogress": "bg-blue-100/50",
+    "done": "bg-red-100/50",
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -640,12 +640,64 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
     }
     onTaskClick(task);
   }
-  
+
+  const getRemainingTime = (deadline: string) => {
+    const now = new Date();
+    const deadDate = parseISO(deadline);
+    if (isToday(deadDate)) return 'Due today';
+    if (isTomorrow(deadDate)) return 'Due tomorrow';
+    if (isPast(deadDate)) return formatDistanceToNowStrict(deadDate, { addSuffix: true });
+    
+    const days = differenceInDays(deadDate, now);
+    if (days < 7) {
+      return `${days} day${days > 1 ? 's' : ''} left`;
+    }
+    return format(deadDate, 'dd MMM');
+  }
+
   return (
-    <Card className={`mb-4 ${cardColors[task.status] ?? 'bg-gray-100'}`} onClick={handleCardClick}>
+    <Card 
+      className={cn("mb-4 group cursor-pointer", cardColors[task.status] ?? 'bg-gray-100')} 
+      onClick={handleCardClick}
+    >
       <CardHeader className="p-4 flex flex-row items-start justify-between">
         <CardTitle className="text-sm font-medium">{task.description}</CardTitle>
-         {canEdit && (
+        <div className="flex-shrink-0">
+          {task.profiles && (
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={getResponsibleAvatar(task.profiles)} />
+              <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-0">
+        {task.tags && (
+          <div className="flex flex-wrap gap-1">
+            {task.tags.map((tag: string) => {
+              const isBlocked = tag.toLowerCase() === 'blocked';
+              const isASAP = tag.toLowerCase() === 'asap';
+              const isFeedback = tag.toLowerCase() === 'feedback';
+              return (
+              <Badge
+                key={tag}
+                variant="secondary"
+                className={cn('font-normal',
+                  isBlocked && 'bg-gray-400 text-white',
+                  isASAP && 'bg-red-500 text-white',
+                  isFeedback && 'bg-green-200 text-green-800'
+                )}
+              >
+                {tag}
+              </Badge>
+            )})}
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="p-4 pt-0 flex justify-between items-center text-xs text-gray-600">
+        <span>{getRemainingTime(task.deadline)}</span>
+        {canEdit && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-6 w-6 -mt-2 -mr-2">
@@ -661,37 +713,13 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
                             onClick={() => onStatusChange(task.id, status)}
                             className={cn(task.status === status && 'bg-accent')}
                         >
-                            Change to {statusLabels[status]}
+                            Move to {statusLabels[status]}
                         </DropdownMenuItem>
                     ))}
                     <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>Delete</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-         )}
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        {task.tags && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {task.tags.map((tag: string) => (
-              <Badge
-                key={tag}
-                className={tag === 'Feedback' ? 'bg-blue-200 text-blue-800' : 'bg-gray-200'}
-              >
-                {tag}
-              </Badge>
-            ))}
           </div>
-        )}
-        {task.deadline && <p className="text-xs text-gray-600">{format(parseISO(task.deadline), 'dd MMM yyyy')}</p>}
-      </CardContent>
-      <CardFooter className="p-4 pt-0 flex justify-between items-center">
-        <div className="flex items-center">
-        </div>
-         {task.profiles && (
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={getResponsibleAvatar(task.profiles)} />
-              <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
-            </Avatar>
         )}
       </CardFooter>
     </Card>
@@ -710,9 +738,9 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
           <div key={status}>
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               {statusLabels[status as keyof typeof statusLabels]}
-              <Badge variant="secondary" className="ml-2">{tasksInStatus.length}</Badge>
+              <Badge variant="secondary" className="ml-2 bg-gray-200 text-gray-700">{tasksInStatus.length}</Badge>
             </h2>
-            <div className="bg-gray-100 p-4 rounded-lg h-full">
+            <div className="rounded-lg h-full">
               {tasksInStatus.map(task => (
                 <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} onTaskClick={onTaskClick}/>
               ))}
@@ -1376,3 +1404,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
