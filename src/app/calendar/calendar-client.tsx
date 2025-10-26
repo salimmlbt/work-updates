@@ -92,6 +92,7 @@ export default function CalendarClient({
     const [isAddEventOpen, setAddEventOpen] = useState(false);
     const [dialogType, setDialogType] = useState<'holiday' | 'event'>('holiday');
     const [officialHolidays, setOfficialHolidays] = useState(initialOfficialHolidays);
+    const [activeCalendarView, setActiveCalendarView] = useState('holidays');
 
     const prevMonth = format(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1), 'yyyy-MM');
     const nextMonth = format(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1), 'yyyy-MM');
@@ -168,19 +169,40 @@ export default function CalendarClient({
                 
             </header>
 
-            <Tabs defaultValue="holidays" className="flex flex-col flex-1">
+            <Tabs value={activeCalendarView} onValueChange={setActiveCalendarView} className="flex flex-col flex-1">
                 <div className="flex justify-between items-center">
-                  <TabsList className="bg-transparent p-0 border-b rounded-none gap-6">
-                    <TabsTrigger value="holidays" className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2">Holidays</TabsTrigger>
-                    <TabsTrigger value="my-calendar" className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2">My Calendar</TabsTrigger>
-                    <TabsTrigger value="falaq-calendar" className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2">Falaq Calendar</TabsTrigger>
-                  </TabsList>
+                    <div className="flex items-center rounded-full bg-muted p-1">
+                        <Button
+                            variant={activeCalendarView === 'holidays' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setActiveCalendarView('holidays')}
+                            className={cn('rounded-full', activeCalendarView === 'holidays' ? 'bg-background shadow' : '')}
+                        >
+                            Holidays
+                        </Button>
+                        <Button
+                            variant={activeCalendarView === 'my-calendar' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setActiveCalendarView('my-calendar')}
+                            className={cn('rounded-full', activeCalendarView === 'my-calendar' ? 'bg-background shadow' : '')}
+                        >
+                            My Calendar
+                        </Button>
+                         <Button
+                            variant={activeCalendarView === 'falaq-calendar' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setActiveCalendarView('falaq-calendar')}
+                            className={cn('rounded-full', activeCalendarView === 'falaq-calendar' ? 'bg-background shadow' : '')}
+                        >
+                            Falaq Calendar
+                        </Button>
+                    </div>
                    <div className="flex gap-2">
-                     <Button onClick={() => openAddDialog('event')} className={cn(dialogType === 'holiday' && 'hidden')}>
+                     <Button onClick={() => openAddDialog('event')} className={cn(activeCalendarView !== 'my-calendar' && 'hidden')}>
                         <Plus className="mr-2 h-4 w-4"/>
                         Add Event
                     </Button>
-                     <Button onClick={() => openAddDialog('holiday')} className={cn(dialogType === 'event' && 'hidden')}>
+                     <Button onClick={() => openAddDialog('holiday')} className={cn(activeCalendarView !== 'falaq-calendar' && 'hidden')}>
                         <Plus className="mr-2 h-4 w-4"/>
                         Create Holiday/Event
                     </Button>
