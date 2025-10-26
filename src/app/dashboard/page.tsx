@@ -1,52 +1,261 @@
+
 import { createServerClient } from '@/lib/supabase/server';
-import ProjectView from '@/components/dashboard/project-view';
-import type { TaskWithAssignee, Client } from '@/lib/types';
-import { Suspense } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getInitials } from '@/lib/utils';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, addDays } from 'date-fns';
+import { AlertCircle, CheckCircle2, Clock, Folder, Users, Zap, Calendar } from 'lucide-react';
 
-async function DashboardData({ projectId }: { projectId?: string }) {
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const STATUS_COLORS: { [key: string]: string } = {
+  'New': '#3b82f6', // blue-500
+  'In Progress': '#a855f7', // purple-500
+  'On Hold': '#f97316', // orange-500
+  'Done': '#22c55e', // green-500
+};
+
+export default async function DashboardPage() {
   const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: projects } = await supabase.from('projects').select('id, name');
-  
-  const currentProjectId = projectId || projects?.[0]?.id;
-  
-  let tasks: TaskWithAssignee[] = [];
-  if (currentProjectId) {
-    const { data: tasksData, error: tasksError } = await supabase
-      .from('tasks')
-      .select('*, profiles(id, full_name, avatar_url, email)')
-      .eq('project_id', currentProjectId)
-      .order('created_at', { ascending: false });
-
-    if (tasksError) {
-      console.error('Error fetching tasks:', tasksError);
-    }
-    tasks = (tasksData as any) ?? [];
+  if (!user) {
+    return <p className="p-4">Please log in to view the dashboard.</p>;
   }
 
-  const { data: profiles } = await supabase.from('profiles').select('*');
-  const { data: clients } = await supabase.from('clients').select('*');
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+
+  // --- Data Fetching ---
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+
+  const [
+    attendanceRes,
+    tasksRes,
+    projectsRes,
+  ] = await Promise.all([
+    supabase.from('attendance')
+      .select('date, total_hours')
+      .eq('user_id', user.id)
+      .gte('date', format(weekStart, 'yyyy-MM-dd'))
+      .lte('date', format(weekEnd, 'yyyy-MM-dd')),
+    supabase.from('tasks')
+      .select('id, description, deadline, status, project_id, projects(name)')
+      .eq('assignee_id', user.id)
+      .eq('is_deleted', false),
+    supabase.from('projects')
+      .select('id, name, status, members')
+      .contains('members', [user.id])
+      .eq('is_deleted', false)
+  ]);
+
+  // --- Data Processing ---
+  const { data: attendanceData } = attendanceRes;
+  const { data: tasks } = tasksRes;
+  const { data: projects } = projectsRes;
+
+  // Attendance Chart Data
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const attendanceChartData = weekDays.map(day => {
+    const record = attendanceData?.find(a => a.date === format(day, 'yyyy-MM-dd'));
+    return {
+      name: format(day, 'EEE'),
+      hours: record?.total_hours ?? 0,
+    };
+  });
+
+  // Task Stats
+  const pendingTasks = tasks?.filter(t => t.status === 'todo').length ?? 0;
+  const inProgressTasks = tasks?.filter(t => t.status === 'inprogress').length ?? 0;
+  const completedTasks = tasks?.filter(t => t.status === 'done').length ?? 0;
+  const totalTasks = tasks?.length ?? 0;
+  
+  // Upcoming Deadlines
+  const upcomingDeadlines = tasks
+    ?.filter(t => t.status !== 'done' && !isBefore(new Date(t.deadline), today))
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+    .slice(0, 5) ?? [];
+
+  // Project Status Pie Chart
+  const projectStatusCounts = projects?.reduce((acc, p) => {
+    const status = p.status || 'New';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) ?? {};
+  
+  const projectStatusData = Object.entries(projectStatusCounts).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
 
   return (
-    <ProjectView 
-      projects={projects ?? []} 
-      initialTasks={tasks}
-      currentProjectId={currentProjectId}
-      profiles={profiles ?? []}
-      clients={clients as Client[] ?? []}
-    />
+    <div className="p-4 md:p-8 lg:p-10 bg-muted/20 min-h-full">
+      <header className="mb-8">
+        <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16 border-2 border-primary">
+                <AvatarImage src={profile?.avatar_url ?? undefined} />
+                <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
+            </Avatar>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Welcome back, {profile?.full_name?.split(' ')[0]}!</h1>
+                <p className="text-muted-foreground">Here's your personal dashboard for today.</p>
+            </div>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+            {/* Stat Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="shadow-lg rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
+                        <AlertCircle className="h-5 w-5 opacity-80" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold">{pendingTasks}</div>
+                    </CardContent>
+                </Card>
+                 <Card className="shadow-lg rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                        <Zap className="h-5 w-5 opacity-80" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold">{inProgressTasks}</div>
+                    </CardContent>
+                </Card>
+                 <Card className="shadow-lg rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                        <CheckCircle2 className="h-5 w-5 opacity-80" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold">{completedTasks}</div>
+                    </CardContent>
+                </Card>
+            </div>
+          
+            {/* Attendance Chart */}
+            <Card className="shadow-lg rounded-xl">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-primary" />
+                        Weekly Hours
+                    </CardTitle>
+                    <CardDescription>Your tracked work hours for the current week.</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                    <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={attendanceChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}h`} />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: 'hsl(var(--background))',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid hsl(var(--border))',
+                                }}
+                                cursor={{ fill: 'hsla(var(--primary), 0.1)' }}
+                            />
+                            <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+
+             {/* Assigned Projects */}
+            <Card className="shadow-lg rounded-xl">
+              <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                      <Folder className="h-5 w-5 text-primary" />
+                      Assigned Projects
+                  </CardTitle>
+                  <CardDescription>Overview of the status of projects you're a member of.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                          <Pie
+                              data={projectStatusData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                              nameKey="name"
+                              label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                  const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
+                                  const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+                                  const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+                                  return (
+                                  <text x={x} y={y} fill="currentColor" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                                      {`${(percent * 100).toFixed(0)}%`}
+                                  </text>
+                                  );
+                              }}
+                          >
+                              {projectStatusData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name]} />
+                              ))}
+                          </Pie>
+                          <Tooltip
+                               contentStyle={{
+                                    backgroundColor: 'hsl(var(--background))',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid hsl(var(--border))',
+                                }}
+                          />
+                          <Legend iconSize={10} />
+                      </PieChart>
+                  </ResponsiveContainer>
+              </CardContent>
+            </Card>
+        </div>
+
+        {/* Right Column */}
+        <div className="lg:col-span-1 space-y-6">
+            {/* Upcoming Deadlines */}
+            <Card className="shadow-lg rounded-xl">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        Upcoming Deadlines
+                    </CardTitle>
+                    <CardDescription>Your nearest upcoming task due dates.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {upcomingDeadlines.length > 0 ? (
+                          upcomingDeadlines.map(task => (
+                            <div key={task.id} className="flex items-start gap-4">
+                                <div className="flex-shrink-0 mt-1 h-8 w-8 rounded-lg bg-primary/10 text-primary flex flex-col items-center justify-center font-bold">
+                                    <span className="text-xs -mb-1">{format(new Date(task.deadline), 'MMM')}</span>
+                                    <span className="text-lg leading-tight">{format(new Date(task.deadline), 'dd')}</span>
+                                </div>
+                                <div>
+                                    <p className="font-medium leading-snug">{task.description}</p>
+                                    <p className="text-sm text-muted-foreground">{task.projects?.name}</p>
+                                </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center text-sm text-muted-foreground py-8">
+                            No upcoming deadlines.
+                          </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+      </div>
+    </div>
   );
 }
 
-
-export default function DashboardPage({
-  searchParams,
-}: {
-  searchParams: { project?: string };
-}) {
-  return (
-    <Suspense fallback={<div className="text-center p-8">Loading dashboard...</div>}>
-      <DashboardData projectId={searchParams.project} />
-    </Suspense>
-  );
-}
+    
