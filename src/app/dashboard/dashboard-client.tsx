@@ -197,41 +197,6 @@ export default function DashboardClient({
 
         {/* Right Column */}
         <div className="lg:col-span-1 space-y-6">
-             <Card className="shadow-lg rounded-xl">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        % Of Attendance
-                    </CardTitle>
-                    <CardDescription>{hasMounted ? format(new Date(), 'MMMM yyyy') : ''}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <PieChart>
-                            <Pie
-                                data={monthlyAttendanceData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                startAngle={90}
-                                endAngle={450}
-                                paddingAngle={0}
-                                dataKey="value"
-                            >
-                                {monthlyAttendanceData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]} stroke={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]}/>
-                                ))}
-                            </Pie>
-                            <Legend content={<CustomLegend />} verticalAlign="middle" align="right" layout="vertical" />
-                        </PieChart>
-                    </ResponsiveContainer>
-                     <Button variant="outline" className="w-full mt-4">
-                        <ArrowDown className="mr-2 h-4 w-4" />
-                        Download Data
-                    </Button>
-                </CardContent>
-            </Card>
-
             {/* Upcoming Deadlines */}
             <Card className="shadow-lg rounded-xl">
                 <CardHeader>
@@ -270,10 +235,43 @@ export default function DashboardClient({
                     </div>
                 </CardContent>
             </Card>
+
+             <Card className="shadow-lg rounded-xl">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        % Of Attendance
+                    </CardTitle>
+                    <CardDescription>{hasMounted ? format(new Date(), 'MMMM yyyy') : ''}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                            <Pie
+                                data={monthlyAttendanceData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                startAngle={90}
+                                endAngle={450}
+                                paddingAngle={0}
+                                dataKey="value"
+                            >
+                                {monthlyAttendanceData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]} stroke={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]}/>
+                                ))}
+                            </Pie>
+                            <Legend content={<CustomLegend />} verticalAlign="middle" align="right" layout="vertical" />
+                        </PieChart>
+                    </ResponsiveContainer>
+                     <Button variant="outline" className="w-full mt-4">
+                        <ArrowDown className="mr-2 h-4 w-4" />
+                        Download Data
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
       </div>
     </div>
   );
 }
-
-    
