@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,19 +21,37 @@ import type { OfficialHoliday } from '@/lib/types'
 interface AddHolidayDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
-  onHolidayAdded: (newHoliday: OfficialHoliday) => void
+  onEventAdded: (newEvent: OfficialHoliday) => void
+  userId?: string | null
+  dialogType: 'holiday' | 'event'
 }
 
-export function AddHolidayDialog({ isOpen, setIsOpen, onHolidayAdded }: AddHolidayDialogProps) {
+export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dialogType }: AddHolidayDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
+  const [formData, setFormData] = useState({ name: '', date: '', description: '' });
+
+  const title = dialogType === 'holiday' ? 'Create Holiday/Event' : 'Add Personal Event';
+  const description = dialogType === 'holiday' 
+    ? 'Mark a new official leave day or event for the team.'
+    : 'Add a personal event to your calendar.';
+  const buttonText = dialogType === 'holiday' ? 'Create Event' : 'Add Event';
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({ name: '', date: '', description: '' });
+    }
+  }, [isOpen]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const form = new FormData(event.currentTarget);
+    if (userId) {
+      form.append('user_id', userId);
+    }
     
     startTransition(async () => {
-      const result = await addHoliday(formData);
+      const result = await addHoliday(form);
       if (result.error) {
         toast({
           title: "Error adding event",
@@ -45,7 +63,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onHolidayAdded }: AddHolid
           title: "Event Added",
           description: "The new event has been added successfully.",
         })
-        onHolidayAdded(result.data as OfficialHoliday)
+        onEventAdded(result.data as OfficialHoliday)
         setIsOpen(false)
       }
     })
@@ -56,50 +74,28 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onHolidayAdded }: AddHolid
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create Event</DialogTitle>
-            <DialogDescription>
-              Mark a new official leave day or event for the team.
-            </DialogDescription>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Event Name</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="e.g., Company Off-site"
-                required
-              />
+              <Input id="name" name="name" placeholder="e.g., Company Off-site" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                required
-              />
+              <Input id="date" name="date" type="date" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description (optional)</Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="Briefly describe the event."
-              />
+              <Textarea id="description" name="description" placeholder="Briefly describe the event." />
             </div>
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setIsOpen(false)}
-            >
-              Cancel
-            </Button>
+            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Event
+              {buttonText}
             </Button>
           </DialogFooter>
         </form>

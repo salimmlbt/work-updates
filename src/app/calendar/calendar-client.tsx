@@ -1,28 +1,17 @@
 'use client'
 
-import { useState, useMemo, useTransition, Fragment } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Briefcase, User, Flag, CheckSquare } from 'lucide-react';
 import { format, parseISO, isToday } from 'date-fns';
-import type { OfficialHoliday } from '@/lib/types';
+import type { OfficialHoliday, Task, Project } from '@/lib/types';
 import { AddHolidayDialog } from './add-holiday-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { deleteHoliday } from '@/app/actions';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface PublicHoliday {
   date: string;
@@ -34,86 +23,122 @@ interface PublicHoliday {
 interface CalendarClientProps {
     publicHolidays: PublicHoliday[];
     officialHolidays: OfficialHoliday[];
-    daysInMonth: {
-        date: string;
-        isCurrentMonth: boolean;
-    }[];
+    myTasks: Task[];
+    allProjects: Project[];
+    sundays: any[];
+    daysInMonth: { date: string; isCurrentMonth: boolean; }[];
     selectedDate: string;
-    prevMonth: string;
-    nextMonth: string;
+    currentUserId?: string | null;
 }
 
-const typeColorMap = {
-    public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
-    official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
-}
+const typeColorMap: { [key: string]: string } = {
+  public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
+  official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
+  weekend: 'bg-gray-100 text-gray-600 border-l-4 border-gray-400',
+  task: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500',
+  project: 'bg-green-100 text-green-800 border-l-4 border-green-500',
+  personal: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500',
+};
+
+const CalendarView = ({ days, events, title }: { days: any[], events: any[], title: string }) => (
+    <ScrollArea className="flex-1 -mx-8">
+        <div className="flex px-8">
+            {days.map(({ date, isCurrentMonth }) => {
+                const dayDate = parseISO(date);
+                const dayKey = format(dayDate, 'yyyy-MM-dd');
+                const dayEvents = events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === dayKey);
+
+                return (
+                    <div key={dayKey} className={cn("w-64 flex-shrink-0 border-r last:border-r-0", !isCurrentMonth && 'opacity-50 bg-muted/30')}>
+                        <div className={cn("text-center py-2 border-b font-semibold sticky top-0 bg-background/80 backdrop-blur-sm z-10", isToday(dayDate) && "text-primary")}>
+                            <p className="text-sm">{format(dayDate, 'EEE')}</p>
+                            <p className="text-2xl">{format(dayDate, 'd')}</p>
+                        </div>
+                        <div className="p-2 space-y-2 h-full">
+                            {dayEvents.map((event, index) => (
+                                <div key={index} className={cn("p-3 rounded-lg shadow-sm text-sm", typeColorMap[event.type] || 'bg-gray-100')}>
+                                    <div className="font-semibold flex items-center gap-2">
+                                        {event.type === 'task' && <CheckSquare className="h-4 w-4" />}
+                                        {event.type === 'project' && <Briefcase className="h-4 w-4" />}
+                                        {event.type === 'personal' && <User className="h-4 w-4" />}
+                                        {(event.type === 'public' || event.type === 'official' || event.type === 'weekend') && <Flag className="h-4 w-4" />}
+                                        <span className="truncate">{event.name}</span>
+                                    </div>
+                                    {event.description && event.description !== event.name && <p className="text-xs mt-1 truncate">{event.description}</p>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )
+            })}
+        </div>
+        <ScrollBar orientation="horizontal" />
+    </ScrollArea>
+)
+
 
 export default function CalendarClient({ 
     publicHolidays: initialPublicHolidays, 
     officialHolidays: initialOfficialHolidays,
+    myTasks,
+    allProjects,
+    sundays,
     daysInMonth,
     selectedDate,
-    prevMonth,
-    nextMonth
+    currentUserId
 }: CalendarClientProps) {
     const router = useRouter();
     const [currentDate, setCurrentDate] = useState(() => parseISO(selectedDate));
-    const [isAddHolidayOpen, setAddHolidayOpen] = useState(false);
-    const [publicHolidays, setPublicHolidays] = useState(initialPublicHolidays);
+    const [isAddEventOpen, setAddEventOpen] = useState(false);
+    const [dialogType, setDialogType] = useState<'holiday' | 'event'>('holiday');
     const [officialHolidays, setOfficialHolidays] = useState(initialOfficialHolidays);
-    const [holidayToDelete, setHolidayToDelete] = useState<OfficialHoliday | null>(null);
-    const [isPending, startTransition] = useTransition();
-    const { toast } = useToast();
 
-    const allHolidaysByDate = useMemo(() => {
-      const holidays = new Map<string, Array<{ name: string; type: 'public' | 'official'; id?: number, description: string | null }>>();
-      
-      const addHolidayToMap = (dateStr: string, holiday: { name: string; type: 'public' | 'official'; id?: number, description: string | null }) => {
-          const day = format(parseISO(dateStr), 'yyyy-MM-dd');
-          if (!holidays.has(day)) {
-              holidays.set(day, []);
-          }
-          holidays.get(day)?.push(holiday);
-      }
+    const prevMonth = format(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1), 'yyyy-MM');
+    const nextMonth = format(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1), 'yyyy-MM');
 
-      publicHolidays.forEach(h => {
-          addHolidayToMap(h.date, { name: h.localName, type: 'public', description: h.name });
-      });
-      
-      officialHolidays.forEach(h => {
-          addHolidayToMap(h.date, { name: h.name, type: 'official', id: h.id, description: h.description });
-      });
-      
-      return holidays;
-  }, [publicHolidays, officialHolidays]);
+    const holidayEvents = useMemo(() => {
+        const publicHolidaysFormatted = initialPublicHolidays.map(h => ({ name: h.localName, date: h.date, type: 'public', description: h.name }));
+        const officialHolidaysFormatted = officialHolidays
+            .filter(h => !h.user_id)
+            .map(h => ({ name: h.name, date: h.date, type: 'official', description: h.description }));
+        return [...publicHolidaysFormatted, ...officialHolidaysFormatted];
+    }, [initialPublicHolidays, officialHolidays]);
 
-    const onHolidayAdded = (newHoliday: OfficialHoliday) => {
-        setOfficialHolidays(prev => [...prev, newHoliday]);
+    const myCalendarEvents = useMemo(() => {
+        const tasksFormatted = myTasks.map(t => ({ name: t.description, date: t.deadline, type: 'task', description: `Task ID: ${t.id}` }));
+        const personalEvents = officialHolidays
+            .filter(h => h.user_id === currentUserId)
+            .map(h => ({ name: h.name, date: h.date, type: 'personal', description: h.description }));
+        return [...tasksFormatted, ...personalEvents];
+    }, [myTasks, officialHolidays, currentUserId]);
+
+    const falaqCalendarEvents = useMemo(() => {
+        const officialEvents = officialHolidays
+            .filter(h => !h.user_id)
+            .map(h => ({ name: h.name, date: h.date, type: 'official', description: h.description }));
+        const projectsFormatted = allProjects.filter(p => p.due_date).map(p => ({ name: p.name, date: p.due_date!, type: 'project', description: `Project: ${p.name}` }));
+        const sundaysFormatted = sundays.map(s => ({ ...s, type: 'weekend' }));
+        return [...officialEvents, ...projectsFormatted, ...sundaysFormatted];
+    }, [officialHolidays, allProjects, sundays]);
+
+    const onEventAdded = (newEvent: OfficialHoliday) => {
+        setOfficialHolidays(prev => [...prev, newEvent]);
     }
     
-    const handleDeleteHoliday = () => {
-        if (!holidayToDelete) return;
-
-        startTransition(async () => {
-            const { error } = await deleteHoliday(holidayToDelete.id);
-            if (error) {
-                toast({ title: 'Error deleting holiday', description: error, variant: 'destructive' });
-            } else {
-                toast({ title: 'Holiday deleted' });
-                setOfficialHolidays(prev => prev.filter(h => h.id !== holidayToDelete.id));
-            }
-            setHolidayToDelete(null);
-        });
-    }
-
-    const handleMonthChange = (month: Date) => {
+    const handleMonthChange = (month: Date | undefined) => {
+        if (!month) return;
         setCurrentDate(month);
         router.push(`/calendar?month=${format(month, 'yyyy-MM')}`);
     }
 
+    const openAddDialog = (type: 'holiday' | 'event') => {
+        setDialogType(type);
+        setAddEventOpen(true);
+    };
+
     return (
         <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
-            <header className="flex items-center justify-between mb-8">
+            <header className="flex items-center justify-between mb-4">
                <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleMonthChange(parseISO(prevMonth))}>
                         <ChevronLeft className="h-4 w-4" />
@@ -140,61 +165,46 @@ export default function CalendarClient({
                         <ChevronRight className="h-4 w-4" />
                     </Button>
                </div>
-                <Button onClick={() => setAddHolidayOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4"/>
-                    Create Event
-                </Button>
+                
             </header>
 
-            <ScrollArea className="flex-1 -mx-8">
-                <div className="flex px-8">
-                    {daysInMonth.map(({ date, isCurrentMonth }) => {
-                        const dayDate = parseISO(date);
-                        const dayKey = format(dayDate, 'yyyy-MM-dd');
-                        const events = allHolidaysByDate.get(dayKey) || [];
-
-                        return (
-                            <div key={dayKey} className={cn("w-64 flex-shrink-0 border-r last:border-r-0", !isCurrentMonth && 'opacity-50 bg-muted/30')}>
-                                <div className={cn("text-center py-2 border-b font-semibold sticky top-0 bg-background/80 backdrop-blur-sm z-10", isToday(dayDate) && "text-primary")}>
-                                    <p className="text-sm">{format(dayDate, 'EEE')}</p>
-                                    <p className="text-2xl">{format(dayDate, 'd')}</p>
-                                </div>
-                                <div className="p-2 space-y-2 h-full">
-                                    {events.map((event, index) => (
-                                        <div key={index} className={cn("p-3 rounded-lg shadow-sm text-sm", typeColorMap[event.type])}>
-                                            <p className="font-semibold">{event.name}</p>
-                                            {event.description && event.description !== event.name && <p className="text-xs">{event.description}</p>}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )
-                    })}
+            <Tabs defaultValue="holidays" className="flex flex-col flex-1">
+                <div className="flex justify-between items-center">
+                  <TabsList className="bg-transparent p-0 border-b rounded-none gap-6">
+                    <TabsTrigger value="holidays" className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2">Holidays</TabsTrigger>
+                    <TabsTrigger value="my-calendar" className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2">My Calendar</TabsTrigger>
+                    <TabsTrigger value="falaq-calendar" className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2">Falaq Calendar</TabsTrigger>
+                  </TabsList>
+                   <div className="flex gap-2">
+                     <Button onClick={() => openAddDialog('event')} className={cn(dialogType === 'holiday' && 'hidden')}>
+                        <Plus className="mr-2 h-4 w-4"/>
+                        Add Event
+                    </Button>
+                     <Button onClick={() => openAddDialog('holiday')} className={cn(dialogType === 'event' && 'hidden')}>
+                        <Plus className="mr-2 h-4 w-4"/>
+                        Create Holiday/Event
+                    </Button>
+                   </div>
                 </div>
-                <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+
+                <TabsContent value="holidays" className="mt-6 flex-1 flex flex-col">
+                    <CalendarView days={daysInMonth} events={holidayEvents} title="Holidays" />
+                </TabsContent>
+                <TabsContent value="my-calendar" className="mt-6 flex-1 flex flex-col">
+                    <CalendarView days={daysInMonth} events={myCalendarEvents} title="My Calendar" />
+                </TabsContent>
+                <TabsContent value="falaq-calendar" className="mt-6 flex-1 flex flex-col">
+                    <CalendarView days={daysInMonth} events={falaqCalendarEvents} title="Falaq Calendar" />
+                </TabsContent>
+            </Tabs>
            
             <AddHolidayDialog 
-                isOpen={isAddHolidayOpen}
-                setIsOpen={setAddHolidayOpen}
-                onHolidayAdded={onHolidayAdded}
+                isOpen={isAddEventOpen}
+                setIsOpen={setAddEventOpen}
+                onEventAdded={onEventAdded}
+                userId={dialogType === 'event' ? currentUserId : null}
+                dialogType={dialogType}
             />
-            <AlertDialog open={!!holidayToDelete} onOpenChange={(open) => !open && setHolidayToDelete(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will permanently delete the holiday "{holidayToDelete?.name}".
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteHoliday} disabled={isPending}>
-                        {isPending ? 'Deleting...' : 'Delete'}
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     );
 }

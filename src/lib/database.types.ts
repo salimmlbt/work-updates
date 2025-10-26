@@ -112,6 +112,7 @@ export type Database = {
           description: string | null
           id: number
           name: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -119,6 +120,7 @@ export type Database = {
           description?: string | null
           id?: number
           name: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -126,8 +128,17 @@ export type Database = {
           description?: string | null
           id?: number
           name?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "official_holidays_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profile_teams: {
         Row: {

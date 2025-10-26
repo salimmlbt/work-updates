@@ -1056,7 +1056,7 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('Error fetching public holidays from Google Calendar:', errorMessage);
-        return { error: `An unexpected error occurred while fetching holidays: ${errorMessage}` };
+        return { data: [], error: `An unexpected error occurred while fetching holidays: ${errorMessage}` };
     }
 }
 
@@ -1065,10 +1065,11 @@ export async function addHoliday(formData: FormData) {
     const name = formData.get('name') as string;
     const date = formData.get('date') as string;
     const description = formData.get('description') as string;
+    const userId = formData.get('user_id') as string | null;
 
     const { data, error } = await supabase
         .from('official_holidays')
-        .insert({ name, date, description })
+        .insert({ name, date, description, user_id: userId })
         .select()
         .single();
     
@@ -1093,3 +1094,4 @@ export async function deleteHoliday(id: number) {
 }
 
     
+
