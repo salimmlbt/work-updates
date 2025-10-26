@@ -6,8 +6,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
 import { format } from 'date-fns';
-import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown } from 'lucide-react';
 import type { Profile, Task, Project } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 const STATUS_COLORS: { [key: string]: string } = {
   'New': '#3b82f6', // blue-500
@@ -15,6 +16,8 @@ const STATUS_COLORS: { [key: string]: string } = {
   'On Hold': '#f97316', // orange-500
   'Done': '#22c55e', // green-500
 };
+
+const ATTENDANCE_COLORS = ['#3b82f6', '#e0e0e0'];
 
 type UpcomingDeadline = Pick<Task, "id" | "description" | "deadline"> & {
     projects: Pick<Project, "name"> | null;
@@ -28,7 +31,24 @@ interface DashboardClientProps {
     attendanceChartData: { name: string; hours: number }[];
     projectStatusData: { name: string; value: number }[];
     upcomingDeadlines: UpcomingDeadline[];
+    monthlyAttendanceData: { name: string; value: number }[];
 }
+
+const CustomLegend = (props: any) => {
+  const { payload } = props;
+  return (
+    <ul className="flex flex-col space-y-2">
+      {payload.map((entry: any, index: number) => (
+        <li key={`item-${index}`} className="flex items-center">
+          <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }} />
+          <span className="text-muted-foreground mr-2">{entry.payload.name}:</span>
+          <span className="font-bold">{`${entry.payload.value}%`}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 
 export default function DashboardClient({
     profile,
@@ -38,6 +58,7 @@ export default function DashboardClient({
     attendanceChartData,
     projectStatusData,
     upcomingDeadlines,
+    monthlyAttendanceData,
 }: DashboardClientProps) {
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-muted/20 min-h-full">
@@ -169,6 +190,41 @@ export default function DashboardClient({
 
         {/* Right Column */}
         <div className="lg:col-span-1 space-y-6">
+             <Card className="shadow-lg rounded-xl">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        % Of Attendance
+                    </CardTitle>
+                    <CardDescription>{format(new Date(), 'MMMM yyyy')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                            <Pie
+                                data={monthlyAttendanceData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                startAngle={90}
+                                endAngle={450}
+                                paddingAngle={0}
+                                dataKey="value"
+                            >
+                                {monthlyAttendanceData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]} stroke={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]}/>
+                                ))}
+                            </Pie>
+                            <Legend content={<CustomLegend />} verticalAlign="middle" align="right" layout="vertical" />
+                        </PieChart>
+                    </ResponsiveContainer>
+                     <Button variant="outline" className="w-full mt-4">
+                        <ArrowDown className="mr-2 h-4 w-4" />
+                        Download Data
+                    </Button>
+                </CardContent>
+            </Card>
+
             {/* Upcoming Deadlines */}
             <Card className="shadow-lg rounded-xl">
                 <CardHeader>
