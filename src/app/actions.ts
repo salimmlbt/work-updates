@@ -1036,9 +1036,9 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
         
         const data = await response.json();
         return { data };
-    } catch (e: any) {
-        console.error('Fetch error in getPublicHolidays:', e);
+    } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
+        console.error('Fetch error in getPublicHolidays:', errorMessage);
         return { error: `An unknown error occurred while fetching holidays: ${errorMessage}` };
     }
 }
