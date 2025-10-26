@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -734,23 +733,54 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      {statuses.map((status, index) => {
-        const tasksInStatus = allTasksProp.filter(task => task.status === status);
-        return (
-          <div key={status} className={cn("px-3", index < statuses.length - 1 && "border-r")}>
-            <h2 className="text-lg font-semibold mb-4 flex items-center border-b pb-4">
-              {statusLabels[status as keyof typeof statusLabels]}
-              <Badge variant="secondary" className="ml-2 bg-gray-200 text-gray-700">{tasksInStatus.length}</Badge>
-            </h2>
-            <div className="rounded-lg h-full pt-4">
-              {tasksInStatus.map(task => (
-                <KanbanCard key={task.id} task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} onTaskClick={onTaskClick}/>
-              ))}
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-b">
+        {statuses.map((status) => {
+          const tasksInStatus = allTasksProp.filter(
+            (task) => task.status === status
+          );
+          return (
+            <div key={status} className="px-3">
+              <h2 className="text-lg font-semibold mb-4 flex items-center pt-4">
+                {statusLabels[status as keyof typeof statusLabels]}
+                <Badge
+                  variant="secondary"
+                  className="ml-2 bg-gray-200 text-gray-700"
+                >
+                  {tasksInStatus.length}
+                </Badge>
+              </h2>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {statuses.map((status, index) => {
+          const tasksInStatus = allTasksProp.filter(
+            (task) => task.status === status
+          );
+          return (
+            <div
+              key={status}
+              className={cn("px-3", index < statuses.length - 1 && "border-r")}
+            >
+              <div className="rounded-lg h-full pt-4">
+                {tasksInStatus.map((task) => (
+                  <KanbanCard
+                    key={task.id}
+                    task={task}
+                    onStatusChange={onStatusChange}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    canEdit={canEdit}
+                    onTaskClick={onTaskClick}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
