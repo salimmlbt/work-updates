@@ -659,7 +659,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
 
   return (
     <Card 
-      className={cn("mb-4 group cursor-pointer border-0 shadow-none", cardColors[task.status] ?? 'bg-gray-100')} 
+      className={cn("mb-4 group cursor-pointer shadow-none", cardColors[task.status] ?? 'bg-gray-100', 'border-0')} 
       onClick={handleCardClick}
     >
       <CardHeader className="p-4 flex flex-row items-start justify-between">
@@ -733,15 +733,15 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
-    <div>
+    <div className="flex flex-col h-full">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-b">
         {statuses.map((status) => {
           const tasksInStatus = allTasksProp.filter(
             (task) => task.status === status
           );
           return (
-            <div key={status} className="px-3">
-              <h2 className="text-lg font-semibold mb-4 flex items-center pt-4">
+            <div key={status} className="px-3 py-4">
+              <h2 className="text-lg font-semibold mb-4 flex items-center">
                 {statusLabels[status as keyof typeof statusLabels]}
                 <Badge
                   variant="secondary"
@@ -754,7 +754,7 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
           );
         })}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 flex-1">
         {statuses.map((status, index) => {
           const tasksInStatus = allTasksProp.filter(
             (task) => task.status === status
@@ -762,7 +762,7 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
           return (
             <div
               key={status}
-              className={cn("px-3", index < statuses.length - 1 && "border-r")}
+              className={cn("px-3 h-full overflow-y-auto", index < statuses.length - 1 && "border-r")}
             >
               <div className="rounded-lg h-full pt-4">
                 {tasksInStatus.map((task) => (
@@ -1355,7 +1355,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       </header>
 
       <main className="flex-1 overflow-auto">
-        <div className="min-w-full inline-block align-middle">
+        <div className="min-w-full inline-block align-middle h-full">
           {mainContent()}
         </div>
       </main>
@@ -1431,5 +1431,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
-    
