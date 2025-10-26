@@ -84,8 +84,9 @@ export default async function DashboardPage() {
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
     ?.filter(t => {
-        // Ensure deadline exists and is a valid date before proceeding
-        if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
+        // Ensure deadline is a valid, non-null date string before proceeding
+        const deadlineDate = new Date(t.deadline);
+        if (!t.deadline || isNaN(deadlineDate.getTime())) {
           return false;
         }
         const zonedDeadline = toZonedTime(t.deadline, 'UTC');
