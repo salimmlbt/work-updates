@@ -12,7 +12,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
 import type { Profile } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 
@@ -41,7 +41,7 @@ const formatCurrency = (amount: number) => {
 export default function SalaryClient({ initialData }: SalaryClientProps) {
 
   return (
-    <Card>
+    <div>
       <CardHeader>
         <div className="flex justify-between items-center">
             <div>
@@ -95,6 +95,6 @@ export default function SalaryClient({ initialData }: SalaryClientProps) {
             </Table>
         </div>
       </CardContent>
-    </Card>
+    </div>
   );
 }
