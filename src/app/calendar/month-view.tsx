@@ -60,10 +60,16 @@ export default function MonthView({ date, events, onEventClick }: MonthViewProps
     <Calendar
       month={date}
       mode="single"
-      className="p-0 h-full [&_td]:h-24 [&_td]:w-24 [&_tr]:w-full"
+      className="p-0 h-full flex flex-col"
       classNames={{
-        table: 'w-full h-full border-collapse',
-        cell: 'p-0 align-top relative',
+        months: "flex-1 flex flex-col",
+        month: "flex-1 flex flex-col",
+        table: 'w-full h-full border-collapse flex flex-col',
+        head_row: "flex",
+        head_cell: "flex-1",
+        body: "flex-1 grid grid-cols-7 grid-rows-5",
+        row: "flex-1 grid grid-cols-7 contents-start",
+        cell: 'p-0 align-top relative flex flex-col',
         day: 'w-full h-full p-2 flex',
       }}
       components={{
