@@ -2,8 +2,8 @@
 import { createServerClient } from '@/lib/supabase/server';
 import CalendarClient from './calendar-client';
 import { getPublicHolidays } from '@/app/actions';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, getDay, addMonths, subMonths } from 'date-fns';
-import type { Task, Project, OfficialHoliday } from '@/lib/types';
+import { startOfMonth, endOfMonth, eachDayOfInterval, format, getDay } from 'date-fns';
+import type { Task, Project } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,6 +57,18 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
             }
         })
   ];
+
+  // Sort events to ensure consistent order between server and client
+  events.sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    if (dateA !== dateB) {
+        return dateA - dateB;
+    }
+    // Fallback to a stable sort property like name if dates are equal
+    return a.name.localeCompare(b.name);
+  });
+
 
   return (
     <CalendarClient 
