@@ -52,7 +52,8 @@ export default function WeekView({ date, events, onEventClick, activeCalendar }:
           <div key={`header-${day.toString()}`} className={cn(
             "sticky top-0 bg-white z-20 text-center py-2 border-b border-r", 
             dayIndex === 6 && 'border-r-0',
-            activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50'
+            activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50',
+            isToday(day) && 'bg-blue-50 dark:bg-blue-900/20'
           )}>
             <p className={cn("text-sm", isToday(day) ? 'text-primary' : 'text-muted-foreground')}>{format(day, 'EEE')}</p>
             <p className={cn("text-2xl font-semibold", isToday(day) && 'text-primary')}>{format(day, 'd')}</p>
@@ -73,7 +74,8 @@ export default function WeekView({ date, events, onEventClick, activeCalendar }:
           <div key={day.toString()} className={cn(
             "relative border-r", 
             dayIndex === 6 && 'border-r-0',
-            activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50'
+            activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50',
+            isToday(day) && 'bg-blue-50 dark:bg-blue-900/20'
           )}>
             {/* Grid lines */}
             <div className="absolute top-0 left-0 w-full h-full">
