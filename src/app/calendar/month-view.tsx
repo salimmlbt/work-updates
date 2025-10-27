@@ -67,9 +67,9 @@ export default function MonthView({ date, events, onEventClick }: MonthViewProps
         table: 'w-full h-full border-collapse flex flex-col',
         head_row: "flex",
         head_cell: "flex-1",
-        body: "flex-1 grid grid-cols-7 grid-rows-5",
+        body: "flex-1 grid grid-cols-7 grid-rows-6",
         row: "flex-1 grid grid-cols-7 contents-start",
-        cell: 'p-0 align-top relative flex flex-col',
+        cell: 'p-0 align-top relative flex flex-col border',
         day: 'w-full h-full p-2 flex',
       }}
       components={{
