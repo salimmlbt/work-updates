@@ -30,7 +30,7 @@ function DayContent({ date, events, onEventClick }: DayContentProps & { events: 
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event) => (
           <div
-            key={event.id}
+            key={`${event.id}-${event.date}`}
             onClick={(e) => {
               e.stopPropagation(); // Prevent DayPicker from selecting the date
               onEventClick(event, e.currentTarget);
