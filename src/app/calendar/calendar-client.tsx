@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Plus, Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Briefcase, User, Flag, CheckSquare } from 'lucide-react';
@@ -40,7 +40,7 @@ export default function CalendarClient({
 }: CalendarClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [currentDate, setCurrentDate] = useState(() => parse(initialMonth, 'yyyy-MM', new Date()));
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
   
   const initialView = searchParams.get('view') || 'week';
   const [view, setView] = useState<'day' | 'week' | 'month'>(initialView as any);
@@ -55,8 +55,14 @@ export default function CalendarClient({
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (initialMonth) {
+      setCurrentDate(parse(initialMonth, 'yyyy-MM', new Date()));
+    }
+  }, [initialMonth]);
+
   const handleDateChange = (date: Date | undefined) => {
-    if (!date) return;
+    if (!date || !currentDate) return;
     const newMonth = format(date, 'yyyy-MM');
     const oldMonth = format(currentDate, 'yyyy-MM');
     setCurrentDate(date);
@@ -66,6 +72,7 @@ export default function CalendarClient({
   };
   
   const handleViewChange = (newView: 'day' | 'week' | 'month') => {
+      if (!currentDate) return;
       setView(newView);
       router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${newView}`);
   }
@@ -78,6 +85,7 @@ export default function CalendarClient({
   const onEventAdded = (newEvent: OfficialHoliday) => {
     const fullEvent: CalendarEvent = {
         ...newEvent,
+        id: `official-${newEvent.id}`,
         type: newEvent.user_id ? 'personal' : 'official'
     };
     setAllEvents(prev => [...prev, fullEvent]);
@@ -114,6 +122,7 @@ export default function CalendarClient({
   }
 
   const renderView = () => {
+    if (!currentDate) return null;
     switch(view) {
       case 'day':
         return <DayView date={currentDate} events={allEvents} onEventClick={handleEventClick} />;
@@ -123,6 +132,10 @@ export default function CalendarClient({
       default:
         return <MonthView date={currentDate} events={allEvents} onEventClick={handleEventClick} />;
     }
+  }
+  
+  if (!currentDate) {
+    return <div className="flex h-full w-full items-center justify-center">Loading...</div>;
   }
 
   return (
