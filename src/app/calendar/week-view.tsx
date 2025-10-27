@@ -1,7 +1,7 @@
 
 'use client'
 
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, getUTCHours, setHours, isToday } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -76,7 +76,7 @@ export default function WeekView({ date, events, onEventClick }: WeekViewProps) 
             {/* Events */}
             <div className="relative h-full p-1 space-y-1">
                {eventsByDay[format(day, 'yyyy-MM-dd')].map(event => {
-                  const eventHour = getUTCHours(new Date(event.date));
+                  const eventHour = new Date(event.date).getUTCHours();
                   const topPosition = eventHour * 5; // 5rem per hour (h-20)
                   
                   return (
