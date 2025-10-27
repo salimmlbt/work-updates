@@ -1,7 +1,6 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import CalendarClient from './calendar-client';
-import { getPublicHolidays } from '@/app/actions';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, getDay } from 'date-fns';
 import type { Task, Project } from '@/lib/types';
 
@@ -9,9 +8,11 @@ export const dynamic = 'force-dynamic';
 
 export default async function CalendarPage({ searchParams }: { searchParams: { month?: string, view?: string } }) {
   const supabase = createServerClient();
-  const selectedDate = searchParams.month ? new Date(`${searchParams.month}-01T00:00:00Z`) : new Date();
   
   const { data: { user } } = await supabase.auth.getUser();
+
+  const selectedMonth = searchParams.month || format(new Date(), 'yyyy-MM');
+  const selectedDate = new Date(`${selectedMonth}-01T00:00:00Z`);
 
   const [
     myTasksResult,
@@ -55,7 +56,6 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     if (dateA !== dateB) {
         return dateA - dateB;
     }
-    // Fallback to a stable sort property like name if dates are equal
     return a.name.localeCompare(b.name);
   });
 
@@ -63,9 +63,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   return (
     <CalendarClient 
         events={events}
-        initialDate={selectedDate.toISOString()}
+        initialMonth={selectedMonth}
         currentUserId={user?.id}
     />
   );
 }
-

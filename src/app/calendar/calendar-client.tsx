@@ -5,7 +5,7 @@ import { useState, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Plus, Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Briefcase, User, Flag, CheckSquare } from 'lucide-react';
-import { format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
+import { format, parse, parseISO, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
 import type { OfficialHoliday } from '@/lib/types';
 import { AddHolidayDialog } from './add-holiday-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -29,18 +29,18 @@ export interface CalendarEvent {
 
 interface CalendarClientProps {
   events: CalendarEvent[];
-  initialDate: string;
+  initialMonth: string;
   currentUserId?: string | null;
 }
 
 export default function CalendarClient({
   events,
-  initialDate,
+  initialMonth,
   currentUserId,
 }: CalendarClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [currentDate, setCurrentDate] = useState(() => parseISO(initialDate));
+  const [currentDate, setCurrentDate] = useState(() => parse(initialMonth, 'yyyy-MM', new Date()));
   
   const initialView = searchParams.get('view') || 'week';
   const [view, setView] = useState<'day' | 'week' | 'month'>(initialView as any);
@@ -57,9 +57,9 @@ export default function CalendarClient({
 
   const handleDateChange = (date: Date | undefined) => {
     if (!date) return;
-    setCurrentDate(date);
     const newMonth = format(date, 'yyyy-MM');
     const oldMonth = format(currentDate, 'yyyy-MM');
+    setCurrentDate(date);
     if (newMonth !== oldMonth) {
         router.push(`/calendar?month=${newMonth}&view=${view}`);
     }
