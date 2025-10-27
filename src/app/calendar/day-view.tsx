@@ -1,7 +1,7 @@
 
 'use client'
 
-import { format, startOfDay, addHours, isSameHour, getHours, setHours } from 'date-fns';
+import { format, startOfDay, addHours, isSameHour, getUTCHours, setHours } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -33,7 +33,7 @@ export default function DayView({ date, events, onEventClick }: DayViewProps) {
   const eventsByHour = useMemo(() => {
     const grouped: { [key: number]: CalendarEvent[] } = {};
     dayEvents.forEach(event => {
-      const hour = getHours(new Date(event.date));
+      const hour = getUTCHours(new Date(event.date));
       if (!grouped[hour]) {
         grouped[hour] = [];
       }
