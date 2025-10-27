@@ -3,7 +3,7 @@
 
 import { Calendar } from '@/components/ui/calendar';
 import type { DayContentProps } from 'react-day-picker';
-import { format, isSameDay, getDay } from 'date-fns';
+import { format, isSameDay, getDay, isToday } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -26,8 +26,12 @@ function DayContent({ date, events, onEventClick, activeCalendar }: DayContentPr
   const isSunday = getDay(date) === 0;
 
   return (
-    <div className={cn("flex flex-col h-full w-full", activeCalendar === 'falaq_calendar' && isSunday && 'bg-red-50')}>
-      <span className="self-start">{dayNumber}</span>
+    <div className={cn(
+        "flex flex-col h-full w-full", 
+        activeCalendar === 'falaq_calendar' && isSunday && 'bg-red-50',
+        isToday(date) && 'bg-blue-50 dark:bg-blue-900/20'
+    )}>
+      <span className={cn("self-start", isToday(date) && 'text-primary font-bold')}>{dayNumber}</span>
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => (
           <div
@@ -73,6 +77,7 @@ export default function MonthView({ date, events, onEventClick, activeCalendar }
         row: "flex-1 grid grid-cols-7 contents-start",
         cell: 'p-0 align-top relative flex flex-col border',
         day: 'w-full h-full p-2 flex',
+        day_today: 'bg-transparent text-foreground' // Override default today styling
       }}
       components={{
         DayContent: (props) => <DayContent {...props} events={events} onEventClick={onEventClick} activeCalendar={activeCalendar} />,
