@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function CalendarPage({ searchParams }: { searchParams: { month?: string, view?: string } }) {
   const supabase = createServerClient();
-  const selectedDate = searchParams.month ? new Date(`${searchParams.month}-01`) : new Date();
-
+  const selectedDate = searchParams.month ? new Date(`${searchParams.month}-01T00:00:00Z`) : new Date();
+  
   const { data: { user } } = await supabase.auth.getUser();
 
   const [
@@ -68,3 +68,4 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     />
   );
 }
+
