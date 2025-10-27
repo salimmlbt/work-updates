@@ -49,9 +49,9 @@ interface CalendarClientProps {
 }
 
 const calendarViews = [
-    { id: 'my_calendar', label: 'My calendar', icon: User },
-    { id: 'falaq_calendar', label: 'Falaq calendar', icon: Building },
     { id: 'holidays', label: 'Holidays', icon: Plane },
+    { id: 'my_calendar', label: 'My Calendar', icon: User },
+    { id: 'falaq_calendar', label: 'Falaq Calendar', icon: Building },
 ]
 
 export default function CalendarClient({
@@ -66,7 +66,7 @@ export default function CalendarClient({
   const initialView = searchParams.get('view') || 'week';
   const [view, setView] = useState<'day' | 'week' | 'month'>(initialView as any);
 
-  const initialCalendar = searchParams.get('calendar') || 'my_calendar';
+  const initialCalendar = searchParams.get('calendar') || 'holidays';
   const [activeCalendar, setActiveCalendar] = useState<keyof EventSources>(initialCalendar as keyof EventSources);
   
   const [isAddEventOpen, setAddEventOpen] = useState(false);
@@ -121,7 +121,7 @@ export default function CalendarClient({
   const handleViewChange = (newView: 'day' | 'week' | 'month') => {
     if (!currentDate) return;
     setView(newView);
-    router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${newView}&calendar=${activeCalendar}`);
+    router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${view}&calendar=${activeCalendar}`);
   };
 
   const openAddDialog = (type: 'holiday' | 'event') => {
@@ -205,26 +205,6 @@ export default function CalendarClient({
         className="sticky top-0 z-30 flex flex-col items-center justify-between gap-4 border-b bg-white p-4 pb-4 shadow-sm sm:flex-row sm:p-6 lg:p-8"
       >
         <div className="flex flex-shrink-0 items-center gap-2">
-           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-[200px] justify-between">
-                    <div className="flex items-center gap-2">
-                        <ActiveCalendarIcon className="h-4 w-4" />
-                        {activeCalendarLabel}
-                    </div>
-                    <ChevronDown className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[200px]">
-                {calendarViews.map(calendar => (
-                    <DropdownMenuItem key={calendar.id} onSelect={() => handleCalendarChange(calendar.id as keyof EventSources)} className={cn(activeCalendar === calendar.id && "bg-accent")}>
-                        <calendar.icon className="mr-2 h-4 w-4" />
-                        {calendar.label}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-           </DropdownMenu>
-
           <Button variant="outline" size="icon" onClick={() => handleDateChange(subMonths(currentDate, 1))}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -257,6 +237,19 @@ export default function CalendarClient({
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-4">
+          <div className="flex items-center rounded-full bg-muted p-1">
+            {calendarViews.map(calendar => (
+              <Button
+                key={calendar.id}
+                variant={activeCalendar === calendar.id ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => handleCalendarChange(calendar.id as keyof EventSources)}
+                className={cn('rounded-full', activeCalendar === calendar.id && 'shadow-sm bg-white')}
+              >
+                {calendar.label}
+              </Button>
+            ))}
+          </div>
           <div className="flex items-center rounded-md bg-muted p-1">
             <Button
               variant={view === 'day' ? 'secondary' : 'ghost'}
