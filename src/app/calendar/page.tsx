@@ -1,12 +1,13 @@
+
 import { createServerClient } from '@/lib/supabase/server';
 import CalendarClient from './calendar-client';
 import { getPublicHolidays } from '@/app/actions';
-import { startOfMonth, endOfMonth, eachDayOfInterval, format, getMonth, getDay } from 'date-fns';
-import type { Task, Project } from '@/lib/types';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, getDay, addMonths, subMonths } from 'date-fns';
+import type { Task, Project, OfficialHoliday } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CalendarPage({ searchParams }: { searchParams: { month?: string } }) {
+export default async function CalendarPage({ searchParams }: { searchParams: { month?: string, view?: string } }) {
   const supabase = createServerClient();
   const selectedDate = searchParams.month ? new Date(`${searchParams.month}-01`) : new Date();
 
@@ -15,17 +16,6 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const year = selectedDate.getFullYear();
   const countryCode = 'in';
 
-  const monthStart = startOfMonth(selectedDate);
-  const monthEnd = endOfMonth(selectedDate);
-  
-  const daysInMonth = eachDayOfInterval({
-    start: monthStart,
-    end: monthEnd,
-  }).map(date => ({
-      date: date.toISOString(),
-      isCurrentMonth: getMonth(date) === getMonth(selectedDate),
-  }));
-  
   const [
     publicHolidaysResult,
     officialHolidaysResult,
@@ -56,26 +46,26 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     console.error('Error fetching projects:', allProjectsError);
   }
 
-  // Add Sundays to Falaq Calendar
-  const sundays = eachDayOfInterval({ start: monthStart, end: monthEnd })
-    .filter(day => getDay(day) === 0)
-    .map(day => ({
-        id: `sunday-${format(day, 'yyyy-MM-dd')}`,
-        name: 'Sunday',
-        date: format(day, 'yyyy-MM-dd'),
-        description: 'Weekend',
-        type: 'weekend'
-    }));
+  const events = [
+    ...(publicHolidays || []).map(h => ({ name: h.localName, date: h.date, type: 'public', description: h.name })),
+    ...(officialHolidays || []).map(h => ({ name: h.name, date: h.date, type: h.user_id ? 'personal' : 'official', description: h.description, id: h.id, user_id: h.user_id })),
+    ...(myTasks as Task[] || []).map(t => ({ name: t.description, date: t.deadline, type: 'task', description: `Task ID: ${t.id}`, id: t.id })),
+    ...(allProjects as Project[] || []).filter(p => p.due_date).map(p => ({ name: p.name, date: p.due_date!, type: 'project', description: `Project: ${p.name}`, id: p.id })),
+    ...eachDayOfInterval({ start: startOfMonth(selectedDate), end: endOfMonth(selectedDate) })
+        .filter(day => getDay(day) === 0)
+        .map(day => ({
+            id: `sunday-${format(day, 'yyyy-MM-dd')}`,
+            name: 'Sunday',
+            date: format(day, 'yyyy-MM-dd'),
+            description: 'Weekend',
+            type: 'weekend'
+        }))
+  ];
 
   return (
     <CalendarClient 
-        publicHolidays={publicHolidays || []}
-        officialHolidays={officialHolidays || []}
-        myTasks={myTasks as Task[] || []}
-        allProjects={allProjects as Project[] || []}
-        sundays={sundays}
-        daysInMonth={daysInMonth}
-        selectedDate={selectedDate.toISOString()}
+        events={events}
+        initialDate={selectedDate.toISOString()}
         currentUserId={user?.id}
     />
   );
