@@ -3,7 +3,7 @@
 
 import { Calendar } from '@/components/ui/calendar';
 import type { DayContentProps } from 'react-day-picker';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, getDay } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -17,15 +17,16 @@ const typeColorMap: { [key: string]: string } = {
   personal: 'bg-pink-100 text-pink-800',
 };
 
-function DayContent({ date, events, onEventClick }: DayContentProps & { events: CalendarEvent[]; onEventClick: (event: CalendarEvent, target: HTMLElement) => void; }) {
+function DayContent({ date, events, onEventClick, activeCalendar }: DayContentProps & { events: CalendarEvent[]; onEventClick: (event: CalendarEvent, target: HTMLElement) => void; activeCalendar: string; }) {
   const dayEvents = useMemo(() => {
     return events.filter(event => isSameDay(new Date(event.date), date));
   }, [date, events]);
   
   const dayNumber = format(date, 'd');
+  const isSunday = getDay(date) === 0;
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className={cn("flex flex-col h-full w-full", activeCalendar === 'falaq_calendar' && isSunday && 'bg-red-50')}>
       <span className="self-start">{dayNumber}</span>
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => (
@@ -53,9 +54,10 @@ interface MonthViewProps {
   date: Date;
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent, target: HTMLElement) => void;
+  activeCalendar: string;
 }
 
-export default function MonthView({ date, events, onEventClick }: MonthViewProps) {
+export default function MonthView({ date, events, onEventClick, activeCalendar }: MonthViewProps) {
   return (
     <Calendar
       month={date}
@@ -67,13 +69,13 @@ export default function MonthView({ date, events, onEventClick }: MonthViewProps
         table: 'w-full h-full border-collapse flex flex-col',
         head_row: "flex",
         head_cell: "flex-1",
-        body: "flex-1 grid grid-cols-7 grid-rows-6 h-full",
+        body: "flex-1 grid grid-cols-7 grid-rows-6",
         row: "flex-1 grid grid-cols-7 contents-start",
         cell: 'p-0 align-top relative flex flex-col border',
         day: 'w-full h-full p-2 flex',
       }}
       components={{
-        DayContent: (props) => <DayContent {...props} events={events} onEventClick={onEventClick} />,
+        DayContent: (props) => <DayContent {...props} events={events} onEventClick={onEventClick} activeCalendar={activeCalendar} />,
       }}
       // To prevent date selection when clicking on a day cell
       onDayClick={(day, modifiers) => {

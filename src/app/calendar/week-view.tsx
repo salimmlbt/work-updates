@@ -1,7 +1,7 @@
 
 'use client'
 
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday, getDay } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -22,9 +22,10 @@ interface WeekViewProps {
   date: Date;
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent, target: HTMLElement) => void;
+  activeCalendar: string;
 }
 
-export default function WeekView({ date, events, onEventClick }: WeekViewProps) {
+export default function WeekView({ date, events, onEventClick, activeCalendar }: WeekViewProps) {
   const weekStart = startOfWeek(date, { weekStartsOn: 0 }); // Sunday
   const weekEnd = endOfWeek(date, { weekStartsOn: 0 }); // Saturday
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -48,7 +49,11 @@ export default function WeekView({ date, events, onEventClick }: WeekViewProps) 
           <div className="h-20 border-b"></div>
         </div>
         {weekDays.map((day, dayIndex) => (
-          <div key={`header-${day.toString()}`} className={cn("sticky top-0 bg-white z-20 text-center py-2 border-b border-r", dayIndex === 6 && 'border-r-0')}>
+          <div key={`header-${day.toString()}`} className={cn(
+            "sticky top-0 bg-white z-20 text-center py-2 border-b border-r", 
+            dayIndex === 6 && 'border-r-0',
+            activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50'
+          )}>
             <p className={cn("text-sm", isToday(day) ? 'text-primary' : 'text-muted-foreground')}>{format(day, 'EEE')}</p>
             <p className={cn("text-2xl font-semibold", isToday(day) && 'text-primary')}>{format(day, 'd')}</p>
           </div>
@@ -65,7 +70,11 @@ export default function WeekView({ date, events, onEventClick }: WeekViewProps) 
         
         {/* Day columns */}
         {weekDays.map((day, dayIndex) => (
-          <div key={day.toString()} className={cn("relative border-r", dayIndex === 6 && 'border-r-0')}>
+          <div key={day.toString()} className={cn(
+            "relative border-r", 
+            dayIndex === 6 && 'border-r-0',
+            activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50'
+          )}>
             {/* Grid lines */}
             <div className="absolute top-0 left-0 w-full h-full">
               {hours.map(hour => (

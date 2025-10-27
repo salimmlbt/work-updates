@@ -177,16 +177,16 @@ export default function CalendarClient({
     switch (view) {
       case 'day':
         return (
-          <DayView date={currentDate} events={allEvents} onEventClick={handleEventClick} />
+          <DayView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} />
         );
       case 'week':
         return (
-          <WeekView date={currentDate} events={allEvents} onEventClick={handleEventClick} />
+          <WeekView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} />
         );
       case 'month':
       default:
         return (
-          <MonthView date={currentDate} events={allEvents} onEventClick={handleEventClick} />
+          <MonthView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} />
         );
     }
   };
@@ -199,7 +199,7 @@ export default function CalendarClient({
   const activeCalendarLabel = calendarViews.find(v => v.id === activeCalendar)?.label;
 
   return (
-    <div className="flex h-screen flex-col bg-white">
+    <div className="flex h-full flex-col bg-white">
       <header
         id="calendar-header"
         className="sticky top-0 z-30 flex flex-col items-center justify-between gap-4 border-b bg-white p-4 pb-4 shadow-sm sm:flex-row sm:p-6 lg:p-8"

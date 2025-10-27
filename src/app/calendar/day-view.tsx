@@ -21,6 +21,7 @@ interface DayViewProps {
   date: Date;
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent, target: HTMLElement) => void;
+  activeCalendar: string;
 }
 
 export default function DayView({ date, events, onEventClick }: DayViewProps) {
