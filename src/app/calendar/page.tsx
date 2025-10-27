@@ -47,19 +47,22 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   }
 
   const events = [
-    ...(publicHolidays || []).map(h => ({ name: h.localName, date: h.date, type: 'public', description: h.name })),
-    ...(officialHolidays || []).map(h => ({ name: h.name, date: h.date, type: h.user_id ? 'personal' : 'official', description: h.description, id: h.id, user_id: h.user_id })),
-    ...(myTasks as Task[] || []).map(t => ({ name: t.description, date: t.deadline, type: 'task', description: `Task ID: ${t.id}`, id: t.id })),
-    ...(allProjects as Project[] || []).filter(p => p.due_date).map(p => ({ name: p.name, date: p.due_date!, type: 'project', description: `Project: ${p.name}`, id: p.id })),
+    ...(publicHolidays || []).map(h => ({ id: `public-${h.localName}-${h.date}`, name: h.localName, date: h.date, type: 'public', description: h.name })),
+    ...(officialHolidays || []).map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, type: h.user_id ? 'personal' : 'official', description: h.description, user_id: h.user_id })),
+    ...(myTasks as Task[] || []).map(t => ({ id: `task-${t.id}`, name: t.description, date: t.deadline, type: 'task', description: `Task ID: ${t.id}` })),
+    ...(allProjects as Project[] || []).filter(p => p.due_date).map(p => ({ id: `project-${p.id}`, name: p.name, date: p.due_date!, type: 'project', description: `Project: ${p.name}` })),
     ...eachDayOfInterval({ start: startOfMonth(selectedDate), end: endOfMonth(selectedDate) })
         .filter(day => getDay(day) === 0)
-        .map(day => ({
-            id: `sunday-${format(day, 'yyyy-MM-dd')}`,
-            name: 'Sunday',
-            date: format(day, 'yyyy-MM-dd'),
-            description: 'Weekend',
-            type: 'weekend'
-        }))
+        .map(day => {
+            const dateStr = format(day, 'yyyy-MM-dd');
+            return {
+                id: `sunday-${dateStr}`,
+                name: 'Sunday',
+                date: dateStr,
+                description: 'Weekend',
+                type: 'weekend'
+            }
+        })
   ];
 
   return (
