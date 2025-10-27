@@ -23,26 +23,22 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const [
     myTasksResult,
     allProjectsResult,
-    officialHolidaysResult,
     publicHolidaysResult,
     personalEventsResult
   ] = await Promise.all([
     user ? supabase.from('tasks').select('*').eq('assignee_id', user.id) : Promise.resolve({ data: [], error: null }),
     supabase.from('projects').select('*').eq('is_deleted', false),
-    supabase.from('official_holidays').select('*').is('user_id', null),
     getPublicHolidays(year, countryCode),
     user ? supabase.from('official_holidays').select('*').eq('user_id', user.id) : Promise.resolve({ data: [], error: null })
   ]);
   
   const { data: myTasks, error: myTasksError } = myTasksResult;
   const { data: allProjects, error: allProjectsError } = allProjectsResult;
-  const { data: officialHolidays, error: officialHolidaysError } = officialHolidaysResult;
   const { data: publicHolidays, error: publicHolidaysError } = publicHolidaysResult;
   const { data: personalEvents, error: personalEventsError } = personalEventsResult;
 
   if (myTasksError) console.error('Error fetching user tasks:', myTasksError);
   if (allProjectsError) console.error('Error fetching projects:', allProjectsError);
-  if (officialHolidaysError) console.error('Error fetching official holidays:', officialHolidaysError);
   if (publicHolidaysError) console.error('Error fetching public holidays:', publicHolidaysError);
   if (personalEventsError) console.error('Error fetching personal events:', personalEventsError);
 
@@ -67,7 +63,6 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const falaqCalendarEvents = [
     ...(allProjects as Project[] || []).filter(p => p.due_date).map(p => ({ id: `project-${p.id}`, name: p.name, date: p.due_date!, type: 'project', description: `Project: ${p.name}` })),
-    ...(officialHolidays as OfficialHoliday[] || []).map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, type: 'official', description: h.description })),
     ...weekendEvents
   ];
 
