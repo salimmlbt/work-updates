@@ -121,7 +121,7 @@ export default function CalendarClient({
   const handleViewChange = (newView: 'day' | 'week' | 'month') => {
     if (!currentDate) return;
     setView(newView);
-    router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${view}&calendar=${activeCalendar}`);
+    router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${newView}&calendar=${activeCalendar}`);
   };
 
   const openAddDialog = (type: 'holiday' | 'event') => {
@@ -250,12 +250,12 @@ export default function CalendarClient({
               </Button>
             ))}
           </div>
-          <div className="flex items-center rounded-md bg-muted p-1">
+          <div className="flex items-center rounded-full bg-muted p-1">
             <Button
               variant={view === 'day' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => handleViewChange('day')}
-              className="rounded-sm"
+              className={cn('rounded-full', view === 'day' && 'shadow-sm bg-white')}
             >
               Day
             </Button>
@@ -263,7 +263,7 @@ export default function CalendarClient({
               variant={view === 'week' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => handleViewChange('week')}
-              className="rounded-sm"
+              className={cn('rounded-full', view === 'week' && 'shadow-sm bg-white')}
             >
               Week
             </Button>
@@ -271,7 +271,7 @@ export default function CalendarClient({
               variant={view === 'month' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => handleViewChange('month')}
-              className="rounded-sm"
+              className={cn('rounded-full', view === 'month' && 'shadow-sm bg-white')}
             >
               Month
             </Button>
