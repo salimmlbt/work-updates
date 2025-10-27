@@ -17,20 +17,15 @@ const typeColorMap: { [key: string]: string } = {
   personal: 'bg-pink-100 text-pink-800',
 };
 
-function DayContent({ date, events, onEventClick, activeCalendar }: DayContentProps & { events: CalendarEvent[]; onEventClick: (event: CalendarEvent, target: HTMLElement) => void; activeCalendar: string; }) {
+function DayContent({ date, events, onEventClick }: DayContentProps & { events: CalendarEvent[]; onEventClick: (event: CalendarEvent, target: HTMLElement) => void; activeCalendar: string; }) {
   const dayEvents = useMemo(() => {
     return events.filter(event => isSameDay(new Date(event.date), date));
   }, [date, events]);
   
   const dayNumber = format(date, 'd');
-  const isSunday = getDay(date) === 0;
 
   return (
-    <div className={cn(
-        "flex flex-col h-full w-full", 
-        activeCalendar === 'falaq_calendar' && isSunday && 'bg-red-50',
-        isToday(date) && 'bg-blue-50 dark:bg-blue-900/20'
-    )}>
+    <div className="flex flex-col h-full w-full p-2">
       <span className={cn("self-start", isToday(date) && 'text-primary font-bold')}>{dayNumber}</span>
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => (
@@ -75,9 +70,11 @@ export default function MonthView({ date, events, onEventClick, activeCalendar }
         head_cell: "flex-1",
         body: "flex-1 grid grid-cols-7 grid-rows-6",
         row: "flex-1 grid grid-cols-7 contents-start",
-        cell: 'p-0 align-top relative flex flex-col border',
-        day: 'w-full h-full p-2 flex',
-        day_today: 'bg-transparent text-foreground' // Override default today styling
+        cell: cn('p-0 align-top relative flex flex-col border', 
+           activeCalendar === 'falaq_calendar' && '[&:has(.rdp-day_sunday)]:bg-red-50',
+           '[&:has(.rdp-day_today)]:bg-blue-50 dark:[&:has(.rdp-day_today)]:bg-blue-900/20'
+        ),
+        day: 'w-full h-full flex',
       }}
       components={{
         DayContent: (props) => <DayContent {...props} events={events} onEventClick={onEventClick} activeCalendar={activeCalendar} />,
