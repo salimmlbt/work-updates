@@ -37,9 +37,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const { data: officialHolidays, error: officialHolidaysError } = officialHolidaysResult;
   const { data: publicHolidays, error: publicHolidaysError } = publicHolidaysResult;
 
-  if (myTasksError) console.error('Error fetching user tasks:', myTasksError);
-  if (allProjectsError) console.error('Error fetching projects:', allProjectsError);
-  if (officialHolidaysError) console.error('Error fetching official holidays:', officialHolidaysError);
+  if (myTasksError) console.error('Error fetching user tasks:', myTasksError.message);
+  if (allProjectsError) console.error('Error fetching projects:', allProjectsError.message);
+  if (officialHolidaysError) console.error('Error fetching official holidays:', officialHolidaysError.message);
   if (publicHolidaysError) console.error('Error fetching public holidays:', publicHolidaysError);
 
   const allHolidays = officialHolidays as OfficialHoliday[] || [];
@@ -58,15 +58,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const personalEvents = allHolidays
     .filter(h => h.user_id === user?.id && h.type === 'personal')
-    .map(h => ({ id: `personal-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'personal', user_id: h.user_id }));
+    .map(h => ({ id: `personal-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'personal', user_id: h.user_id, falaq_event_type: h.falaq_event_type }));
 
   const companyEvents = allHolidays
     .filter(h => h.type === 'official')
-    .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id }));
+    .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id, falaq_event_type: h.falaq_event_type }));
   
   const specialDays = allHolidays
     .filter(h => h.type === 'special_day')
-    .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id }));
+    .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id, falaq_event_type: h.falaq_event_type }));
 
 
   const myCalendarEvents = [

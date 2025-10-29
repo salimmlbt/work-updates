@@ -1029,7 +1029,7 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
           return { error: msg };
         }
 
-        const calendar = google.calendar({ version: 'v3', auth: API_KEY });
+        const calendar = google.calendar({ version: 'v3' });
         
         let calendarId = `en.${countryCode.toLowerCase()}#holiday@group.v.calendar.google.com`;
         if (countryCode.toLowerCase() === 'in') {
@@ -1038,7 +1038,7 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
 
         const response = await calendar.events.list({
             calendarId,
-            auth: API_KEY,
+            key: API_KEY,
             timeMin: `${year}-01-01T00:00:00Z`,
             timeMax: `${year}-12-31T23:59:59Z`,
             singleEvents: true,

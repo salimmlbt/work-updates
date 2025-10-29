@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -34,6 +35,7 @@ export interface CalendarEvent {
   type: string;
   description: string | null;
   user_id?: string | null;
+  falaq_event_type?: 'leave' | 'event' | 'meeting' | null;
 }
 
 type EventSources = {
@@ -340,3 +342,4 @@ export default function CalendarClient({
     </div>
   );
 }
+
