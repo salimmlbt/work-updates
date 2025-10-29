@@ -1,38 +1,9 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import type { Task, Profile, Client, Project, TaskWithDetails } from '@/lib/types';
-import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
+import TasksPageLoader from './tasks-page-loader';
 
 export const dynamic = 'force-dynamic';
-
-const TasksClient = dynamic(() => import('./tasks-client'), {
-    ssr: false,
-    loading: () => (
-        <div className="p-6 h-full">
-            <div className="flex items-center justify-between pb-4 mb-4 border-b">
-                <div className="flex items-center gap-4">
-                    <Skeleton className="h-10 w-24" />
-                    <Skeleton className="h-10 w-32" />
-                </div>
-                <div className="flex items-center gap-2">
-                    <Skeleton className="h-9 w-24" />
-                    <Skeleton className="h-9 w-40" />
-                </div>
-            </div>
-            <div className="space-y-8">
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-48" />
-                    <div className="border rounded-lg">
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-});
 
 export default async function TasksPage() {
     const supabase = createServerClient();
@@ -70,7 +41,7 @@ export default async function TasksPage() {
         return { ...task, clients: client || null };
     });
 
-    return <TasksClient 
+    return <TasksPageLoader 
         initialTasks={tasks as TaskWithDetails[]} 
         projects={allProjectsData as Project[] || []}
         clients={clientsData as Client[] || []}
