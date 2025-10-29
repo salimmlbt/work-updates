@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
@@ -31,11 +32,11 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
   const { toast } = useToast()
   const [formData, setFormData] = useState({ name: '', date: '', description: '' });
 
-  const title = dialogType === 'holiday' ? 'Create Holiday/Event' : 'Add Personal Event';
+  const title = dialogType === 'holiday' ? 'Add Holiday or Event' : 'Add Personal Event';
   const description = dialogType === 'holiday' 
     ? 'Mark a new official leave day or event for the team.'
     : 'Add a personal event to your calendar.';
-  const buttonText = dialogType === 'holiday' ? 'Create Holiday' : 'Add Event';
+  const buttonText = dialogType === 'holiday' ? 'Create Event' : 'Add Event';
 
   useEffect(() => {
     if (isOpen) {

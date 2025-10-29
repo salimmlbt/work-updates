@@ -291,6 +291,12 @@ export default function CalendarClient({
                     Add Event
                 </Button>
             )}
+             {activeCalendar === 'holidays' && (
+                <Button onClick={() => openAddDialog('holiday')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Special Day
+                </Button>
+            )}
           </div>
         </div>
       </header>
