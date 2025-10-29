@@ -22,7 +22,7 @@ import { format } from 'date-fns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type DialogMode = 'holiday' | 'event' | 'special_day';
-type FalaqEventType = 'holiday' | 'event' | 'meeting';
+type FalaqEventType = 'leave' | 'event' | 'meeting';
 
 interface AddHolidayDialogProps {
   isOpen: boolean
@@ -45,7 +45,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
   };
 
   const descriptionMap: Record<DialogMode, string> = {
-    holiday: 'Mark a new holiday, event, or meeting for the team.',
+    holiday: 'Mark a new leave, event, or meeting for the team.',
     event: 'Add a personal event to your calendar.',
     special_day: 'Mark a new special day for the team.'
   };
@@ -59,7 +59,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
         name: '',
         date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '',
         description: '',
-        falaqEventType: dialogType === 'holiday' ? 'holiday' : ''
+        falaqEventType: dialogType === 'holiday' ? 'leave' : ''
       });
     }
   }, [isOpen, selectedDate, dialogType]);
@@ -137,7 +137,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
                             <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="holiday">Holiday</SelectItem>
+                            <SelectItem value="leave">Leave</SelectItem>
                             <SelectItem value="event">Event</SelectItem>
                             <SelectItem value="meeting">Meeting</SelectItem>
                         </SelectContent>

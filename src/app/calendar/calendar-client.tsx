@@ -294,7 +294,7 @@ export default function CalendarClient({
             {activeCalendar === 'falaq_calendar' && (
                 <Button onClick={() => openAddDialog('holiday')}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Holiday
+                    Add
                 </Button>
             )}
             {activeCalendar === 'my_calendar' && (

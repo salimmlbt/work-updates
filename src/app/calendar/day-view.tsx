@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 const typeColorMap: { [key: string]: string } = {
   public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
   official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
-  holiday: 'bg-red-100 text-red-800 border-l-4 border-red-500',
+  leave: 'bg-red-100 text-red-800 border-l-4 border-red-500',
   weekend: 'bg-gray-200 text-gray-700',
   task: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500',
   project: 'bg-green-100 text-green-800 border-l-4 border-green-500',
@@ -47,7 +47,7 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
   }, [dayEvents]);
 
   const isPublicHoliday = dayEvents.some(e => e.type === 'public');
-  const isFalaqHoliday = dayEvents.some(e => (e as any).falaq_event_type === 'holiday');
+  const isFalaqHoliday = dayEvents.some(e => (e as any).falaq_event_type === 'leave');
 
   return (
     <div className={cn("h-full w-full", (activeCalendar === 'falaq_calendar' && isFalaqHoliday) && "bg-red-50")}>
@@ -74,14 +74,14 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
             {Object.entries(eventsByHour).map(([hour, hourEvents]) => (
                 <div key={hour} className="absolute w-full" style={{ top: `${parseInt(hour) * 5}rem`, left: 0 }}>
                     {hourEvents.map((event, index) => {
-                      const isEventFalaqHoliday = (event as any).falaq_event_type === 'holiday';
+                      const isEventFalaqHoliday = (event as any).falaq_event_type === 'leave';
                       return (
                         <div
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                             className={cn(
                               'p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', 
-                              isEventFalaqHoliday ? typeColorMap['holiday'] : typeColorMap[event.type] || 'bg-gray-100'
+                              isEventFalaqHoliday ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
                             )}
                             style={{ marginLeft: `${index * 5}%` }}
                         >
