@@ -106,6 +106,25 @@ export default async function DashboardPage() {
     value,
   }));
 
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Subscriptions Over Time</CardTitle>
+            <CardDescription>A line chart showing monthly subscriptions.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+              <LineChart data={lineChartData}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis />
+                <Tooltip content={<ChartTooltipContent />} />
+                <Legend content={<ChartLegendContent />} />
+                <Line type="monotone" dataKey="subscriptions" stroke="var(--color-subscriptions)" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
 
   return (
     <DashboardClient
