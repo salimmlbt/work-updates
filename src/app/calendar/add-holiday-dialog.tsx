@@ -35,7 +35,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
   const description = dialogType === 'holiday' 
     ? 'Mark a new official leave day or event for the team.'
     : 'Add a personal event to your calendar.';
-  const buttonText = dialogType === 'holiday' ? 'Create Event' : 'Add Event';
+  const buttonText = dialogType === 'holiday' ? 'Create Holiday' : 'Add Event';
 
   useEffect(() => {
     if (isOpen) {

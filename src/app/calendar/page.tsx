@@ -23,19 +23,23 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const [
     myTasksResult,
     allProjectsResult,
+    officialHolidaysResult,
     publicHolidaysResult,
   ] = await Promise.all([
     user ? supabase.from('tasks').select('*').eq('assignee_id', user.id) : Promise.resolve({ data: [], error: null }),
     supabase.from('projects').select('*').eq('is_deleted', false),
+    supabase.from('official_holidays').select('*'),
     getPublicHolidays(year, countryCode),
   ]);
   
   const { data: myTasks, error: myTasksError } = myTasksResult;
   const { data: allProjects, error: allProjectsError } = allProjectsResult;
+  const { data: officialHolidays, error: officialHolidaysError } = officialHolidaysResult;
   const { data: publicHolidays, error: publicHolidaysError } = publicHolidaysResult;
 
   if (myTasksError) console.error('Error fetching user tasks:', myTasksError);
   if (allProjectsError) console.error('Error fetching projects:', allProjectsError);
+  if (officialHolidaysError) console.error('Error fetching official holidays:', officialHolidaysError);
   if (publicHolidaysError) console.error('Error fetching public holidays:', publicHolidaysError);
 
   const weekendEvents = eachDayOfInterval({ start: startOfMonth(selectedDate), end: endOfMonth(selectedDate) })
@@ -51,18 +55,29 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
         }
     });
 
+  const personalEvents = (officialHolidays as OfficialHoliday[] || [])
+    .filter(h => h.user_id === user?.id)
+    .map(h => ({ id: `personal-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'personal', user_id: h.user_id }));
+
+  const companyEvents = (officialHolidays as OfficialHoliday[] || [])
+    .filter(h => !h.user_id)
+    .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id }));
+
   const myCalendarEvents = [
     ...(myTasks as Task[] || []).map(t => ({ id: `task-${t.id}`, name: t.description, date: t.deadline, type: 'task', description: `Task ID: ${t.id}` })),
+    ...personalEvents,
     ...weekendEvents
   ];
 
   const falaqCalendarEvents = [
     ...(allProjects as Project[] || []).filter(p => p.due_date).map(p => ({ id: `project-${p.id}`, name: p.name, date: p.due_date!, type: 'project', description: `Project: ${p.name}` })),
+    ...companyEvents,
     ...weekendEvents
   ];
 
   const holidayEvents = [
     ...(publicHolidays || []).map(h => ({ id: `public-${h.name}-${h.date}`, name: h.name, date: h.date, type: 'public', description: 'Public Holiday' })),
+    ...companyEvents,
     ...weekendEvents
   ];
 

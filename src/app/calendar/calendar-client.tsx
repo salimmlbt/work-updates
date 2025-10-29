@@ -132,7 +132,7 @@ export default function CalendarClient({
   const onEventAdded = (newEvent: OfficialHoliday) => {
     const fullEvent: CalendarEvent = {
       ...newEvent,
-      id: `official-${newEvent.id}`,
+      id: newEvent.user_id ? `personal-${newEvent.id}` : `official-${newEvent.id}`,
       type: newEvent.user_id ? 'personal' : 'official',
     };
     setAllEvents((prev) => [...prev, fullEvent]);
@@ -154,7 +154,8 @@ export default function CalendarClient({
 
   const handleDelete = (eventId: string | number) => {
     startTransition(async () => {
-      const numericId = typeof eventId === 'string' ? parseInt(eventId.split('-')[1]) : eventId;
+      const numericIdString = typeof eventId === 'string' ? eventId.split('-').pop() : String(eventId);
+      const numericId = numericIdString ? parseInt(numericIdString) : NaN;
       if (isNaN(numericId)) return;
 
       const { error } = await deleteHoliday(numericId);
@@ -278,6 +279,10 @@ export default function CalendarClient({
           </div>
 
           <div className="flex gap-2">
+            <Button onClick={() => openAddDialog('holiday')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Holiday
+            </Button>
             <Button onClick={() => openAddDialog('event')}>
               <Plus className="mr-2 h-4 w-4" />
               Add Event

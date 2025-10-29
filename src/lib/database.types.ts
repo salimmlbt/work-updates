@@ -435,7 +435,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_project_and_tasks: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      schedule_task_attachment_deletion: {
+        Args: {
+          p_task_id: string
+          p_delay_seconds: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       task_status: "todo" | "inprogress" | "done"
