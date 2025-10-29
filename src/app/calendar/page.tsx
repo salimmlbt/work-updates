@@ -17,6 +17,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const selectedDate = new Date(`${selectedMonth}-01T00:00:00Z`);
   const year = getYear(selectedDate);
   
+  const monthStart = startOfMonth(selectedDate);
+  const monthEnd = endOfMonth(selectedDate);
+  const allDaysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
   // TODO: Make country code configurable
   const countryCode = 'IN';
 
@@ -44,16 +48,17 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const allHolidays = officialHolidays as OfficialHoliday[] || [];
 
-  const weekendEvents = allHolidays
-    .filter(h => h.type === 'weekend')
-    .map(h => ({
-      id: `weekend-${h.id}`,
-      name: 'Sunday',
-      date: h.date,
-      description: 'Weekend',
-      type: 'weekend',
+  const sundaysInMonth = allDaysInMonth.filter(day => getDay(day) === 0);
+
+  const weekendEvents = sundaysInMonth.map(sunday => ({
+      id: `weekend-${format(sunday, 'yyyy-MM-dd')}`,
+      name: 'Leave',
+      date: format(sunday, 'yyyy-MM-dd'),
+      description: 'Sunday Leave',
+      type: 'official',
       user_id: null,
-    }));
+      falaq_event_type: 'leave' as const,
+  }));
 
 
   const personalEvents = allHolidays
