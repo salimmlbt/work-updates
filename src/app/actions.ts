@@ -1038,6 +1038,7 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
 
         const response = await calendar.events.list({
             calendarId,
+            auth: API_KEY,
             timeMin: `${year}-01-01T00:00:00Z`,
             timeMax: `${year}-12-31T23:59:59Z`,
             singleEvents: true,
