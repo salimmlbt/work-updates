@@ -50,13 +50,16 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
         <div className="col-start-1 col-end-2 border-r sticky top-0 bg-white z-20">
           <div className="h-20 border-b"></div>
         </div>
-        {weekDays.map((day, dayIndex) => (
+        {weekDays.map((day, dayIndex) => {
+          const dayKey = format(day, 'yyyy-MM-dd');
+          const isWeekend = eventsByDay[dayKey]?.some(e => e.type === 'weekend');
+          return (
           <div 
             key={`header-${day.toString()}`} 
             className={cn(
                 "sticky top-0 bg-white z-20 text-center py-2 border-b border-r cursor-pointer", 
                 dayIndex === 6 && 'border-r-0',
-                activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50',
+                isWeekend && 'bg-red-50',
                 isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
                 isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
             )}
@@ -65,7 +68,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
             <p className={cn("text-sm", isToday(day) ? 'text-primary' : 'text-muted-foreground', isSameDay(day, selectedDate) && 'text-primary font-bold')}>{format(day, 'EEE')}</p>
             <p className={cn("text-2xl font-semibold", isToday(day) && 'text-primary', isSameDay(day, selectedDate) && 'text-primary')}>{format(day, 'd')}</p>
           </div>
-        ))}
+        )})}
         
         {/* Time column */}
         <div className="col-start-1 col-end-2 border-r">
@@ -77,11 +80,14 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
         </div>
         
         {/* Day columns */}
-        {weekDays.map((day, dayIndex) => (
+        {weekDays.map((day, dayIndex) => {
+          const dayKey = format(day, 'yyyy-MM-dd');
+          const isWeekend = eventsByDay[dayKey]?.some(e => e.type === 'weekend');
+          return (
           <div key={day.toString()} className={cn(
             "relative border-r", 
             dayIndex === 6 && 'border-r-0',
-            activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50',
+            isWeekend && 'bg-red-50',
             isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
             isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
           )}>
@@ -115,7 +121,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
                })}
             </div>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );

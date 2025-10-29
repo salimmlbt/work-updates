@@ -42,20 +42,28 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   if (officialHolidaysError) console.error('Error fetching official holidays:', officialHolidaysError);
   if (publicHolidaysError) console.error('Error fetching public holidays:', publicHolidaysError);
 
+  const allHolidays = officialHolidays as OfficialHoliday[] || [];
+
+  const allHolidayDates = new Set(allHolidays.map(h => format(new Date(h.date), 'yyyy-MM-dd')));
+
   const weekendEvents = eachDayOfInterval({ start: startOfMonth(selectedDate), end: endOfMonth(selectedDate) })
-    .filter(day => getDay(day) === 0 || getDay(day) === 6)
+    .filter(day => {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const isSunday = getDay(day) === 0;
+        // Only include Sunday if it's not an official holiday/event
+        return isSunday && !allHolidayDates.has(dateStr);
+    })
     .map(day => {
         const dateStr = format(day, 'yyyy-MM-dd');
         return {
             id: `weekend-${dateStr}`,
-            name: getDay(day) === 0 ? 'Sunday' : 'Saturday',
+            name: 'Sunday',
             date: dateStr,
             description: 'Weekend',
-            type: 'weekend'
+            type: 'weekend',
+            user_id: null,
         }
     });
-
-  const allHolidays = officialHolidays as OfficialHoliday[] || [];
 
   const personalEvents = allHolidays
     .filter(h => h.user_id === user?.id)
@@ -73,19 +81,17 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const myCalendarEvents = [
     ...(myTasks as Task[] || []).map(t => ({ id: `task-${t.id}`, name: t.description, date: t.deadline, type: 'task', description: `Task ID: ${t.id}` })),
     ...personalEvents,
-    ...weekendEvents
   ];
 
   const falaqCalendarEvents = [
     ...(allProjects as Project[] || []).filter(p => p.due_date).map(p => ({ id: `project-${p.id}`, name: p.name, date: p.due_date!, type: 'project', description: `Project: ${p.name}` })),
     ...companyEvents,
-    ...weekendEvents
+    ...weekendEvents,
   ];
 
   const holidayEvents = [
     ...(publicHolidays || []).map(h => ({ id: `public-${h.name}-${h.date}`, name: h.name, date: h.date, type: 'public', description: 'Public Holiday' })),
     ...specialDays,
-    ...weekendEvents
   ];
 
   // Sort events to ensure consistent order

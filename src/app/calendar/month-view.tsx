@@ -24,9 +24,10 @@ function DayContent({ date, events, onEventClick, activeCalendar, selectedDate }
   
   const dayNumber = format(date, 'd');
   const isSelected = selectedDate && isSameDay(date, selectedDate);
+  const isWeekend = dayEvents.some(e => e.type === 'weekend');
 
   return (
-    <div className="flex flex-col h-full w-full p-2">
+    <div className={cn("flex flex-col h-full w-full p-2", isWeekend && "bg-red-50")}>
       <span className={cn("self-start", isToday(date) && 'text-primary font-bold', isSelected && 'bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center')}>{dayNumber}</span>
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => (
@@ -76,7 +77,6 @@ export default function MonthView({ date, events, onEventClick, activeCalendar, 
         body: "flex-1 grid grid-cols-7 grid-rows-6",
         row: "flex-1 grid grid-cols-7 contents-start",
         cell: cn('p-0 align-top relative flex flex-col border', 
-           activeCalendar === 'falaq_calendar' && '[&:has(.rdp-day_sunday)]:bg-red-50',
            '[&:has(.rdp-day_today)]:bg-blue-50 dark:[&:has(.rdp-day_today)]:bg-blue-900/20'
         ),
         day: 'w-full h-full flex',
