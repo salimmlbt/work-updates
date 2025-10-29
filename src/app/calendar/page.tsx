@@ -55,13 +55,20 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
         }
     });
 
-  const personalEvents = (officialHolidays as OfficialHoliday[] || [])
+  const allHolidays = officialHolidays as OfficialHoliday[] || [];
+
+  const personalEvents = allHolidays
     .filter(h => h.user_id === user?.id)
     .map(h => ({ id: `personal-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'personal', user_id: h.user_id }));
 
-  const companyEvents = (officialHolidays as OfficialHoliday[] || [])
-    .filter(h => !h.user_id)
+  const companyEvents = allHolidays
+    .filter(h => !h.user_id && h.type === 'official')
     .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id }));
+  
+  const specialDays = allHolidays
+    .filter(h => !h.user_id && h.type === 'special_day')
+    .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id }));
+
 
   const myCalendarEvents = [
     ...(myTasks as Task[] || []).map(t => ({ id: `task-${t.id}`, name: t.description, date: t.deadline, type: 'task', description: `Task ID: ${t.id}` })),
@@ -77,7 +84,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const holidayEvents = [
     ...(publicHolidays || []).map(h => ({ id: `public-${h.name}-${h.date}`, name: h.name, date: h.date, type: 'public', description: 'Public Holiday' })),
-    ...companyEvents.filter(e => e.name !== 'Holiday'), // Assuming holidays from Falaq calendar are named "Holiday"
+    ...specialDays,
     ...weekendEvents
   ];
 
@@ -105,4 +112,3 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     />
   );
 }
-

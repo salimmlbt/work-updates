@@ -25,7 +25,7 @@ interface AddHolidayDialogProps {
   setIsOpen: (open: boolean) => void
   onEventAdded: (newEvent: OfficialHoliday) => void
   userId?: string | null
-  dialogType: 'holiday' | 'event'
+  dialogType: 'holiday' | 'event' | 'special_day'
   selectedDate: Date | null
 }
 
@@ -34,11 +34,27 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
   const { toast } = useToast()
   const [formData, setFormData] = useState({ name: '', date: '', description: '' });
 
-  const title = dialogType === 'holiday' ? 'Add Holiday or Event' : 'Add Personal Event';
-  const description = dialogType === 'holiday' 
-    ? 'Mark a new official leave day or event for the team.'
-    : 'Add a personal event to your calendar.';
-  const buttonText = dialogType === 'holiday' ? 'Create Event' : 'Add Event';
+  const titleMap = {
+    holiday: 'Add Holiday or Event',
+    event: 'Add Personal Event',
+    special_day: 'Add Special Day'
+  };
+
+  const descriptionMap = {
+    holiday: 'Mark a new official leave day or event for the team.',
+    event: 'Add a personal event to your calendar.',
+    special_day: 'Mark a new special day for the team.'
+  };
+
+  const buttonTextMap = {
+    holiday: 'Create Event',
+    event: 'Add Event',
+    special_day: 'Add Special Day'
+  };
+  
+  const title = titleMap[dialogType];
+  const description = descriptionMap[dialogType];
+  const buttonText = buttonTextMap[dialogType];
 
   useEffect(() => {
     if (isOpen) {
@@ -56,6 +72,17 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
     if (userId) {
       form.append('user_id', userId);
     }
+    
+    // Determine type based on dialogType and userId
+    let type: 'official' | 'personal' | 'special_day';
+    if (userId) {
+        type = 'personal';
+    } else if (dialogType === 'special_day') {
+        type = 'special_day';
+    } else {
+        type = 'official';
+    }
+    form.append('type', type);
     
     startTransition(async () => {
       const result = await addHoliday(form);

@@ -71,7 +71,7 @@ export default function CalendarClient({
   const [activeCalendar, setActiveCalendar] = useState<keyof EventSources>(initialCalendar as keyof EventSources);
   
   const [isAddEventOpen, setAddEventOpen] = useState(false);
-  const [dialogType, setDialogType] = useState<'holiday' | 'event'>('holiday');
+  const [dialogType, setDialogType] = useState<'holiday' | 'event' | 'special_day'>('holiday');
 
   const [allEvents, setAllEvents] = useState(eventSources[activeCalendar]);
 
@@ -136,7 +136,7 @@ export default function CalendarClient({
     router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${newView}&calendar=${activeCalendar}`);
   };
 
-  const openAddDialog = (type: 'holiday' | 'event') => {
+  const openAddDialog = (type: 'holiday' | 'event' | 'special_day') => {
     setDialogType(type);
     setAddEventOpen(true);
   };
@@ -145,7 +145,7 @@ export default function CalendarClient({
     const fullEvent: CalendarEvent = {
       ...newEvent,
       id: newEvent.user_id ? `personal-${newEvent.id}` : `official-${newEvent.id}`,
-      type: newEvent.user_id ? 'personal' : 'official',
+      type: newEvent.type || (newEvent.user_id ? 'personal' : 'official'),
     };
     setAllEvents((prev) => [...prev, fullEvent]);
   };
@@ -304,7 +304,7 @@ export default function CalendarClient({
                 </Button>
             )}
              {activeCalendar === 'holidays' && (
-                <Button onClick={() => openAddDialog('holiday')}>
+                <Button onClick={() => openAddDialog('special_day')}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Special Day
                 </Button>

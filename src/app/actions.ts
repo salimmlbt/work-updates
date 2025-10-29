@@ -1066,10 +1066,11 @@ export async function addHoliday(formData: FormData) {
     const date = formData.get('date') as string;
     const description = formData.get('description') as string;
     const userId = formData.get('user_id') as string | null;
+    const type = formData.get('type') as 'official' | 'personal' | 'special_day';
 
     const { data, error } = await supabase
         .from('official_holidays')
-        .insert({ name, date, description, user_id: userId })
+        .insert({ name, date, description, user_id: userId, type })
         .select()
         .single();
     
