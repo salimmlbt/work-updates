@@ -77,7 +77,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const holidayEvents = [
     ...(publicHolidays || []).map(h => ({ id: `public-${h.name}-${h.date}`, name: h.name, date: h.date, type: 'public', description: 'Public Holiday' })),
-    ...companyEvents,
+    ...companyEvents.filter(e => e.name !== 'Holiday'), // Assuming holidays from Falaq calendar are named "Holiday"
     ...weekendEvents
   ];
 
@@ -105,3 +105,4 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     />
   );
 }
+
