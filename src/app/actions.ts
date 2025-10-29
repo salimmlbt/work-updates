@@ -1,6 +1,7 @@
 
 
 
+
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -1059,6 +1060,12 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('Error fetching public holidays from Google Calendar:', errorMessage);
+        if (errorMessage.includes('API key not valid')) {
+            return { data: [], error: 'The provided Google API Key is not valid.' };
+        }
+        if (errorMessage.includes('Not Found')) {
+             return { data: [], error: `Could not find holiday calendar for country code: ${countryCode}`};
+        }
         return { data: [], error: `An unexpected error occurred while fetching holidays: ${errorMessage}` };
     }
 }
@@ -1092,6 +1099,34 @@ export async function addHoliday(formData: FormData) {
     revalidatePath('/calendar');
     return { data: data as OfficialHoliday };
 }
+
+export async function updateHoliday(id: number, formData: FormData) {
+    const supabase = await createServerClient();
+    const name = formData.get('name') as string;
+    const date = formData.get('date') as string;
+    const description = formData.get('description') as string;
+    const falaqEventType = formData.get('falaq_event_type') as OfficialHoliday['falaq_event_type'] | null;
+
+    const { data, error } = await supabase
+        .from('official_holidays')
+        .update({ 
+            name, 
+            date, 
+            description,
+            falaq_event_type: falaqEventType,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+    
+    if (error) {
+        return { error: error.message };
+    }
+    
+    revalidatePath('/calendar');
+    return { data: data as OfficialHoliday };
+}
+
 
 export async function deleteHoliday(id: number) {
     const supabase = await createServerClient();

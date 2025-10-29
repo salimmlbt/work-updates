@@ -23,10 +23,11 @@ interface EventPopoverProps {
   position: { top: number; left: number };
   onClose: () => void;
   onDelete: (eventId: string | number) => void;
+  onEdit: (event: CalendarEvent) => void;
   isPending: boolean;
 }
 
-export function EventPopover({ event, position, onClose, onDelete, isPending }: EventPopoverProps) {
+export function EventPopover({ event, position, onClose, onDelete, onEdit, isPending }: EventPopoverProps) {
   const isPersonalOrOfficial = event.type === 'personal' || event.type === 'official';
 
   return (
@@ -48,7 +49,7 @@ export function EventPopover({ event, position, onClose, onDelete, isPending }: 
       
       {isPersonalOrOfficial && (
         <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => onEdit(event)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
             </Button>

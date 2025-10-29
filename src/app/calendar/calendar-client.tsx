@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -27,6 +28,7 @@ import { deleteHoliday } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { EditHolidayDialog } from './edit-holiday-dialog';
 
 export interface CalendarEvent {
   id: string | number;
@@ -74,6 +76,9 @@ export default function CalendarClient({
   
   const [isAddEventOpen, setAddEventOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'holiday' | 'event' | 'special_day'>('holiday');
+  const [isEditEventOpen, setEditEventOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<CalendarEvent | null>(null);
+
 
   const [allEvents, setAllEvents] = useState(eventSources[activeCalendar]);
 
@@ -151,6 +156,16 @@ export default function CalendarClient({
     };
     setAllEvents((prev) => [...prev, fullEvent]);
   };
+  
+  const onEventUpdated = (updatedEvent: OfficialHoliday) => {
+    const fullEvent: CalendarEvent = {
+      ...updatedEvent,
+      id: updatedEvent.user_id ? `personal-${updatedEvent.id}` : `official-${updatedEvent.id}`,
+      type: updatedEvent.type || (updatedEvent.user_id ? 'personal' : 'official'),
+    };
+     setAllEvents((prev) => prev.map(e => e.id === fullEvent.id ? fullEvent : e));
+     closePopover();
+  };
 
   const handleEventClick = (event: CalendarEvent, eventTarget: HTMLElement) => {
     const rect = eventTarget.getBoundingClientRect();
@@ -191,6 +206,12 @@ export default function CalendarClient({
       }
     });
   };
+
+  const handleEdit = (event: CalendarEvent) => {
+    setEventToEdit(event);
+    setEditEventOpen(true);
+    closePopover();
+  }
 
   const renderView = () => {
     if (!currentDate || !selectedDate) return null;
@@ -331,6 +352,7 @@ export default function CalendarClient({
             position={popoverPosition}
             onClose={closePopover}
             onDelete={handleDelete}
+            onEdit={handleEdit}
             isPending={isPending}
           />
         )}
@@ -344,6 +366,14 @@ export default function CalendarClient({
         dialogType={dialogType}
         selectedDate={selectedDate}
       />
+      {eventToEdit && (
+        <EditHolidayDialog
+          isOpen={isEditEventOpen}
+          setIsOpen={setEditEventOpen}
+          onEventUpdated={onEventUpdated}
+          event={eventToEdit}
+        />
+      )}
     </div>
   );
 }
