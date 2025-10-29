@@ -1,12 +1,12 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import type { Task, Profile, Client, Project, TaskWithDetails } from '@/lib/types';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const dynamic = 'force-dynamic';
 
-const TasksClient = dynamic(() => import('./tasks-client'), {
+const TasksClient = dynamicImport(() => import('./tasks-client'), {
     ssr: false,
     loading: () => (
         <div className="p-6 h-full">
