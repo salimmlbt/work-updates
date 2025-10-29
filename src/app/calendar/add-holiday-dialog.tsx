@@ -19,49 +19,47 @@ import { useToast } from '@/hooks/use-toast'
 import { addHoliday } from '@/app/actions'
 import type { OfficialHoliday } from '@/lib/types'
 import { format } from 'date-fns'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+type DialogMode = 'holiday' | 'event' | 'special_day';
+type FalaqEventType = 'official' | 'event' | 'meeting';
 
 interface AddHolidayDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   onEventAdded: (newEvent: OfficialHoliday) => void
   userId?: string | null
-  dialogType: 'holiday' | 'event' | 'special_day'
+  dialogType: DialogMode
   selectedDate: Date | null
 }
 
 export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dialogType, selectedDate }: AddHolidayDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
-  const [formData, setFormData] = useState({ name: '', date: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', date: '', description: '', falaqType: 'official' as FalaqEventType });
 
-  const titleMap = {
-    holiday: 'Add Holiday or Event',
+  const titleMap: Record<DialogMode, string> = {
+    holiday: 'Add to Falaq Calendar',
     event: 'Add Personal Event',
     special_day: 'Add Special Day'
   };
 
-  const descriptionMap = {
-    holiday: 'Mark a new official leave day or event for the team.',
+  const descriptionMap: Record<DialogMode, string> = {
+    holiday: 'Mark a new holiday, event, or meeting for the team.',
     event: 'Add a personal event to your calendar.',
     special_day: 'Mark a new special day for the team.'
-  };
-
-  const buttonTextMap = {
-    holiday: 'Create Event',
-    event: 'Add Event',
-    special_day: 'Add Special Day'
   };
   
   const title = titleMap[dialogType];
   const description = descriptionMap[dialogType];
-  const buttonText = buttonTextMap[dialogType];
 
   useEffect(() => {
     if (isOpen) {
       setFormData({
         name: '',
         date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '',
-        description: ''
+        description: '',
+        falaqType: 'official'
       });
     }
   }, [isOpen, selectedDate]);
@@ -73,14 +71,13 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
       form.append('user_id', userId);
     }
     
-    // Determine type based on dialogType and userId
-    let type: 'official' | 'personal' | 'special_day';
-    if (userId) {
-        type = 'personal';
-    } else if (dialogType === 'special_day') {
-        type = 'special_day';
+    let type: OfficialHoliday['type'];
+    if (dialogType === 'holiday') {
+      type = formData.falaqType;
+    } else if (dialogType === 'event') {
+      type = 'personal';
     } else {
-        type = 'official';
+      type = 'special_day';
     }
     form.append('type', type);
     
@@ -107,6 +104,10 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
     setFormData(prev => ({...prev, date: e.target.value }));
   }
 
+  const handleTypeChange = (value: FalaqEventType) => {
+    setFormData(prev => ({ ...prev, falaqType: value }));
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
@@ -116,6 +117,21 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+             {dialogType === 'holiday' && (
+                <div className="grid gap-2">
+                    <Label htmlFor="falaq-type">Type</Label>
+                    <Select onValueChange={handleTypeChange} defaultValue={formData.falaqType}>
+                        <SelectTrigger id="falaq-type">
+                            <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="official">Holiday</SelectItem>
+                            <SelectItem value="event">Event</SelectItem>
+                            <SelectItem value="meeting">Meeting</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="name">Event Name</Label>
               <Input id="name" name="name" placeholder="e.g., Company Off-site" required />
@@ -133,7 +149,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {buttonText}
+              Create
             </Button>
           </DialogFooter>
         </form>
