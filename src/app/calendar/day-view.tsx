@@ -50,7 +50,7 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
   const isFalaqHoliday = dayEvents.some(e => (e as any).falaq_event_type === 'holiday');
 
   return (
-    <div className={cn("h-full w-full", (isPublicHoliday || isFalaqHoliday) && "bg-red-50")}>
+    <div className={cn("h-full w-full", (activeCalendar === 'falaq_calendar' && isFalaqHoliday) && "bg-red-50")}>
       <div className="grid grid-cols-[auto_1fr] h-full">
         <div className="col-start-1 col-end-2 border-r">
           {hours.map(hour => (

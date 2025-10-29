@@ -33,7 +33,7 @@ function DayContent({ date, events, onEventClick, activeCalendar, selectedDate }
 
 
   return (
-    <div className={cn("flex flex-col h-full w-full p-2", isPublicHoliday || isFalaqHoliday ? "bg-red-50" : (isWeekendDay && "bg-gray-50/50"), isMarkedAsWeekend && "bg-red-100")}>
+    <div className={cn("flex flex-col h-full w-full p-2", activeCalendar === 'falaq_calendar' && isFalaqHoliday ? "bg-red-50" : (isWeekendDay && "bg-gray-50/50"), isMarkedAsWeekend && "bg-red-100")}>
       <span className={cn("self-start", isToday(date) && 'text-primary font-bold', isSelected && 'bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center')}>{dayNumber}</span>
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => {
