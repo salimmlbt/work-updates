@@ -80,7 +80,7 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
                             onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                             className={cn(
                               'p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', 
-                              isEventFalaqLeave ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
+                              (activeCalendar === 'falaq_calendar' && isEventFalaqLeave) ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
                             )}
                             style={{ marginLeft: `${index * 5}%` }}
                         >

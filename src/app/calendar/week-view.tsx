@@ -116,7 +116,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
                           onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                           className={cn(
                               'absolute w-[95%] p-2 rounded-lg text-sm cursor-pointer z-10 pointer-events-auto', 
-                              isEventFalaqLeave ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
+                              (activeCalendar === 'falaq_calendar' && isEventFalaqLeave) ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
                           )}
                           style={{ top: `${topPosition}rem`}}
                       >

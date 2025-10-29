@@ -46,7 +46,7 @@ function DayContent({ date, events, onEventClick, activeCalendar, selectedDate }
               }}
               className={cn(
                 'text-xs p-1 rounded-sm truncate cursor-pointer', 
-                isEventFalaqLeave ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
+                (activeCalendar === 'falaq_calendar' && isEventFalaqLeave) ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
               )}
               title={event.name}
             >
