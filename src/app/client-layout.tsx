@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
 import type { Profile } from '@/lib/types';
+import { Toaster } from "@/components/ui/toaster";
 
 export default function ClientLayout({
   children,
@@ -22,6 +23,7 @@ export default function ClientLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(initialIsAuthenticated);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     setIsAuthenticated(initialIsAuthenticated);
@@ -57,28 +59,25 @@ export default function ClientLayout({
   
   const showNav = isAuthenticated && pathname !== '/login';
 
-  if (isAuthenticated === null) {
-      return (
-          <div className="min-h-screen bg-background flex items-center justify-center">
-              <div>Loading...</div>
-          </div>
-      )
-  }
-
   return (
     <div className="flex min-h-screen w-full bg-background">
       {showNav && (
-        <Sidebar profile={profile} />
+        <Sidebar 
+            profile={profile} 
+            isCollapsed={isSidebarCollapsed}
+            setIsCollapsed={setSidebarCollapsed}
+        />
       )}
       <div className={cn(
           "flex flex-1 flex-col transition-all duration-300",
-          showNav && "ml-64"
+          showNav && (isSidebarCollapsed ? "ml-20" : "ml-64")
         )}>
         {showNav && <Header />}
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }

@@ -51,6 +51,8 @@ const initialFormState = {
     password: '',
     confirmPassword: '',
     avatar: null as File | null,
+    workStartTime: '',
+    workEndTime: '',
 };
 
 export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: AddUserDialogProps) {
@@ -63,13 +65,15 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
   useEffect(() => {
-    const { name, email, roleId, password, confirmPassword } = formState;
+    const { name, email, roleId, password, confirmPassword, workStartTime, workEndTime } = formState;
     const isValid = name.trim() !== '' &&
                     email.trim() !== '' &&
                     roleId !== '' &&
                     password.trim() !== '' &&
                     password.length >= 6 &&
-                    password === confirmPassword;
+                    password === confirmPassword &&
+                    workStartTime.trim() !== '' &&
+                    workEndTime.trim() !== '';
     setIsFormValid(isValid);
   }, [formState]);
   
@@ -131,6 +135,8 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     formData.append('password', formState.password);
     formData.append('role_id', formState.roleId);
     formData.append('team_ids', formState.teamIds.join(','));
+    formData.append('work_start_time', formState.workStartTime);
+    formData.append('work_end_time', formState.workEndTime);
     if (formState.avatar) {
       formData.append('avatar', formState.avatar);
     }
@@ -239,6 +245,16 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                         </ScrollArea>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                    <Label htmlFor="workStartTime">Check In Time</Label>
+                    <Input id="workStartTime" name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workEndTime">Check Out Time</Label>
+                    <Input id="workEndTime" name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} required />
                   </div>
                 </div>
                  <div className="space-y-2">

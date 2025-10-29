@@ -35,6 +35,7 @@ import { updateUserRole, updateUserTeams, deleteTeam, updateUserIsArchived, dele
 import { useToast } from '@/hooks/use-toast';
 import { RenameTeamDialog } from './rename-team-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format, parse } from 'date-fns';
 
 interface TeamsClientProps {
 	initialUsers: Profile[];
@@ -183,6 +184,22 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
       setUserToDeletePermanently(null);
     });
   }
+  
+  const formatTime = (time: string | null) => {
+    if (!time) return '';
+    try {
+      const date = parse(time, 'HH:mm:ss', new Date());
+      return format(date, 'p');
+    } catch {
+      try {
+        const date = parse(time, 'HH:mm', new Date());
+        return format(date, 'p');
+      } catch (e) {
+        console.error("Could not parse time:", time, e);
+        return time;
+      }
+    }
+  };
 
   const usersWithData = useMemo(() => users.map((user) => {
     const isAdmin = user.email === 'admin@falaq.com';
@@ -220,7 +237,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
     const userTeamIds = user.teams.map(t => t.id);
 
     return (
-        <div className="grid grid-cols-5 items-center py-3 px-4 group">
+        <div className="grid grid-cols-6 items-center py-3 px-4 group">
             <div className="col-span-1 flex items-center gap-3">
                 <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatar_url ?? undefined} />
@@ -280,6 +297,11 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                       ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+            </div>
+            <div className="col-span-1 text-muted-foreground">
+              {user.work_start_time && user.work_end_time 
+                ? `${formatTime(user.work_start_time)} - ${formatTime(user.work_end_time)}`
+                : '-'}
             </div>
             <div className="col-span-1 flex justify-between items-center">
                 <Badge variant="outline" className={cn(
@@ -418,11 +440,12 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                         <div className="overflow-x-auto">
                             <div className="min-w-full inline-block align-middle">
                                 <div className="border-t">
-                                    <div className="grid grid-cols-5 py-3 px-4 text-left text-sm font-semibold text-muted-foreground">
+                                    <div className="grid grid-cols-6 py-3 px-4 text-left text-sm font-semibold text-muted-foreground">
                                         <div className="col-span-1">Users</div>
                                         <div className="col-span-1">Email</div>
                                         <div className="col-span-1">Team</div>
                                         <div className="col-span-1">Role</div>
+                                        <div className="col-span-1">Working Hours</div>
                                         <div className="col-span-1">Status</div>
                                     </div>
                                     <div className="divide-y">
@@ -453,11 +476,12 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                           <div className="overflow-x-auto">
                             <div className="min-w-full inline-block align-middle">
                                 <div className="border-t">
-                                    <div className="grid grid-cols-5 py-3 px-4 text-left text-sm font-semibold text-muted-foreground">
+                                    <div className="grid grid-cols-6 py-3 px-4 text-left text-sm font-semibold text-muted-foreground">
                                         <div className="col-span-1">Users</div>
                                         <div className="col-span-1">Email</div>
                                         <div className="col-span-1">Team</div>
                                         <div className="col-span-1">Role</div>
+                                        <div className="col-span-1">Working Hours</div>
                                         <div className="col-span-1">Status</div>
                                     </div>
                                     <div className="divide-y">
@@ -561,5 +585,3 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
 		</>
 	);
 }
-
-    

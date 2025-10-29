@@ -1,8 +1,38 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import TasksClient from './tasks-client';
 import type { Task, Profile, Client, Project, TaskWithDetails } from '@/lib/types';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 
+export const dynamic = 'force-dynamic';
+
+const TasksClient = dynamic(() => import('./tasks-client'), {
+    ssr: false,
+    loading: () => (
+        <div className="p-6 h-full">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-32" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-9 w-24" />
+                    <Skeleton className="h-9 w-40" />
+                </div>
+            </div>
+            <div className="space-y-8">
+                <div className="space-y-2">
+                    <Skeleton className="h-8 w-48" />
+                    <div className="border rounded-lg">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+});
 
 export default async function TasksPage() {
     const supabase = createServerClient();
@@ -15,20 +45,21 @@ export default async function TasksPage() {
         userProfile = profileData as Profile;
     }
 
-    const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*, profiles(*), projects(*)');
+    const [
+        { data: tasksData, error: tasksError },
+        { data: clientsData, error: clientsError },
+        { data: profilesData, error: profilesError },
+        { data: allProjectsData, error: allProjectsError }
+    ] = await Promise.all([
+        supabase.from('tasks').select('*, profiles(*), projects(id, name, client_id)'),
+        supabase.from('clients').select('*'),
+        supabase.from('profiles').select('*, teams:profile_teams(teams(*))'),
+        supabase.from('projects').select('*').eq('is_deleted', false) // Fetch all active projects
+    ]);
 
-    const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('*');
 
-    const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*, teams:profile_teams(teams(*))');
-
-    if (tasksError || clientsError || profilesError) {
-        console.error('Error fetching data:', tasksError || clientsError || profilesError);
+    if (tasksError || clientsError || profilesError || allProjectsError) {
+        console.error('Error fetching data:', tasksError, clientsError, profilesError, allProjectsError);
     }
     
     const tasks = (tasksData as any[] || []).map(task => {
@@ -39,22 +70,11 @@ export default async function TasksPage() {
         return { ...task, clients: client || null };
     });
 
-    const projectMap = new Map<string, Project>();
-    if (tasksData) {
-      tasksData.forEach(task => {
-        if (task.projects && !projectMap.has(task.projects.id)) {
-          projectMap.set(task.projects.id, task.projects as Project);
-        }
-      });
-    }
-    const projects = Array.from(projectMap.values());
-
     return <TasksClient 
         initialTasks={tasks as TaskWithDetails[]} 
-        projects={projects}
+        projects={allProjectsData as Project[] || []}
         clients={clientsData as Client[] || []}
         profiles={profilesData as Profile[] || []}
         currentUserProfile={userProfile}
     />
 }
-

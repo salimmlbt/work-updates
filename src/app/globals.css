@@ -36,7 +36,7 @@
     --sidebar-icon-muted: 213 9% 58%; /* #8c939f */
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 44% 31%; /* #2d4071 */
+    --sidebar-accent: 223 44% 27%; /* #263765 */
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 223 47% 21%;
     --sidebar-ring: 217 91% 60%;
@@ -74,7 +74,7 @@
     --sidebar-icon-muted: 213 9% 58%; /* #8c939f */
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 44% 31%; /* #2d4071 */
+    --sidebar-accent: 223 44% 27%; /* #263765 */
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 223 47% 21%;
     --sidebar-ring: 217 91% 60%;
@@ -89,6 +89,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .rdp-day_sunday {
+    @apply text-red-500;
+  }
+}
+
 
 .cropper-controls {
   @apply p-4 flex flex-col gap-4;

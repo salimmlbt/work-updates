@@ -1,6 +1,5 @@
 
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
 import { cn } from '@/lib/utils';
 import { createServerClient } from '@/lib/supabase/server';
 import ClientLayout from './client-layout';
@@ -40,7 +39,6 @@ export default async function RootLayout({
         >
           {children}
         </ClientLayout>
-        <Toaster />
       </body>
     </html>
   );

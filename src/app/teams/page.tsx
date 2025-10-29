@@ -36,6 +36,7 @@ export default async function TeamsPage() {
         billing: "Editor",
         teams: "Editor",
         settings: "Editor",
+        accessibility: "Editor"
       }
     });
     
@@ -63,6 +64,7 @@ export default async function TeamsPage() {
     { id: 'billing', label: 'Can the "{ROLE_NAME}" Access Billing?' },
     { id: 'teams', label: 'Can the "{ROLE_NAME}" Access Team & Users?' },
     { id: 'settings', label: 'Can the "{ROLE_NAME}" Access Settings?' },
+    { id: 'accessibility', label: 'Can the "{ROLE_NAME}" Access Accessibility?' },
   ];
 
   return (

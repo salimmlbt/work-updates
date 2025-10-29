@@ -4,9 +4,157 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
-import type { TaskWithAssignee } from '@/lib/types'
+import type { TaskWithAssignee, Attachment, OfficialHoliday } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { google } from 'googleapis';
+
+export async function checkIn() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to check in.' };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: existing, error: fetchError } = await supabase
+    .from('attendance')
+    .select('id, check_in')
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .single();
+
+  if (fetchError && fetchError.code !== 'PGRST116') {
+     return { error: `Database error: ${fetchError.message}` };
+  }
+  
+  if (existing && existing.check_in) {
+    return { error: 'You have already checked in today.' };
+  }
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .insert({
+      user_id: user.id,
+      date: today,
+      check_in: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/attendance');
+  return { data };
+}
+
+export async function checkOut() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to check out.' };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: attendance, error: fetchError } = await supabase
+    .from('attendance')
+    .select('id, check_in, check_out')
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .single();
+  
+  if (fetchError || !attendance) {
+    return { error: 'You have not checked in today.' };
+  }
+  
+  if (attendance.check_out) {
+    return { error: 'You have already checked out today.' };
+  }
+
+  const checkInTime = new Date(attendance.check_in!).getTime();
+  const checkOutTime = new Date().getTime();
+  const totalHours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({
+      check_out: new Date().toISOString(),
+      total_hours: totalHours,
+    })
+    .eq('id', attendance.id)
+    .select()
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+  
+  revalidatePath('/attendance');
+  return { data };
+}
+
+export async function lunchOut() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in.' };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({
+      lunch_out: new Date().toISOString(),
+    })
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .select('id')
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+  
+  revalidatePath('/attendance');
+  return { data };
+}
+
+export async function lunchIn() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in.' };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({
+      lunch_in: new Date().toISOString(),
+    })
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .select('id')
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+  
+  revalidatePath('/attendance');
+  return { data };
+}
+
 
 export async function addProject(formData: FormData) {
   const supabase = createServerClient()
@@ -53,8 +201,8 @@ export async function addProject(formData: FormData) {
       type: rawFormData.type,
       is_deleted: false,
     })
-    .select()
-    .maybeSingle()
+    .select('*')
+    .single()
 
   if (projectError) {
     console.error('Error creating project:', projectError)
@@ -88,7 +236,7 @@ export async function updateProject(projectId: string, formData: FormData) {
         return { error: 'Project name is required.' }
     }
 
-    const { error: projectError } = await supabase
+    const { data: project, error: projectError } = await supabase
         .from('projects')
         .update({
             name: rawFormData.name,
@@ -103,6 +251,8 @@ export async function updateProject(projectId: string, formData: FormData) {
             updated_at: new Date().toISOString()
         })
         .eq('id', projectId)
+        .select('*')
+        .single();
 
     if (projectError) {
         console.error('Error updating project:', projectError)
@@ -111,23 +261,26 @@ export async function updateProject(projectId: string, formData: FormData) {
     
     revalidatePath('/dashboard')
     revalidatePath('/projects')
-    return { data: { success: true } }
+    return { data: project }
 }
 
 export async function updateProjectStatus(projectId: string, status: string) {
     const supabase = createServerClient();
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('projects')
         .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', projectId);
+        .eq('id', projectId)
+        .select('id, status, updated_at')
+        .single();
 
     if (error) {
         console.error('Error updating project status:', error)
         return { error: `Failed to update project status: ${error.message}` };
     }
 
-    revalidatePath('/projects')
-    return { success: true };
+    revalidatePath('/projects');
+    revalidatePath('/dashboard');
+    return { data };
 }
 
 
@@ -136,7 +289,7 @@ export async function deleteProject(projectId: string) {
 
     const { error } = await supabase
         .from('projects')
-        .update({ is_deleted: true })
+        .update({ is_deleted: true, updated_at: new Date().toISOString() })
         .eq('id', projectId);
 
     if (error) {
@@ -153,7 +306,7 @@ export async function restoreProject(projectId: string) {
 
     const { error } = await supabase
         .from('projects')
-        .update({ is_deleted: false })
+        .update({ is_deleted: false, updated_at: new Date().toISOString() })
         .eq('id', projectId);
 
     if (error) {
@@ -236,17 +389,22 @@ export async function updateTask(taskId: string, formData: FormData) {
 }
 
 export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogress' | 'done') {
-  const supabase = createServerClient()
-  const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId)
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from('tasks')
+    .update({ status })
+    .eq('id', taskId);
   
   if (error) {
     console.error('Error updating task status:', error);
-    return { error: error.message }
+    return { error: error.message };
   }
 
-  revalidatePath('/tasks')
-  return { success: true }
+  revalidatePath('/tasks');
+  revalidatePath('/dashboard');
+  return { success: true };
 }
+
 
 export async function deleteTask(taskId: string) {
   const supabase = createServerClient()
@@ -388,7 +546,7 @@ export async function updateClient(clientId: string, formData: FormData) {
             return { error: `Failed to upload new avatar: ${uploadError.message}` };
         }
 
-        const { data: publicUrlData } = supabase.storage
+        const { data: publicUrlData } = await supabase.storage
             .from('avatars')
             .getPublicUrl(newFilePath);
         
@@ -558,7 +716,7 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
         avatar_url: userData.avatar_url,
         role_id: userData.role_id,
       })
-      .select('*, roles(*), teams(*)')
+      .select('*, roles(*), teams:profile_teams(teams(*))')
       .single();
 
     if (profileError) {
@@ -751,3 +909,188 @@ export async function updateProfile(userId: string, formData: FormData) {
   revalidatePath('/', 'layout');
   return { data };
 }
+
+export async function uploadAttachment(formData: FormData): Promise<{ data: Attachment | null, error: string | null }> {
+  const supabase = createServerClient();
+  const file = formData.get('file') as File;
+
+  if (!file) {
+    return { data: null, error: 'No file provided.' };
+  }
+
+  const filePath = `public/${Date.now()}_${file.name}`;
+  
+  const { error: uploadError } = await supabase.storage
+    .from('attachments')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    console.error('Error uploading attachment:', uploadError);
+    return { data: null, error: uploadError.message };
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from('attachments')
+    .getPublicUrl(filePath);
+
+  if (!publicUrlData) {
+    return { data: null, error: 'Could not get public URL for attachment.' };
+  }
+
+  const attachment: Attachment = {
+    path: filePath,
+    publicUrl: publicUrlData.publicUrl,
+    name: file.name
+  };
+
+  return { data: attachment, error: null };
+}
+
+export async function schedule_task_attachment_deletion(task_id: string, delay_seconds: number) {
+    const supabase = createServerClient()
+    const { error } = await supabase.rpc('schedule_task_attachment_deletion', {
+        p_task_id: task_id,
+        p_delay_seconds: delay_seconds
+    })
+    if (error) {
+        console.error('Error scheduling attachment deletion:', error)
+        return { error: error.message }
+    }
+    return { success: true }
+}
+
+export async function delete_task_attachments(task_id: string) {
+    const supabase = createServerClient();
+    const { data: task, error: fetchError } = await supabase
+        .from('tasks')
+        .select('attachments')
+        .eq('id', task_id)
+        .single();
+
+    if (fetchError || !task) {
+        console.error('Could not fetch task to delete attachments:', fetchError);
+        return { error: 'Could not fetch task to delete attachments' };
+    }
+
+    const attachments = task.attachments as Attachment[] | null;
+    if (attachments && attachments.length > 0) {
+        const paths = attachments.map(att => att.path);
+        const { error: deleteError } = await supabase.storage.from('attachments').remove(paths);
+        if (deleteError) {
+            console.error('Error deleting attachments from storage:', deleteError);
+            return { error: 'Failed to delete attachments from storage' };
+        }
+    }
+
+    return { success: true };
+}
+
+export async function updateSetting(key: string, value: any) {
+  const supabase = createServerClient();
+  
+  const { data, error } = await supabase
+    .from('app_settings')
+    .update({ value: value })
+    .eq('key', key)
+    .select()
+    .single();
+
+  if (error) {
+    // If the setting doesn't exist, create it.
+    if (error.code === 'PGRST116') {
+      const { data: insertData, error: insertError } = await supabase
+        .from('app_settings')
+        .insert({ key, value })
+        .select()
+        .single();
+      
+      if (insertError) {
+        return { error: `Failed to create setting: ${insertError.message}` };
+      }
+      revalidatePath('/accessibility');
+      revalidatePath('/dashboard', 'layout'); // Revalidate layout to update header
+      return { data: insertData };
+    }
+    return { error: `Failed to update setting: ${error.message}` };
+  }
+
+  revalidatePath('/accessibility');
+  revalidatePath('/dashboard', 'layout'); // Revalidate layout to update header
+  return { data };
+}
+
+
+export async function getPublicHolidays(year: number, countryCode: string): Promise<{ data?: any[], error?: string | null }> {
+    try {
+        const API_KEY = process.env.GOOGLE_API_KEY;
+        if (!API_KEY) {
+          const msg = 'Google API Key is not set in environment variables (GOOGLE_API_KEY)';
+          console.error(msg);
+          return { error: msg };
+        }
+
+        const calendar = google.calendar({ version: 'v3', auth: API_KEY });
+        
+        let calendarId = `en.${countryCode.toLowerCase()}#holiday@group.v.calendar.google.com`;
+        if (countryCode.toLowerCase() === 'in') {
+          calendarId = `en.indian#holiday@group.v.calendar.google.com`;
+        }
+
+        const response = await calendar.events.list({
+            calendarId,
+            timeMin: `${year}-01-01T00:00:00Z`,
+            timeMax: `${year}-12-31T23:59:59Z`,
+            singleEvents: true,
+            orderBy: 'startTime',
+        });
+        
+        const holidays = response.data.items?.map(item => ({
+            date: item.start?.date,
+            localName: item.summary,
+            name: item.summary,
+            countryCode: countryCode,
+        })) || [];
+        
+        return { data: holidays as any[], error: null };
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('Error fetching public holidays from Google Calendar:', errorMessage);
+        return { data: [], error: `An unexpected error occurred while fetching holidays: ${errorMessage}` };
+    }
+}
+
+export async function addHoliday(formData: FormData) {
+    const supabase = createServerClient();
+    const name = formData.get('name') as string;
+    const date = formData.get('date') as string;
+    const description = formData.get('description') as string;
+    const userId = formData.get('user_id') as string | null;
+
+    const { data, error } = await supabase
+        .from('official_holidays')
+        .insert({ name, date, description, user_id: userId })
+        .select()
+        .single();
+    
+    if (error) {
+        return { error: error.message };
+    }
+    
+    revalidatePath('/calendar');
+    return { data: data as OfficialHoliday };
+}
+
+export async function deleteHoliday(id: number) {
+    const supabase = createServerClient();
+    const { error } = await supabase.from('official_holidays').delete().eq('id', id);
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    revalidatePath('/calendar');
+    return { success: true };
+}
+
+    

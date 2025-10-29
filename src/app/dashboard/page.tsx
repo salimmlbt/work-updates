@@ -1,85 +1,110 @@
-'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar, Line, ResponsiveContainer } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { DollarSign, Users, ShoppingCart, Activity } from 'lucide-react';
+import { createServerClient } from '@/lib/supabase/server';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
+import DashboardClient from './dashboard-client';
 
-const lineChartData = [
-  { month: 'January', subscriptions: 400 },
-  { month: 'February', subscriptions: 300 },
-  { month: 'March', subscriptions: 600 },
-  { month: 'April', subscriptions: 800 },
-  { month: 'May', subscriptions: 500 },
-  { month: 'June', subscriptions: 700 },
-];
+export default async function DashboardPage() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-const barChartData = [
-  { month: 'January', sales: 120 },
-  { month: 'February', sales: 200 },
-  { month: 'March', sales: 150 },
-  { month: 'April', sales: 300 },
-  { month: 'May', sales: 250 },
-  { month: 'June', sales: 400 },
-];
+  if (!user) {
+    return <p className="p-4">Please log in to view the dashboard.</p>;
+  }
 
-const chartConfig = {
-  subscriptions: {
-    label: 'Subscriptions',
-    color: '#2563eb',
-  },
-  sales: {
-    label: 'Sales',
-    color: '#84cc16',
-  },
-};
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
-export default function DashboardPage() {
-  return (
-    <div className="space-y-8 p-2">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Subscriptions</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+2350</div>
-            <p className="text-xs text-muted-foreground">+180.1% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sales</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+12,234</div>
-            <p className="text-xs text-muted-foreground">+19% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Now</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+573</div>
-            <p className="text-xs text-muted-foreground">+201 since last hour</p>
-          </CardContent>
-        </Card>
-      </div>
+  // --- Data Fetching ---
+  const today = new Date();
+  const todayDateString = format(today, 'yyyy-MM-dd');
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
+
+  const [
+    weeklyAttendanceRes,
+    monthlyAttendanceRes,
+    tasksRes,
+    projectsRes,
+  ] = await Promise.all([
+    supabase.from('attendance')
+      .select('date, total_hours')
+      .eq('user_id', user.id)
+      .gte('date', format(weekStart, 'yyyy-MM-dd'))
+      .lte('date', format(weekEnd, 'yyyy-MM-dd')),
+    supabase.from('attendance')
+        .select('date')
+        .eq('user_id', user.id)
+        .gte('date', format(monthStart, 'yyyy-MM-dd'))
+        .lte('date', format(monthEnd, 'yyyy-MM-dd')),
+    supabase.from('tasks')
+      .select('id, description, deadline, status, project_id, projects(name)')
+      .eq('assignee_id', user.id)
+      .eq('is_deleted', false),
+    supabase.from('projects')
+      .select('id, name, status, members')
+      .contains('members', [user.id])
+      .eq('is_deleted', false)
+  ]);
+
+  // --- Data Processing ---
+  const { data: weeklyAttendanceData } = weeklyAttendanceRes;
+  const { data: monthlyAttendanceData } = monthlyAttendanceRes;
+  const { data: tasks } = tasksRes;
+  const { data: projects } = projectsRes;
+
+  // Weekly Attendance Chart Data
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const attendanceChartData = weekDays.map(day => {
+    const record = weeklyAttendanceData?.find(a => a.date === format(day, 'yyyy-MM-dd'));
+    return {
+      name: format(day, 'EEE'),
+      hours: record?.total_hours ?? 0,
+    };
+  });
+  
+  // Monthly Attendance Pie Chart
+  const daysInMonth = getDaysInMonth(today);
+  const presentDays = monthlyAttendanceData?.length ?? 0;
+  const absentDays = daysInMonth - presentDays;
+  const presentPercentage = Math.round((presentDays / daysInMonth) * 100);
+  const absentPercentage = 100 - presentPercentage;
+
+  const monthlyAttendancePieData = [
+    { name: 'Present', value: presentPercentage },
+    { name: 'Absent', value: absentPercentage },
+  ];
+
+
+  // Task Stats
+  const pendingTasks = tasks?.filter(t => t.status === 'todo').length ?? 0;
+  const inProgressTasks = tasks?.filter(t => t.status === 'inprogress').length ?? 0;
+  const completedTasks = tasks?.filter(t => t.status === 'done').length ?? 0;
+  
+  // Upcoming Deadlines
+  const upcomingDeadlines = tasks
+    ?.filter(t => {
+        // Ensure deadline is a valid, non-null date string and is in the future
+        if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
+          return false;
+        }
+        const deadlineDateString = format(new Date(t.deadline), 'yyyy-MM-dd');
+        return t.status !== 'done' && deadlineDateString >= todayDateString;
+    })
+    .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
+    .slice(0, 5) ?? [];
+
+  // Project Status Pie Chart
+  const projectStatusCounts = projects?.reduce((acc, p) => {
+    const status = p.status || 'New';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) ?? {};
+  
+  const projectStatusData = Object.entries(projectStatusCounts).map(([name, value]) => ({
+    name,
+    value,
+  }));
 
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
@@ -101,25 +126,16 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Sales by Month</CardTitle>
-            <CardDescription>A bar chart showing monthly sales.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-              <BarChart data={barChartData}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Legend content={<ChartLegendContent />} />
-                <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+  return (
+    <DashboardClient
+      profile={profile}
+      pendingTasks={pendingTasks}
+      inProgressTasks={inProgressTasks}
+      completedTasks={completedTasks}
+      attendanceChartData={attendanceChartData}
+      projectStatusData={projectStatusData}
+      upcomingDeadlines={upcomingDeadlines.map(t => ({...t, projects: t.projects || null }))}
+      monthlyAttendanceData={monthlyAttendancePieData}
+    />
   );
 }

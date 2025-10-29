@@ -10,171 +10,134 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      clients: {
+      app_settings: {
         Row: {
-          id: string
-          created_at: string
-          name: string
-          avatar: string
-          industry: string
-          contact: string
-          whatsapp: string | null
-          projects_count: number | null
-          tasks_count: number | null
+          id: number
+          key: string
+          value: Json | null
         }
         Insert: {
-          id?: string
-          created_at?: string
-          name: string
-          avatar: string
-          industry: string
-          contact: string
-          whatsapp?: string | null
-          projects_count?: number | null
-          tasks_count?: number | null
+          id?: number
+          key: string
+          value?: Json | null
         }
         Update: {
-          id?: string
-          created_at?: string
-          name?: string
-          avatar?: string
-          industry?: string
-          contact?: string
-          whatsapp?: string | null
-          projects_count?: number | null
-          tasks_count?: number | null
+          id?: number
+          key?: string
+          value?: Json | null
         }
         Relationships: []
       }
-      projects: {
+      attendance: {
         Row: {
-          created_at: string
+          check_in: string | null
+          check_out: string | null
+          date: string
           id: string
-          name: string
-          start_date: string | null
-          due_date: string | null
-          client_id: string | null
-          status: string | null
-          priority: string | null
-          leaders: string[] | null
-          members: string[] | null
-          type: string | null
-          is_deleted: boolean
-          updated_at: string | null
+          lunch_in: string | null
+          lunch_out: string | null
+          total_hours: number | null
+          user_id: string
         }
         Insert: {
-          created_at?: string
+          check_in?: string | null
+          check_out?: string | null
+          date: string
           id?: string
-          name: string
-          start_date?: string | null
-          due_date?: string | null
-          client_id?: string | null
-          status?: string | null
-          priority?: string | null
-          leaders?: string[] | null
-          members?: string[] | null
-          type?: string | null
-          is_deleted?: boolean
-          updated_at?: string | null
+          lunch_in?: string | null
+          lunch_out?: string | null
+          total_hours?: number | null
+          user_id: string
         }
         Update: {
-          created_at?: string
+          check_in?: string | null
+          check_out?: string | null
+          date?: string
           id?: string
-          name?: string
-          start_date?: string | null
-          due_date?: string | null
-          client_id?: string | null
-          status?: string | null
-          priority?: string | null
-          leaders?: string[] | null
-          members?: string[] | null
-          type?: string | null
-          is_deleted?: boolean
-          updated_at?: string | null
+          lunch_in?: string | null
+          lunch_out?: string | null
+          total_hours?: number | null
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "projects_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "attendance_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      project_types: {
-        Row: {
-          id: string
-          created_at: string
-          name: string
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          name: string
-        }
-        Update: {
-          id?: string
-          created_at?: string
-          name?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          email: string | null
-          full_name: string | null
-          id: string
-          role_id: string | null
-          status: string | null
-          is_archived: boolean
-          contact: string | null
-          instagram: string | null
-          linkedin: string | null
-          birthday: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          email?: string | null
-          full_name?: string | null
-          id: string
-          role_id?: string | null
-          status?: string | null
-          is_archived?: boolean
-          contact?: string | null
-          instagram?: string | null
-          linkedin?: string | null
-          birthday?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          role_id?: string | null
-          status?: string | null
-          is_archived?: boolean
-          contact?: string | null
-          instagram?: string | null
-          linkedin?: string | null
-          birthday?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "roles"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      clients: {
+        Row: {
+          avatar: string
+          contact: string
+          created_at: string
+          id: string
+          industry: string
+          name: string
+          projects_count: number | null
+          tasks_count: number | null
+          whatsapp: string | null
+        }
+        Insert: {
+          avatar: string
+          contact: string
+          created_at?: string
+          id?: string
+          industry: string
+          name: string
+          projects_count?: number | null
+          tasks_count?: number | null
+          whatsapp?: string | null
+        }
+        Update: {
+          avatar?: string
+          contact?: string
+          created_at?: string
+          id?: string
+          industry?: string
+          name?: string
+          projects_count?: number | null
+          tasks_count?: number | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      official_holidays: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          id: number
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: number
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: number
+          name?: string
+          user_id?: string | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
+            foreignKeyName: "official_holidays_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       profile_teams: {
@@ -194,33 +157,172 @@ export type Database = {
           {
             foreignKeyName: "profile_teams_profile_id_fkey"
             columns: ["profile_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "profile_teams_team_id_fkey"
             columns: ["team_id"]
+            isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          birthday: string | null
+          contact: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          instagram: string | null
+          is_archived: boolean
+          linkedin: string | null
+          role_id: string | null
+          status: string | null
+          work_end_time: string | null
+          work_start_time: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          birthday?: string | null
+          contact?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          instagram?: string | null
+          is_archived?: boolean
+          linkedin?: string | null
+          role_id?: string | null
+          status?: string | null
+          work_end_time?: string | null
+          work_start_time?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          birthday?: string | null
+          contact?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          instagram?: string | null
+          is_archived?: boolean
+          linkedin?: string | null
+          role_id?: string | null
+          status?: string | null
+          work_end_time?: string | null
+          work_start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          is_deleted: boolean
+          leaders: string[] | null
+          members: string[] | null
+          name: string
+          priority: string | null
+          start_date: string | null
+          status: string | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          is_deleted?: boolean
+          leaders?: string[] | null
+          members?: string[] | null
+          name: string
+          priority?: string | null
+          start_date?: string | null
+          status?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          is_deleted?: boolean
+          leaders?: string[] | null
+          members?: string[] | null
+          name?: string
+          priority?: string | null
+          start_date?: string | null
+          status?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
         ]
       }
       roles: {
         Row: {
-          id: string
           created_at: string
+          id: string
           name: string
           permissions: Json
         }
         Insert: {
-          id?: string
           created_at?: string
+          id?: string
           name: string
           permissions: Json
         }
         Update: {
-          id?: string
           created_at?: string
+          id?: string
           name?: string
           permissions?: Json
         }
@@ -229,42 +331,48 @@ export type Database = {
       tasks: {
         Row: {
           assignee_id: string | null
+          attachments: Json | null
+          client_id: string | null
           created_at: string
           deadline: string
           description: string
           id: string
+          is_deleted: boolean
           project_id: string | null
-          client_id: string | null
+          rich_description: Json | null
           status: "todo" | "inprogress" | "done"
           tags: string[] | null
           type: string | null
-          is_deleted: boolean
         }
         Insert: {
           assignee_id?: string | null
+          attachments?: Json | null
+          client_id?: string | null
           created_at?: string
           deadline: string
           description: string
           id?: string
+          is_deleted?: boolean
           project_id?: string | null
-          client_id?: string | null
+          rich_description?: Json | null
           status?: "todo" | "inprogress" | "done"
           tags?: string[] | null
           type?: string | null
-          is_deleted?: boolean
         }
         Update: {
           assignee_id?: string | null
+          attachments?: Json | null
+          client_id?: string | null
           created_at?: string
           deadline?: string
           description?: string
           id?: string
+          is_deleted?: boolean
           project_id?: string | null
-          client_id?: string | null
+          rich_description?: Json | null
           status?: "todo" | "inprogress" | "done"
           tags?: string[] | null
           type?: string | null
-          is_deleted?: boolean
         }
         Relationships: [
           {
@@ -275,41 +383,41 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
-           {
-            foreignKeyName: "tasks_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          }
         ]
       }
       teams: {
         Row: {
-          id: string
           created_at: string
-          name: string
           default_tasks: string[] | null
+          id: string
+          name: string
           owner_id: string
         }
         Insert: {
-          id?: string
           created_at?: string
-          name: string
           default_tasks?: string[] | null
+          id?: string
+          name: string
           owner_id: string
         }
         Update: {
-          id?: string
           created_at?: string
-          name?: string
           default_tasks?: string[] | null
+          id?: string
+          name?: string
           owner_id?: string
         }
         Relationships: [
@@ -319,7 +427,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
     }
@@ -330,7 +438,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_status: "todo" | "inprogress" | "done"
     }
     CompositeTypes: {
       [_ in never]: never
