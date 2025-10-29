@@ -1067,10 +1067,18 @@ export async function addHoliday(formData: FormData) {
     const description = formData.get('description') as string;
     const userId = formData.get('user_id') as string | null;
     const type = formData.get('type') as OfficialHoliday['type'];
+    const falaqEventType = formData.get('falaq_event_type') as OfficialHoliday['falaq_event_type'] | null;
 
     const { data, error } = await supabase
         .from('official_holidays')
-        .insert({ name, date, description, user_id: userId, type })
+        .insert({ 
+            name, 
+            date, 
+            description, 
+            user_id: userId, 
+            type,
+            falaq_event_type: falaqEventType,
+        })
         .select()
         .single();
     

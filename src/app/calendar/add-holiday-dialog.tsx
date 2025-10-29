@@ -22,7 +22,7 @@ import { format } from 'date-fns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type DialogMode = 'holiday' | 'event' | 'special_day';
-type FalaqEventType = 'official' | 'event' | 'meeting';
+type FalaqEventType = 'holiday' | 'event' | 'meeting';
 
 interface AddHolidayDialogProps {
   isOpen: boolean
@@ -36,7 +36,7 @@ interface AddHolidayDialogProps {
 export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dialogType, selectedDate }: AddHolidayDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
-  const [formData, setFormData] = useState({ name: '', date: '', description: '', falaqType: 'official' as FalaqEventType });
+  const [formData, setFormData] = useState<{name: string, date: string, description: string, falaqEventType: FalaqEventType | ''}>({ name: '', date: '', description: '', falaqEventType: '' });
 
   const titleMap: Record<DialogMode, string> = {
     holiday: 'Add to Falaq Calendar',
@@ -59,13 +59,22 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
         name: '',
         date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '',
         description: '',
-        falaqType: 'official'
+        falaqEventType: dialogType === 'holiday' ? 'holiday' : ''
       });
     }
-  }, [isOpen, selectedDate]);
+  }, [isOpen, selectedDate, dialogType]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (dialogType === 'holiday' && !formData.falaqEventType) {
+      toast({
+        title: "Type is required",
+        description: "Please select a type for the Falaq Calendar event.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const form = new FormData(event.currentTarget);
     if (userId) {
       form.append('user_id', userId);
@@ -73,7 +82,10 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
     
     let type: OfficialHoliday['type'];
     if (dialogType === 'holiday') {
-      type = formData.falaqType;
+      type = 'official';
+      if (formData.falaqEventType) {
+        form.append('falaq_event_type', formData.falaqEventType);
+      }
     } else if (dialogType === 'event') {
       type = 'personal';
     } else {
@@ -105,7 +117,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
   }
 
   const handleTypeChange = (value: FalaqEventType) => {
-    setFormData(prev => ({ ...prev, falaqType: value }));
+    setFormData(prev => ({ ...prev, falaqEventType: value }));
   };
 
   return (
@@ -120,12 +132,12 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
              {dialogType === 'holiday' && (
                 <div className="grid gap-2">
                     <Label htmlFor="falaq-type">Type</Label>
-                    <Select onValueChange={handleTypeChange} defaultValue={formData.falaqType}>
+                    <Select onValueChange={handleTypeChange} value={formData.falaqEventType || undefined} required>
                         <SelectTrigger id="falaq-type">
                             <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="official">Holiday</SelectItem>
+                            <SelectItem value="holiday">Holiday</SelectItem>
                             <SelectItem value="event">Event</SelectItem>
                             <SelectItem value="meeting">Meeting</SelectItem>
                         </SelectContent>

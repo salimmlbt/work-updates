@@ -112,6 +112,7 @@ export type Database = {
           description: string | null
           id: number
           name: string
+          type: "official" | "personal" | "special_day" | "weekend" | "event" | "meeting"
           user_id: string | null
         }
         Insert: {
@@ -120,6 +121,7 @@ export type Database = {
           description?: string | null
           id?: number
           name: string
+          type: "official" | "personal" | "special_day" | "weekend" | "event" | "meeting"
           user_id?: string | null
         }
         Update: {
@@ -128,6 +130,7 @@ export type Database = {
           description?: string | null
           id?: number
           name?: string
+          type?: "official" | "personal" | "special_day" | "weekend" | "event" | "meeting"
           user_id?: string | null
         }
         Relationships: [
