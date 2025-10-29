@@ -121,7 +121,7 @@ export default function CalendarClient({
   const handleViewChange = (newView: 'day' | 'week' | 'month') => {
     if (!currentDate) return;
     setView(newView);
-    router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${newView}&calendar=${activeCalendar}`);
+    router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${view}&calendar=${activeCalendar}`);
   };
 
   const openAddDialog = (type: 'holiday' | 'event') => {
@@ -279,14 +279,18 @@ export default function CalendarClient({
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={() => openAddDialog('holiday')}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Holiday
-            </Button>
-            <Button onClick={() => openAddDialog('event')}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Event
-            </Button>
+            {activeCalendar === 'falaq_calendar' && (
+                <Button onClick={() => openAddDialog('holiday')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Holiday
+                </Button>
+            )}
+            {activeCalendar === 'my_calendar' && (
+                <Button onClick={() => openAddDialog('event')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Event
+                </Button>
+            )}
           </div>
         </div>
       </header>
