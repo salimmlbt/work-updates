@@ -154,11 +154,16 @@ export default function CalendarClient({
 
   const handleEventClick = (event: CalendarEvent, eventTarget: HTMLElement) => {
     const rect = eventTarget.getBoundingClientRect();
-    const sheet = document.querySelector('[data-radix-dialog-content]');
-    const sheetRect = sheet?.getBoundingClientRect() || { top: 0, left: 0 };
+    const calendarMain = document.querySelector('main');
+    const calendarRect = calendarMain?.getBoundingClientRect() || { top: 0, left: 0 };
 
-    let top = rect.top - sheetRect.top + rect.height / 2;
-    let left = rect.left - sheetRect.left + rect.width + 10;
+    let top = rect.top - calendarRect.top + window.scrollY;
+    let left = rect.right - calendarRect.left + 10;
+    
+    // Check if popover would go off-screen
+    if (left + 320 > window.innerWidth) { // 320px is the popover width
+      left = rect.left - calendarRect.left - 320 - 10;
+    }
 
     setSelectedEvent(event);
     setPopoverPosition({ top, left });
@@ -342,4 +347,3 @@ export default function CalendarClient({
     </div>
   );
 }
-
