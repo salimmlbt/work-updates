@@ -1,4 +1,3 @@
-
 'use client'
 
 import { Calendar } from '@/components/ui/calendar';
@@ -11,7 +10,7 @@ import { useMemo } from 'react';
 const typeColorMap: { [key: string]: string } = {
   public: 'bg-blue-100 text-blue-800',
   official: 'bg-purple-100 text-purple-800',
-  weekend: 'bg-gray-200 text-gray-700',
+  weekend: 'bg-red-100 text-red-800',
   task: 'bg-yellow-100 text-yellow-800',
   project: 'bg-green-100 text-green-800',
   personal: 'bg-pink-100 text-pink-800',
@@ -24,10 +23,12 @@ function DayContent({ date, events, onEventClick, activeCalendar, selectedDate }
   
   const dayNumber = format(date, 'd');
   const isSelected = selectedDate && isSameDay(date, selectedDate);
-  const isWeekend = dayEvents.some(e => e.type === 'weekend');
+  const isWeekendDay = getDay(date) === 0;
+
+  const isMarkedAsWeekend = dayEvents.some(e => e.type === 'weekend');
 
   return (
-    <div className={cn("flex flex-col h-full w-full p-2", isWeekend && "bg-red-50")}>
+    <div className={cn("flex flex-col h-full w-full p-2", isWeekendDay && "bg-red-50/50", isMarkedAsWeekend && "bg-red-100")}>
       <span className={cn("self-start", isToday(date) && 'text-primary font-bold', isSelected && 'bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center')}>{dayNumber}</span>
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => (

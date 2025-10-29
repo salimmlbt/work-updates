@@ -44,26 +44,17 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const allHolidays = officialHolidays as OfficialHoliday[] || [];
 
-  const allHolidayDates = new Set(allHolidays.map(h => format(new Date(h.date), 'yyyy-MM-dd')));
+  const weekendEvents = allHolidays
+    .filter(h => h.type === 'weekend')
+    .map(h => ({
+      id: `weekend-${h.id}`,
+      name: 'Sunday',
+      date: h.date,
+      description: 'Weekend',
+      type: 'weekend',
+      user_id: null,
+    }));
 
-  const weekendEvents = eachDayOfInterval({ start: startOfMonth(selectedDate), end: endOfMonth(selectedDate) })
-    .filter(day => {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const isSunday = getDay(day) === 0;
-        // Only include Sunday if it's not an official holiday/event
-        return isSunday && !allHolidayDates.has(dateStr);
-    })
-    .map(day => {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        return {
-            id: `weekend-${dateStr}`,
-            name: 'Sunday',
-            date: dateStr,
-            description: 'Weekend',
-            type: 'weekend',
-            user_id: null,
-        }
-    });
 
   const personalEvents = allHolidays
     .filter(h => h.user_id === user?.id)
