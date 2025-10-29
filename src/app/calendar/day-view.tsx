@@ -1,4 +1,3 @@
-
 'use client'
 
 import { format, startOfDay, addHours, isSameHour, setHours, isSameDay } from 'date-fns';
@@ -9,6 +8,7 @@ import { useMemo } from 'react';
 const typeColorMap: { [key: string]: string } = {
   public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
   official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
+  holiday: 'bg-red-200 text-red-900 border-l-4 border-red-500',
   weekend: 'bg-gray-200 text-gray-700',
   task: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500',
   project: 'bg-green-100 text-green-800 border-l-4 border-green-500',
@@ -45,8 +45,10 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
     return grouped;
   }, [dayEvents]);
 
+  const isHoliday = dayEvents.some(e => (e as any).falaq_event_type === 'holiday');
+
   return (
-    <div className="h-full w-full">
+    <div className={cn("h-full w-full", isHoliday && "bg-red-50")}>
       <div className="grid grid-cols-[auto_1fr] h-full">
         <div className="col-start-1 col-end-2 border-r">
           {hours.map(hour => (
@@ -69,17 +71,22 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
           <div className="absolute top-0 left-0 w-full h-full p-2 pointer-events-none">
             {Object.entries(eventsByHour).map(([hour, hourEvents]) => (
                 <div key={hour} className="absolute w-full" style={{ top: `${parseInt(hour) * 5}rem`, left: 0 }}>
-                    {hourEvents.map((event, index) => (
+                    {hourEvents.map((event, index) => {
+                      const isHolidayEvent = (event as any).falaq_event_type === 'holiday';
+                      return (
                         <div
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
-                            className={cn('p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', typeColorMap[event.type] || 'bg-gray-100')}
+                            className={cn(
+                              'p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', 
+                              isHolidayEvent ? typeColorMap['holiday'] : typeColorMap[event.type] || 'bg-gray-100'
+                            )}
                             style={{ marginLeft: `${index * 5}%` }}
                         >
                             <p className="font-semibold truncate">{event.name}</p>
                             <p className="text-xs truncate">{event.description}</p>
                         </div>
-                    ))}
+                    )})}
                 </div>
             ))}
           </div>
