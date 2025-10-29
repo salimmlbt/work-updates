@@ -6,7 +6,7 @@ import AttendanceDetailClient from './attendance-detail-client';
 export const dynamic = 'force-dynamic';
 
 export default async function UserAttendancePage({ params, searchParams }: { params: { userId: string }, searchParams: { month?: string } }) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const userId = params.userId;
 
   const { data: user, error: userError } = await supabase

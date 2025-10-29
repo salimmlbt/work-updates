@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 
 export async function login(formData: FormData) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   const username = formData.get('email') as string
   const password = formData.get('password') as string
@@ -30,7 +30,7 @@ export async function login(formData: FormData) {
 }
 
 export async function logout() {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     await supabase.auth.signOut()
     redirect('/login')
 }

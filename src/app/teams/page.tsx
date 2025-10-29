@@ -17,7 +17,7 @@ async function getRoles(supabase: ReturnType<typeof createServerClient>) {
 }
 
 export default async function TeamsPage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   
   let { data: rolesData, error: rolesError } = await getRoles(supabase);
 

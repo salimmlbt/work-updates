@@ -1,5 +1,6 @@
 
 
+
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -10,7 +11,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
 
 export async function checkIn() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -53,7 +54,7 @@ export async function checkIn() {
 }
 
 export async function checkOut() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -100,7 +101,7 @@ export async function checkOut() {
 }
 
 export async function lunchOut() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -128,7 +129,7 @@ export async function lunchOut() {
 }
 
 export async function lunchIn() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -157,7 +158,7 @@ export async function lunchIn() {
 
 
 export async function addProject(formData: FormData) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   
   const rawFormData = {
     name: formData.get('name') as string,
@@ -218,7 +219,7 @@ export async function addProject(formData: FormData) {
 }
 
 export async function updateProject(projectId: string, formData: FormData) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     
     const rawFormData = {
         name: formData.get('name') as string,
@@ -265,7 +266,7 @@ export async function updateProject(projectId: string, formData: FormData) {
 }
 
 export async function updateProjectStatus(projectId: string, status: string) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('projects')
         .update({ status, updated_at: new Date().toISOString() })
@@ -285,7 +286,7 @@ export async function updateProjectStatus(projectId: string, status: string) {
 
 
 export async function deleteProject(projectId: string) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     const { error } = await supabase
         .from('projects')
@@ -302,7 +303,7 @@ export async function deleteProject(projectId: string) {
 }
 
 export async function restoreProject(projectId: string) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     const { error } = await supabase
         .from('projects')
@@ -318,7 +319,7 @@ export async function restoreProject(projectId: string) {
 }
 
 export async function deleteProjectPermanently(projectId: string) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     
     const { error } = await supabase.rpc('delete_project_and_tasks', {
       p_id: projectId,
@@ -334,7 +335,7 @@ export async function deleteProjectPermanently(projectId: string) {
 }
 
 export async function addTask(formData: FormData) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   
   const taskData = {
     project_id: formData.get('projectId') as string,
@@ -361,7 +362,7 @@ export async function addTask(formData: FormData) {
 }
 
 export async function updateTask(taskId: string, formData: FormData) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     
     const taskData = {
         description: formData.get('description') as string,
@@ -389,7 +390,7 @@ export async function updateTask(taskId: string, formData: FormData) {
 }
 
 export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogress' | 'done') {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { error } = await supabase
     .from('tasks')
     .update({ status })
@@ -407,7 +408,7 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
 
 
 export async function deleteTask(taskId: string) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { error } = await supabase.from('tasks').update({ is_deleted: true }).eq('id', taskId)
   
   if (error) {
@@ -419,7 +420,7 @@ export async function deleteTask(taskId: string) {
 }
 
 export async function restoreTask(taskId: string) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { error } = await supabase.from('tasks').update({ is_deleted: false }).eq('id', taskId)
   
   if (error) {
@@ -431,7 +432,7 @@ export async function restoreTask(taskId: string) {
 }
 
 export async function deleteTaskPermanently(taskId: string) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { error } = await supabase.from('tasks').delete().eq('id', taskId)
   
   if (error) {
@@ -461,7 +462,7 @@ export async function prioritizeTasks(tasks: TaskWithAssignee[]) {
 }
 
 export async function addClient(formData: FormData) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   
   const name = formData.get('name') as string;
   const avatarFile = formData.get('avatar') as File | null;
@@ -510,7 +511,7 @@ export async function addClient(formData: FormData) {
 }
 
 export async function updateClient(clientId: string, formData: FormData) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     
     const { data: currentClient, error: fetchError } = await supabase
         .from('clients')
@@ -582,7 +583,7 @@ export async function updateClient(clientId: string, formData: FormData) {
 
 
 export async function deleteClient(clientId: string) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data: client, error: fetchError } = await supabase
       .from('clients')
@@ -615,7 +616,7 @@ export async function deleteClient(clientId: string) {
 }
 
 export async function createTeam(name: string, defaultTasks: string[]) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -640,7 +641,7 @@ export async function createTeam(name: string, defaultTasks: string[]) {
 }
 
 export async function createRole(name: string, permissions: Record<string, "Restricted" | "Viewer" | "Editor">) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data, error } = await supabase
     .from('roles')
     .insert({ name, permissions })
@@ -655,7 +656,7 @@ export async function createRole(name: string, permissions: Record<string, "Rest
 }
 
 export async function updateRole(id: string, name: string, permissions: Record<string, "Restricted" | "Viewer" | "Editor">) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data, error } = await supabase
     .from('roles')
     .update({ name, permissions })
@@ -672,7 +673,7 @@ export async function updateRole(id: string, name: string, permissions: Record<s
 
 
 export async function deleteRole(id: string) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { error } = await supabase.from('roles').delete().eq('id', id)
 
     if (error) {
@@ -707,7 +708,8 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
       return { error: "User could not be created in Auth."}
     }
     
-    const { data: profileData, error: profileError } = await createServerClient()
+    const supabase = await createServerClient()
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .insert({
         id: authData.user.id,
@@ -729,7 +731,7 @@ export async function addUser(userData: Omit<import('@/lib/types').Profile, 'id'
 }
 
 export async function updateUserRole(userId: string, roleId: string) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { error } = await supabase
     .from('profiles')
     .update({ role_id: roleId })
@@ -743,7 +745,7 @@ export async function updateUserRole(userId: string, roleId: string) {
 }
 
 export async function updateUserTeam(userId: string, teamId: string) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { error } = await supabase
     .from('profiles')
     .update({ team_id: teamId })
@@ -757,7 +759,7 @@ export async function updateUserTeam(userId: string, teamId: string) {
 }
 
 export async function createProjectType(name: string) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase.from('project_types').insert({ name }).select().single();
     if (error) {
         return { error: error.message };
@@ -767,7 +769,7 @@ export async function createProjectType(name: string) {
 }
 
 export async function renameProjectType(id: string, oldName: string, newName: string) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // First update all projects with the old type name
     const { error: projectsError } = await supabase
@@ -798,7 +800,7 @@ export async function renameProjectType(id: string, oldName: string, newName: st
 }
 
 export async function deleteProjectType(id: string) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { error } = await supabase.from('project_types').delete().eq('id', id);
 
     if (error) {
@@ -816,7 +818,7 @@ const months = [
 ];
 
 export async function updateProfile(userId: string, formData: FormData) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const fullName = formData.get('full_name') as string;
   const contact = formData.get('contact') as string | null;
@@ -911,7 +913,7 @@ export async function updateProfile(userId: string, formData: FormData) {
 }
 
 export async function uploadAttachment(formData: FormData): Promise<{ data: Attachment | null, error: string | null }> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const file = formData.get('file') as File;
 
   if (!file) {
@@ -947,7 +949,7 @@ export async function uploadAttachment(formData: FormData): Promise<{ data: Atta
 }
 
 export async function schedule_task_attachment_deletion(task_id: string, delay_seconds: number) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { error } = await supabase.rpc('schedule_task_attachment_deletion', {
         p_task_id: task_id,
         p_delay_seconds: delay_seconds
@@ -960,7 +962,7 @@ export async function schedule_task_attachment_deletion(task_id: string, delay_s
 }
 
 export async function delete_task_attachments(task_id: string) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: task, error: fetchError } = await supabase
         .from('tasks')
         .select('attachments')
@@ -986,7 +988,7 @@ export async function delete_task_attachments(task_id: string) {
 }
 
 export async function updateSetting(key: string, value: any) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   
   const { data, error } = await supabase
     .from('app_settings')
@@ -1062,7 +1064,7 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
 }
 
 export async function addHoliday(formData: FormData) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const name = formData.get('name') as string;
     const date = formData.get('date') as string;
     const description = formData.get('description') as string;
@@ -1092,7 +1094,7 @@ export async function addHoliday(formData: FormData) {
 }
 
 export async function deleteHoliday(id: number) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { error } = await supabase.from('official_holidays').delete().eq('id', id);
 
     if (error) {

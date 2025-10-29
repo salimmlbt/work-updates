@@ -15,7 +15,7 @@ interface SalaryData {
 }
 
 export default async function BillingPage({ searchParams }: { searchParams: { month?: string } }) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const selectedDate = searchParams.month ? new Date(searchParams.month) : new Date();
 
     const monthStart = startOfMonth(selectedDate);

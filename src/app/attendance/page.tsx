@@ -6,7 +6,7 @@ import AttendanceClient from './attendance-client';
 export const dynamic = 'force-dynamic';
 
 export default async function AttendancePage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   // Get today's date in UTC
   const today = new Date().toISOString().split('T')[0];
 

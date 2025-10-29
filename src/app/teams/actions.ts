@@ -7,7 +7,7 @@ import type { RoleWithPermissions, PermissionLevel, Profile, Task, Attachment } 
 import { revalidatePath } from 'next/cache'
 
 export async function createTeam(name: string, defaultTasks: string[]) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -32,7 +32,7 @@ export async function createTeam(name: string, defaultTasks: string[]) {
 }
 
 export async function updateTeam(id: string, name: string) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { data, error } = await supabase
         .from('teams')
         .update({ name })
@@ -48,7 +48,7 @@ export async function updateTeam(id: string, name: string) {
 }
 
 export async function deleteTeam(id: string) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Unassign users from the team first
     const { error: updateError } = await supabase
@@ -74,7 +74,7 @@ export async function deleteTeam(id: string) {
 }
 
 export async function createRole(name: string, permissions: Record<string, PermissionLevel>) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data, error } = await supabase
     .from('roles')
     .insert({ name, permissions })
@@ -89,7 +89,7 @@ export async function createRole(name: string, permissions: Record<string, Permi
 }
 
 export async function updateRole(id: string, name: string, permissions: Record<string, PermissionLevel>) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data, error } = await supabase
     .from('roles')
     .update({ name, permissions })
@@ -106,7 +106,7 @@ export async function updateRole(id: string, name: string, permissions: Record<s
 
 
 export async function deleteRole(id: string) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { error } = await supabase.from('roles').delete().eq('id', id)
 
     if (error) {
@@ -118,7 +118,7 @@ export async function deleteRole(id: string) {
 }
 
 export async function addUser(formData: FormData) {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const supabaseAdmin = createSupabaseAdminClient()
     
     if (!supabaseAdmin) {
@@ -228,7 +228,7 @@ export async function addUser(formData: FormData) {
 }
 
 export async function updateUser(userId: string, formData: FormData) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const supabaseAdmin = createSupabaseAdminClient();
 
     const fullName = formData.get('full_name') as string;
@@ -342,7 +342,7 @@ export async function updateUser(userId: string, formData: FormData) {
 }
 
 export async function updateUserRole(userId: string, roleId: string) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { error } = await supabase
     .from('profiles')
     .update({ role_id: roleId })
@@ -356,7 +356,7 @@ export async function updateUserRole(userId: string, roleId: string) {
 }
 
 export async function updateUserTeams(userId: string, teamIds: string[]) {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   
   // First, remove all existing team associations for the user
   const { error: deleteError } = await supabase
@@ -383,7 +383,7 @@ export async function updateUserTeams(userId: string, teamIds: string[]) {
 }
 
 export async function updateUserIsArchived(userId: string, isArchived: boolean) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const supabaseAdmin = createSupabaseAdminClient();
 
   if (!supabaseAdmin) {
@@ -422,7 +422,7 @@ export async function updateUserIsArchived(userId: string, isArchived: boolean) 
 }
 
 export async function deleteUserPermanently(userId: string) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const supabaseAdmin = createSupabaseAdminClient();
 
     if (!supabaseAdmin) {
@@ -455,7 +455,7 @@ export async function deleteUserPermanently(userId: string) {
 
 
 export async function updateUserStatus(userId: string, status: 'Active' | 'Archived') {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
     
     if (error) {
@@ -475,7 +475,7 @@ export async function createTask(taskData: {
     type: string | null;
     attachments?: Attachment[] | null;
 }) {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('tasks')
         .insert({

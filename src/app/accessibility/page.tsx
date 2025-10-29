@@ -13,7 +13,7 @@ import { SetTimesForm } from './set-times-form';
 export const dynamic = 'force-dynamic';
 
 export default async function AccessibilityPage() {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single();
     const lunchStartTime = (setting?.value as string | undefined) || '13:00';
 

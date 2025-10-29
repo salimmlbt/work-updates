@@ -9,7 +9,7 @@ import { getPublicHolidays } from '../actions';
 export const dynamic = 'force-dynamic';
 
 export default async function CalendarPage({ searchParams }: { searchParams: { month?: string, view?: string } }) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -109,5 +109,3 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     />
   );
 }
-
-    

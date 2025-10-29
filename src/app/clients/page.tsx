@@ -5,7 +5,7 @@ import ClientsPageClient from './clients-page-client';
 export const dynamic = 'force-dynamic';
 
 export default async function ClientsPage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: clients, error } = await supabase
     .from('clients')
     .select('*')

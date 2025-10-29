@@ -1,8 +1,9 @@
+
 import { createServerClient as createSupabaseServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from '@/lib/database.types'
 
-export function createServerClient() {
+export async function createServerClient() {
   const cookieStore = cookies()
 
   return createSupabaseServerClient<Database>(
@@ -10,10 +11,10 @@ export function createServerClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
+        get: async (name: string) => {
           return cookieStore.get(name)?.value
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set: async (name: string, value: string, options: CookieOptions) => {
           try {
             cookieStore.set({ name, value, ...options })
           } catch (error) {
@@ -22,7 +23,7 @@ export function createServerClient() {
             // user sessions.
           }
         },
-        remove(name: string, options: CookieOptions) {
+        remove: async (name: string, options: CookieOptions) => {
           try {
             cookieStore.set({ name, value: '', ...options })
           } catch (error) {
