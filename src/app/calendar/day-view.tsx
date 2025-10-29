@@ -46,11 +46,10 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
     return grouped;
   }, [dayEvents]);
 
-  const isPublicHoliday = dayEvents.some(e => e.type === 'public');
-  const isFalaqHoliday = dayEvents.some(e => (e as any).falaq_event_type === 'leave');
+  const isFalaqLeave = dayEvents.some(e => (e as any).falaq_event_type === 'leave');
 
   return (
-    <div className={cn("h-full w-full", (activeCalendar === 'falaq_calendar' && isFalaqHoliday) && "bg-red-50")}>
+    <div className={cn("h-full w-full", (activeCalendar === 'falaq_calendar' && isFalaqLeave) && "bg-red-50")}>
       <div className="grid grid-cols-[auto_1fr] h-full">
         <div className="col-start-1 col-end-2 border-r">
           {hours.map(hour => (
@@ -74,14 +73,14 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
             {Object.entries(eventsByHour).map(([hour, hourEvents]) => (
                 <div key={hour} className="absolute w-full" style={{ top: `${parseInt(hour) * 5}rem`, left: 0 }}>
                     {hourEvents.map((event, index) => {
-                      const isEventFalaqHoliday = (event as any).falaq_event_type === 'leave';
+                      const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
                       return (
                         <div
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                             className={cn(
                               'p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', 
-                              isEventFalaqHoliday ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
+                              isEventFalaqLeave ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
                             )}
                             style={{ marginLeft: `${index * 5}%` }}
                         >

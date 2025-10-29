@@ -27,17 +27,16 @@ function DayContent({ date, events, onEventClick, activeCalendar, selectedDate }
   const isSelected = selectedDate && isSameDay(date, selectedDate);
   const isWeekendDay = getDay(date) === 0;
 
-  const isFalaqHoliday = dayEvents.some(e => (e as any).falaq_event_type === 'leave');
+  const isFalaqLeave = dayEvents.some(e => (e as any).falaq_event_type === 'leave');
   const isMarkedAsWeekend = dayEvents.some(e => e.type === 'weekend');
-  const isPublicHoliday = dayEvents.some(e => (e as any).type === 'public');
 
 
   return (
-    <div className={cn("flex flex-col h-full w-full p-2", activeCalendar === 'falaq_calendar' && isFalaqHoliday ? "bg-red-50" : (isWeekendDay && "bg-gray-50/50"), isMarkedAsWeekend && "bg-red-100")}>
+    <div className={cn("flex flex-col h-full w-full p-2", activeCalendar === 'falaq_calendar' && isFalaqLeave ? "bg-red-50" : (isWeekendDay && "bg-gray-50/50"), isMarkedAsWeekend && "bg-red-100")}>
       <span className={cn("self-start", isToday(date) && 'text-primary font-bold', isSelected && 'bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center')}>{dayNumber}</span>
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => {
-           const isEventFalaqHoliday = (event as any).falaq_event_type === 'leave';
+           const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
           return (
             <div
               key={`${event.id}-${index}`}
@@ -47,7 +46,7 @@ function DayContent({ date, events, onEventClick, activeCalendar, selectedDate }
               }}
               className={cn(
                 'text-xs p-1 rounded-sm truncate cursor-pointer', 
-                isEventFalaqHoliday ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
+                isEventFalaqLeave ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
               )}
               title={event.name}
             >

@@ -54,8 +54,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
         {weekDays.map((day, dayIndex) => {
           const dayKey = format(day, 'yyyy-MM-dd');
           const isWeekend = eventsByDay[dayKey]?.some(e => e.type === 'weekend');
-          const isPublicHoliday = eventsByDay[dayKey]?.some(e => e.type === 'public');
-          const isFalaqHoliday = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'leave');
+          const isFalaqLeave = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'leave');
           
           return (
           <div 
@@ -63,7 +62,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
             className={cn(
                 "sticky top-0 bg-white z-20 text-center py-2 border-b border-r cursor-pointer", 
                 dayIndex === 6 && 'border-r-0',
-                activeCalendar === 'falaq_calendar' && isFalaqHoliday ? 'bg-red-50' : isWeekend ? 'bg-red-50/50' : '',
+                activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-50' : isWeekend ? 'bg-red-50/50' : '',
                 isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
                 isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
             )}
@@ -87,14 +86,13 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
         {weekDays.map((day, dayIndex) => {
           const dayKey = format(day, 'yyyy-MM-dd');
           const isWeekend = eventsByDay[dayKey]?.some(e => e.type === 'weekend');
-          const isPublicHoliday = eventsByDay[dayKey]?.some(e => e.type === 'public');
-          const isFalaqHoliday = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'leave');
+          const isFalaqLeave = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'leave');
 
           return (
           <div key={day.toString()} className={cn(
             "relative border-r", 
             dayIndex === 6 && 'border-r-0',
-            activeCalendar === 'falaq_calendar' && isFalaqHoliday ? 'bg-red-50' : isWeekend ? 'bg-red-50/50' : '',
+            activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-50' : isWeekend ? 'bg-red-50/50' : '',
             isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
             isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
           )}>
@@ -110,7 +108,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
                {eventsByDay[format(day, 'yyyy-MM-dd')].map(event => {
                   const eventHour = new Date(event.date).getUTCHours();
                   const topPosition = eventHour * 5; // 5rem per hour (h-20)
-                  const isEventFalaqHoliday = (event as any).falaq_event_type === 'leave';
+                  const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
                   
                   return (
                       <div
@@ -118,7 +116,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
                           onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                           className={cn(
                               'absolute w-[95%] p-2 rounded-lg text-sm cursor-pointer z-10 pointer-events-auto', 
-                              isEventFalaqHoliday ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
+                              isEventFalaqLeave ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
                           )}
                           style={{ top: `${topPosition}rem`}}
                       >
