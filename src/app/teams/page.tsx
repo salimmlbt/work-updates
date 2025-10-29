@@ -19,7 +19,11 @@ async function getRoles(supabase: ReturnType<typeof createServerClient>) {
 export default async function TeamsPage() {
   const supabase = createServerClient();
   
-  let { data: rolesData } = await getRoles(supabase);
+  let { data: rolesData, error: rolesError } = await getRoles(supabase);
+
+  if (rolesError) {
+    console.error('Error fetching roles:', rolesError);
+  }
 
   const adminRoleExists = rolesData?.some(r => r.name === 'Falaq Admin');
 
@@ -40,15 +44,21 @@ export default async function TeamsPage() {
       }
     });
     
-    if (!insertError) {
+    if (insertError) {
+        console.error('Error creating admin role:', insertError);
+    } else {
       // Re-fetch roles after creating the admin role
       const { data: updatedRolesData } = await getRoles(supabase);
       rolesData = updatedRolesData;
     }
   }
-  
-  const { data: profilesData } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))');
-  const { data: teamsData } = await supabase.from('teams').select('*');
+
+  const { data: profilesData, error: profilesError } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams!inner(*))');
+  const { data: teamsData, error: teamsError } = await supabase.from('teams').select('*');
+
+  if (profilesError) console.error('Error fetching profiles:', profilesError);
+  if (teamsError) console.error('Error fetching teams:', teamsError);
+
 
   const roles = rolesData as Role[] ?? [];
   const profiles = profilesData as Profile[] ?? [];
