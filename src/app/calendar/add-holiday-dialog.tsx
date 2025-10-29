@@ -18,6 +18,7 @@ import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { addHoliday } from '@/app/actions'
 import type { OfficialHoliday } from '@/lib/types'
+import { format } from 'date-fns'
 
 interface AddHolidayDialogProps {
   isOpen: boolean
@@ -25,9 +26,10 @@ interface AddHolidayDialogProps {
   onEventAdded: (newEvent: OfficialHoliday) => void
   userId?: string | null
   dialogType: 'holiday' | 'event'
+  selectedDate: Date | null
 }
 
-export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dialogType }: AddHolidayDialogProps) {
+export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dialogType, selectedDate }: AddHolidayDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
   const [formData, setFormData] = useState({ name: '', date: '', description: '' });
@@ -40,9 +42,13 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
 
   useEffect(() => {
     if (isOpen) {
-      setFormData({ name: '', date: '', description: '' });
+      setFormData({
+        name: '',
+        date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '',
+        description: ''
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, selectedDate]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -70,6 +76,10 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
     })
   }
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({...prev, date: e.target.value }));
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
@@ -85,7 +95,7 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
             </div>
             <div className="grid gap-2">
               <Label htmlFor="date">Date</Label>
-              <Input id="date" name="date" type="date" required />
+              <Input id="date" name="date" type="date" value={formData.date} onChange={handleDateChange} required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description (optional)</Label>

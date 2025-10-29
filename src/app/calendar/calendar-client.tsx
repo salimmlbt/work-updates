@@ -13,7 +13,7 @@ import {
   Building,
   Plane,
 } from 'lucide-react';
-import { format, parse, addMonths, subMonths } from 'date-fns';
+import { format, parse, addMonths, subMonths, isSameDay } from 'date-fns';
 import type { OfficialHoliday } from '@/lib/types';
 import { AddHolidayDialog } from './add-holiday-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -62,6 +62,7 @@ export default function CalendarClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const initialView = searchParams.get('view') || 'week';
   const [view, setView] = useState<'day' | 'week' | 'month'>(initialView as any);
@@ -83,9 +84,13 @@ export default function CalendarClient({
   
   useEffect(() => {
     if (initialMonth) {
-      setCurrentDate(parse(initialMonth, 'yyyy-MM', new Date()));
+      const parsedDate = parse(initialMonth, 'yyyy-MM', new Date());
+      setCurrentDate(parsedDate);
+      if (!selectedDate) {
+        setSelectedDate(new Date());
+      }
     }
-  }, [initialMonth]);
+  }, [initialMonth, selectedDate]);
 
   useEffect(() => {
     setAllEvents(eventSources[activeCalendar]);
@@ -111,6 +116,13 @@ export default function CalendarClient({
       router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
     }
   };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    if (view !== 'month') {
+        setCurrentDate(date);
+    }
+  };
   
   const handleCalendarChange = (newCalendar: keyof EventSources) => {
     if (!currentDate) return;
@@ -121,7 +133,7 @@ export default function CalendarClient({
   const handleViewChange = (newView: 'day' | 'week' | 'month') => {
     if (!currentDate) return;
     setView(newView);
-    router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${view}&calendar=${activeCalendar}`);
+    router.push(`/calendar?month=${format(currentDate, 'yyyy-MM')}&view=${newView}&calendar=${activeCalendar}`);
   };
 
   const openAddDialog = (type: 'holiday' | 'event') => {
@@ -174,20 +186,20 @@ export default function CalendarClient({
   };
 
   const renderView = () => {
-    if (!currentDate) return null;
+    if (!currentDate || !selectedDate) return null;
     switch (view) {
       case 'day':
         return (
-          <DayView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} />
+          <DayView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} />
         );
       case 'week':
         return (
-          <WeekView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} />
+          <WeekView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} />
         );
       case 'month':
       default:
         return (
-          <MonthView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} />
+          <MonthView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} />
         );
     }
   };
@@ -323,6 +335,7 @@ export default function CalendarClient({
         onEventAdded={onEventAdded}
         userId={dialogType === 'event' ? currentUserId : null}
         dialogType={dialogType}
+        selectedDate={selectedDate}
       />
     </div>
   );

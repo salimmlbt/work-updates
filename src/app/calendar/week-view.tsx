@@ -1,7 +1,7 @@
 
 'use client'
 
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday, getDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday, getDay, isSameDay } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -23,9 +23,11 @@ interface WeekViewProps {
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent, target: HTMLElement) => void;
   activeCalendar: string;
+  onDateSelect: (date: Date) => void;
+  selectedDate: Date;
 }
 
-export default function WeekView({ date, events, onEventClick, activeCalendar }: WeekViewProps) {
+export default function WeekView({ date, events, onEventClick, activeCalendar, onDateSelect, selectedDate }: WeekViewProps) {
   const weekStart = startOfWeek(date, { weekStartsOn: 0 }); // Sunday
   const weekEnd = endOfWeek(date, { weekStartsOn: 0 }); // Saturday
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -49,14 +51,19 @@ export default function WeekView({ date, events, onEventClick, activeCalendar }:
           <div className="h-20 border-b"></div>
         </div>
         {weekDays.map((day, dayIndex) => (
-          <div key={`header-${day.toString()}`} className={cn(
-            "sticky top-0 bg-white z-20 text-center py-2 border-b border-r", 
-            dayIndex === 6 && 'border-r-0',
-            activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50',
-            isToday(day) && 'bg-blue-50 dark:bg-blue-900/20'
-          )}>
-            <p className={cn("text-sm", isToday(day) ? 'text-primary' : 'text-muted-foreground')}>{format(day, 'EEE')}</p>
-            <p className={cn("text-2xl font-semibold", isToday(day) && 'text-primary')}>{format(day, 'd')}</p>
+          <div 
+            key={`header-${day.toString()}`} 
+            className={cn(
+                "sticky top-0 bg-white z-20 text-center py-2 border-b border-r cursor-pointer", 
+                dayIndex === 6 && 'border-r-0',
+                activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50',
+                isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
+                isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
+            )}
+            onClick={() => onDateSelect(day)}
+          >
+            <p className={cn("text-sm", isToday(day) ? 'text-primary' : 'text-muted-foreground', isSameDay(day, selectedDate) && 'text-primary font-bold')}>{format(day, 'EEE')}</p>
+            <p className={cn("text-2xl font-semibold", isToday(day) && 'text-primary', isSameDay(day, selectedDate) && 'text-primary')}>{format(day, 'd')}</p>
           </div>
         ))}
         
@@ -75,17 +82,18 @@ export default function WeekView({ date, events, onEventClick, activeCalendar }:
             "relative border-r", 
             dayIndex === 6 && 'border-r-0',
             activeCalendar === 'falaq_calendar' && getDay(day) === 0 && 'bg-red-50',
-            isToday(day) && 'bg-blue-50 dark:bg-blue-900/20'
+            isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
+            isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
           )}>
             {/* Grid lines */}
             <div className="absolute top-0 left-0 w-full h-full">
               {hours.map(hour => (
-                <div key={`grid-${hour}`} className="h-20 border-b"></div>
+                <div key={`grid-${hour}`} className="h-20 border-b cursor-pointer" onClick={() => onDateSelect(setHours(day, hour))}></div>
               ))}
             </div>
 
             {/* Events */}
-            <div className="relative h-full p-1 space-y-1">
+            <div className="relative h-full p-1 space-y-1 pointer-events-none">
                {eventsByDay[format(day, 'yyyy-MM-dd')].map(event => {
                   const eventHour = new Date(event.date).getUTCHours();
                   const topPosition = eventHour * 5; // 5rem per hour (h-20)
@@ -93,9 +101,9 @@ export default function WeekView({ date, events, onEventClick, activeCalendar }:
                   return (
                       <div
                           key={event.id}
-                          onClick={(e) => onEventClick(event, e.currentTarget)}
+                          onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                           className={cn(
-                              'absolute w-[95%] p-2 rounded-lg text-sm cursor-pointer z-10', 
+                              'absolute w-[95%] p-2 rounded-lg text-sm cursor-pointer z-10 pointer-events-auto', 
                               typeColorMap[event.type] || 'bg-gray-100'
                           )}
                           style={{ top: `${topPosition}rem`}}

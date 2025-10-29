@@ -1,7 +1,7 @@
 
 'use client'
 
-import { format, startOfDay, addHours, isSameHour, setHours } from 'date-fns';
+import { format, startOfDay, addHours, isSameHour, setHours, isSameDay } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -22,9 +22,11 @@ interface DayViewProps {
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent, target: HTMLElement) => void;
   activeCalendar: string;
+  onDateSelect: (date: Date) => void;
+  selectedDate: Date;
 }
 
-export default function DayView({ date, events, onEventClick }: DayViewProps) {
+export default function DayView({ date, events, onEventClick, activeCalendar, onDateSelect, selectedDate }: DayViewProps) {
   const dayEvents = useMemo(() => {
     return events
       .filter(e => format(new Date(e.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'))
@@ -55,16 +57,23 @@ export default function DayView({ date, events, onEventClick }: DayViewProps) {
         </div>
         <div className="col-start-2 col-end-3 relative">
           {hours.map(hour => (
-            <div key={`grid-${hour}`} className="h-20 border-b"></div>
+            <div 
+              key={`grid-${hour}`} 
+              className={cn(
+                "h-20 border-b cursor-pointer",
+                isSameHour(setHours(date, hour), selectedDate) && isSameDay(date, selectedDate) ? 'bg-blue-50' : 'hover:bg-gray-50'
+              )}
+              onClick={() => onDateSelect(setHours(date, hour))}
+            ></div>
           ))}
-          <div className="absolute top-0 left-0 w-full h-full p-2">
+          <div className="absolute top-0 left-0 w-full h-full p-2 pointer-events-none">
             {Object.entries(eventsByHour).map(([hour, hourEvents]) => (
                 <div key={hour} className="absolute w-full" style={{ top: `${parseInt(hour) * 5}rem`, left: 0 }}>
                     {hourEvents.map((event, index) => (
                         <div
                             key={event.id}
-                            onClick={(e) => onEventClick(event, e.currentTarget)}
-                            className={cn('p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%]', typeColorMap[event.type] || 'bg-gray-100')}
+                            onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
+                            className={cn('p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', typeColorMap[event.type] || 'bg-gray-100')}
                             style={{ marginLeft: `${index * 5}%` }}
                         >
                             <p className="font-semibold truncate">{event.name}</p>

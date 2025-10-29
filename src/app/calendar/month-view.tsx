@@ -17,16 +17,17 @@ const typeColorMap: { [key: string]: string } = {
   personal: 'bg-pink-100 text-pink-800',
 };
 
-function DayContent({ date, events, onEventClick }: DayContentProps & { events: CalendarEvent[]; onEventClick: (event: CalendarEvent, target: HTMLElement) => void; activeCalendar: string; }) {
+function DayContent({ date, events, onEventClick, activeCalendar, selectedDate }: DayContentProps & { events: CalendarEvent[]; onEventClick: (event: CalendarEvent, target: HTMLElement) => void; activeCalendar: string; selectedDate: Date | null }) {
   const dayEvents = useMemo(() => {
     return events.filter(event => isSameDay(new Date(event.date), date));
   }, [date, events]);
   
   const dayNumber = format(date, 'd');
+  const isSelected = selectedDate && isSameDay(date, selectedDate);
 
   return (
     <div className="flex flex-col h-full w-full p-2">
-      <span className={cn("self-start", isToday(date) && 'text-primary font-bold')}>{dayNumber}</span>
+      <span className={cn("self-start", isToday(date) && 'text-primary font-bold', isSelected && 'bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center')}>{dayNumber}</span>
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => (
           <div
@@ -54,13 +55,17 @@ interface MonthViewProps {
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent, target: HTMLElement) => void;
   activeCalendar: string;
+  onDateSelect: (date: Date) => void;
+  selectedDate: Date | null;
 }
 
-export default function MonthView({ date, events, onEventClick, activeCalendar }: MonthViewProps) {
+export default function MonthView({ date, events, onEventClick, activeCalendar, onDateSelect, selectedDate }: MonthViewProps) {
   return (
     <Calendar
       month={date}
       mode="single"
+      selected={selectedDate || undefined}
+      onSelect={(day) => day && onDateSelect(day)}
       className="p-0 h-full flex flex-col"
       classNames={{
         months: "flex-1 flex flex-col",
@@ -75,14 +80,14 @@ export default function MonthView({ date, events, onEventClick, activeCalendar }
            '[&:has(.rdp-day_today)]:bg-blue-50 dark:[&:has(.rdp-day_today)]:bg-blue-900/20'
         ),
         day: 'w-full h-full flex',
+        day_selected: 'bg-blue-100 dark:bg-blue-900/30',
       }}
       components={{
-        DayContent: (props) => <DayContent {...props} events={events} onEventClick={onEventClick} activeCalendar={activeCalendar} />,
+        DayContent: (props) => <DayContent {...props} events={events} onEventClick={onEventClick} activeCalendar={activeCalendar} selectedDate={selectedDate} />,
       }}
-      // To prevent date selection when clicking on a day cell
       onDayClick={(day, modifiers) => {
         if (modifiers.disabled) return;
-        // Do nothing to prevent selection
+        onDateSelect(day);
       }}
     />
   );
