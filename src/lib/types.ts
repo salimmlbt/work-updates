@@ -44,3 +44,5 @@ export type TaskWithDetails = Task & {
   clients: Client | null;
   attachments: Attachment[] | null;
 }
+
+    

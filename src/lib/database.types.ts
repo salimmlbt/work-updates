@@ -110,27 +110,30 @@ export type Database = {
           created_at: string
           date: string
           description: string | null
+          falaq_event_type: "holiday" | "event" | "meeting" | null
           id: number
           name: string
-          type: "official" | "personal" | "special_day" | "weekend" | "event" | "meeting"
+          type: "official" | "personal" | "special_day" | "weekend"
           user_id: string | null
         }
         Insert: {
           created_at?: string
           date: string
           description?: string | null
+          falaq_event_type?: "holiday" | "event" | "meeting" | null
           id?: number
           name: string
-          type: "official" | "personal" | "special_day" | "weekend" | "event" | "meeting"
+          type: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
         }
         Update: {
           created_at?: string
           date?: string
           description?: string | null
+          falaq_event_type?: "holiday" | "event" | "meeting" | null
           id?: number
           name?: string
-          type?: "official" | "personal" | "special_day" | "weekend" | "event" | "meeting"
+          type?: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
         }
         Relationships: [
@@ -453,6 +456,7 @@ export type Database = {
       }
     }
     Enums: {
+      falaq_event_type: "holiday" | "event" | "meeting"
       task_status: "todo" | "inprogress" | "done"
     }
     CompositeTypes: {
@@ -460,3 +464,5 @@ export type Database = {
     }
   }
 }
+
+    

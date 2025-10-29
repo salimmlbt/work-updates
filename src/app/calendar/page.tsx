@@ -57,15 +57,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
 
   const personalEvents = allHolidays
-    .filter(h => h.user_id === user?.id)
+    .filter(h => h.user_id === user?.id && h.type === 'personal')
     .map(h => ({ id: `personal-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'personal', user_id: h.user_id }));
 
   const companyEvents = allHolidays
-    .filter(h => !h.user_id && h.type === 'official')
+    .filter(h => h.type === 'official')
     .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id }));
   
   const specialDays = allHolidays
-    .filter(h => !h.user_id && h.type === 'special_day')
+    .filter(h => h.type === 'special_day')
     .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id }));
 
 
@@ -109,3 +109,5 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     />
   );
 }
+
+    
