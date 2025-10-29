@@ -17,16 +17,21 @@ export default async function TasksPage() {
     }
 
     const [
-        { data: tasksData, error: tasksError },
-        { data: clientsData, error: clientsError },
-        { data: profilesData, error: profilesError },
-        { data: allProjectsData, error: allProjectsError }
+        tasksResponse,
+        clientsResponse,
+        profilesResponse,
+        projectsResponse,
     ] = await Promise.all([
-        supabase.from('tasks').select('*, profiles(*), projects(id, name, client_id)'),
+        supabase.from('tasks').select('*, profiles(id, full_name, avatar_url), projects(id, name, client_id)'),
         supabase.from('clients').select('*'),
         supabase.from('profiles').select('*, teams:profile_teams(teams(*))'),
-        supabase.from('projects').select('*').eq('is_deleted', false) // Fetch all active projects
+        supabase.from('projects').select('*').eq('is_deleted', false),
     ]);
+
+    const { data: tasksData, error: tasksError } = tasksResponse;
+    const { data: clientsData, error: clientsError } = clientsResponse;
+    const { data: profilesData, error: profilesError } = profilesResponse;
+    const { data: allProjectsData, error: allProjectsError } = projectsResponse;
 
 
     if (tasksError || clientsError || profilesError || allProjectsError) {
