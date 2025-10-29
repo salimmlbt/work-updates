@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 const typeColorMap: { [key: string]: string } = {
   public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
   official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
-  holiday: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
+  holiday: 'bg-red-100 text-red-800 border-l-4 border-red-500',
   weekend: 'bg-gray-200 text-gray-700',
   task: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500',
   project: 'bg-green-100 text-green-800 border-l-4 border-green-500',
@@ -46,10 +46,11 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
     return grouped;
   }, [dayEvents]);
 
-  const isHoliday = dayEvents.some(e => (e as any).type === 'public');
+  const isPublicHoliday = dayEvents.some(e => e.type === 'public');
+  const isFalaqHoliday = dayEvents.some(e => (e as any).falaq_event_type === 'holiday');
 
   return (
-    <div className={cn("h-full w-full", isHoliday && "bg-red-50")}>
+    <div className={cn("h-full w-full", (isPublicHoliday || isFalaqHoliday) && "bg-red-50")}>
       <div className="grid grid-cols-[auto_1fr] h-full">
         <div className="col-start-1 col-end-2 border-r">
           {hours.map(hour => (
@@ -73,14 +74,14 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
             {Object.entries(eventsByHour).map(([hour, hourEvents]) => (
                 <div key={hour} className="absolute w-full" style={{ top: `${parseInt(hour) * 5}rem`, left: 0 }}>
                     {hourEvents.map((event, index) => {
-                      const isFalaqHoliday = (event as any).falaq_event_type === 'holiday';
+                      const isEventFalaqHoliday = (event as any).falaq_event_type === 'holiday';
                       return (
                         <div
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                             className={cn(
                               'p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', 
-                              isFalaqHoliday ? typeColorMap['holiday'] : typeColorMap[event.type] || 'bg-gray-100'
+                              isEventFalaqHoliday ? typeColorMap['holiday'] : typeColorMap[event.type] || 'bg-gray-100'
                             )}
                             style={{ marginLeft: `${index * 5}%` }}
                         >

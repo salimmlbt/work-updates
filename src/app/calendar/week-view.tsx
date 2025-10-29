@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 const typeColorMap: { [key: string]: string } = {
   public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
   official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
-  holiday: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
+  holiday: 'bg-red-100 text-red-800 border-l-4 border-red-500',
   weekend: 'bg-gray-200 text-gray-700',
   task: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500',
   project: 'bg-green-100 text-green-800 border-l-4 border-green-500',
@@ -54,7 +54,8 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
         {weekDays.map((day, dayIndex) => {
           const dayKey = format(day, 'yyyy-MM-dd');
           const isWeekend = eventsByDay[dayKey]?.some(e => e.type === 'weekend');
-          const isHoliday = eventsByDay[dayKey]?.some(e => (e as any).type === 'public');
+          const isPublicHoliday = eventsByDay[dayKey]?.some(e => e.type === 'public');
+          const isFalaqHoliday = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'holiday');
           
           return (
           <div 
@@ -62,7 +63,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
             className={cn(
                 "sticky top-0 bg-white z-20 text-center py-2 border-b border-r cursor-pointer", 
                 dayIndex === 6 && 'border-r-0',
-                isHoliday ? 'bg-red-50' : isWeekend ? 'bg-red-50/50' : '',
+                isPublicHoliday || isFalaqHoliday ? 'bg-red-50' : isWeekend ? 'bg-red-50/50' : '',
                 isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
                 isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
             )}
@@ -86,13 +87,14 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
         {weekDays.map((day, dayIndex) => {
           const dayKey = format(day, 'yyyy-MM-dd');
           const isWeekend = eventsByDay[dayKey]?.some(e => e.type === 'weekend');
-          const isHoliday = eventsByDay[dayKey]?.some(e => (e as any).type === 'public');
+          const isPublicHoliday = eventsByDay[dayKey]?.some(e => e.type === 'public');
+          const isFalaqHoliday = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'holiday');
 
           return (
           <div key={day.toString()} className={cn(
             "relative border-r", 
             dayIndex === 6 && 'border-r-0',
-            isHoliday ? 'bg-red-50' : isWeekend ? 'bg-red-50/50' : '',
+            isPublicHoliday || isFalaqHoliday ? 'bg-red-50' : isWeekend ? 'bg-red-50/50' : '',
             isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
             isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
           )}>
@@ -108,7 +110,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
                {eventsByDay[format(day, 'yyyy-MM-dd')].map(event => {
                   const eventHour = new Date(event.date).getUTCHours();
                   const topPosition = eventHour * 5; // 5rem per hour (h-20)
-                  const isFalaqHoliday = (event as any).falaq_event_type === 'holiday';
+                  const isEventFalaqHoliday = (event as any).falaq_event_type === 'holiday';
                   
                   return (
                       <div
@@ -116,7 +118,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
                           onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                           className={cn(
                               'absolute w-[95%] p-2 rounded-lg text-sm cursor-pointer z-10 pointer-events-auto', 
-                              isFalaqHoliday ? typeColorMap['holiday'] : typeColorMap[event.type] || 'bg-gray-100'
+                              isEventFalaqHoliday ? typeColorMap['holiday'] : typeColorMap[event.type] || 'bg-gray-100'
                           )}
                           style={{ top: `${topPosition}rem`}}
                       >
