@@ -46,6 +46,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
 
     const nonWorkingDates = new Set<string>();
     holidays.forEach(h => {
+        // A day is non-working if it's an explicit leave OR it's a weekend that has NOT been deleted.
         if (h.type === 'leave') {
             nonWorkingDates.add(h.date);
         } else if (h.type === 'weekend' && !h.is_deleted) {
