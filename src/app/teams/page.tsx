@@ -12,7 +12,7 @@ import type { Role, Profile, Team } from '@/lib/types';
 import RolesClient from './roles-client';
 import TeamsClient from './teams-client';
 
-async function getRoles(supabase: ReturnType<typeof createServerClient>) {
+async function getRoles(supabase: any) {
     return await supabase.from('roles').select('*');
 }
 

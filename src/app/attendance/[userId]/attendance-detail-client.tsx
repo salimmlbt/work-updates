@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { Profile } from '@/lib/types';
+import { useState, useEffect } from 'react';
 
 interface MonthlyAttendance {
     date: string;
@@ -41,15 +42,29 @@ interface AttendanceDetailClientProps {
   allDaysCount: number;
 }
 
-function formatTime(time: string | null): string {
-  if (!time) return '-';
-  try {
-    // This will now run in the client's browser, using their local timezone
-    return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-  } catch (e) {
-    return '-';
-  }
+function TimeDisplay({ time }: { time: string | null }) {
+  const [formattedTime, setFormattedTime] = useState('-');
+
+  useEffect(() => {
+    if (time) {
+      try {
+        const localTime = new Date(time).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+        setFormattedTime(localTime);
+      } catch (e) {
+        setFormattedTime('-');
+      }
+    } else {
+      setFormattedTime('-');
+    }
+  }, [time]);
+
+  return <>{formattedTime}</>;
 }
+
 
 function formatHours(hours: number | null): string {
   if (hours === null || typeof hours === 'undefined') return '0.00';
@@ -149,10 +164,10 @@ export default function AttendanceDetailClient({
                   <div className="font-medium">{format(parseISO(item.date), 'dd MMMM, yyyy')}</div>
                   <div className="text-sm text-muted-foreground">{format(parseISO(item.date), 'EEEE')}</div>
                 </TableCell>
-                <TableCell>{formatTime(item.check_in)}</TableCell>
-                <TableCell>{formatTime(item.lunch_out)}</TableCell>
-                <TableCell>{formatTime(item.lunch_in)}</TableCell>
-                <TableCell>{formatTime(item.check_out)}</TableCell>
+                <TableCell><TimeDisplay time={item.check_in} /></TableCell>
+                <TableCell><TimeDisplay time={item.lunch_out} /></TableCell>
+                <TableCell><TimeDisplay time={item.lunch_in} /></TableCell>
+                <TableCell><TimeDisplay time={item.check_out} /></TableCell>
                 <TableCell>{formatHours(item.total_hours)}</TableCell>
               </TableRow>
             ))}

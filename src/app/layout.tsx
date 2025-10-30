@@ -11,19 +11,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const supabase = await createServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
   
   let profile: Profile | null = null;
-  if (session?.user) {
+  if (user) {
     const { data } = await supabase
       .from('profiles')
       .select('*, roles(*), teams:profile_teams(teams(*))')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
     profile = data as Profile;
   }
 
-  const isAuthenticated = !!session;
+  const isAuthenticated = !!user;
 
   return (
     <html lang="en" suppressHydrationWarning>

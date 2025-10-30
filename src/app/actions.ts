@@ -1,7 +1,4 @@
 
-
-
-
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -26,7 +23,7 @@ export async function checkIn() {
     .select('id, check_in')
     .eq('user_id', user.id)
     .eq('date', today)
-    .single();
+    .maybeSingle();
 
   if (fetchError && fetchError.code !== 'PGRST116') {
      return { error: `Database error: ${fetchError.message}` };
@@ -69,7 +66,7 @@ export async function checkOut() {
     .select('id, check_in, check_out')
     .eq('user_id', user.id)
     .eq('date', today)
-    .single();
+    .maybeSingle();
   
   if (fetchError || !attendance) {
     return { error: 'You have not checked in today.' };
@@ -119,7 +116,7 @@ export async function lunchOut() {
     .eq('user_id', user.id)
     .eq('date', today)
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error) {
     return { error: error.message };
@@ -147,7 +144,7 @@ export async function lunchIn() {
     .eq('user_id', user.id)
     .eq('date', today)
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error) {
     return { error: error.message };
@@ -1139,5 +1136,3 @@ export async function deleteHoliday(id: number) {
     revalidatePath('/calendar');
     return { success: true };
 }
-
-    

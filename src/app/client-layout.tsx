@@ -44,11 +44,13 @@ export default function ClientLayout({
 
       if (event === 'USER_UPDATED' && session?.user) {
          // If user is archived, log them out
-         supabase.from('profiles').select('is_archived').eq('id', session.user.id).single().then(({data}) => {
+         (async () => {
+            const {data} = await supabase.from('profiles').select('is_archived').eq('id', session.user.id).single()
             if (data?.is_archived) {
-                logout().then(() => router.push('/login'));
+                await logout();
+                router.push('/login');
             }
-         });
+         })();
       }
     });
 
