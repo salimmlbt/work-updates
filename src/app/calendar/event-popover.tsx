@@ -29,6 +29,7 @@ interface EventPopoverProps {
 
 export function EventPopover({ event, position, onClose, onDelete, onEdit, isPending }: EventPopoverProps) {
   const isPersonalOrOfficial = event.type === 'personal' || event.type === 'official';
+  const isDeletable = isPersonalOrOfficial || event.type === 'weekend';
 
   return (
     <div
@@ -47,12 +48,14 @@ export function EventPopover({ event, position, onClose, onDelete, onEdit, isPen
       
       {/* Add attendees and notes if available in your event data */}
       
-      {isPersonalOrOfficial && (
+      {isDeletable && (
         <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => onEdit(event)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-            </Button>
+            {isPersonalOrOfficial && (
+              <Button variant="outline" size="sm" onClick={() => onEdit(event)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+              </Button>
+            )}
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
