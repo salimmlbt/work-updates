@@ -44,33 +44,16 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
     if (attendanceError) return <p>Error fetching attendance: {attendanceError.message}</p>
     if (holidaysError) return <p>Error fetching holidays: {holidaysError.message}</p>
 
-    const leaveDates = new Set(
-        holidays
-        .filter(h => 
-            (h.type === 'leave') || 
-            (h.type === 'weekend' && !h.is_deleted)
-        )
-        .map(h => h.date)
-    );
-
-    const nonWorkingDays = allDays.filter(day => {
-        const dayOfWeek = getDay(day);
-        const dateString = format(day, 'yyyy-MM-dd');
-        
-        // It's a non-working day if it's an official leave
-        if (leaveDates.has(dateString)) return true;
-
-        // It's a non-working day if it's a Sunday and there's NO specific (deleted) record for it
-        if (dayOfWeek === 0) {
-            const sundayRecord = holidays.find(h => h.date === dateString && h.type === 'weekend');
-            // If no record, it's a default Sunday off. If there is a record, it's non-working only if NOT deleted.
-            return !sundayRecord || !sundayRecord.is_deleted;
+    const nonWorkingDates = new Set<string>();
+    holidays.forEach(h => {
+        if (h.type === 'leave') {
+            nonWorkingDates.add(h.date);
+        } else if (h.type === 'weekend' && !h.is_deleted) {
+            nonWorkingDates.add(h.date);
         }
-
-        return false;
     });
 
-    const totalWorkingDays = daysInMonth - nonWorkingDays.length;
+    const totalWorkingDays = daysInMonth - nonWorkingDates.size;
 
     const salaryData: SalaryData[] = users.map(user => {
         const userAttendance = attendance.filter(a => a.user_id === user.id);
