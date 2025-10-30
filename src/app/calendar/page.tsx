@@ -1,12 +1,48 @@
 
-
 import { createServerClient } from '@/lib/supabase/server';
 import CalendarClient from './calendar-client';
-import { startOfMonth, endOfMonth, eachDayOfInterval, format, getDay, getYear } from 'date-fns';
+import { startOfMonth, endOfMonth, eachDayOfInterval, format, getDay, getYear, startOfYear, endOfYear } from 'date-fns';
 import type { Task, Project, OfficialHoliday } from '@/lib/types';
 import { getPublicHolidays } from '../actions';
 
 export const dynamic = 'force-dynamic';
+
+async function seedWeekendHolidays(supabase: any, year: number) {
+  const yearStart = startOfYear(new Date(year, 0, 1));
+  const yearEnd = endOfYear(new Date(year, 11, 31));
+  const allSundays = eachDayOfInterval({ start: yearStart, end: yearEnd }).filter(day => getDay(day) === 0);
+
+  // Fetch ALL existing weekend holidays for the year, including soft-deleted ones
+  const { data: existingHolidays, error: fetchError } = await supabase
+    .from('official_holidays')
+    .select('date')
+    .eq('type', 'weekend')
+    .gte('date', format(yearStart, 'yyyy-MM-dd'))
+    .lte('date', format(yearEnd, 'yyyy-MM-dd'));
+
+  if (fetchError) {
+    console.error('Error fetching existing weekend holidays:', fetchError);
+    return;
+  }
+
+  const existingDates = new Set(existingHolidays.map((h: any) => h.date));
+  const holidaysToInsert = allSundays
+    .filter(day => !existingDates.has(format(day, 'yyyy-MM-dd')))
+    .map(day => ({
+      name: 'Leave',
+      date: format(day, 'yyyy-MM-dd'),
+      type: 'weekend' as const,
+      is_deleted: false,
+    }));
+
+  if (holidaysToInsert.length > 0) {
+    const { error: insertError } = await supabase.from('official_holidays').insert(holidaysToInsert);
+    if (insertError) {
+      console.error('Error seeding weekend holidays:', insertError);
+    }
+  }
+}
+
 
 export default async function CalendarPage({ searchParams }: { searchParams: { month?: string, view?: string } }) {
   const supabase = await createServerClient();
@@ -17,9 +53,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const selectedDate = new Date(`${selectedMonth}-01T00:00:00Z`);
   const year = getYear(selectedDate);
   
-  const monthStart = startOfMonth(selectedDate);
-  const monthEnd = endOfMonth(selectedDate);
-  const allDaysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  // Seed Sundays for the current year
+  await seedWeekendHolidays(supabase, year);
 
   // TODO: Make country code configurable
   const countryCode = 'IN';
@@ -30,7 +65,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     officialHolidaysResult,
     publicHolidaysResult,
   ] = await Promise.all([
-    user ? supabase.from('tasks').select('*').eq('assignee_id', user.id) : Promise.resolve({ data: [], error: null }),
+    user ? supabase.from('tasks').select('*').eq('assignee_id', user.id).eq('is_deleted', false) : Promise.resolve({ data: [], error: null }),
     supabase.from('projects').select('*').eq('is_deleted', false),
     supabase.from('official_holidays').select('*').eq('is_deleted', false),
     getPublicHolidays(year, countryCode),
@@ -48,19 +83,6 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const allHolidays = officialHolidays as OfficialHoliday[] || [];
 
-  const sundaysInMonth = allDaysInMonth.filter(day => getDay(day) === 0);
-
-  const weekendEvents = sundaysInMonth.map(sunday => ({
-      id: `weekend-${format(sunday, 'yyyy-MM-dd')}`,
-      name: 'Leave',
-      date: format(sunday, 'yyyy-MM-dd'),
-      description: 'Sunday Leave',
-      type: 'official',
-      user_id: null,
-      falaq_event_type: 'leave' as const,
-  }));
-
-
   const personalEvents = allHolidays
     .filter(h => h.user_id === user?.id && h.type === 'personal')
     .map(h => ({ id: `personal-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'personal', user_id: h.user_id, falaq_event_type: h.falaq_event_type }));
@@ -72,6 +94,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const specialDays = allHolidays
     .filter(h => h.type === 'special_day')
     .map(h => ({ id: `official-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'official', user_id: h.user_id, falaq_event_type: h.falaq_event_type }));
+
+  const weekendEvents = allHolidays
+    .filter(h => h.type === 'weekend')
+    .map(h => ({ id: `weekend-${h.id}`, name: h.name, date: h.date, description: h.description, type: 'weekend', user_id: h.user_id, falaq_event_type: h.falaq_event_type }));
 
 
   const myCalendarEvents = [

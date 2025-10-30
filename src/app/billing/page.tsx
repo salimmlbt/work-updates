@@ -1,8 +1,8 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import type { Profile } from '@/lib/types';
+import type { Profile, OfficialHoliday } from '@/lib/types';
 import BillingClient from './billing-client';
-import { startOfMonth, endOfMonth, getDaysInMonth, differenceInHours, parse, format, subMonths, addMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, getDaysInMonth, differenceInHours, parse, format, subMonths, addMonths, eachDayOfInterval, getDay } from 'date-fns';
 
 interface SalaryData {
     user: Profile;
@@ -16,32 +16,61 @@ interface SalaryData {
 
 export default async function BillingPage({ searchParams }: { searchParams: { month?: string } }) {
     const supabase = await createServerClient();
-    const selectedDate = searchParams.month ? new Date(searchParams.month) : new Date();
+    const selectedDate = searchParams.month ? new Date(`${searchParams.month}-01T00:00:00Z`) : new Date();
 
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
     const daysInMonth = getDaysInMonth(selectedDate);
     const prevMonth = format(subMonths(selectedDate, 1), 'yyyy-MM');
     const nextMonth = format(addMonths(selectedDate, 1), 'yyyy-MM');
+    
+    const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-    const { data: users, error: usersError } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('email', 'admin@falaq.com');
+    const [
+        usersRes,
+        attendanceRes,
+        holidaysRes
+    ] = await Promise.all([
+        supabase.from('profiles').select('*').neq('email', 'admin@falaq.com'),
+        supabase.from('attendance').select('*').gte('date', format(monthStart, 'yyyy-MM-dd')).lte('date', format(monthEnd, 'yyyy-MM-dd')),
+        supabase.from('official_holidays').select('date, type, is_deleted').gte('date', format(monthStart, 'yyyy-MM-dd')).lte('date', format(monthEnd, 'yyyy-MM-dd')),
+    ]);
 
-    if (usersError) {
-        return <p>Error fetching users: {usersError.message}</p>
-    }
+    const { data: users, error: usersError } = usersRes;
+    const { data: attendance, error: attendanceError } = attendanceRes;
+    const { data: holidays, error: holidaysError } = holidaysRes;
 
-    const { data: attendance, error: attendanceError } = await supabase
-        .from('attendance')
-        .select('*')
-        .gte('date', monthStart.toISOString())
-        .lte('date', monthEnd.toISOString());
+    if (usersError) return <p>Error fetching users: {usersError.message}</p>
+    if (attendanceError) return <p>Error fetching attendance: {attendanceError.message}</p>
+    if (holidaysError) return <p>Error fetching holidays: {holidaysError.message}</p>
 
-    if (attendanceError) {
-        return <p>Error fetching attendance: {attendanceError.message}</p>
-    }
+    const leaveDates = new Set(
+        holidays
+        .filter(h => 
+            (h.type === 'leave') || 
+            (h.type === 'weekend' && !h.is_deleted)
+        )
+        .map(h => h.date)
+    );
+
+    const nonWorkingDays = allDays.filter(day => {
+        const dayOfWeek = getDay(day);
+        const dateString = format(day, 'yyyy-MM-dd');
+        
+        // It's a non-working day if it's an official leave
+        if (leaveDates.has(dateString)) return true;
+
+        // It's a non-working day if it's a Sunday and there's NO specific (deleted) record for it
+        if (dayOfWeek === 0) {
+            const sundayRecord = holidays.find(h => h.date === dateString && h.type === 'weekend');
+            // If no record, it's a default Sunday off. If there is a record, it's non-working only if NOT deleted.
+            return !sundayRecord || !sundayRecord.is_deleted;
+        }
+
+        return false;
+    });
+
+    const totalWorkingDays = daysInMonth - nonWorkingDays.length;
 
     const salaryData: SalaryData[] = users.map(user => {
         const userAttendance = attendance.filter(a => a.user_id === user.id);
@@ -64,16 +93,16 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             }
         });
 
-        const absentDays = daysInMonth - presentDays;
+        const absentDays = totalWorkingDays - presentDays;
 
         // Placeholder salary logic
         const monthlySalary = 30000;
-        const perDaySalary = monthlySalary / daysInMonth;
+        const perDaySalary = totalWorkingDays > 0 ? monthlySalary / totalWorkingDays : 0;
         const payableSalary = (fullDays * perDaySalary) + (halfDays * perDaySalary / 2);
 
         return {
             user: user as Profile,
-            totalWorkingDays: daysInMonth,
+            totalWorkingDays,
             totalFullDays: fullDays,
             totalHalfDays: halfDays,
             totalAbsentDays: absentDays,
