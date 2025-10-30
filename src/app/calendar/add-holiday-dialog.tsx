@@ -19,7 +19,7 @@ import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { addHoliday } from '@/app/actions'
 import type { OfficialHoliday } from '@/lib/types'
-import { format } from 'date-fns'
+import { format, getDay } from 'date-fns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type DialogMode = 'holiday' | 'event' | 'special_day';
@@ -53,6 +53,8 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
   
   const title = titleMap[dialogType];
   const description = descriptionMap[dialogType];
+  const isSunday = selectedDate ? getDay(selectedDate) === 0 : false;
+  const isWorkingSundaySelected = formData.falaqEventType === 'working_sunday';
 
   useEffect(() => {
     if (isOpen) {
@@ -81,6 +83,10 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
       form.append('user_id', userId);
     }
     
+    if (isWorkingSundaySelected && !form.get('name')) {
+        form.set('name', 'Working Sunday');
+    }
+
     let type: OfficialHoliday['type'];
     if (dialogType === 'holiday') {
       type = 'official';
@@ -141,14 +147,14 @@ export function AddHolidayDialog({ isOpen, setIsOpen, onEventAdded, userId, dial
                             <SelectItem value="leave">Leave</SelectItem>
                             <SelectItem value="event">Event</SelectItem>
                             <SelectItem value="meeting">Meeting</SelectItem>
-                            <SelectItem value="working_sunday">Working Sunday</SelectItem>
+                            {isSunday && <SelectItem value="working_sunday">Working Sunday</SelectItem>}
                         </SelectContent>
                     </Select>
                 </div>
             )}
             <div className="grid gap-2">
               <Label htmlFor="name">Event Name</Label>
-              <Input id="name" name="name" placeholder="e.g., Company Off-site" required />
+              <Input id="name" name="name" placeholder="e.g., Company Off-site" required={!isWorkingSundaySelected} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="date">Date</Label>
