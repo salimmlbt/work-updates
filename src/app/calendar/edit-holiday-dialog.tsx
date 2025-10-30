@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
@@ -22,7 +23,7 @@ import { format, parseISO } from 'date-fns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { CalendarEvent } from './calendar-client'
 
-type FalaqEventType = 'leave' | 'event' | 'meeting';
+type FalaqEventType = 'leave' | 'event' | 'meeting' | 'working_sunday';
 
 interface EditHolidayDialogProps {
   isOpen: boolean
@@ -127,6 +128,7 @@ export function EditHolidayDialog({ isOpen, setIsOpen, onEventUpdated, event }: 
                             <SelectItem value="leave">Leave</SelectItem>
                             <SelectItem value="event">Event</SelectItem>
                             <SelectItem value="meeting">Meeting</SelectItem>
+                            <SelectItem value="working_sunday">Working Sunday</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

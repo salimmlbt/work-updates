@@ -1,4 +1,5 @@
 
+
 import { createServerClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import BillingClient from './billing-client';
@@ -12,6 +13,7 @@ import {
     getDay,
     parse,
     differenceInHours,
+    getDaysInMonth,
 } from 'date-fns';
 
 interface SalaryData {
@@ -36,6 +38,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
     const nextMonth = format(addMonths(selectedDate, 1), 'yyyy-MM');
 
     const allDaysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    const totalDaysInMonth = getDaysInMonth(selectedDate);
 
     // 🟦 Fetch data
     const [usersRes, attendanceRes, holidaysRes] = await Promise.all([
@@ -47,8 +50,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             .lte('date', format(monthEnd, 'yyyy-MM-dd')),
         supabase
             .from('official_holidays')
-            .select('date')
-            .eq('type', 'leave')
+            .select('date, falaq_event_type')
             .eq('is_deleted', false)
             .gte('date', format(monthStart, 'yyyy-MM-dd'))
             .lte('date', format(monthEnd, 'yyyy-MM-dd')),
@@ -62,18 +64,25 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
     if (attendanceError) return <p>Error fetching attendance: {attendanceError.message}</p>;
     if (holidaysError) return <p>Error fetching holidays: {holidaysError.message}</p>;
 
-    const leaveDates = new Set((holidays || []).map(h => h.date));
-
-    // 🟥 Calculate working days: exclude Sundays and leave days
-    const totalWorkingDays = allDaysInMonth.filter((day) => {
-        const isSunday = getDay(day) === 0;
+    // 🧮 Calculate working days
+    const leaveDates = new Set((holidays || []).filter(h => h.falaq_event_type === 'leave').map(h => h.date));
+    const workingSundays = new Set((holidays || []).filter(h => h.falaq_event_type === 'working_sunday').map(h => h.date));
+    
+    let nonWorkingDaysCount = 0;
+    allDaysInMonth.forEach(day => {
         const dayStr = format(day, 'yyyy-MM-dd');
-        const isLeave = leaveDates.has(dayStr);
-        return !isSunday && !isLeave;
-    }).length;
+        const isSunday = getDay(day) === 0;
 
+        // It's a non-working day if it's a Sunday (and not explicitly a working Sunday)
+        // OR if it's an official leave day.
+        if ((isSunday && !workingSundays.has(dayStr)) || leaveDates.has(dayStr)) {
+            nonWorkingDaysCount++;
+        }
+    });
 
-    // 🧮 Build salary data
+    const totalWorkingDays = totalDaysInMonth - nonWorkingDaysCount;
+
+    // 🧮 Build salary data for each user
     const salaryData: SalaryData[] = users.map((user) => {
         const userAttendance = attendance.filter((a) => a.user_id === user.id);
         const presentDays = userAttendance.length;
@@ -101,6 +110,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             }
         });
 
+        // Absent days are total working days minus days they were present (full or half)
         const absentDays = totalWorkingDays - presentDays;
 
         // 🟩 Salary logic (can be replaced with your real data)
@@ -113,7 +123,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             totalWorkingDays,
             totalFullDays: fullDays,
             totalHalfDays: halfDays,
-            totalAbsentDays: absentDays,
+            totalAbsentDays: absentDays > 0 ? absentDays : 0, // Ensure absent days is not negative
             monthlySalary,
             payableSalary,
         };

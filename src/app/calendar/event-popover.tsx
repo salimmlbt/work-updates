@@ -28,8 +28,9 @@ interface EventPopoverProps {
 }
 
 export function EventPopover({ event, position, onClose, onDelete, onEdit, isPending }: EventPopoverProps) {
-  const isPersonalOrOfficial = event.type === 'personal' || event.type === 'official';
-  const isDeletable = isPersonalOrOfficial || event.type === 'weekend';
+  const isEditable = event.type === 'personal' || event.type === 'official';
+  const isDeletable = isEditable || event.type === 'special_day';
+
 
   return (
     <div
@@ -46,11 +47,9 @@ export function EventPopover({ event, position, onClose, onDelete, onEdit, isPen
         </Button>
       </div>
       
-      {/* Add attendees and notes if available in your event data */}
-      
       {isDeletable && (
         <div className="mt-4 flex justify-end gap-2">
-            {isPersonalOrOfficial && (
+            {isEditable && (
               <Button variant="outline" size="sm" onClick={() => onEdit(event)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit

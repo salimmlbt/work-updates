@@ -11,7 +11,7 @@ const typeColorMap: { [key: string]: string } = {
   public: 'bg-blue-100 text-blue-800',
   official: 'bg-purple-100 text-purple-800',
   leave: 'bg-red-100 text-red-800',
-  weekend: 'bg-red-100 text-red-800',
+  working_sunday: 'bg-green-100 text-green-800',
   task: 'bg-yellow-100 text-yellow-800',
   project: 'bg-green-100 text-green-800',
   personal: 'bg-pink-100 text-pink-800',
@@ -37,17 +37,13 @@ function DayContent({
   const isSelected = selectedDate && isSameDay(date, selectedDate);
   const isWeekendDay = getDay(date) === 0;
 
-  const isFalaqLeave = dayEvents.some(e => (e as any).falaq_event_type === 'leave');
-  const isMarkedAsWeekend = dayEvents.some(e => e.type === 'weekend');
+  const isWorkingSunday = dayEvents.some(e => e.falaq_event_type === 'working_sunday');
 
   return (
     <div
       className={cn(
         'flex flex-col h-full w-full p-2',
-        activeCalendar === 'falaq_calendar' && isFalaqLeave
-          ? 'bg-red-50'
-          : isWeekendDay && 'bg-gray-50/50',
-        isMarkedAsWeekend && 'bg-red-100'
+        isWeekendDay && !isWorkingSunday ? 'bg-red-50' : 'bg-transparent'
       )}
     >
       <span
@@ -63,8 +59,7 @@ function DayContent({
 
       <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
         {dayEvents.slice(0, 3).map((event, index) => {
-          const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
-          const eventType = event.type?.toLowerCase?.() || '';
+          const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || '';
 
           return (
             <div
@@ -75,9 +70,7 @@ function DayContent({
               }}
               className={cn(
                 'text-xs p-1 rounded-sm truncate cursor-pointer',
-                (activeCalendar === 'falaq_calendar' && isEventFalaqLeave)
-                  ? typeColorMap['leave']
-                  : typeColorMap[eventType] || 'bg-gray-100'
+                typeColorMap[eventType] || 'bg-gray-100'
               )}
               title={event.name}
             >

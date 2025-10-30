@@ -110,34 +110,34 @@ export type Database = {
           created_at: string
           date: string
           description: string | null
-          falaq_event_type: "leave" | "event" | "meeting" | null
+          falaq_event_type: "leave" | "event" | "meeting" | "working_sunday" | null
           id: number
-          name: string
-          type: "official" | "personal" | "special_day" | "weekend"
-          user_id: string | null
           is_deleted: boolean
+          name: string
+          type: "official" | "personal" | "special_day"
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           date: string
           description?: string | null
-          falaq_event_type?: "leave" | "event" | "meeting" | null
+          falaq_event_type?: "leave" | "event" | "meeting" | "working_sunday" | null
           id?: number
-          name: string
-          type: "official" | "personal" | "special_day" | "weekend"
-          user_id?: string | null
           is_deleted?: boolean
+          name: string
+          type: "official" | "personal" | "special_day"
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           date?: string
           description?: string | null
-          falaq_event_type?: "leave" | "event" | "meeting" | null
+          falaq_event_type?: "leave" | "event" | "meeting" | "working_sunday" | null
           id?: number
-          name?: string
-          type?: "official" | "personal" | "special_day" | "weekend"
-          user_id?: string | null
           is_deleted?: boolean
+          name?: string
+          type?: "official" | "personal" | "special_day"
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -459,7 +459,7 @@ export type Database = {
       }
     }
     Enums: {
-      falaq_event_type: "leave" | "event" | "meeting"
+      falaq_event_type: "leave" | "event" | "meeting" | "working_sunday"
       task_status: "todo" | "inprogress" | "done"
     }
     CompositeTypes: {
