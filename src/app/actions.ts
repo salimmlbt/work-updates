@@ -1127,7 +1127,10 @@ export async function updateHoliday(id: number, formData: FormData) {
 
 export async function deleteHoliday(id: number) {
     const supabase = await createServerClient();
-    const { error } = await supabase.from('official_holidays').delete().eq('id', id);
+    const { error } = await supabase
+        .from('official_holidays')
+        .update({ is_deleted: true })
+        .eq('id', id);
 
     if (error) {
         return { error: error.message };

@@ -32,7 +32,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   ] = await Promise.all([
     user ? supabase.from('tasks').select('*').eq('assignee_id', user.id) : Promise.resolve({ data: [], error: null }),
     supabase.from('projects').select('*').eq('is_deleted', false),
-    supabase.from('official_holidays').select('*'),
+    supabase.from('official_holidays').select('*').eq('is_deleted', false),
     getPublicHolidays(year, countryCode),
   ]);
   
