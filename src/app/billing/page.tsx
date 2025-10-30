@@ -20,11 +20,10 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
 
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
-    const daysInMonth = getDaysInMonth(selectedDate);
     const prevMonth = format(subMonths(selectedDate, 1), 'yyyy-MM');
     const nextMonth = format(addMonths(selectedDate, 1), 'yyyy-MM');
     
-    const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    const allDaysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
     const [
         usersRes,
@@ -33,7 +32,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
     ] = await Promise.all([
         supabase.from('profiles').select('*').neq('email', 'admin@falaq.com'),
         supabase.from('attendance').select('*').gte('date', format(monthStart, 'yyyy-MM-dd')).lte('date', format(monthEnd, 'yyyy-MM-dd')),
-        supabase.from('official_holidays').select('date, type, is_deleted').gte('date', format(monthStart, 'yyyy-MM-dd')).lte('date', format(monthEnd, 'yyyy-MM-dd')),
+        supabase.from('official_holidays').select('date, type, is_deleted').eq('is_deleted', false).gte('date', format(monthStart, 'yyyy-MM-dd')).lte('date', format(monthEnd, 'yyyy-MM-dd')),
     ]);
 
     const { data: users, error: usersError } = usersRes;
@@ -44,17 +43,24 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
     if (attendanceError) return <p>Error fetching attendance: {attendanceError.message}</p>
     if (holidaysError) return <p>Error fetching holidays: {holidaysError.message}</p>
 
-    const nonWorkingDates = new Set<string>();
-    holidays.forEach(h => {
-        // A day is non-working if it's an explicit leave OR it's a weekend that has NOT been deleted.
-        if (h.type === 'leave') {
-            nonWorkingDates.add(h.date);
-        } else if (h.type === 'weekend' && !h.is_deleted) {
-            nonWorkingDates.add(h.date);
+    const leaveDates = new Set(
+      (holidays || [])
+        .filter(h => h.type === 'leave')
+        .map(h => h.date)
+    );
+    
+    const totalWorkingDays = allDaysInMonth.filter(day => {
+        // Sunday is day 0
+        if (getDay(day) === 0) {
+            return false;
         }
-    });
+        // Check if it's an official leave
+        if (leaveDates.has(format(day, 'yyyy-MM-dd'))) {
+            return false;
+        }
+        return true;
+    }).length;
 
-    const totalWorkingDays = daysInMonth - nonWorkingDates.size;
 
     const salaryData: SalaryData[] = users.map(user => {
         const userAttendance = attendance.filter(a => a.user_id === user.id);
