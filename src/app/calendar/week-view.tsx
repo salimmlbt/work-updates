@@ -69,8 +69,8 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
             )}
             onClick={() => onDateSelect(day)}
           >
-            <p className={cn("text-sm", isToday(day) ? 'text-primary' : 'text-muted-foreground', isSameDay(day, selectedDate) && 'text-primary font-bold')}>{format(day, 'EEE')}</p>
-            <p className={cn("text-2xl font-semibold", isToday(day) && 'text-primary', isSameDay(day, selectedDate) && 'text-primary')}>{format(day, 'd')}</p>
+            <p className={cn("text-sm", isToday(day) && !isSameDay(day, selectedDate) ? 'text-primary' : 'text-muted-foreground', isSameDay(day, selectedDate) && 'text-primary font-bold')}>{format(day, 'EEE')}</p>
+            <p className={cn("text-2xl font-semibold", isToday(day) && !isSameDay(day, selectedDate) && 'text-primary', isSameDay(day, selectedDate) && 'text-primary')}>{format(day, 'd')}</p>
           </div>
         )})}
         

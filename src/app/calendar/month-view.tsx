@@ -54,7 +54,7 @@ function DayContent({
       <span
         className={cn(
           'self-start mb-1 h-6 w-6 flex items-center justify-center',
-          isToday(date) && 'text-primary font-bold',
+          isToday(date) && !isSelected && 'text-primary font-bold',
           isSelected &&
             'bg-primary text-primary-foreground rounded-full'
         )}
@@ -155,17 +155,23 @@ export default function MonthView({
         DayContent: (props) => {
           const isWorkingSunday = eventsByDay[format(props.date, 'yyyy-MM-dd')]?.some(e => e.falaq_event_type === 'working_sunday');
           const isSunday = getDay(props.date) === 0;
+          const isSelected = selectedDate && isSameDay(props.date, selectedDate);
           return (
-          <div className={cn(isSunday && !isWorkingSunday && 'bg-red-50 h-full w-full')}>
-            <DayContent
-              {...props}
-              events={events}
-              onEventClick={onEventClick}
-              activeCalendar={activeCalendar}
-              selectedDate={selectedDate}
-            />
-          </div>
-        )},
+            <div className={cn("h-full w-full",
+                isSunday && !isWorkingSunday && 'bg-red-50',
+                isToday(props.date) && !isSelected && 'bg-blue-50',
+                isSelected && 'bg-blue-100'
+            )}>
+              <DayContent
+                {...props}
+                events={events}
+                onEventClick={onEventClick}
+                activeCalendar={activeCalendar}
+                selectedDate={selectedDate}
+              />
+            </div>
+          )
+        },
       }}
       onDayClick={(day, modifiers) => {
         if (modifiers.disabled) return;
