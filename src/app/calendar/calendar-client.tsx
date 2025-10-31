@@ -13,6 +13,7 @@ import {
   User,
   Building,
   Plane,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import { format, parse, addMonths, subMonths, isSameDay, addWeeks, subWeeks, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import type { OfficialHoliday } from '@/lib/types';
@@ -287,10 +288,10 @@ export default function CalendarClient({
           </Button>
            <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-auto justify-start text-left font-normal">
-                <Calendar className="mr-2 h-4 w-4" />
-                <span>{format(currentDate, 'MMMM d, yyyy')}</span>
-              </Button>
+                <div role="button" className={cn("w-auto justify-start text-left font-normal", 'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <span>{format(currentDate, 'MMMM d, yyyy')}</span>
+                </div>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
