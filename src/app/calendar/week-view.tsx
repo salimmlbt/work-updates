@@ -4,8 +4,6 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday, g
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const typeColorMap: { [key: string]: string } = {
   public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
@@ -27,10 +25,9 @@ interface WeekViewProps {
   activeCalendar: string;
   onDateSelect: (date: Date) => void;
   selectedDate: Date;
-  onWeekChange: (direction: 'next' | 'prev') => void;
 }
 
-export default function WeekView({ date, events, onEventClick, activeCalendar, onDateSelect, selectedDate, onWeekChange }: WeekViewProps) {
+export default function WeekView({ date, events, onEventClick, activeCalendar, onDateSelect, selectedDate }: WeekViewProps) {
   const weekStart = startOfWeek(date, { weekStartsOn: 0 }); // Sunday
   const weekEnd = endOfWeek(date, { weekStartsOn: 0 }); // Saturday
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -52,12 +49,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
         {/* Day headers (sticky) */}
         <div className="col-start-1 col-end-2 border-r sticky top-0 bg-white z-20">
           <div className="h-20 border-b flex items-center justify-center gap-1">
-             <Button variant="ghost" size="icon" onClick={() => onWeekChange('prev')}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-             <Button variant="ghost" size="icon" onClick={() => onWeekChange('next')}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+             {/* This space is for alignment */}
           </div>
         </div>
         {weekDays.map((day, dayIndex) => {
@@ -72,8 +64,8 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
             className={cn(
                 "sticky top-0 bg-white z-20 text-center py-2 border-b border-r cursor-pointer", 
                 dayIndex === 6 && 'border-r-0',
-                activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-50' : '',
-                isSunday && !isWorkingSunday ? 'bg-red-50' : '',
+                activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-100' : '',
+                isSunday && !isWorkingSunday ? 'bg-red-100' : '',
                 isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
                 isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
             )}
@@ -104,8 +96,8 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
           <div key={day.toString()} className={cn(
             "relative border-r", 
             dayIndex === 6 && 'border-r-0',
-            activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-50' : '',
-            isSunday && !isWorkingSunday ? 'bg-red-50' : '',
+            activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-100' : '',
+            isSunday && !isWorkingSunday ? 'bg-red-100' : '',
             isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
             isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
           )}>

@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { Calendar } from '@/components/ui/calendar';
@@ -137,6 +138,7 @@ export default function MonthView({
       classNames={{
         months: 'flex-1 flex flex-col',
         month: 'flex-1 flex flex-col',
+        caption: 'hidden',
         caption_label: 'text-lg font-medium',
         nav: 'hidden',
         table: 'w-full h-full border-collapse table-fixed',
@@ -160,7 +162,7 @@ export default function MonthView({
           const isSelected = selectedDate && isSameDay(props.date, selectedDate);
           return (
             <div className={cn("h-full w-full",
-                isSunday && !isWorkingSunday && 'bg-red-50/50',
+                isSunday && !isWorkingSunday && 'bg-red-100',
                 isToday(props.date) && !isSelected && 'bg-blue-50',
                 isSelected && 'bg-blue-100'
             )}>

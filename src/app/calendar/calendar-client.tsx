@@ -14,7 +14,7 @@ import {
   Building,
   Plane,
 } from 'lucide-react';
-import { format, parse, addMonths, subMonths, isSameDay, addWeeks, subWeeks } from 'date-fns';
+import { format, parse, addMonths, subMonths, isSameDay, addWeeks, subWeeks, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import type { OfficialHoliday } from '@/lib/types';
 import { AddHolidayDialog } from './add-holiday-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -89,13 +89,9 @@ export default function CalendarClient({
   const [mainHeight, setMainHeight] = useState('100vh');
   
   useEffect(() => {
-    // This effect synchronizes the component's state with the URL's search parameters.
     const newDate = parse(initialMonth, 'yyyy-MM', new Date());
     setCurrentDate(newDate);
-    // Keep selectedDate in sync unless a specific day has been clicked
-    if (format(selectedDate, 'yyyy-MM') !== initialMonth) {
-        setSelectedDate(newDate);
-    }
+    setSelectedDate(newDate);
   }, [initialMonth]);
 
 
@@ -114,18 +110,9 @@ export default function CalendarClient({
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
 
-  const handleDateChange = (date: Date | undefined) => {
-    if (!date) return;
+  const navigateToDate = (date: Date) => {
     const newMonth = format(date, 'yyyy-MM');
-    const oldMonth = currentDate ? format(currentDate, 'yyyy-MM') : '';
-    
-    if (newMonth !== oldMonth) {
-      router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
-    } else {
-       // If only the day changes within the same month, just update state
-      setCurrentDate(date);
-      setSelectedDate(date);
-    }
+    router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
   };
 
   const handleDateSelect = (date: Date) => {
@@ -133,14 +120,8 @@ export default function CalendarClient({
     if (view !== 'month') {
         setCurrentDate(date);
     }
+    navigateToDate(date);
   };
-
-  const handleWeekChange = (direction: 'next' | 'prev') => {
-    if (!currentDate) return;
-    const newDate = direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1);
-    const newMonth = format(newDate, 'yyyy-MM');
-    router.push(`/calendar?month=${newMonth}&view=week&calendar=${activeCalendar}`);
-  }
   
   const handleCalendarChange = (newCalendar: keyof EventSources) => {
     if (!currentDate) return;
@@ -233,7 +214,7 @@ export default function CalendarClient({
         );
       case 'week':
         return (
-          <WeekView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} onWeekChange={handleWeekChange} />
+          <WeekView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} />
         );
       case 'month':
       default:
@@ -247,45 +228,85 @@ export default function CalendarClient({
     return <div className="flex h-full w-full items-center justify-center">Loading...</div>;
   }
   
-  const ActiveCalendarIcon = calendarViews.find(v => v.id === activeCalendar)?.icon || User;
-  const activeCalendarLabel = calendarViews.find(v => v.id === activeCalendar)?.label;
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
+
+  const renderHeaderControls = () => {
+      switch (view) {
+          case 'day':
+              return (
+                  <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" onClick={() => navigateToDate(subDays(currentDate, 1))}>
+                          <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <h2 className="text-lg font-semibold w-48 text-center">{format(currentDate, 'MMMM d, yyyy')}</h2>
+                      <Button variant="outline" size="icon" onClick={() => navigateToDate(addDays(currentDate, 1))}>
+                          <ChevronRight className="h-4 w-4" />
+                      </Button>
+                  </div>
+              )
+          case 'week':
+              return (
+                  <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" onClick={() => navigateToDate(subWeeks(currentDate, 1))}>
+                          <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <h2 className="text-lg font-semibold w-48 text-center">
+                          {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d')}
+                      </h2>
+                      <Button variant="outline" size="icon" onClick={() => navigateToDate(addWeeks(currentDate, 1))}>
+                          <ChevronRight className="h-4 w-4" />
+                      </Button>
+                  </div>
+              )
+          case 'month':
+          default:
+              return (
+                  <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" onClick={() => navigateToDate(subMonths(currentDate, 1))}>
+                          <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <h2 className="text-lg font-semibold w-48 text-center">{format(currentDate, 'MMMM yyyy')}</h2>
+                      <Button variant="outline" size="icon" onClick={() => navigateToDate(addMonths(currentDate, 1))}>
+                          <ChevronRight className="h-4 w-4" />
+                      </Button>
+                  </div>
+              )
+      }
+  }
 
   return (
     <div className="flex h-full flex-col bg-white">
       <header
         id="calendar-header"
-        className="sticky top-0 z-30 flex flex-col items-center justify-between gap-4 border-b bg-white p-4 pb-4 shadow-sm sm:flex-row sm:p-6 lg:p-8"
+        className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b bg-white p-4 shadow-sm"
       >
         <div className="flex flex-shrink-0 items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => handleDateChange(subMonths(currentDate, 1))}>
-            <ChevronLeft className="h-4 w-4" />
+          <Button variant="outline" onClick={() => navigateToDate(new Date())}>
+            Today
           </Button>
-
-          <Popover>
+           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" className="w-48 justify-center whitespace-nowrap text-lg font-semibold">
-                {format(currentDate, 'MMMM yyyy')}
+              <Button variant="outline" className="w-auto justify-start text-left font-normal">
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>{format(currentDate, 'MMMM d, yyyy')}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
                 month={currentDate}
-                onMonthChange={(month) => month && handleDateChange(month)}
+                onMonthChange={(month) => month && navigateToDate(month)}
                 selected={currentDate}
-                onSelect={(date) => date && handleDateChange(date)}
+                onSelect={(date) => date && handleDateSelect(date)}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
+        </div>
 
-          <Button variant="outline" size="icon" onClick={() => handleDateChange(addMonths(currentDate, 1))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-
-          <Button variant="outline" onClick={() => handleDateChange(new Date())}>
-            Today
-          </Button>
+        <div className="flex flex-1 justify-center">
+            {renderHeaderControls()}
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-4">
