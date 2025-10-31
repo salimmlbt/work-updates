@@ -14,7 +14,7 @@ import {
   Building,
   Plane,
 } from 'lucide-react';
-import { format, parse, addMonths, subMonths, isSameDay } from 'date-fns';
+import { format, parse, addMonths, subMonths, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import type { OfficialHoliday } from '@/lib/types';
 import { AddHolidayDialog } from './add-holiday-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -114,12 +114,15 @@ export default function CalendarClient({
   }, []);
 
   const handleDateChange = (date: Date | undefined) => {
-    if (!date || !currentDate) return;
+    if (!date) return;
     const newMonth = format(date, 'yyyy-MM');
-    const oldMonth = format(currentDate, 'yyyy-MM');
+    const oldMonth = currentDate ? format(currentDate, 'yyyy-MM') : '';
+    
     setCurrentDate(date);
-    if (newMonth !== oldMonth) {
-      router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
+    handleDateSelect(date); // Also update the selected date
+
+    if (newMonth !== oldMonth || view !== 'month') {
+        router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
     }
   };
 
@@ -129,6 +132,12 @@ export default function CalendarClient({
         setCurrentDate(date);
     }
   };
+
+  const handleWeekChange = (direction: 'next' | 'prev') => {
+    if (!currentDate) return;
+    const newDate = direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1);
+    handleDateChange(newDate);
+  }
   
   const handleCalendarChange = (newCalendar: keyof EventSources) => {
     if (!currentDate) return;
@@ -221,7 +230,7 @@ export default function CalendarClient({
         );
       case 'week':
         return (
-          <WeekView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} />
+          <WeekView date={currentDate} events={allEvents} onEventClick={handleEventClick} activeCalendar={activeCalendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} onWeekChange={handleWeekChange} />
         );
       case 'month':
       default:
