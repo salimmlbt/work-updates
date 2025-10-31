@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Calendar } from '@/components/ui/calendar';
@@ -45,9 +46,10 @@ function DayContent({
   
   const containerRef = useRef<HTMLDivElement>(null);
   
+  const actualEvents = dayEvents.filter(e => e.type !== 'weekend');
   const maxVisibleEvents = 3;
-  const visibleEvents = dayEvents.filter(e => e.type !== 'weekend').slice(0, maxVisibleEvents);
-  const overflowCount = dayEvents.length - visibleEvents.length;
+  const visibleEvents = actualEvents.slice(0, maxVisibleEvents);
+  const overflowCount = actualEvents.length - visibleEvents.length;
 
   return (
      <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50")}>
@@ -158,7 +160,7 @@ export default function MonthView({
           const isSelected = selectedDate && isSameDay(props.date, selectedDate);
           return (
             <div className={cn("h-full w-full",
-                isSunday && !isWorkingSunday && 'bg-red-50',
+                isSunday && !isWorkingSunday && 'bg-red-50/50',
                 isToday(props.date) && !isSelected && 'bg-blue-50',
                 isSelected && 'bg-blue-100'
             )}>
