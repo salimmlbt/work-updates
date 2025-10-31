@@ -3,10 +3,10 @@
 
 import { Calendar } from '@/components/ui/calendar';
 import type { DayContentProps } from 'react-day-picker';
-import { format, isSameDay, getMonth, isToday } from 'date-fns';
+import { format, isSameDay, getMonth, isToday, getDay } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
-import { useMemo, useRef, useLayoutEffect } from 'react';
+import { useMemo, useRef, useLayoutEffect, useState } from 'react';
 
 const typeColorMap: { [key: string]: { bg: string; border: string } } = {
     public: { bg: 'bg-blue-100', border: 'border-blue-500' },
@@ -43,34 +43,32 @@ function DayContent({
   const isSelected = selectedDate && isSameDay(date, selectedDate);
   
   const containerRef = useRef<HTMLDivElement>(null);
-  const eventsRef = useRef<HTMLDivElement>(null);
+  const dayNumberRef = useRef<HTMLSpanElement>(null);
+  const [overflowCount, setOverflowCount] = useState(0);
 
-  const { visibleEvents, overflowCount } = useMemo(() => {
-    if (!containerRef.current || !eventsRef.current || dayEvents.length === 0) {
-      return { visibleEvents: dayEvents, overflowCount: 0 };
+  useLayoutEffect(() => {
+    if (containerRef.current && dayNumberRef.current) {
+        const eventItemHeight = 22; // approx height of one event badge
+        const containerHeight = containerRef.current.offsetHeight;
+        const dayNumberHeight = dayNumberRef.current.offsetHeight + 4; // 4 for margin
+        const availableHeight = containerHeight - dayNumberHeight;
+        const maxVisibleEvents = Math.floor(availableHeight / eventItemHeight);
+        
+        if (dayEvents.length > maxVisibleEvents) {
+            setOverflowCount(dayEvents.length - maxVisibleEvents);
+        } else {
+            setOverflowCount(0);
+        }
     }
-    
-    // Simple calculation assuming a fixed height for event items
-    const eventItemHeight = 22; // approx height of one event badge
-    const containerHeight = containerRef.current.offsetHeight;
-    const dayNumberHeight = 24; // approx height of the day number
-    const availableHeight = containerHeight - dayNumberHeight;
-    const maxVisibleEvents = Math.floor(availableHeight / eventItemHeight);
-
-    if (dayEvents.length > maxVisibleEvents) {
-      return {
-        visibleEvents: dayEvents.slice(0, maxVisibleEvents -1),
-        overflowCount: dayEvents.length - (maxVisibleEvents -1),
-      };
-    }
-    
-    return { visibleEvents: dayEvents, overflowCount: 0 };
-  }, [dayEvents]);
-
+  }, [dayEvents.length]);
+  
+  const maxVisible = overflowCount > 0 ? dayEvents.length - overflowCount : dayEvents.length;
+  const visibleEvents = dayEvents.slice(0, maxVisible);
 
   return (
      <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50")}>
       <span
+        ref={dayNumberRef}
         className={cn(
           'self-start mb-1 h-6 w-6 flex items-center justify-center',
           isToday(date) && 'text-primary font-bold',
@@ -81,7 +79,7 @@ function DayContent({
         {dayNumber}
       </span>
 
-      <div ref={eventsRef} className="flex-1 overflow-hidden space-y-1">
+      <div className="flex-1 overflow-hidden space-y-1">
         {visibleEvents.map((event, index) => {
           const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || 'official';
           const color = typeColorMap[eventType] || { bg: 'bg-gray-100', border: 'border-gray-500' };
@@ -96,7 +94,6 @@ function DayContent({
                 'text-xs p-1 rounded-sm truncate cursor-pointer border-l-4',
                 color.bg,
                 color.border,
-                isOutside && 'opacity-50'
               )}
               title={event.name}
             >
@@ -147,9 +144,9 @@ export default function MonthView({
         head_row: 'flex',
         head_cell: 'flex-1 p-2 text-center text-sm font-medium text-muted-foreground',
         body: 'flex-1 grid grid-cols-7 grid-rows-5',
-        row: 'flex-1 grid grid-cols-7 contents-start border-t',
+        row: 'grid grid-cols-7 contents-start border-t min-h-0',
         cell: cn(
-          'h-full p-0 align-top relative flex flex-col border-r',
+          'p-0 align-top relative flex flex-col border-r',
           'last:border-r-0'
         ),
         day: 'w-full h-full flex',
