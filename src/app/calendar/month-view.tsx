@@ -2,7 +2,7 @@
 
 import { Calendar } from '@/components/ui/calendar';
 import type { DayContentProps } from 'react-day-picker';
-import { format, isSameDay, getMonth, isToday } from 'date-fns';
+import { format, isSameDay, getMonth, isToday, getDay } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo, useRef } from 'react';
@@ -37,7 +37,9 @@ function DayContent({
   }, [date, events]);
   
   const isOutside = getMonth(date) !== getMonth(displayMonth);
-  const isWeekend = dayEvents.some(e => e.type === 'weekend');
+  
+  const isWorkingSunday = dayEvents.some(e => e.falaq_event_type === 'working_sunday');
+  const isSunday = getDay(date) === 0;
 
   const dayNumber = format(date, 'd');
   const isSelected = selectedDate && isSameDay(date, selectedDate);
@@ -46,10 +48,10 @@ function DayContent({
   
   const maxVisibleEvents = 3;
   const visibleEvents = dayEvents.filter(e => e.type !== 'weekend').slice(0, maxVisibleEvents);
-  const overflowCount = dayEvents.length - visibleEvents.length - (isWeekend ? 1 : 0);
+  const overflowCount = dayEvents.length - visibleEvents.length - (isSunday && !isWorkingSunday ? 1 : 0);
 
   return (
-     <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50", isWeekend && 'bg-red-100/50 dark:bg-red-900/20')}>
+     <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50", isSunday && !isWorkingSunday && 'bg-red-50 dark:bg-red-900/20')}>
       <span
         className={cn(
           'self-start mb-1 h-6 w-6 flex items-center justify-center',
