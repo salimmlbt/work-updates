@@ -19,6 +19,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const monthEnd = endOfMonth(selectedDate);
   const year = getYear(selectedDate);
   
+  const monthStartISO = format(monthStart, 'yyyy-MM-dd');
+  const monthEndISO = format(monthEnd, 'yyyy-MM-dd');
+  
   // TODO: Make country code configurable
   const countryCode = 'IN';
 
@@ -28,9 +31,21 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
     officialHolidaysResult,
     publicHolidaysResult,
   ] = await Promise.all([
-    user ? supabase.from('tasks').select('*').eq('assignee_id', user.id).eq('is_deleted', false) : Promise.resolve({ data: [], error: null }),
-    supabase.from('projects').select('*').eq('is_deleted', false),
-    supabase.from('official_holidays').select('*').eq('is_deleted', false),
+    user 
+      ? supabase.from('tasks').select('*')
+          .eq('assignee_id', user.id)
+          .eq('is_deleted', false)
+          .gte('deadline', monthStartISO)
+          .lte('deadline', monthEndISO) 
+      : Promise.resolve({ data: [], error: null }),
+    supabase.from('projects').select('*')
+      .eq('is_deleted', false)
+      .gte('due_date', monthStartISO)
+      .lte('due_date', monthEndISO),
+    supabase.from('official_holidays').select('*')
+      .eq('is_deleted', false)
+      .gte('date', monthStartISO)
+      .lte('date', monthEndISO),
     getPublicHolidays(year, countryCode),
   ]);
   
@@ -84,7 +99,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   ];
 
   const holidayEvents = [
-    ...(publicHolidays || []).map(h => ({ id: `public-${h.name}-${h.date}`, name: h.name, date: h.date, type: 'public', description: 'Public Holiday' })),
+    ...(publicHolidays || []).filter(h => {
+        const hDate = new Date(h.date);
+        return hDate >= monthStart && hDate <= monthEnd;
+    }).map(h => ({ id: `public-${h.name}-${h.date}`, name: h.name, date: h.date, type: 'public', description: 'Public Holiday' })),
     ...specialDays,
     ...nonWorkingSundays,
   ];
