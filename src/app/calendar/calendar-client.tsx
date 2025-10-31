@@ -36,7 +36,7 @@ export interface CalendarEvent {
   type: string;
   description: string | null;
   user_id?: string | null;
-  falaq_event_type?: 'leave' | 'event' | 'meeting' | null;
+  falaq_event_type?: 'leave' | 'event' | 'meeting' | 'working_sunday' | null;
 }
 
 type EventSources = {
@@ -64,8 +64,8 @@ export default function CalendarClient({
 }: CalendarClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [currentDate, setCurrentDate] = useState<Date | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentDate, setCurrentDate] = useState(parse(initialMonth, 'yyyy-MM', new Date()));
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const initialView = searchParams.get('view') || 'week';
   const [view, setView] = useState<'day' | 'week' | 'month'>(initialView as any);
@@ -89,14 +89,15 @@ export default function CalendarClient({
   const [mainHeight, setMainHeight] = useState('100vh');
   
   useEffect(() => {
-    if (initialMonth) {
-      const parsedDate = parse(initialMonth, 'yyyy-MM', new Date());
-      setCurrentDate(parsedDate);
-      if (!selectedDate) {
-        setSelectedDate(new Date());
-      }
+    // This effect synchronizes the component's state with the URL's search parameters.
+    const newDate = parse(initialMonth, 'yyyy-MM', new Date());
+    setCurrentDate(newDate);
+    // Keep selectedDate in sync unless a specific day has been clicked
+    if (format(selectedDate, 'yyyy-MM') !== initialMonth) {
+        setSelectedDate(newDate);
     }
-  }, [initialMonth, selectedDate]);
+  }, [initialMonth]);
+
 
   useEffect(() => {
     setAllEvents(eventSources[activeCalendar]);
@@ -118,11 +119,12 @@ export default function CalendarClient({
     const newMonth = format(date, 'yyyy-MM');
     const oldMonth = currentDate ? format(currentDate, 'yyyy-MM') : '';
     
-    setCurrentDate(date);
-    handleDateSelect(date); // Also update the selected date
-
-    if (newMonth !== oldMonth || view !== 'month' || searchParams.get('month') !== newMonth) {
+    if (newMonth !== oldMonth) {
       router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
+    } else {
+       // If only the day changes within the same month, just update state
+      setCurrentDate(date);
+      setSelectedDate(date);
     }
   };
 
@@ -138,8 +140,6 @@ export default function CalendarClient({
     const newDate = direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1);
     const newMonth = format(newDate, 'yyyy-MM');
     router.push(`/calendar?month=${newMonth}&view=week&calendar=${activeCalendar}`);
-    setCurrentDate(newDate);
-    setSelectedDate(newDate);
   }
   
   const handleCalendarChange = (newCalendar: keyof EventSources) => {
