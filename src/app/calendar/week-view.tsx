@@ -16,7 +16,7 @@ const typeColorMap: { [key: string]: string } = {
 };
 
 
-const hours = Array.from({ length: 24 }, (_, i) => i);
+const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8 AM to 11 PM
 
 interface WeekViewProps {
   date: Date;
@@ -112,7 +112,8 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
             <div className="relative h-full p-1 space-y-1 pointer-events-none">
                {eventsByDay[format(day, 'yyyy-MM-dd')].map(event => {
                   const eventHour = new Date(event.date).getUTCHours();
-                  const topPosition = eventHour * 5; // 5rem per hour (h-20)
+                  if (eventHour < 8) return null; // Don't render events before 8 AM
+                  const topPosition = (eventHour - 8) * 5; // 5rem per hour (h-20), offset by 8 hours
                   const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
                   
                   return (

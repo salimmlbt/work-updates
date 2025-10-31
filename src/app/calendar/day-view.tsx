@@ -17,7 +17,7 @@ const typeColorMap: { [key: string]: string } = {
   personal: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500',
 };
 
-const hours = Array.from({ length: 24 }, (_, i) => i);
+const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8 AM to 11 PM
 
 interface DayViewProps {
   date: Date;
@@ -71,26 +71,31 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
             ></div>
           ))}
           <div className="absolute top-0 left-0 w-full h-full p-2 pointer-events-none">
-            {Object.entries(eventsByHour).map(([hour, hourEvents]) => (
-                <div key={hour} className="absolute w-full" style={{ top: `${parseInt(hour) * 5}rem`, left: 0 }}>
-                    {hourEvents.map((event, index) => {
-                      const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
-                      return (
-                        <div
-                            key={event.id}
-                            onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
-                            className={cn(
-                              'p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', 
-                              (activeCalendar === 'falaq_calendar' && isEventFalaqLeave) ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
-                            )}
-                            style={{ marginLeft: `${index * 5}%` }}
-                        >
-                            <p className="font-semibold truncate">{event.name}</p>
-                            <p className="text-xs truncate">{event.description}</p>
-                        </div>
-                    )})}
-                </div>
-            ))}
+            {Object.entries(eventsByHour).map(([hour, hourEvents]) => {
+                const hourNumber = parseInt(hour);
+                if (hourNumber < 8) return null; // Don't render events before 8 AM
+                const topPosition = (hourNumber - 8) * 5; // 5rem per hour, offset by 8 hours
+                return (
+                    <div key={hour} className="absolute w-full" style={{ top: `${topPosition}rem`, left: 0 }}>
+                        {hourEvents.map((event, index) => {
+                          const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
+                          return (
+                            <div
+                                key={event.id}
+                                onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
+                                className={cn(
+                                  'p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', 
+                                  (activeCalendar === 'falaq_calendar' && isEventFalaqLeave) ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
+                                )}
+                                style={{ marginLeft: `${index * 5}%` }}
+                            >
+                                <p className="font-semibold truncate">{event.name}</p>
+                                <p className="text-xs truncate">{event.description}</p>
+                            </div>
+                        )})}
+                    </div>
+                )
+            })}
           </div>
         </div>
       </div>
