@@ -1,4 +1,3 @@
-
 'use client'
 
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday, getDay, isSameDay } from 'date-fns';
@@ -62,7 +61,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
             className={cn(
                 "sticky top-0 bg-white z-20 text-center py-2 border-b border-r cursor-pointer", 
                 dayIndex === 6 && 'border-r-0',
-                activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-50' : isWeekend ? 'bg-red-50/50 dark:bg-red-900/10' : '',
+                activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-50' : '',
                 isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
                 isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
             )}
@@ -92,7 +91,7 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
           <div key={day.toString()} className={cn(
             "relative border-r", 
             dayIndex === 6 && 'border-r-0',
-            activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-50' : isWeekend ? 'bg-red-50/50 dark:bg-red-900/10' : '',
+            activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-50' : '',
             isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
             isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
           )}>
