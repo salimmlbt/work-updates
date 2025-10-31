@@ -121,8 +121,8 @@ export default function CalendarClient({
     setCurrentDate(date);
     handleDateSelect(date); // Also update the selected date
 
-    if (newMonth !== oldMonth || view !== 'month') {
-        router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
+    if (newMonth !== oldMonth || view !== 'month' || searchParams.get('month') !== newMonth) {
+      router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
     }
   };
 
@@ -136,7 +136,10 @@ export default function CalendarClient({
   const handleWeekChange = (direction: 'next' | 'prev') => {
     if (!currentDate) return;
     const newDate = direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1);
-    handleDateChange(newDate);
+    const newMonth = format(newDate, 'yyyy-MM');
+    router.push(`/calendar?month=${newMonth}&view=week&calendar=${activeCalendar}`);
+    setCurrentDate(newDate);
+    setSelectedDate(newDate);
   }
   
   const handleCalendarChange = (newCalendar: keyof EventSources) => {
