@@ -3,7 +3,7 @@
 
 import { Calendar } from '@/components/ui/calendar';
 import type { DayContentProps } from 'react-day-picker';
-import { format, isSameDay, getMonth, isToday, getDay } from 'date-fns';
+import { format, isSameDay, getMonth, isToday } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo, useRef, useLayoutEffect, useState } from 'react';
@@ -46,24 +46,16 @@ function DayContent({
   const dayNumberRef = useRef<HTMLSpanElement>(null);
   const [overflowCount, setOverflowCount] = useState(0);
 
-  useLayoutEffect(() => {
-    if (containerRef.current && dayNumberRef.current) {
-        const eventItemHeight = 22; // approx height of one event badge
-        const containerHeight = containerRef.current.offsetHeight;
-        const dayNumberHeight = dayNumberRef.current.offsetHeight + 4; // 4 for margin
-        const availableHeight = containerHeight - dayNumberHeight;
-        const maxVisibleEvents = Math.floor(availableHeight / eventItemHeight);
-        
-        if (dayEvents.length > maxVisibleEvents) {
-            setOverflowCount(dayEvents.length - maxVisibleEvents);
-        } else {
-            setOverflowCount(0);
-        }
-    }
-  }, [dayEvents.length]);
+  const maxVisibleEvents = 3;
+  const visibleEvents = dayEvents.slice(0, maxVisibleEvents);
   
-  const maxVisible = overflowCount > 0 ? dayEvents.length - overflowCount : dayEvents.length;
-  const visibleEvents = dayEvents.slice(0, maxVisible);
+  useLayoutEffect(() => {
+    if (dayEvents.length > maxVisibleEvents) {
+      setOverflowCount(dayEvents.length - maxVisibleEvents);
+    } else {
+      setOverflowCount(0);
+    }
+  }, [dayEvents, maxVisibleEvents]);
 
   return (
      <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50")}>
@@ -140,13 +132,13 @@ export default function MonthView({
         month: 'flex-1 flex flex-col',
         caption_label: 'text-lg font-medium',
         nav: 'hidden',
-        table: 'w-full h-full border-collapse flex-1 flex flex-col table-fixed',
+        table: 'w-full h-full border-collapse table-fixed',
         head_row: 'flex',
         head_cell: 'flex-1 p-2 text-center text-sm font-medium text-muted-foreground',
-        body: 'flex-1 grid grid-cols-7 grid-rows-5',
-        row: 'grid grid-cols-7 contents-start border-t min-h-0',
+        body: 'flex-1',
+        row: 'h-1/5 border-t',
         cell: cn(
-          'p-0 align-top relative flex flex-col border-r',
+          'p-0 align-top relative border-r',
           'last:border-r-0'
         ),
         day: 'w-full h-full flex',
