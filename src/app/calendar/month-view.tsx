@@ -1,4 +1,3 @@
-
 'use client'
 
 import { Calendar } from '@/components/ui/calendar';
@@ -6,7 +5,7 @@ import type { DayContentProps } from 'react-day-picker';
 import { format, isSameDay, getMonth, isToday } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
-import { useMemo, useRef, useLayoutEffect, useState } from 'react';
+import { useMemo, useRef } from 'react';
 
 const typeColorMap: { [key: string]: { bg: string; border: string } } = {
     public: { bg: 'bg-blue-100', border: 'border-blue-500' },
@@ -43,24 +42,14 @@ function DayContent({
   const isSelected = selectedDate && isSameDay(date, selectedDate);
   
   const containerRef = useRef<HTMLDivElement>(null);
-  const dayNumberRef = useRef<HTMLSpanElement>(null);
-  const [overflowCount, setOverflowCount] = useState(0);
-
+  
   const maxVisibleEvents = 3;
   const visibleEvents = dayEvents.slice(0, maxVisibleEvents);
-  
-  useLayoutEffect(() => {
-    if (dayEvents.length > maxVisibleEvents) {
-      setOverflowCount(dayEvents.length - maxVisibleEvents);
-    } else {
-      setOverflowCount(0);
-    }
-  }, [dayEvents, maxVisibleEvents]);
+  const overflowCount = dayEvents.length > maxVisibleEvents ? dayEvents.length - maxVisibleEvents : 0;
 
   return (
      <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50")}>
       <span
-        ref={dayNumberRef}
         className={cn(
           'self-start mb-1 h-6 w-6 flex items-center justify-center',
           isToday(date) && 'text-primary font-bold',
@@ -133,8 +122,8 @@ export default function MonthView({
         caption_label: 'text-lg font-medium',
         nav: 'hidden',
         table: 'w-full h-full border-collapse table-fixed',
-        head_row: 'flex',
-        head_cell: 'flex-1 p-2 text-center text-sm font-medium text-muted-foreground',
+        head_row: '',
+        head_cell: 'p-2 text-center text-sm font-medium text-muted-foreground w-[14.28%]',
         body: 'flex-1',
         row: 'h-1/5 border-t',
         cell: cn(
