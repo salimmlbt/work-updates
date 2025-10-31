@@ -114,7 +114,7 @@ export type Database = {
           id: number
           is_deleted: boolean
           name: string
-          type: "official" | "personal" | "special_day"
+          type: "official" | "personal" | "special_day" | "weekend"
           user_id: string | null
         }
         Insert: {
@@ -125,7 +125,7 @@ export type Database = {
           id?: number
           is_deleted?: boolean
           name: string
-          type: "official" | "personal" | "special_day"
+          type: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
         }
         Update: {
@@ -136,7 +136,7 @@ export type Database = {
           id?: number
           is_deleted?: boolean
           name?: string
-          type?: "official" | "personal" | "special_day"
+          type?: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
         }
         Relationships: [

@@ -37,6 +37,7 @@ function DayContent({
   }, [date, events]);
   
   const isOutside = getMonth(date) !== getMonth(displayMonth);
+  const isWeekend = dayEvents.some(e => e.type === 'weekend');
 
   const dayNumber = format(date, 'd');
   const isSelected = selectedDate && isSameDay(date, selectedDate);
@@ -44,11 +45,11 @@ function DayContent({
   const containerRef = useRef<HTMLDivElement>(null);
   
   const maxVisibleEvents = 3;
-  const visibleEvents = dayEvents.slice(0, maxVisibleEvents);
-  const overflowCount = dayEvents.length > maxVisibleEvents ? dayEvents.length - maxVisibleEvents : 0;
+  const visibleEvents = dayEvents.filter(e => e.type !== 'weekend').slice(0, maxVisibleEvents);
+  const overflowCount = dayEvents.length - visibleEvents.length - (isWeekend ? 1 : 0);
 
   return (
-     <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50")}>
+     <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50", isWeekend && 'bg-red-50/50 dark:bg-red-900/10')}>
       <span
         className={cn(
           'self-start mb-1 h-6 w-6 flex items-center justify-center',

@@ -15,6 +15,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
 
   const selectedMonth = searchParams.month || format(new Date(), 'yyyy-MM');
   const selectedDate = new Date(`${selectedMonth}-01T00:00:00Z`);
+  const monthStart = startOfMonth(selectedDate);
+  const monthEnd = endOfMonth(selectedDate);
   const year = getYear(selectedDate);
   
   // TODO: Make country code configurable
@@ -43,6 +45,20 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   if (publicHolidaysError) console.error('Error fetching public holidays:', publicHolidaysError);
 
   const allHolidays = officialHolidays as OfficialHoliday[] || [];
+  
+  const workingSundays = new Set((allHolidays || []).filter(h => h.falaq_event_type === 'working_sunday').map(h => h.date));
+  
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const nonWorkingSundays = daysInMonth
+    .filter(day => getDay(day) === 0 && !workingSundays.has(format(day, 'yyyy-MM-dd')))
+    .map(day => ({
+      id: `weekend-${format(day, 'yyyy-MM-dd')}`,
+      name: 'Sunday',
+      date: format(day, 'yyyy-MM-dd'),
+      type: 'weekend',
+      description: 'Non-working day',
+    }));
+
 
   const personalEvents = allHolidays
     .filter(h => h.user_id === user?.id && h.type === 'personal')
@@ -70,6 +86,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   const holidayEvents = [
     ...(publicHolidays || []).map(h => ({ id: `public-${h.name}-${h.date}`, name: h.name, date: h.date, type: 'public', description: 'Public Holiday' })),
     ...specialDays,
+    ...nonWorkingSundays,
   ];
 
   // Sort events to ensure consistent order
