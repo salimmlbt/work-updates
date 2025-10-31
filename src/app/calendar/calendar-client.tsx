@@ -92,7 +92,7 @@ export default function CalendarClient({
   useEffect(() => {
     const newDate = parse(initialMonth, 'yyyy-MM', new Date());
     setCurrentDate(newDate);
-    setSelectedDate(newDate);
+    // Don't reset selectedDate here, so it persists across month navigations
   }, [initialMonth]);
 
 
@@ -118,9 +118,6 @@ export default function CalendarClient({
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    if (view !== 'month') {
-        setCurrentDate(date);
-    }
     navigateToDate(date);
   };
   
@@ -237,11 +234,11 @@ export default function CalendarClient({
           case 'day':
               return (
                   <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" onClick={() => navigateToDate(subDays(currentDate, 1))}>
+                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(subDays(currentDate, 1))}>
                           <ChevronLeft className="h-4 w-4" />
                       </Button>
                       <h2 className="text-lg font-semibold w-48 text-center">{format(currentDate, 'MMMM d, yyyy')}</h2>
-                      <Button variant="outline" size="icon" onClick={() => navigateToDate(addDays(currentDate, 1))}>
+                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(addDays(currentDate, 1))}>
                           <ChevronRight className="h-4 w-4" />
                       </Button>
                   </div>
@@ -249,13 +246,13 @@ export default function CalendarClient({
           case 'week':
               return (
                   <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" onClick={() => navigateToDate(subWeeks(currentDate, 1))}>
+                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(subWeeks(currentDate, 1))}>
                           <ChevronLeft className="h-4 w-4" />
                       </Button>
                       <h2 className="text-lg font-semibold w-48 text-center">
                           {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d')}
                       </h2>
-                      <Button variant="outline" size="icon" onClick={() => navigateToDate(addWeeks(currentDate, 1))}>
+                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(addWeeks(currentDate, 1))}>
                           <ChevronRight className="h-4 w-4" />
                       </Button>
                   </div>
