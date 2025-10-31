@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -332,7 +331,7 @@ export default function CalendarClient({
                 </Button>
             )}
              {activeCalendar === 'holidays' && (
-                <Button onClick={() => openAddDialog('special_day')}>
+                <Button onClick={() => openAddDialog('special_day')} className="rounded-full">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Special Day
                 </Button>
