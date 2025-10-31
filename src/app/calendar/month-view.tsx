@@ -2,11 +2,11 @@
 'use client'
 
 import { Calendar } from '@/components/ui/calendar';
-import type { DayContentProps, DayProps } from 'react-day-picker';
-import { format, isSameDay, getDay, isToday, getMonth } from 'date-fns';
+import type { DayContentProps } from 'react-day-picker';
+import { format, isSameDay, getMonth, isToday } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
-import { useMemo, useRef, useLayoutEffect, useState } from 'react';
+import { useMemo, useRef, useLayoutEffect } from 'react';
 
 const typeColorMap: { [key: string]: { bg: string; border: string } } = {
     public: { bg: 'bg-blue-100', border: 'border-blue-500' },
@@ -16,6 +16,7 @@ const typeColorMap: { [key: string]: { bg: string; border: string } } = {
     task: { bg: 'bg-yellow-100', border: 'border-yellow-500' },
     project: { bg: 'bg-green-100', border: 'border-green-500' },
     personal: { bg: 'bg-pink-100', border: 'border-pink-500' },
+    special_day: { bg: 'bg-purple-100', border: 'border-purple-500' },
 };
 
 
@@ -41,23 +42,49 @@ function DayContent({
   const dayNumber = format(date, 'd');
   const isSelected = selectedDate && isSameDay(date, selectedDate);
   
+  const containerRef = useRef<HTMLDivElement>(null);
+  const eventsRef = useRef<HTMLDivElement>(null);
+
+  const { visibleEvents, overflowCount } = useMemo(() => {
+    if (!containerRef.current || !eventsRef.current || dayEvents.length === 0) {
+      return { visibleEvents: dayEvents, overflowCount: 0 };
+    }
+    
+    // Simple calculation assuming a fixed height for event items
+    const eventItemHeight = 22; // approx height of one event badge
+    const containerHeight = containerRef.current.offsetHeight;
+    const dayNumberHeight = 24; // approx height of the day number
+    const availableHeight = containerHeight - dayNumberHeight;
+    const maxVisibleEvents = Math.floor(availableHeight / eventItemHeight);
+
+    if (dayEvents.length > maxVisibleEvents) {
+      return {
+        visibleEvents: dayEvents.slice(0, maxVisibleEvents -1),
+        overflowCount: dayEvents.length - (maxVisibleEvents -1),
+      };
+    }
+    
+    return { visibleEvents: dayEvents, overflowCount: 0 };
+  }, [dayEvents]);
+
+
   return (
-     <div className={cn("relative flex flex-col h-full p-2", isOutside && "opacity-50")}>
+     <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50")}>
       <span
         className={cn(
-          'self-start mb-1',
+          'self-start mb-1 h-6 w-6 flex items-center justify-center',
           isToday(date) && 'text-primary font-bold',
           isSelected &&
-            'bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center'
+            'bg-primary text-primary-foreground rounded-full'
         )}
       >
         {dayNumber}
       </span>
 
-      <div className="flex-1 overflow-hidden space-y-1">
-        {dayEvents.slice(0, 2).map((event, index) => {
-          const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || '';
-           const color = typeColorMap[eventType] || { bg: 'bg-gray-100', border: 'border-gray-500' };
+      <div ref={eventsRef} className="flex-1 overflow-hidden space-y-1">
+        {visibleEvents.map((event, index) => {
+          const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || 'official';
+          const color = typeColorMap[eventType] || { bg: 'bg-gray-100', border: 'border-gray-500' };
           return (
             <div
               key={`${event.id}-${index}`}
@@ -68,7 +95,8 @@ function DayContent({
               className={cn(
                 'text-xs p-1 rounded-sm truncate cursor-pointer border-l-4',
                 color.bg,
-                color.border
+                color.border,
+                isOutside && 'opacity-50'
               )}
               title={event.name}
             >
@@ -76,9 +104,9 @@ function DayContent({
             </div>
           );
         })}
-        {dayEvents.length > 2 && (
+        {overflowCount > 0 && (
           <div className="text-xs text-muted-foreground mt-1">
-            + {dayEvents.length - 2} more
+            + {overflowCount} more
           </div>
         )}
       </div>
@@ -113,6 +141,8 @@ export default function MonthView({
       classNames={{
         months: 'flex-1 flex flex-col',
         month: 'flex-1 flex flex-col',
+        caption_label: 'text-lg font-medium',
+        nav: 'hidden',
         table: 'w-full h-full border-collapse flex-1 flex flex-col table-fixed',
         head_row: 'flex',
         head_cell: 'flex-1 p-2 text-center text-sm font-medium text-muted-foreground',
