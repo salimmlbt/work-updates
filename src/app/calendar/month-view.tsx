@@ -1,7 +1,7 @@
 'use client'
 
 import { Calendar } from '@/components/ui/calendar';
-import type { DayContentProps } from 'react-day-picker';
+import type { DayPicker, DayProps } from 'react-day-picker';
 import { format, isSameDay, getMonth, isToday, getDay } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,7 @@ function DayContent({
   onEventClick,
   activeCalendar,
   selectedDate,
-}: DayContentProps & {
+}: DayProps & {
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent, target: HTMLElement) => void;
   activeCalendar: string;
@@ -39,7 +39,6 @@ function DayContent({
   const isOutside = getMonth(date) !== getMonth(displayMonth);
   
   const isWorkingSunday = dayEvents.some(e => e.falaq_event_type === 'working_sunday');
-  const isSunday = getDay(date) === 0;
 
   const dayNumber = format(date, 'd');
   const isSelected = selectedDate && isSameDay(date, selectedDate);
@@ -48,10 +47,10 @@ function DayContent({
   
   const maxVisibleEvents = 3;
   const visibleEvents = dayEvents.filter(e => e.type !== 'weekend').slice(0, maxVisibleEvents);
-  const overflowCount = dayEvents.length - visibleEvents.length - (isSunday && !isWorkingSunday ? 1 : 0);
+  const overflowCount = dayEvents.length - visibleEvents.length;
 
   return (
-     <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50", isSunday && !isWorkingSunday && 'bg-red-50 dark:bg-red-900/20')}>
+     <div ref={containerRef} className={cn("relative flex flex-col h-full p-2 overflow-hidden", isOutside && "opacity-50")}>
       <span
         className={cn(
           'self-start mb-1 h-6 w-6 flex items-center justify-center',
@@ -112,6 +111,20 @@ export default function MonthView({
   onDateSelect,
   selectedDate,
 }: MonthViewProps) {
+
+  const eventsByDay = useMemo(() => {
+    const grouped: { [key: string]: CalendarEvent[] } = {};
+    events.forEach(event => {
+      const dayKey = format(new Date(event.date), 'yyyy-MM-dd');
+      if (!grouped[dayKey]) {
+        grouped[dayKey] = [];
+      }
+      grouped[dayKey].push(event);
+    });
+    return grouped;
+  }, [events]);
+
+
   return (
     <Calendar
       month={date}
@@ -139,15 +152,20 @@ export default function MonthView({
         day_outside: 'text-muted-foreground',
       }}
       components={{
-        DayContent: (props) => (
-          <DayContent
-            {...props}
-            events={events}
-            onEventClick={onEventClick}
-            activeCalendar={activeCalendar}
-            selectedDate={selectedDate}
-          />
-        ),
+        DayContent: (props) => {
+          const isWorkingSunday = eventsByDay[format(props.date, 'yyyy-MM-dd')]?.some(e => e.falaq_event_type === 'working_sunday');
+          const isSunday = getDay(props.date) === 0;
+          return (
+          <div className={cn(isSunday && !isWorkingSunday && 'bg-red-50/50 h-full w-full')}>
+            <DayContent
+              {...props}
+              events={events}
+              onEventClick={onEventClick}
+              activeCalendar={activeCalendar}
+              selectedDate={selectedDate}
+            />
+          </div>
+        )},
       }}
       onDayClick={(day, modifiers) => {
         if (modifiers.disabled) return;
