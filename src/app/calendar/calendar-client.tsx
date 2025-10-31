@@ -319,13 +319,13 @@ export default function CalendarClient({
 
           <div className="flex gap-2">
             {activeCalendar === 'falaq_calendar' && (
-                <Button onClick={() => openAddDialog('holiday')}>
+                <Button onClick={() => openAddDialog('holiday')} className="rounded-full">
                     <Plus className="mr-2 h-4 w-4" />
                     Add
                 </Button>
             )}
             {activeCalendar === 'my_calendar' && (
-                <Button onClick={() => openAddDialog('event')}>
+                <Button onClick={() => openAddDialog('event')} className="rounded-full">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Event
                 </Button>
