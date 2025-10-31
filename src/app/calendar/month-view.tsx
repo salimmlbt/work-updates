@@ -156,7 +156,7 @@ export default function MonthView({
           const isWorkingSunday = eventsByDay[format(props.date, 'yyyy-MM-dd')]?.some(e => e.falaq_event_type === 'working_sunday');
           const isSunday = getDay(props.date) === 0;
           return (
-          <div className={cn(isSunday && !isWorkingSunday && 'bg-red-50/50 h-full w-full')}>
+          <div className={cn(isSunday && !isWorkingSunday && 'bg-red-50 h-full w-full')}>
             <DayContent
               {...props}
               events={events}
