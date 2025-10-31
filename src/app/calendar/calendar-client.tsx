@@ -65,7 +65,7 @@ export default function CalendarClient({
 }: CalendarClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [currentDate, setCurrentDate] = useState(parse(initialMonth, 'yyyy-MM', new Date()));
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const initialView = searchParams.get('view') || 'week';
@@ -92,7 +92,7 @@ export default function CalendarClient({
   useEffect(() => {
     const newDate = parse(initialMonth, 'yyyy-MM', new Date());
     setCurrentDate(newDate);
-    // Don't reset selectedDate here, so it persists across month navigations
+    setSelectedDate(newDate);
   }, [initialMonth]);
 
 
@@ -113,11 +113,16 @@ export default function CalendarClient({
 
   const navigateToDate = (date: Date) => {
     const newMonth = format(date, 'yyyy-MM');
-    router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
+    const currentMonth = format(currentDate, 'yyyy-MM');
+    // Only push to router if month changes, or if it's a day/week view navigation
+    if (newMonth !== currentMonth || view !== 'month') {
+        router.push(`/calendar?month=${newMonth}&view=${view}&calendar=${activeCalendar}`);
+    }
   };
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    setCurrentDate(date);
     navigateToDate(date);
   };
   
@@ -261,11 +266,11 @@ export default function CalendarClient({
           default:
               return (
                   <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" onClick={() => navigateToDate(subMonths(currentDate, 1))}>
+                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(subMonths(currentDate, 1))}>
                           <ChevronLeft className="h-4 w-4" />
                       </Button>
                       <h2 className="text-lg font-semibold w-48 text-center">{format(currentDate, 'MMMM yyyy')}</h2>
-                      <Button variant="outline" size="icon" onClick={() => navigateToDate(addMonths(currentDate, 1))}>
+                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(addMonths(currentDate, 1))}>
                           <ChevronRight className="h-4 w-4" />
                       </Button>
                   </div>
@@ -280,7 +285,7 @@ export default function CalendarClient({
         className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b bg-white p-4 shadow-sm"
       >
         <div className="flex flex-shrink-0 items-center gap-2">
-          <Button variant="outline" onClick={() => navigateToDate(new Date())}>
+          <Button variant="outline" onClick={() => handleDateSelect(new Date())}>
             Today
           </Button>
            <Popover>
@@ -294,7 +299,7 @@ export default function CalendarClient({
               <Calendar
                 mode="single"
                 month={currentDate}
-                onMonthChange={(month) => month && navigateToDate(month)}
+                onMonthChange={(month) => month && handleDateSelect(month)}
                 selected={currentDate}
                 onSelect={(date) => date && handleDateSelect(date)}
                 initialFocus
