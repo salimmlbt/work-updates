@@ -1,24 +1,27 @@
+
 'use client'
 
 import { Calendar } from '@/components/ui/calendar';
-import type { DayContentProps } from 'react-day-picker';
-import { format, isSameDay, getDay, isToday } from 'date-fns';
+import type { DayContentProps, DayProps } from 'react-day-picker';
+import { format, isSameDay, getDay, isToday, getMonth } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
+import { useMemo, useRef, useLayoutEffect, useState } from 'react';
 
-const typeColorMap: { [key: string]: string } = {
-  public: 'bg-blue-100 text-blue-800',
-  official: 'bg-purple-100 text-purple-800',
-  leave: 'bg-red-100 text-red-800',
-  working_sunday: 'bg-green-100 text-green-800',
-  task: 'bg-yellow-100 text-yellow-800',
-  project: 'bg-green-100 text-green-800',
-  personal: 'bg-pink-100 text-pink-800',
+const typeColorMap: { [key: string]: { bg: string; border: string } } = {
+    public: { bg: 'bg-blue-100', border: 'border-blue-500' },
+    official: { bg: 'bg-purple-100', border: 'border-purple-500' },
+    leave: { bg: 'bg-red-100', border: 'border-red-500' },
+    working_sunday: { bg: 'bg-green-100', border: 'border-green-500' },
+    task: { bg: 'bg-yellow-100', border: 'border-yellow-500' },
+    project: { bg: 'bg-green-100', border: 'border-green-500' },
+    personal: { bg: 'bg-pink-100', border: 'border-pink-500' },
 };
+
 
 function DayContent({
   date,
+  displayMonth,
   events,
   onEventClick,
   activeCalendar,
@@ -32,20 +35,14 @@ function DayContent({
   const dayEvents = useMemo(() => {
     return events.filter(event => isSameDay(new Date(event.date), date));
   }, [date, events]);
+  
+  const isOutside = getMonth(date) !== getMonth(displayMonth);
 
   const dayNumber = format(date, 'd');
   const isSelected = selectedDate && isSameDay(date, selectedDate);
-  const isWeekendDay = getDay(date) === 0;
-
-  const isWorkingSunday = dayEvents.some(e => e.falaq_event_type === 'working_sunday');
-
+  
   return (
-    <div
-      className={cn(
-        'flex flex-col h-full w-full p-2',
-        isWeekendDay && !isWorkingSunday ? 'bg-red-50/50' : 'bg-transparent'
-      )}
-    >
+     <div className={cn("relative flex flex-col h-full p-2", isOutside && "opacity-50")}>
       <span
         className={cn(
           'self-start mb-1',
@@ -57,9 +54,10 @@ function DayContent({
         {dayNumber}
       </span>
 
-      <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
+      <div className="flex-1 overflow-hidden space-y-1">
         {dayEvents.slice(0, 2).map((event, index) => {
           const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || '';
+           const color = typeColorMap[eventType] || { bg: 'bg-gray-100', border: 'border-gray-500' };
           return (
             <div
               key={`${event.id}-${index}`}
@@ -68,8 +66,9 @@ function DayContent({
                 onEventClick(event, e.currentTarget);
               }}
               className={cn(
-                'text-xs p-1 rounded-sm truncate cursor-pointer',
-                typeColorMap[eventType] || 'bg-gray-100'
+                'text-xs p-1 rounded-sm truncate cursor-pointer border-l-4',
+                color.bg,
+                color.border
               )}
               title={event.name}
             >
@@ -114,18 +113,19 @@ export default function MonthView({
       classNames={{
         months: 'flex-1 flex flex-col',
         month: 'flex-1 flex flex-col',
-        table: 'w-full h-full border-collapse flex-1 flex flex-col',
+        table: 'w-full h-full border-collapse flex-1 flex flex-col table-fixed',
         head_row: 'flex',
         head_cell: 'flex-1 p-2 text-center text-sm font-medium text-muted-foreground',
         body: 'flex-1 grid grid-cols-7 grid-rows-5',
         row: 'flex-1 grid grid-cols-7 contents-start border-t',
         cell: cn(
-          'p-0 align-top relative flex flex-col border-r',
+          'h-full p-0 align-top relative flex flex-col border-r',
           'last:border-r-0'
         ),
         day: 'w-full h-full flex',
-        day_selected: 'bg-blue-50',
-        day_today: 'bg-accent/50',
+        day_selected: '',
+        day_today: '',
+        day_outside: 'text-muted-foreground',
       }}
       components={{
         DayContent: (props) => (
