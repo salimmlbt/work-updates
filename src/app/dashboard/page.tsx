@@ -67,7 +67,7 @@ export default async function DashboardPage() {
   const daysInMonth = getDaysInMonth(today);
   const presentDays = monthlyAttendanceData?.length ?? 0;
   const absentDays = daysInMonth - presentDays;
-  const presentPercentage = Math.round((presentDays / daysInMonth) * 100);
+  const presentPercentage = daysInMonth > 0 ? Math.round((presentDays / daysInMonth) * 100) : 0;
   const absentPercentage = 100 - presentPercentage;
 
   const monthlyAttendancePieData = [
