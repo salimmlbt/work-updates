@@ -1,9 +1,9 @@
-
 import { createServerClient } from '@/lib/supabase/server';
 import type { Task, Profile, Client, Project, TaskWithDetails } from '@/lib/types';
 import ProjectsPageLoader from './projects-page-loader';
 import TasksPageLoader from './tasks-page-loader';
 
+// ✅ This controls Next.js caching behavior
 export const dynamic = 'force-dynamic';
 
 export default async function TasksPage() {

@@ -18,7 +18,7 @@ export default async function ProjectsPage() {
         { data: clientsData, error: clientsError },
         { data: projectTypesData, error: projectTypesError }
     ] = await Promise.all([
-        supabase.from('projects').select('*'),
+        supabase.from('projects').select('*, tasks(id)'), // tasks_count is not a real column. fetch task ids and count them client-side.
         supabase.from('profiles').select('*'),
         supabase.from('clients').select('*'),
         supabase.from('project_types').select('*')
@@ -29,9 +29,15 @@ export default async function ProjectsPage() {
     if (clientsError) console.error("Error fetching clients:", clientsError);
     if (projectTypesError) console.error("Error fetching project types:", projectTypesError);
 
+    const projectsWithTaskCount = (projectsData as any[] ?? []).map(p => ({
+        ...p,
+        tasks_count: p.tasks.length,
+        tasks: undefined, // remove the tasks array
+    }));
+
     return (
         <ProjectsClient 
-            initialProjects={projectsData ?? []} 
+            initialProjects={projectsWithTaskCount as Project[]} 
             currentUser={user} 
             profiles={profilesData as Profile[] ?? []}
             clients={clientsData as Client[] ?? []}
