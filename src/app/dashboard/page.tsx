@@ -1,4 +1,3 @@
-
 import { createServerClient } from '@/lib/supabase/server';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import DashboardClient from './dashboard-client';
@@ -11,7 +10,11 @@ export default async function DashboardPage() {
     return <p className="p-4">Please log in to view the dashboard.</p>;
   }
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
 
   // --- Data Fetching ---
   const today = new Date();
@@ -32,19 +35,22 @@ export default async function DashboardPage() {
       .eq('user_id', user.id)
       .gte('date', format(weekStart, 'yyyy-MM-dd'))
       .lte('date', format(weekEnd, 'yyyy-MM-dd')),
+
     supabase.from('attendance')
-        .select('date')
-        .eq('user_id', user.id)
-        .gte('date', format(monthStart, 'yyyy-MM-dd'))
-        .lte('date', format(monthEnd, 'yyyy-MM-dd')),
+      .select('date')
+      .eq('user_id', user.id)
+      .gte('date', format(monthStart, 'yyyy-MM-dd'))
+      .lte('date', format(monthEnd, 'yyyy-MM-dd')),
+
     supabase.from('tasks')
       .select('id, description, deadline, status, project_id, projects(name)')
       .eq('assignee_id', user.id)
       .eq('is_deleted', false),
+
     supabase.from('projects')
       .select('id, name, status, members')
       .contains('members', [user.id])
-      .eq('is_deleted', false)
+      .eq('is_deleted', false),
   ]);
 
   // --- Data Processing ---
@@ -62,7 +68,7 @@ export default async function DashboardPage() {
       hours: record?.total_hours ?? 0,
     };
   });
-  
+
   // Monthly Attendance Pie Chart
   const daysInMonth = getDaysInMonth(today);
   const presentDays = monthlyAttendanceData?.length ?? 0;
@@ -75,56 +81,36 @@ export default async function DashboardPage() {
     { name: 'Absent', value: absentPercentage },
   ];
 
-
   // Task Stats
   const pendingTasks = tasks?.filter(t => t.status === 'todo').length ?? 0;
   const inProgressTasks = tasks?.filter(t => t.status === 'inprogress').length ?? 0;
   const completedTasks = tasks?.filter(t => t.status === 'done').length ?? 0;
-  
+
   // Upcoming Deadlines
-  const upcomingDeadlines = tasks
-    ?.filter(t => {
-        // Ensure deadline is a valid, non-null date string and is in the future
+  const upcomingDeadlines =
+    tasks
+      ?.filter(t => {
         if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
           return false;
         }
         const deadlineDateString = format(new Date(t.deadline), 'yyyy-MM-dd');
         return t.status !== 'done' && deadlineDateString >= todayDateString;
-    })
-    .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
-    .slice(0, 5) ?? [];
+      })
+      .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
+      .slice(0, 5) ?? [];
 
   // Project Status Pie Chart
-  const projectStatusCounts = projects?.reduce((acc, p) => {
-    const status = p.status || 'New';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>) ?? {};
-  
+  const projectStatusCounts =
+    projects?.reduce((acc, p) => {
+      const status = p.status || 'New';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>) ?? {};
+
   const projectStatusData = Object.entries(projectStatusCounts).map(([name, value]) => ({
     name,
     value,
   }));
-
-      <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Subscriptions Over Time</CardTitle>
-            <CardDescription>A line chart showing monthly subscriptions.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-              <LineChart data={lineChartData}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Legend content={<ChartLegendContent />} />
-                <Line type="monotone" dataKey="subscriptions" stroke="var(--color-subscriptions)" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
 
   return (
     <DashboardClient
@@ -134,7 +120,7 @@ export default async function DashboardPage() {
       completedTasks={completedTasks}
       attendanceChartData={attendanceChartData}
       projectStatusData={projectStatusData}
-      upcomingDeadlines={upcomingDeadlines.map(t => ({...t, projects: t.projects || null }))}
+      upcomingDeadlines={upcomingDeadlines.map(t => ({ ...t, projects: t.projects || null }))}
       monthlyAttendanceData={monthlyAttendancePieData}
     />
   );
