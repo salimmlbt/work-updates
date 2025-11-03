@@ -46,11 +46,13 @@ export default async function TasksPage() {
         return { ...task, clients: client || null };
     });
 
-    return <TasksPageLoader 
-        initialTasks={tasks as TaskWithDetails[]} 
-        projects={allProjectsData as Project[] || []}
-        clients={clientsData as Client[] || []}
-        profiles={profilesData as Profile[] || []}
-        currentUserProfile={userProfile}
-    />
+    return (
+        <TasksPageLoader 
+            initialTasks={tasks as TaskWithDetails[]} 
+            projects={allProjectsData as Project[] || []}
+            clients={clientsData as Client[] || []}
+            profiles={profilesData as Profile[] || []}
+            currentUserProfile={userProfile}
+        />
+    )
 }
