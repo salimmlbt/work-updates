@@ -65,8 +65,9 @@ export default function CalendarClient({
 }: CalendarClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  const [currentDate, setCurrentDate] = useState(() => parse(initialMonth, 'yyyy-MM', new Date()));
+  const [selectedDate, setSelectedDate] = useState(() => parse(initialMonth, 'yyyy-MM', new Date()));
 
   const initialView = searchParams.get('view') || 'week';
   const [view, setView] = useState<'day' | 'week' | 'month'>(initialView as any);
@@ -91,8 +92,13 @@ export default function CalendarClient({
   
   useEffect(() => {
     const newDate = parse(initialMonth, 'yyyy-MM', new Date());
-    setCurrentDate(newDate);
-    setSelectedDate(newDate);
+    if (newDate.getTime() !== currentDate.getTime()) {
+      setCurrentDate(newDate);
+    }
+    if (newDate.getTime() !== selectedDate.getTime()) {
+      setSelectedDate(newDate);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMonth]);
 
 
@@ -290,10 +296,10 @@ export default function CalendarClient({
           </Button>
            <Popover>
             <PopoverTrigger asChild>
-                <div role="button" className={cn("w-auto justify-start text-left font-normal", 'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2')}>
+                <Button variant="outline" className={cn("w-auto justify-start text-left font-normal")}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     <span>{format(currentDate, 'MMMM d, yyyy')}</span>
-                </div>
+                </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
