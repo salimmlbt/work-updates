@@ -21,6 +21,7 @@ import {
   Trash2,
   RefreshCcw,
   Loader2,
+  Share2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -65,6 +66,8 @@ import {
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
 import { useSearchParams } from 'next/navigation';
+import { ReassignTaskDialog } from './reassign-task-dialog';
+
 
 const statusIcons = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
@@ -404,7 +407,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; }) => {
+const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isCompleted }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isCompleted: boolean; }) => {
   const [dateText, setDateText] = useState('No date');
   
   const attachments = useMemo(() => {
@@ -549,6 +552,11 @@ const TaskRow = ({ task, onStatusChange, onEdit, onDelete, openMenuId, setOpenMe
             <DropdownMenuItem onClick={() => onEdit(task)}>
               <Pencil className="mr-2 h-4 w-4" /> Edit
             </DropdownMenuItem>
+            {isCompleted && !task.parent_task_id && (
+              <DropdownMenuItem onClick={() => onReassign(task)}>
+                <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
@@ -575,6 +583,8 @@ const TaskTableBody = ({
   onDelete,
   canEdit,
   onTaskClick,
+  onReassign,
+  isCompleted,
 }: {
   isOpen: boolean
   tasks: TaskWithDetails[]
@@ -589,6 +599,8 @@ const TaskTableBody = ({
   onDelete: (task: TaskWithDetails) => void;
   canEdit: boolean;
   onTaskClick: (task: TaskWithDetails) => void;
+  onReassign: (task: TaskWithDetails) => void;
+  isCompleted: boolean;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -610,7 +622,7 @@ const TaskTableBody = ({
               className={`border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors`}
               data-menu-open={openMenuId === task.id}
             >
-              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} canEdit={canEdit} onTaskClick={onTaskClick} />
+              <TaskRow task={task} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} canEdit={canEdit} onTaskClick={onTaskClick} onReassign={onReassign} isCompleted={isCompleted} />
             </motion.tr>
           ))}
       </AnimatePresence>
@@ -627,7 +639,7 @@ const TaskTableBody = ({
   )
 }
 
-const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskClick }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void }) => {
+const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
   const cardColors: { [key: string]: string } = {
     "todo": "bg-blue-100/50",
     "inprogress": "bg-purple-100/50",
@@ -658,6 +670,8 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
     }
     return format(deadDate, 'dd MMM');
   }
+
+  const isCompleted = task.status === 'done';
 
   return (
     <Card 
@@ -720,6 +734,11 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
                             Move to {statusLabels[status]}
                         </DropdownMenuItem>
                     ))}
+                     {isCompleted && !task.parent_task_id && (
+                      <DropdownMenuItem onClick={() => onReassign(task)}>
+                        <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>Delete</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -731,7 +750,7 @@ const KanbanCard = ({ task, onStatusChange, onEdit, onDelete, canEdit, onTaskCli
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit, onTaskClick }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void }) => {
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
   const statuses = ['todo', 'inprogress', 'done'];
 
   return (
@@ -776,6 +795,7 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onEdit, onDelete, ca
                     onDelete={onDelete}
                     canEdit={canEdit}
                     onTaskClick={onTaskClick}
+                    onReassign={onReassign}
                   />
                 ))}
               </div>
@@ -831,6 +851,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const searchParams = useSearchParams();
+  const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
 
   useEffect(() => {
     const taskId = searchParams.get('taskId');
@@ -1172,6 +1193,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                         onDelete={handleDeleteClick}
                         canEdit={canEditTasks}
                         onTaskClick={setSelectedTask}
+                        onReassign={(task) => setTaskToReassign(task)}
+                        isCompleted={false}
                       />
                     </table>
     
@@ -1260,6 +1283,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                           onDelete={handleDeleteClick}
                           canEdit={canEditTasks}
                           onTaskClick={setSelectedTask}
+                          onReassign={(task) => setTaskToReassign(task)}
+                          isCompleted={true}
                         />
                       </table>
                     </motion.div>
@@ -1271,7 +1296,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         )}
       </>
     ):(
-      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} />
+      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} />
     )
   }
 
@@ -1400,6 +1425,15 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           clients={clients}
           profiles={profiles}
           onTaskUpdated={handleTaskUpdated}
+        />
+      )}
+      {taskToReassign && (
+        <ReassignTaskDialog
+          isOpen={!!taskToReassign}
+          setIsOpen={() => setTaskToReassign(null)}
+          task={taskToReassign}
+          profiles={profiles}
+          onTaskCreated={handleSaveTask}
         />
       )}
        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
