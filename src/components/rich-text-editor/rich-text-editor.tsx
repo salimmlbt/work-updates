@@ -1,11 +1,10 @@
-
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Toolbar } from './toolbar'
 import Underline from '@tiptap/extension-underline'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect } from 'react'
 import type { Profile } from '@/lib/types'
 import { Button } from '../ui/button'
 import { Copy } from 'lucide-react'
@@ -76,10 +75,9 @@ export function RichTextEditor({
     <div className="flex flex-col justify-stretch">
       {isEditor ? (
         <>
-          <div className="flex justify-between items-center border border-b-0 border-input rounded-tl-md rounded-tr-md p-2">
+          <div className="flex justify-between items-center rounded-tl-md rounded-tr-md p-2">
             <Toolbar editor={editor} />
           </div>
-
           <EditorContent editor={editor} />
         </>
       ) : (
