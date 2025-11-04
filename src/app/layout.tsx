@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/icon.svg',
   },
-  manifest: '/manifest.json?v=1',
+  manifest: '/manifest.json?v=2',
 };
 
 
@@ -53,6 +53,21 @@ export default async function RootLayout({
         >
           {children}
         </ClientLayout>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                  }).catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
