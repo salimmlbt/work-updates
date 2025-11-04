@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Calendar } from '@/components/ui/calendar'
@@ -32,6 +33,7 @@ function DayContent({
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [maxVisible, setMaxVisible] = useState(3)
+  const [hasMounted, setHasMounted] = useState(false)
 
   // Filter for events on this day
   const dayEvents = useMemo(() => {
@@ -44,13 +46,14 @@ function DayContent({
 
   // Dynamically calculate how many events can fit
   useEffect(() => {
+    setHasMounted(true);
     const el = containerRef.current
     if (!el) return
 
     const observer = new ResizeObserver(() => {
       const availableHeight = el.clientHeight - 28 // Leave space for day number
       const lineHeight = 22 // average event item height
-      const visibleCount = Math.max(1, Math.floor(availableHeight / lineHeight))
+      const visibleCount = Math.max(0, Math.floor(availableHeight / lineHeight))
       setMaxVisible(visibleCount)
     })
 
@@ -60,6 +63,27 @@ function DayContent({
 
   const visibleEvents = dayEvents.slice(0, maxVisible)
   const overflow = dayEvents.length - visibleEvents.length
+
+  if (!hasMounted) {
+    return (
+      <div
+        className={cn(
+          'relative flex flex-col h-full p-1.5 sm:p-2 rounded-md overflow-hidden transition-all',
+          isOutside && 'opacity-40'
+        )}
+      >
+        <span
+          className={cn(
+            'self-start mb-1 text-xs font-medium h-6 w-6 flex items-center justify-center rounded-full',
+            isToday(date) && !isSelected && 'text-primary font-bold',
+            isSelected && 'bg-primary text-white'
+          )}
+        >
+          {dayNumber}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div
