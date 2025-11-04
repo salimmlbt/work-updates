@@ -483,6 +483,7 @@ export async function createTask(taskData: {
     assignee_id: string;
     type: string | null;
     attachments?: Attachment[] | null;
+    parent_task_id?: string | null;
 }) {
     const supabase = await createServerClient();
     const { data, error } = await supabase
