@@ -1,10 +1,10 @@
-
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { createServerClient } from '@/lib/supabase/server';
 import ClientLayout from './client-layout';
 import type { Profile } from '@/lib/types';
 import { type Metadata } from 'next';
+import { PageLoader } from '@/components/page-loader';
 
 export const metadata: Metadata = {
   title: 'Falaq - Work Updates',
@@ -47,6 +47,7 @@ export default async function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className={cn("min-h-screen bg-background font-body font-sans antialiased")}>
+        <PageLoader />
         <ClientLayout
           isAuthenticated={isAuthenticated}
           profile={profile}
