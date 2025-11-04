@@ -1,22 +1,23 @@
-
 'use client'
 
-import { format, startOfDay, addHours, isSameHour, setHours, isSameDay, parseISO } from 'date-fns';
+import { format, startOfDay, addHours, isSameHour, setHours, isSameDay, getHours, getMinutes, parseISO } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
-const typeColorMap: { [key: string]: string } = {
-  public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
-  official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
-  leave: 'bg-red-100 text-red-800 border-l-4 border-red-500',
-  weekend: 'bg-gray-200 text-gray-700',
-  task: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500',
-  project: 'bg-green-100 text-green-800 border-l-4 border-green-500',
-  personal: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500',
+const typeColorMap: { [key: string]: { bg: string; border: string } } = {
+  public: { bg: 'bg-blue-100', border: 'border-blue-500' },
+  official: { bg: 'bg-purple-100', border: 'border-purple-500' },
+  leave: { bg: 'bg-red-100', border: 'border-red-500' },
+  weekend: { bg: 'bg-gray-200', border: 'border-gray-500' },
+  task: { bg: 'bg-yellow-100', border: 'border-yellow-500' },
+  project: { bg: 'bg-green-100', border: 'border-green-500' },
+  personal: { bg: 'bg-pink-100', border: 'border-pink-500' },
+  special_day: { bg: 'bg-purple-100', border: 'border-purple-500' },
+  working_sunday: { bg: 'bg-green-100', border: 'border-green-500' },
 };
 
-const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8 AM to 11 PM
+const hours = Array.from({ length: 24 }, (_, i) => i); // 12 AM to 11 PM
 
 interface DayViewProps {
   date: Date;
@@ -28,7 +29,6 @@ interface DayViewProps {
 }
 
 const isAllDayEvent = (event: CalendarEvent) => {
-    // An event is all-day if its date string doesn't contain a time part.
     return event.date.length === 10; 
 }
 
@@ -42,11 +42,19 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
 
   const allDayEvents = useMemo(() => dayEvents.filter(isAllDayEvent), [dayEvents]);
   const timedEvents = useMemo(() => dayEvents.filter(e => !isAllDayEvent(e)), [dayEvents]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
 
   const eventsByHour = useMemo(() => {
     const grouped: { [key: number]: CalendarEvent[] } = {};
     timedEvents.forEach(event => {
-      const hour = parseISO(event.date).getHours();
+      const hour = getHours(parseISO(event.date));
       if (!grouped[hour]) {
         grouped[hour] = [];
       }
@@ -55,22 +63,36 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
     return grouped;
   }, [timedEvents]);
 
-  const isFalaqLeave = allDayEvents.some(e => (e as any).falaq_event_type === 'leave');
+  const isFalaqLeave = allDayEvents.some(e => e.falaq_event_type === 'leave');
+
+  const nowIndicator = useMemo(() => {
+    if (!isSameDay(date, currentTime)) return null;
+
+    const topPosition = (currentTime.getHours() + currentTime.getMinutes() / 60) * 4; // 4rem per hour (h-16)
+    return (
+      <div className="absolute w-full" style={{ top: `${topPosition}rem`, left: 0 }}>
+        <div className="relative">
+          <div className="h-0.5 bg-red-500 w-full"></div>
+          <div className="absolute -left-1.5 -top-1.5 h-3 w-3 rounded-full bg-red-500"></div>
+        </div>
+      </div>
+    );
+  }, [currentTime, date]);
 
   return (
     <div className={cn("h-full w-full flex flex-col", (activeCalendar === 'falaq_calendar' && isFalaqLeave) && "bg-red-50")}>
        <div className="border-b">
-         <div className="grid grid-cols-[auto_1fr] items-center">
-            <div className="w-20 text-center py-2 text-sm text-muted-foreground border-r">All day</div>
-            <div className="p-2 space-y-1">
+         <div className="grid grid-cols-[60px_1fr]">
+            <div className="w-16 text-center py-2 text-xs text-muted-foreground border-r flex items-center justify-center">All-day</div>
+            <div className="p-2 space-y-1 min-h-[4rem]">
                  {allDayEvents.map(event => {
                     const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || 'official';
-                    const colorClass = typeColorMap[eventType] || 'bg-gray-100';
+                    const color = typeColorMap[eventType] || { bg: 'bg-gray-100', border: 'border-gray-500' };
                     return (
                         <div
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
-                            className={cn('p-1 rounded-md text-sm cursor-pointer w-full', colorClass)}
+                            className={cn('p-1 rounded-sm text-sm cursor-pointer w-full border-l-4', color.bg, color.border)}
                         >
                             <p className="font-semibold truncate">{event.name}</p>
                         </div>
@@ -79,11 +101,11 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
             </div>
          </div>
        </div>
-      <div className="grid grid-cols-[auto_1fr] flex-1">
+      <div className="grid grid-cols-[60px_1fr] flex-1 overflow-y-auto">
         <div className="col-start-1 col-end-2 border-r">
           {hours.map(hour => (
-            <div key={hour} className="h-20 text-right pr-2 pt-1 border-b">
-              <span className="text-sm text-muted-foreground">{format(setHours(new Date(), hour), 'ha')}</span>
+            <div key={hour} className="h-16 text-right pr-2 pt-1 border-b">
+              {hour > 0 && <span className="text-xs text-muted-foreground">{format(setHours(new Date(), hour), 'ha')}</span>}
             </div>
           ))}
         </div>
@@ -92,30 +114,38 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
             <div 
               key={`grid-${hour}`} 
               className={cn(
-                "h-20 border-b cursor-pointer",
-                isSameHour(setHours(date, hour), selectedDate) && isSameDay(date, selectedDate) ? 'bg-blue-50' : 'hover:bg-gray-50'
+                "h-16 border-b cursor-pointer",
+                isSameHour(setHours(date, hour), selectedDate) && isSameDay(date, selectedDate) ? 'bg-blue-50 dark:bg-blue-900/40' : 'hover:bg-gray-50 dark:hover:bg-gray-800/20'
               )}
               onClick={() => onDateSelect(setHours(date, hour))}
             ></div>
           ))}
-          <div className="absolute top-0 left-0 w-full h-full p-2 pointer-events-none">
+          <div className="absolute top-0 left-0 w-full h-full p-1 pointer-events-none">
             {Object.entries(eventsByHour).map(([hour, hourEvents]) => {
                 const hourNumber = parseInt(hour);
-                if (hourNumber < 8) return null; 
-                const topPosition = (hourNumber - 8) * 5; // 5rem per hour, offset by 8 hours
+                const topPosition = hourNumber * 4; // 4rem per hour (h-16)
+                
+                const eventsWithLayout = hourEvents.map((event, index, arr) => ({
+                    event,
+                    width: `${100 / arr.length}%`,
+                    left: `${index * (100 / arr.length)}%`,
+                }));
+
                 return (
-                    <div key={hour} className="absolute w-full" style={{ top: `${topPosition}rem`, left: 0 }}>
-                        {hourEvents.map((event, index) => {
-                          const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
+                    <div key={hour} className="absolute w-[calc(100%-0.5rem)]" style={{ top: `${topPosition}rem`, left: '0.25rem' }}>
+                        {eventsWithLayout.map(({event, width, left}) => {
+                          const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || 'official';
+                          const color = typeColorMap[eventType] || { bg: 'bg-gray-100', border: 'border-gray-500' };
+                          
                           return (
                             <div
                                 key={event.id}
                                 onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                                 className={cn(
-                                  'p-2 rounded-lg text-sm cursor-pointer mb-1 w-[98%] pointer-events-auto', 
-                                  (activeCalendar === 'falaq_calendar' && isEventFalaqLeave) ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
+                                  'absolute p-2 rounded-lg text-xs cursor-pointer mb-1 pointer-events-auto border-l-4', 
+                                  color.bg, color.border
                                 )}
-                                style={{ marginLeft: `${index * 5}%` }}
+                                style={{ width, left }}
                             >
                                 <p className="font-semibold truncate">{event.name}</p>
                                 <p className="text-xs truncate">{event.description}</p>
@@ -125,6 +155,7 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
                 )
             })}
           </div>
+          {nowIndicator}
         </div>
       </div>
     </div>
