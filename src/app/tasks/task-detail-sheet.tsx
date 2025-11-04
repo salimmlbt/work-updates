@@ -200,14 +200,12 @@ export function TaskDetailSheet({
               <AlignLeft className="h-5 w-5 text-muted-foreground" />
               <h3 className="font-semibold text-xl">Description</h3>
             </div>
-            <div className="rounded-xl border border-gray-100 dark:border-neutral-800 p-4 bg-white dark:bg-neutral-950 shadow-sm hover:shadow-md transition-all">
-              <RichTextEditor
-                initialContent={task.rich_description}
-                userProfile={userProfile}
-                onUpdate={handleDescriptionUpdate}
-                isDirty={isDescriptionDirty}
-              />
-            </div>
+            <RichTextEditor
+              initialContent={task.rich_description}
+              userProfile={userProfile}
+              onUpdate={handleDescriptionUpdate}
+              isDirty={isDescriptionDirty}
+            />
           </section>
 
           <Separator />

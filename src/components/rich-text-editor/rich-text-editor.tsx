@@ -35,8 +35,9 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class: cn(
-          'rounded-bl-md rounded-br-md border border-input p-4 prose dark:prose-invert max-w-full min-h-[150px] focus:outline-none',
-          !isEditor && 'bg-muted'
+          'prose dark:prose-invert max-w-full min-h-[150px] focus:outline-none',
+          isEditor && 'rounded-bl-md rounded-br-md p-4 border-input border border-t-0',
+          !isEditor && 'bg-muted p-4 rounded-md border-input border'
         ),
       },
     },
@@ -82,7 +83,7 @@ export function RichTextEditor({
         </>
       ) : (
         <div className="relative">
-          <div className="prose dark:prose-invert max-w-full border border-input rounded-md p-4 min-h-[150px] bg-muted">
+          <div className="prose dark:prose-invert max-w-full rounded-md p-4 min-h-[150px] bg-transparent">
             {editor && <EditorContent editor={editor} />}
           </div>
           <Button
