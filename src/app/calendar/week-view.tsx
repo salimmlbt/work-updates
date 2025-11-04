@@ -65,9 +65,8 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
       {/* Day headers and all-day events */}
       <div className="grid grid-cols-[auto_repeat(7,1fr)] sticky top-0 bg-white z-20 border-b">
         {/* Top-left corner */}
-        <div className="col-start-1 col-end-2 border-r">
-           <div className="h-20 flex items-center justify-center"></div>
-           <div className="h-full border-t flex items-center justify-center p-2 text-sm text-muted-foreground">All day</div>
+        <div className="col-start-1 col-end-2 border-r min-h-[100px]">
+           <div className="h-full flex items-center justify-center p-2 text-sm text-muted-foreground">All day</div>
         </div>
 
         {/* Day headers */}
