@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Plus, MoreVertical, Pencil, Trash2, Archive, UserCog, ChevronDown, Check } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
-import type { Profile, Role, Team } from '@/lib/types';
+import type { Profile, Role, Team, WorkType } from '@/lib/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,9 +41,10 @@ interface TeamsClientProps {
 	initialUsers: Profile[];
 	initialRoles: Role[];
 	initialTeams: Team[];
+    workTypes: WorkType[];
 }
 
-export default function TeamsClient({ initialUsers, initialRoles, initialTeams }: TeamsClientProps) {
+export default function TeamsClient({ initialUsers, initialRoles, initialTeams, workTypes }: TeamsClientProps) {
 	const [selectedTeam, setSelectedTeam] = useState('All teams');
 	const [isCreateTeamOpen, setCreateTeamOpen] = useState(false);
 	const [isAddUserOpen, setAddUserOpen] = useState(false);
@@ -496,7 +497,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams }
                     )}
 				</main>
 			</div>
-			<CreateTeamDialog isOpen={isCreateTeamOpen} setIsOpen={setCreateTeamOpen} onTeamCreated={onTeamCreated} />
+			<CreateTeamDialog isOpen={isCreateTeamOpen} setIsOpen={setCreateTeamOpen} onTeamCreated={onTeamCreated} workTypes={workTypes} />
 			<AddUserDialog 
 				isOpen={isAddUserOpen} 
 				setIsOpen={setAddUserOpen} 

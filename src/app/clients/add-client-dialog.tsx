@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useRef } from 'react'
@@ -18,7 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { addClient } from '@/app/actions'
-import type { Client } from '@/lib/types'
+import type { Client, Industry } from '@/lib/types'
 import {
   Select,
   SelectContent,
@@ -26,7 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { businessIndustries } from '@/lib/industries'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropperDialog } from './image-cropper-dialog'
@@ -45,12 +45,14 @@ interface AddClientDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   onClientAdded: (newClient: Client) => void
+  industries: Industry[]
 }
 
 export function AddClientDialog({
   isOpen,
   setIsOpen,
   onClientAdded,
+  industries,
 }: AddClientDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -201,9 +203,9 @@ export function AddClientDialog({
                       </SelectTrigger>
                       <SelectContent>
                         <ScrollArea className="h-60">
-                          {businessIndustries.map((industry) => (
-                            <SelectItem key={industry} value={industry}>
-                              {industry}
+                          {industries.map((industry) => (
+                            <SelectItem key={industry.id} value={industry.name}>
+                              {industry.name}
                             </SelectItem>
                           ))}
                         </ScrollArea>

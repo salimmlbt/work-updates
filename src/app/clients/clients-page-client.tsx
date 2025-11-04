@@ -29,8 +29,7 @@ import {
 } from '@/components/ui/table';
 import { AddClientDialog } from './add-client-dialog';
 import { EditClientDialog } from './edit-client-dialog';
-import type { Client } from '@/lib/types';
-import { businessIndustries } from '@/lib/industries';
+import type { Client, Industry } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -70,24 +69,26 @@ const colors = [
   { light: 'bg-orange-100 text-orange-800', dark: 'dark:bg-orange-900/50 dark:text-orange-300' },
 ];
 
-businessIndustries.forEach((industry, index) => {
-  industryColorMap.set(industry, colors[index % colors.length]);
-});
-
-const getIndustryColor = (industry: string) => {
+const getIndustryColor = (industry: string, allIndustries: Industry[]) => {
+  if (!industryColorMap.has(industry)) {
+    const index = allIndustries.findIndex(i => i.name === industry);
+    industryColorMap.set(industry, colors[index % colors.length]);
+  }
   return industryColorMap.get(industry) || colors[0];
 };
 
 const ClientRow = ({ 
     client, 
+    industries,
     onEdit, 
     onDeleteConfirm 
 }: { 
     client: Client, 
+    industries: Industry[],
     onEdit: (client: Client) => void,
     onDeleteConfirm: (client: Client) => void,
 }) => {
-  const industryColor = getIndustryColor(client.industry);
+  const industryColor = getIndustryColor(client.industry, industries);
   const displayIndustry = client.industry.replace(/\s*\(.*\)\s*/g, '');
   
   return (
@@ -158,7 +159,7 @@ const ClientRow = ({
 };
 
 
-export default function ClientsPageClient({ initialClients }: { initialClients: Client[] }) {
+export default function ClientsPageClient({ initialClients, industries }: { initialClients: Client[], industries: Industry[] }) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [isEditClientOpen, setEditClientOpen] = useState(false);
@@ -273,7 +274,8 @@ export default function ClientsPageClient({ initialClients }: { initialClients: 
                     {filteredClients.map(client => (
                         <ClientRow 
                             key={client.id} 
-                            client={client} 
+                            client={client}
+                            industries={industries}
                             onEdit={handleEditClick}
                             onDeleteConfirm={handleDeleteConfirm}
                         />
@@ -287,6 +289,7 @@ export default function ClientsPageClient({ initialClients }: { initialClients: 
         isOpen={isAddClientOpen}
         setIsOpen={setAddClientOpen}
         onClientAdded={handleClientAdded}
+        industries={industries}
       />
       {clientToEdit && (
         <EditClientDialog
@@ -294,6 +297,7 @@ export default function ClientsPageClient({ initialClients }: { initialClients: 
             setIsOpen={setEditClientOpen}
             client={clientToEdit}
             onClientUpdated={handleClientUpdated}
+            industries={industries}
         />
       )}
        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>

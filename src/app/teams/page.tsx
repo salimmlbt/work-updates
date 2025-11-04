@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Role, Profile, Team } from '@/lib/types';
+import type { Role, Profile, Team, WorkType } from '@/lib/types';
 import RolesClient from './roles-client';
 import TeamsClient from './teams-client';
 
@@ -55,14 +55,17 @@ export default async function TeamsPage() {
 
   const { data: profilesData, error: profilesError } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams!inner(*))');
   const { data: teamsData, error: teamsError } = await supabase.from('teams').select('*');
+  const { data: workTypesData, error: workTypesError } = await supabase.from('work_types').select('*');
 
   if (profilesError) console.error('Error fetching profiles:', profilesError);
   if (teamsError) console.error('Error fetching teams:', teamsError);
+  if (workTypesError) console.error('Error fetching work types:', workTypesError);
 
 
   const roles = rolesData as Role[] ?? [];
   const profiles = profilesData as Profile[] ?? [];
   const teams = teamsData as Team[] ?? [];
+  const workTypes = workTypesData as WorkType[] ?? [];
 
   const permissionsList = [
     { id: 'dashboard', label: 'Can the "{ROLE_NAME}" Access Dashboard?' },
@@ -118,6 +121,7 @@ export default async function TeamsPage() {
             initialUsers={profiles} 
             initialRoles={roles} 
             initialTeams={teams}
+            workTypes={workTypes}
           />
         </TabsContent>
         <TabsContent value="roles" className="mt-6">

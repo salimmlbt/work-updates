@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition } from 'react'
@@ -8,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -18,18 +18,18 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { predefinedTasks } from '@/lib/predefined-tasks'
 import { Badge } from '@/components/ui/badge'
 import { ChevronDown, X, Loader2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { createTeam } from './actions'
 import { useToast } from '@/hooks/use-toast'
-import type { Team } from '@/lib/types'
+import type { Team, WorkType } from '@/lib/types'
 
 interface CreateTeamDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   onTeamCreated: (newTeam: Team) => void;
+  workTypes: WorkType[];
 }
 
 const taskColors = [
@@ -39,7 +39,7 @@ const taskColors = [
   '#FFD700', '#6495ED', '#DC143C'
 ];
 
-export function CreateTeamDialog({ isOpen, setIsOpen, onTeamCreated }: CreateTeamDialogProps) {
+export function CreateTeamDialog({ isOpen, setIsOpen, onTeamCreated, workTypes }: CreateTeamDialogProps) {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
   const [teamName, setTeamName] = useState('')
   const { toast } = useToast();
@@ -94,7 +94,7 @@ export function CreateTeamDialog({ isOpen, setIsOpen, onTeamCreated }: CreateTea
                   <div className="flex gap-1 flex-wrap">
                     {selectedTasks.length > 0 ? (
                       selectedTasks.map(task => {
-                        const taskIndex = predefinedTasks.findIndex(t => t === task);
+                        const taskIndex = workTypes.findIndex(t => t.name === task);
                         const color = taskColors[taskIndex % taskColors.length];
                         return (
                           <Badge 
@@ -131,19 +131,19 @@ export function CreateTeamDialog({ isOpen, setIsOpen, onTeamCreated }: CreateTea
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
                 <ScrollArea className="h-60">
-                  {predefinedTasks.map((task, index) => (
+                  {workTypes.map((task, index) => (
                     <DropdownMenuCheckboxItem
-                      key={task}
-                      checked={selectedTasks.includes(task)}
+                      key={task.id}
+                      checked={selectedTasks.includes(task.name)}
                       onSelect={(e) => e.preventDefault()}
-                      onClick={() => handleSelectTask(task)}
+                      onClick={() => handleSelectTask(task.name)}
                     >
                       <div className="flex items-center gap-2">
                         <span 
                           className="h-3 w-3 rounded-full" 
                           style={{ backgroundColor: taskColors[index % taskColors.length] }}
                         />
-                        {task}
+                        {task.name}
                       </div>
                     </DropdownMenuCheckboxItem>
                   ))}

@@ -9,12 +9,28 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SetTimesForm } from './set-times-form';
+import IndustryTypes from './industry-types';
+import WorkTypes from './work-types';
+import type { Industry, WorkType } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AccessibilityPage() {
     const supabase = await createServerClient();
-    const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single();
+    
+    const [
+        { data: setting },
+        { data: industriesData, error: industriesError },
+        { data: workTypesData, error: workTypesError },
+    ] = await Promise.all([
+        supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
+        supabase.from('industries').select('*'),
+        supabase.from('work_types').select('*'),
+    ]);
+    
+    if (industriesError) console.error('Error fetching industries', industriesError);
+    if (workTypesError) console.error('Error fetching work types', workTypesError);
+
     const lunchStartTime = (setting?.value as string | undefined) || '13:00';
 
   return (
@@ -73,26 +89,10 @@ export default async function AccessibilityPage() {
               <TabsTrigger value="work-type">Work type</TabsTrigger>
             </TabsList>
             <TabsContent value="industry-type">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Industry Types</CardTitle>
-                  <CardDescription>Manage the types of industries for clients.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Industry type management will be here.</p>
-                </CardContent>
-              </Card>
+              <IndustryTypes initialIndustries={industriesData as Industry[] ?? []} />
             </TabsContent>
             <TabsContent value="work-type">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Work Types</CardTitle>
-                  <CardDescription>Manage the default work types for teams.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Work type management will be here.</p>
-                </CardContent>
-              </Card>
+              <WorkTypes initialWorkTypes={workTypesData as WorkType[] ?? []} />
             </TabsContent>
           </Tabs>
         </TabsContent>

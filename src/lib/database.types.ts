@@ -105,14 +105,31 @@ export type Database = {
         }
         Relationships: []
       }
+      industries: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       official_holidays: {
         Row: {
           created_at: string
           date: string
           description: string | null
-          falaq_event_type: "leave" | "event" | "meeting" | "working_sunday" | null
+          falaq_event_type: "leave" | "event" | "meeting" | null
           id: number
-          is_deleted: boolean
           name: string
           type: "official" | "personal" | "special_day" | "weekend"
           user_id: string | null
@@ -121,9 +138,8 @@ export type Database = {
           created_at?: string
           date: string
           description?: string | null
-          falaq_event_type?: "leave" | "event" | "meeting" | "working_sunday" | null
+          falaq_event_type?: "leave" | "event" | "meeting" | null
           id?: number
-          is_deleted?: boolean
           name: string
           type: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
@@ -132,9 +148,8 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string | null
-          falaq_event_type?: "leave" | "event" | "meeting" | "working_sunday" | null
+          falaq_event_type?: "leave" | "event" | "meeting" | null
           id?: number
-          is_deleted?: boolean
           name?: string
           type?: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
@@ -329,12 +344,19 @@ export type Database = {
           name: string
           permissions: Json
         }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          permissions?: Json
-        }
+        Update:
+          | {
+              created_at?: string
+              id?: string
+              name?: string
+              permissions?: Json
+            }
+          | {
+              created_at?: string
+              id?: string
+              name?: string
+              permissions?: Json
+            }
         Relationships: []
       }
       tasks: {
@@ -439,6 +461,24 @@ export type Database = {
           },
         ]
       }
+      work_types: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -459,7 +499,7 @@ export type Database = {
       }
     }
     Enums: {
-      falaq_event_type: "leave" | "event" | "meeting" | "working_sunday"
+      falaq_event_type: "leave" | "event" | "meeting"
       task_status: "todo" | "inprogress" | "done"
     }
     CompositeTypes: {

@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
-import type { TaskWithAssignee, Attachment, OfficialHoliday } from '@/lib/types'
+import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
@@ -1138,4 +1138,52 @@ export async function deleteHoliday(id: number) {
 
     revalidatePath('/calendar');
     return { success: true };
+}
+
+export async function addIndustry(name: string): Promise<{ data: Industry | null, error: string | null }> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.from('industries').insert({ name }).select().single();
+    if (error) return { data: null, error: error.message };
+    revalidatePath('/accessibility');
+    return { data, error: null };
+}
+
+export async function renameIndustry(id: number, name: string): Promise<{ data: Industry | null, error: string | null }> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.from('industries').update({ name }).eq('id', id).select().single();
+    if (error) return { data: null, error: error.message };
+    revalidatePath('/accessibility');
+    return { data, error: null };
+}
+
+export async function deleteIndustry(id: number): Promise<{ error: string | null }> {
+    const supabase = await createServerClient();
+    const { error } = await supabase.from('industries').delete().eq('id', id);
+    if (error) return { error: error.message };
+    revalidatePath('/accessibility');
+    return { error: null };
+}
+
+export async function addWorkType(name: string): Promise<{ data: WorkType | null, error: string | null }> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.from('work_types').insert({ name }).select().single();
+    if (error) return { data: null, error: error.message };
+    revalidatePath('/accessibility');
+    return { data, error: null };
+}
+
+export async function renameWorkType(id: number, name: string): Promise<{ data: WorkType | null, error: string | null }> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.from('work_types').update({ name }).eq('id', id).select().single();
+    if (error) return { data: null, error: error.message };
+    revalidatePath('/accessibility');
+    return { data, error: null };
+}
+
+export async function deleteWorkType(id: number): Promise<{ error: string | null }> {
+    const supabase = await createServerClient();
+    const { error } = await supabase.from('work_types').delete().eq('id', id);
+    if (error) return { error: error.message };
+    revalidatePath('/accessibility');
+    return { error: null };
 }
