@@ -1,8 +1,7 @@
 
-
 'use client'
 
-import { format, startOfDay, addHours, isSameHour, setHours, isSameDay } from 'date-fns';
+import { format, startOfDay, addHours, isSameHour, setHours, isSameDay, parseISO } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -28,30 +27,59 @@ interface DayViewProps {
   selectedDate: Date;
 }
 
+const isAllDayEvent = (event: CalendarEvent) => {
+    // An event is all-day if its date string doesn't contain a time part.
+    return event.date.length === 10; 
+}
+
+
 export default function DayView({ date, events, onEventClick, activeCalendar, onDateSelect, selectedDate }: DayViewProps) {
   const dayEvents = useMemo(() => {
     return events
-      .filter(e => format(new Date(e.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'))
+      .filter(e => isSameDay(parseISO(e.date), date))
       .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [date, events]);
-  
+
+  const allDayEvents = useMemo(() => dayEvents.filter(isAllDayEvent), [dayEvents]);
+  const timedEvents = useMemo(() => dayEvents.filter(e => !isAllDayEvent(e)), [dayEvents]);
+
   const eventsByHour = useMemo(() => {
     const grouped: { [key: number]: CalendarEvent[] } = {};
-    dayEvents.forEach(event => {
-      const hour = new Date(event.date).getUTCHours();
+    timedEvents.forEach(event => {
+      const hour = parseISO(event.date).getHours();
       if (!grouped[hour]) {
         grouped[hour] = [];
       }
       grouped[hour].push(event);
     });
     return grouped;
-  }, [dayEvents]);
+  }, [timedEvents]);
 
-  const isFalaqLeave = dayEvents.some(e => (e as any).falaq_event_type === 'leave');
+  const isFalaqLeave = allDayEvents.some(e => (e as any).falaq_event_type === 'leave');
 
   return (
-    <div className={cn("h-full w-full", (activeCalendar === 'falaq_calendar' && isFalaqLeave) && "bg-red-50")}>
-      <div className="grid grid-cols-[auto_1fr] h-full">
+    <div className={cn("h-full w-full flex flex-col", (activeCalendar === 'falaq_calendar' && isFalaqLeave) && "bg-red-50")}>
+       <div className="border-b">
+         <div className="grid grid-cols-[auto_1fr] items-center">
+            <div className="w-20 text-center py-2 text-sm text-muted-foreground border-r">All day</div>
+            <div className="p-2 space-y-1">
+                 {allDayEvents.map(event => {
+                    const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || 'official';
+                    const colorClass = typeColorMap[eventType] || 'bg-gray-100';
+                    return (
+                        <div
+                            key={event.id}
+                            onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
+                            className={cn('p-1 rounded-md text-sm cursor-pointer w-full', colorClass)}
+                        >
+                            <p className="font-semibold truncate">{event.name}</p>
+                        </div>
+                    )
+                 })}
+            </div>
+         </div>
+       </div>
+      <div className="grid grid-cols-[auto_1fr] flex-1">
         <div className="col-start-1 col-end-2 border-r">
           {hours.map(hour => (
             <div key={hour} className="h-20 text-right pr-2 pt-1 border-b">
@@ -73,7 +101,7 @@ export default function DayView({ date, events, onEventClick, activeCalendar, on
           <div className="absolute top-0 left-0 w-full h-full p-2 pointer-events-none">
             {Object.entries(eventsByHour).map(([hour, hourEvents]) => {
                 const hourNumber = parseInt(hour);
-                if (hourNumber < 8) return null; // Don't render events before 8 AM
+                if (hourNumber < 8) return null; 
                 const topPosition = (hourNumber - 8) * 5; // 5rem per hour, offset by 8 hours
                 return (
                     <div key={hour} className="absolute w-full" style={{ top: `${topPosition}rem`, left: 0 }}>

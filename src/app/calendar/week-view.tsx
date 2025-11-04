@@ -1,18 +1,19 @@
+
 'use client'
 
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday, getDay, isSameDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, setHours, isToday, getDay, isSameDay, parseISO } from 'date-fns';
 import { type CalendarEvent } from './calendar-client';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
 const typeColorMap: { [key: string]: string } = {
-  public: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500',
-  official: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500',
-  leave: 'bg-red-100 text-red-800 border-l-4 border-red-500',
+  public: 'bg-blue-100 text-blue-800 border-blue-500',
+  official: 'bg-purple-100 text-purple-800 border-purple-500',
+  leave: 'bg-red-100 text-red-800 border-red-500',
   weekend: 'bg-gray-200 text-gray-700',
-  task: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500',
-  project: 'bg-green-100 text-green-800 border-l-4 border-green-500',
-  personal: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500',
+  task: 'bg-yellow-100 text-yellow-800 border-yellow-500',
+  project: 'bg-green-100 text-green-800 border-green-500',
+  personal: 'bg-pink-100 text-pink-800 border-pink-500',
 };
 
 
@@ -27,55 +28,101 @@ interface WeekViewProps {
   selectedDate: Date;
 }
 
+const isAllDayEvent = (event: CalendarEvent) => {
+    return event.date.length === 10;
+}
+
 export default function WeekView({ date, events, onEventClick, activeCalendar, onDateSelect, selectedDate }: WeekViewProps) {
   const weekStart = startOfWeek(date, { weekStartsOn: 0 }); // Sunday
   const weekEnd = endOfWeek(date, { weekStartsOn: 0 }); // Saturday
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  
+  const allDayEvents = useMemo(() => events.filter(isAllDayEvent), [events]);
+  const timedEvents = useMemo(() => events.filter(e => !isAllDayEvent(e)), [events]);
 
   const eventsByDay = useMemo(() => {
     const grouped: { [key: string]: CalendarEvent[] } = {};
     weekDays.forEach(day => {
       const dayKey = format(day, 'yyyy-MM-dd');
-      grouped[dayKey] = events
-        .filter(e => format(new Date(e.date), 'yyyy-MM-dd') === dayKey)
+      grouped[dayKey] = timedEvents
+        .filter(e => isSameDay(parseISO(e.date), day))
         .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     });
     return grouped;
-  }, [weekDays, events]);
+  }, [weekDays, timedEvents]);
+  
+  const allDayEventsByDay = useMemo(() => {
+    const grouped: { [key: string]: CalendarEvent[] } = {};
+    weekDays.forEach(day => {
+        const dayKey = format(day, 'yyyy-MM-dd');
+        grouped[dayKey] = allDayEvents.filter(e => isSameDay(parseISO(e.date), day));
+    });
+    return grouped;
+  }, [weekDays, allDayEvents]);
 
   return (
-    <div className="relative h-full w-full">
-      <div className="grid grid-cols-[auto_repeat(7,1fr)] h-full w-full">
-        {/* Day headers (sticky) */}
-        <div className="col-start-1 col-end-2 border-r sticky top-0 bg-white z-20">
-          <div className="h-20 border-b flex items-center justify-center gap-1">
-             {/* This space is for alignment */}
-          </div>
+    <div className="relative h-full w-full flex flex-col">
+      {/* Day headers and all-day events */}
+      <div className="grid grid-cols-[auto_repeat(7,1fr)] sticky top-0 bg-white z-20 border-b">
+        {/* Top-left corner */}
+        <div className="col-start-1 col-end-2 border-r">
+           <div className="h-20 flex items-center justify-center"></div>
+           <div className="h-full border-t flex items-center justify-center p-2 text-sm text-muted-foreground">All day</div>
         </div>
+
+        {/* Day headers */}
         {weekDays.map((day, dayIndex) => {
           const dayKey = format(day, 'yyyy-MM-dd');
-          const isWorkingSunday = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'working_sunday');
+          const isWorkingSunday = allDayEventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'working_sunday');
           const isSunday = getDay(day) === 0;
-          const isFalaqLeave = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'leave');
+          const isFalaqLeave = allDayEventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'leave');
           
           return (
-          <div 
-            key={`header-${day.toString()}`} 
-            className={cn(
-                "sticky top-0 bg-white z-20 text-center py-2 border-b border-r cursor-pointer", 
-                dayIndex === 6 && 'border-r-0',
-                activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-100' : '',
-                isSunday && !isWorkingSunday ? 'bg-red-100' : '',
-                isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
-                isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
-            )}
-            onClick={() => onDateSelect(day)}
-          >
-            <p className={cn("text-sm", isToday(day) && !isSameDay(day, selectedDate) ? 'text-primary' : 'text-muted-foreground', isSameDay(day, selectedDate) && 'text-primary font-bold')}>{format(day, 'EEE')}</p>
-            <p className={cn("text-2xl font-semibold", isToday(day) && !isSameDay(day, selectedDate) && 'text-primary', isSameDay(day, selectedDate) && 'text-primary')}>{format(day, 'd')}</p>
-          </div>
-        )})}
+            <div 
+              key={`header-${day.toString()}`} 
+              className={cn(
+                  "text-center py-2 border-r cursor-pointer", 
+                  dayIndex === 6 && 'border-r-0',
+                  (activeCalendar === 'falaq_calendar' && isFalaqLeave) || (isSunday && !isWorkingSunday) ? 'bg-red-100' : '',
+                  isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
+                  isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
+              )}
+              onClick={() => onDateSelect(day)}
+            >
+              <p className={cn("text-sm", isToday(day) && !isSameDay(day, selectedDate) ? 'text-primary' : 'text-muted-foreground', isSameDay(day, selectedDate) && 'text-primary font-bold')}>{format(day, 'EEE')}</p>
+              <p className={cn("text-2xl font-semibold", isToday(day) && !isSameDay(day, selectedDate) && 'text-primary', isSameDay(day, selectedDate) && 'text-primary')}>{format(day, 'd')}</p>
+            </div>
+          );
+        })}
         
+        {/* All-day event row */}
+        {weekDays.map((day, dayIndex) => (
+             <div 
+                key={`all-day-${day.toString()}`} 
+                className={cn(
+                    "border-r p-1 space-y-1", dayIndex === 0 && "col-start-2",
+                     dayIndex === 6 && "border-r-0"
+                )}
+             >
+                {allDayEventsByDay[format(day, 'yyyy-MM-dd')]?.map(event => {
+                    const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || 'official';
+                    const colorClass = typeColorMap[eventType] || 'bg-gray-100';
+                    return (
+                        <div
+                            key={event.id}
+                            onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
+                            className={cn('p-1 rounded-md text-xs cursor-pointer w-full', colorClass)}
+                        >
+                            <p className="font-semibold truncate">{event.name}</p>
+                        </div>
+                    )
+                })}
+            </div>
+        ))}
+      </div>
+      
+      {/* Timed events grid */}
+      <div className="grid grid-cols-[auto_repeat(7,1fr)] flex-1">
         {/* Time column */}
         <div className="col-start-1 col-end-2 border-r">
           {hours.map(hour => (
@@ -88,52 +135,49 @@ export default function WeekView({ date, events, onEventClick, activeCalendar, o
         {/* Day columns */}
         {weekDays.map((day, dayIndex) => {
           const dayKey = format(day, 'yyyy-MM-dd');
-          const isWorkingSunday = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'working_sunday');
+          const isWorkingSunday = allDayEventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'working_sunday');
           const isSunday = getDay(day) === 0;
-          const isFalaqLeave = eventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'leave');
+          const isFalaqLeave = allDayEventsByDay[dayKey]?.some(e => (e as any).falaq_event_type === 'leave');
 
           return (
-          <div key={day.toString()} className={cn(
-            "relative border-r", 
-            dayIndex === 6 && 'border-r-0',
-            activeCalendar === 'falaq_calendar' && isFalaqLeave ? 'bg-red-100' : '',
-            isSunday && !isWorkingSunday ? 'bg-red-100' : '',
-            isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
-            isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
-          )}>
-            {/* Grid lines */}
-            <div className="absolute top-0 left-0 w-full h-full">
-              {hours.map(hour => (
-                <div key={`grid-${hour}`} className="h-20 border-b cursor-pointer" onClick={() => onDateSelect(setHours(day, hour))}></div>
-              ))}
-            </div>
+            <div key={day.toString()} className={cn(
+              "relative border-r", 
+              dayIndex === 6 && 'border-r-0',
+              (activeCalendar === 'falaq_calendar' && isFalaqLeave) || (isSunday && !isWorkingSunday) ? 'bg-red-100' : '',
+              isToday(day) && !isSameDay(day, selectedDate) && 'bg-blue-50 dark:bg-blue-900/20',
+              isSameDay(day, selectedDate) && 'bg-blue-100 dark:bg-blue-900/40'
+            )}>
+              {/* Grid lines */}
+              <div className="absolute top-0 left-0 w-full h-full">
+                {hours.map(hour => (
+                  <div key={`grid-${hour}`} className="h-20 border-b cursor-pointer" onClick={() => onDateSelect(setHours(day, hour))}></div>
+                ))}
+              </div>
 
-            {/* Events */}
-            <div className="relative h-full p-1 space-y-1 pointer-events-none">
-               {eventsByDay[format(day, 'yyyy-MM-dd')].map(event => {
-                  const eventHour = new Date(event.date).getUTCHours();
-                  if (eventHour < 8) return null; // Don't render events before 8 AM
-                  const topPosition = (eventHour - 8) * 5; // 5rem per hour (h-20), offset by 8 hours
-                  const isEventFalaqLeave = (event as any).falaq_event_type === 'leave';
-                  
-                  return (
-                      <div
-                          key={event.id}
-                          onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
-                          className={cn(
-                              'absolute w-[95%] p-2 rounded-lg text-sm cursor-pointer z-10 pointer-events-auto', 
-                              (activeCalendar === 'falaq_calendar' && isEventFalaqLeave) ? typeColorMap['leave'] : typeColorMap[event.type] || 'bg-gray-100'
-                          )}
-                          style={{ top: `${topPosition}rem`}}
-                      >
-                          <p className="font-semibold truncate">{event.name}</p>
-                          <p className="text-xs truncate">{event.description}</p>
-                      </div>
-                  );
-               })}
+              {/* Events */}
+              <div className="relative h-full p-1 space-y-1 pointer-events-none">
+                 {eventsByDay[format(day, 'yyyy-MM-dd')].map(event => {
+                    const eventHour = parseISO(event.date).getHours();
+                    if (eventHour < 8) return null; // Don't render events before 8 AM
+                    const topPosition = (eventHour - 8) * 5; // 5rem per hour (h-20), offset by 8 hours
+                    const colorClass = typeColorMap[event.type] || 'bg-gray-100';
+                    
+                    return (
+                        <div
+                            key={event.id}
+                            onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
+                            className={cn('absolute w-[95%] p-2 rounded-lg text-sm cursor-pointer z-10 pointer-events-auto', colorClass)}
+                            style={{ top: `${topPosition}rem`}}
+                        >
+                            <p className="font-semibold truncate">{event.name}</p>
+                            <p className="text-xs truncate">{event.description}</p>
+                        </div>
+                    );
+                 })}
+              </div>
             </div>
-          </div>
-        )})}
+          );
+        })}
       </div>
     </div>
   );
