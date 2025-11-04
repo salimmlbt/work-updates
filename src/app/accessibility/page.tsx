@@ -33,6 +33,12 @@ export default async function AccessibilityPage() {
           >
             Cache Timer
           </TabsTrigger>
+          <TabsTrigger
+            value="types"
+            className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2"
+          >
+            Types
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="set-times" className="mt-6">
             <Card>
@@ -59,6 +65,36 @@ export default async function AccessibilityPage() {
               <p>Cache timer settings will be here.</p>
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="types" className="mt-6">
+          <Tabs defaultValue="industry-type" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="industry-type">Industry type</TabsTrigger>
+              <TabsTrigger value="work-type">Work type</TabsTrigger>
+            </TabsList>
+            <TabsContent value="industry-type">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Industry Types</CardTitle>
+                  <CardDescription>Manage the types of industries for clients.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Industry type management will be here.</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="work-type">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Work Types</CardTitle>
+                  <CardDescription>Manage the default work types for teams.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Work type management will be here.</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
