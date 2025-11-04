@@ -105,6 +105,50 @@ export type Database = {
         }
         Relationships: []
       }
+      content_schedules: {
+        Row: {
+          id: string
+          created_at: string
+          client_id: string
+          title: string
+          scheduled_date: string
+          status: string
+          content_type: string | null
+          notes: string | null
+          is_deleted: boolean
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          client_id: string
+          title: string
+          scheduled_date: string
+          status?: string
+          content_type?: string | null
+          notes?: string | null
+          is_deleted?: boolean
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          client_id?: string
+          title?: string
+          scheduled_date?: string
+          status?: string
+          content_type?: string | null
+          notes?: string | null
+          is_deleted?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_schedules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       industries: {
         Row: {
           created_at: string
