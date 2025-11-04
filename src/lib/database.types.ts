@@ -107,37 +107,37 @@ export type Database = {
       }
       content_schedules: {
         Row: {
-          id: string
-          created_at: string
           client_id: string
-          title: string
+          content_type: string | null
+          created_at: string
+          id: string
+          is_deleted: boolean
+          notes: string | null
           scheduled_date: string
           status: string
-          content_type: string | null
-          notes: string | null
-          is_deleted: boolean
+          title: string
         }
         Insert: {
-          id?: string
-          created_at?: string
           client_id: string
-          title: string
+          content_type?: string | null
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          notes?: string | null
           scheduled_date: string
           status?: string
-          content_type?: string | null
-          notes?: string | null
-          is_deleted?: boolean
+          title: string
         }
         Update: {
-          id?: string
-          created_at?: string
           client_id?: string
-          title?: string
+          content_type?: string | null
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          notes?: string | null
           scheduled_date?: string
           status?: string
-          content_type?: string | null
-          notes?: string | null
-          is_deleted?: boolean
+          title?: string
         }
         Relationships: [
           {
@@ -146,7 +146,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       industries: {
@@ -388,19 +388,12 @@ export type Database = {
           name: string
           permissions: Json
         }
-        Update:
-          | {
-              created_at?: string
-              id?: string
-              name?: string
-              permissions?: Json
-            }
-          | {
-              created_at?: string
-              id?: string
-              name?: string
-              permissions?: Json
-            }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          permissions?: Json
+        }
         Relationships: []
       }
       tasks: {
@@ -413,6 +406,8 @@ export type Database = {
           description: string
           id: string
           is_deleted: boolean
+          parent_task_id: string | null
+          posting_status: "Planned" | "Scheduled" | "Posted" | null
           project_id: string | null
           rich_description: Json | null
           status: "todo" | "inprogress" | "done"
@@ -428,6 +423,8 @@ export type Database = {
           description: string
           id?: string
           is_deleted?: boolean
+          parent_task_id?: string | null
+          posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           rich_description?: Json | null
           status?: "todo" | "inprogress" | "done"
@@ -443,6 +440,8 @@ export type Database = {
           description?: string
           id?: string
           is_deleted?: boolean
+          parent_task_id?: string | null
+          posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           rich_description?: Json | null
           status?: "todo" | "inprogress" | "done"
@@ -462,6 +461,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
           {
@@ -544,6 +550,7 @@ export type Database = {
     }
     Enums: {
       falaq_event_type: "leave" | "event" | "meeting"
+      posting_status_enum: "Planned" | "Scheduled" | "Posted"
       task_status: "todo" | "inprogress" | "done"
     }
     CompositeTypes: {
@@ -551,3 +558,5 @@ export type Database = {
     }
   }
 }
+
+    
