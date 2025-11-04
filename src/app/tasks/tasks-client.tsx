@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -473,19 +472,19 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
       <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[250px] cursor-pointer">
         <div className="flex items-center gap-3">
           {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-muted-foreground shrink-0" fill="currentColor"/>}
-          {isReassigned && <Share2 className="h-4 w-4 text-blue-500 shrink-0" />}
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
             <span className="truncate shrink">{task.description}</span>
-            {task.tags?.map(tag => (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className={`${tag === 'ASAP' ? 'bg-red-100 text-red-700' : tag === 'Feedback' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'} font-medium ml-2`}
-              >
-                {tag}
-              </Badge>
-            ))}
           </div>
+          {isReassigned && <Share2 className="h-4 w-4 text-blue-500 shrink-0" />}
+          {task.tags?.map(tag => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className={`${tag === 'ASAP' ? 'bg-red-100 text-red-700' : tag === 'Feedback' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'} font-medium ml-2`}
+            >
+              {tag}
+            </Badge>
+          ))}
         </div>
       </td>
       <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
