@@ -404,6 +404,23 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogr
   return { success: true };
 }
 
+export async function updateTaskPostingStatus(taskId: string, posting_status: 'Planned' | 'Scheduled' | 'Posted') {
+    const supabase = await createServerClient();
+    const { error } = await supabase
+        .from('tasks')
+        .update({ posting_status })
+        .eq('id', taskId);
+
+    if (error) {
+        console.error('Error updating task posting status:', error);
+        return { error: error.message };
+    }
+
+    revalidatePath('/tasks');
+    revalidatePath('/dashboard');
+    return { success: true };
+}
+
 
 export async function deleteTask(taskId: string) {
   const supabase = await createServerClient()
