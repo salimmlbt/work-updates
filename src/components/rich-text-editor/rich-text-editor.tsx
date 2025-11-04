@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -36,8 +37,8 @@ export function RichTextEditor({
       attributes: {
         class: cn(
           'prose dark:prose-invert max-w-full min-h-[150px] focus:outline-none',
-          isEditor && 'rounded-bl-md rounded-br-md p-4 border-input border border-t-0',
-          !isEditor && 'bg-muted p-4 rounded-md border-input border'
+          isEditor && 'rounded-bl-md rounded-br-md p-4',
+          !isEditor && 'p-4'
         ),
       },
     },
