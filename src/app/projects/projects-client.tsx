@@ -32,6 +32,7 @@ import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectS
 import { EditProjectDialog } from './edit-project-dialog';
 import { RenameTypeDialog } from './rename-type-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
 
 type ProjectWithOwnerAndClient = Project & {
     owner: Profile | null;
@@ -342,6 +343,19 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [typeToDelete, setTypeToDelete] = useState<ProjectType | null>(null);
   const [isDeleteTypeAlertOpen, setDeleteTypeAlertOpen] = useState(false);
   const [projectToDeletePermanently, setProjectToDeletePermanently] = useState<ProjectWithOwnerAndClient | null>(null);
+
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const projectId = searchParams.get('projectId');
+    if (projectId) {
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        setProjectToEdit(project);
+        setEditProjectOpen(true);
+      }
+    }
+  }, [searchParams, projects]);
 
   useEffect(() => {
     const projectsWithData = initialProjects.map(p => ({

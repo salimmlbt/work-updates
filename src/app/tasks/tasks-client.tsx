@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -63,6 +64,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
+import { useSearchParams } from 'next/navigation';
 
 const statusIcons = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
@@ -828,6 +830,17 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const taskId = searchParams.get('taskId');
+    if (taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        setSelectedTask(task);
+      }
+    }
+  }, [searchParams, tasks]);
   
   const supabase = createClient();
 

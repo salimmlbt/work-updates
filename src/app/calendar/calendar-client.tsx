@@ -169,6 +169,18 @@ export default function CalendarClient({
   };
 
   const handleEventClick = (event: CalendarEvent, eventTarget: HTMLElement) => {
+    if (event.type === 'task' && typeof event.id === 'string' && event.id.startsWith('task-')) {
+        const taskId = event.id.replace('task-', '');
+        router.push(`/tasks?taskId=${taskId}`);
+        return;
+    }
+
+    if (event.type === 'project' && typeof event.id === 'string' && event.id.startsWith('project-')) {
+        const projectId = event.id.replace('project-', '');
+        router.push(`/projects?projectId=${projectId}`);
+        return;
+    }
+
     const rect = eventTarget.getBoundingClientRect();
     const calendarMain = document.querySelector('main');
     const calendarRect = calendarMain?.getBoundingClientRect() || { top: 0, left: 0 };
