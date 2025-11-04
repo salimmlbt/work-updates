@@ -22,7 +22,7 @@ export default async function TasksPage() {
         profilesResponse,
         projectsResponse,
     ] = await Promise.all([
-        supabase.from('tasks').select('*, profiles(id, full_name, avatar_url), projects(id, name, client_id)'),
+        supabase.from('tasks').select('*, profiles(id, full_name, avatar_url), projects(id, name, client_id)').limit(50).order('created_at', { ascending: false }),
         supabase.from('clients').select('*'),
         supabase.from('profiles').select('*, teams:profile_teams(teams(*))'),
         supabase.from('projects').select('*').eq('is_deleted', false),
