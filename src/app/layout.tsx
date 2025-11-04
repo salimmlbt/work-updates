@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/icon.svg',
   },
-  manifest: '/manifest.json',
+  manifest: '/manifest.json?v=1',
 };
 
 
