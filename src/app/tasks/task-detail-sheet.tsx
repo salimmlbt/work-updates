@@ -13,6 +13,8 @@ import {
   Pencil,
   AlignLeft,
   Plus,
+  Save,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -23,13 +25,16 @@ import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { LinkIcon } from '@/components/icons'
 import { RichTextEditor } from '@/components/rich-text-editor/rich-text-editor'
-import { useMemo } from 'react'
+import { useMemo, useState, useTransition } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 interface TaskDetailSheetProps {
   task: TaskWithDetails
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
   onEdit: (task: TaskWithDetails) => void
+  onTaskUpdated: (task: TaskWithDetails) => void
   userProfile: Profile | null
 }
 
@@ -57,7 +62,12 @@ const typeColors: { [key: string]: string } = {
 };
 
 
-export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit, userProfile }: TaskDetailSheetProps) {
+export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit, onTaskUpdated, userProfile }: TaskDetailSheetProps) {
+  const [isPending, startTransition] = useTransition()
+  const [descriptionContent, setDescriptionContent] = useState(task.rich_description)
+  const [isDescriptionDirty, setIsDescriptionDirty] = useState(false)
+  const supabase = createClient()
+  const { toast } = useToast()
 
   const formatDate = (date: string | null) => {
     if (!date) return 'No due date';
@@ -82,6 +92,36 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit, userProfil
     }
     return [];
   }, [task.attachments]);
+
+  const handleDescriptionUpdate = (newContent: any) => {
+    setDescriptionContent(newContent);
+    if (!isDescriptionDirty) {
+      setIsDescriptionDirty(true);
+    }
+  }
+
+  const handleSaveDescription = () => {
+    startTransition(async () => {
+      const { error, data } = await supabase
+        .from('tasks')
+        .update({ rich_description: descriptionContent })
+        .eq('id', task.id)
+        .select()
+        .single()
+
+      if (error) {
+        toast({
+          title: 'Error saving description',
+          description: error.message,
+          variant: 'destructive',
+        })
+      } else {
+        toast({ title: 'Description saved successfully!' })
+        setIsDescriptionDirty(false)
+        onTaskUpdated({ ...task, ...data })
+      }
+    })
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -136,9 +176,10 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit, userProfil
                     <h3 className="font-semibold text-lg">Description</h3>
                 </div>
                 <RichTextEditor 
-                  taskId={task.id}
-                  initialContent={task.rich_description as any}
+                  initialContent={task.rich_description}
                   userProfile={userProfile}
+                  onUpdate={handleDescriptionUpdate}
+                  isDirty={isDescriptionDirty}
                 />
             </div>
             
@@ -172,11 +213,21 @@ export function TaskDetailSheet({ task, isOpen, onOpenChange, onEdit, userProfil
             </div>
 
         </div>
-        <div className="p-4 border-t bg-background mt-auto">
+        <div className="p-4 border-t bg-background mt-auto flex justify-between">
             <Button onClick={() => onEdit(task)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit Task
             </Button>
+            {isDescriptionDirty && (
+              <Button onClick={handleSaveDescription} disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Save Description
+              </Button>
+            )}
         </div>
       </SheetContent>
     </Sheet>

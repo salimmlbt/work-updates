@@ -5,28 +5,24 @@ import StarterKit from '@tiptap/starter-kit'
 import { Toolbar } from './toolbar'
 import Underline from '@tiptap/extension-underline'
 import { useEffect, useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useToast } from '@/hooks/use-toast'
 import type { Profile } from '@/lib/types'
 import { Button } from '../ui/button'
-import { Copy, Save } from 'lucide-react'
+import { Copy } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 interface RichTextEditorProps {
-  taskId: string
   initialContent: any
   userProfile: Profile | null
+  onUpdate: (content: any) => void
+  isDirty: boolean
 }
 
 export function RichTextEditor({
-  taskId,
   initialContent,
   userProfile,
+  onUpdate,
 }: RichTextEditorProps) {
-  const [content, setContent] = useState(initialContent)
-  const [isDirty, setIsDirty] = useState(false)
-  const [isPending, startTransition] = useTransition()
-  const supabase = createClient()
   const { toast } = useToast()
 
   const permissions = userProfile?.roles?.permissions as Record<string, string>
@@ -34,7 +30,7 @@ export function RichTextEditor({
 
   const editor = useEditor({
     extensions: [StarterKit, Underline],
-    content: content,
+    content: initialContent,
     editable: isEditor,
     editorProps: {
       attributes: {
@@ -45,17 +41,17 @@ export function RichTextEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      setContent(editor.getJSON())
-      setIsDirty(true)
+      onUpdate(editor.getJSON())
     },
   })
 
   // When initialContent changes (e.g., viewing a different task), reset the editor state.
   useEffect(() => {
     if (editor && !editor.isDestroyed) {
-      editor.commands.setContent(initialContent, false) // `false` prevents firing the onUpdate
-      setContent(initialContent)
-      setIsDirty(false)
+      // Check if content is actually different to prevent unnecessary updates and cursor jumps.
+      if (JSON.stringify(editor.getJSON()) !== JSON.stringify(initialContent)) {
+        editor.commands.setContent(initialContent, false) // `false` prevents firing the onUpdate
+      }
     }
   }, [initialContent, editor])
 
@@ -64,26 +60,6 @@ export function RichTextEditor({
       editor.setEditable(isEditor)
     }
   }, [isEditor, editor])
-
-  const handleSave = () => {
-    startTransition(async () => {
-      const { error } = await supabase
-        .from('tasks')
-        .update({ rich_description: content })
-        .eq('id', taskId)
-
-      if (error) {
-        toast({
-          title: 'Error saving description',
-          description: error.message,
-          variant: 'destructive',
-        })
-      } else {
-        toast({ title: 'Description saved successfully!' })
-        setIsDirty(false)
-      }
-    })
-  }
 
   const handleCopy = () => {
     if (editor) {
@@ -100,12 +76,6 @@ export function RichTextEditor({
         <>
           <div className="flex justify-between items-center border border-b-0 border-input rounded-tl-md rounded-tr-md p-2">
             <Toolbar editor={editor} />
-            {isDirty && (
-              <Button onClick={handleSave} size="sm" disabled={isPending}>
-                <Save className="h-4 w-4 mr-2" />
-                {isPending ? 'Saving...' : 'Save'}
-              </Button>
-            )}
           </div>
 
           <EditorContent editor={editor} />
