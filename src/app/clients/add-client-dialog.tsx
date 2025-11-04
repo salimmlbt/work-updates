@@ -114,12 +114,12 @@ export function AddClientDialog({
         description: result.error,
         variant: 'destructive',
       })
-    } else {
+    } else if (result.data) {
       toast({
         title: 'Client Added',
         description: 'The new client has been added successfully.',
       })
-      onClientAdded(result.data as Client)
+      onClientAdded(result.data as any)
       setIsOpen(false)
       reset()
       setAvatarPreview(null)

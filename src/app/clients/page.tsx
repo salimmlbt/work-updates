@@ -11,7 +11,7 @@ export default async function ClientsPage() {
     { data: clients, error: clientsError },
     { data: industries, error: industriesError }
   ] = await Promise.all([
-    supabase.from('clients').select('*').order('created_at', { ascending: false }),
+    supabase.from('clients').select('*, projects(id), tasks(id)').order('created_at', { ascending: false }),
     supabase.from('industries').select('*').order('name')
   ]);
 
@@ -21,6 +21,14 @@ export default async function ClientsPage() {
   if (industriesError) {
     console.error('Error fetching industries:', industriesError);
   }
+  
+  const clientsWithCounts = (clients as any[] ?? []).map(c => ({
+      ...c,
+      projects_count: c.projects.length,
+      tasks_count: c.tasks.length,
+      projects: undefined,
+      tasks: undefined
+  }));
 
-  return <ClientsPageClient initialClients={clients ?? []} industries={industries as Industry[] ?? []} />;
+  return <ClientsPageClient initialClients={clientsWithCounts ?? []} industries={industries as Industry[] ?? []} />;
 }
