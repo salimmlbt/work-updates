@@ -1387,6 +1387,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                 setTaskToEdit(selectedTask);
             }}
             userProfile={currentUserProfile}
+            onTaskUpdated={handleTaskUpdated}
         />
       )}
 
