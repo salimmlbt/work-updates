@@ -46,6 +46,13 @@ export function RichTextEditor({
       setContent(editor.getJSON())
     },
   })
+  
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) {
+        editor.setEditable(isEditor);
+    }
+  }, [isEditor, editor]);
+
 
   useEffect(() => {
     if (debouncedContent) {
