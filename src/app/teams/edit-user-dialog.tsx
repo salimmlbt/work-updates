@@ -26,7 +26,7 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { Loader2, Pencil, User, ChevronDown } from 'lucide-react'
+import { Loader2, Pencil, User, ChevronDown, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile } from '@/lib/types'
 import { updateUser } from './actions'
@@ -54,6 +54,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     avatar: null as File | null,
     workStartTime: user.work_start_time || '',
     workEndTime: user.work_end_time || '',
+    deleteAvatar: false,
   });
   const [isFormValid, setIsFormValid] = useState(false);
   const { toast } = useToast();
@@ -83,6 +84,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
           avatar: null,
           workStartTime: user.work_start_time || '',
           workEndTime: user.work_end_time || '',
+          deleteAvatar: false,
       });
       setAvatarPreview(user.avatar_url);
     }
@@ -121,10 +123,15 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
   };
 
   const onCropComplete = (croppedImage: File) => {
-    setFormState(prevState => ({ ...prevState, avatar: croppedImage }));
+    setFormState(prevState => ({ ...prevState, avatar: croppedImage, deleteAvatar: false }));
     setAvatarPreview(URL.createObjectURL(croppedImage));
     setImageToCrop(null);
   };
+  
+  const handleDeleteAvatar = () => {
+      setFormState(prevState => ({...prevState, avatar: null, deleteAvatar: true}));
+      setAvatarPreview(null);
+  }
 
   const handleUpdateUser = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -141,6 +148,9 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     }
     if (formState.avatar) {
       formData.append('avatar', formState.avatar);
+    }
+    if (formState.deleteAvatar) {
+        formData.append('delete_avatar', 'true');
     }
 
     startTransition(async () => {
@@ -168,7 +178,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
             <form onSubmit={handleUpdateUser}>
                 <div className="space-y-4 py-4">
                   <div className="flex justify-center">
-                      <div className="relative">
+                      <div className="relative group">
                         <input
                           type="file"
                           accept="image/*"
@@ -185,13 +195,26 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                             <User className="h-12 w-12 text-muted-foreground" />
                           </AvatarFallback>
                         </Avatar>
-                        <button
-                          type="button"
-                          className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
+                        <div className="absolute bottom-0 right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                type="button"
+                                className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                                onClick={() => fileInputRef.current?.click()}
+                                title="Edit Avatar"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </button>
+                            {avatarPreview && (
+                                <button
+                                    type="button"
+                                    className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+                                    onClick={handleDeleteAvatar}
+                                    title="Delete Avatar"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
                       </div>
                     </div>
                   <div className="space-y-2">

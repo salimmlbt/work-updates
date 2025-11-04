@@ -238,6 +238,7 @@ export async function updateUser(userId: string, formData: FormData) {
     const avatarFile = formData.get('avatar') as File | null;
     const workStartTime = formData.get('work_start_time') as string;
     const workEndTime = formData.get('work_end_time') as string;
+    const deleteAvatar = formData.get('delete_avatar') === 'true';
     
     const { data: currentProfile, error: fetchError } = await supabase
         .from('profiles')
@@ -250,18 +251,26 @@ export async function updateUser(userId: string, formData: FormData) {
     }
 
     let avatarUrl = currentProfile.avatar_url;
-
-    if (avatarFile && avatarFile.size > 0) {
+    
+    const deleteOldAvatar = async () => {
         if (avatarUrl && !avatarUrl.includes('pravatar.cc')) {
-          try {
-            const oldAvatarPath = new URL(avatarUrl).pathname.split('/avatars/').pop();
-            if (oldAvatarPath) {
-                await supabase.storage.from('avatars').remove([oldAvatarPath]);
+            try {
+                const oldAvatarPath = new URL(avatarUrl).pathname.split('/avatars/').pop();
+                if (oldAvatarPath) {
+                    await supabase.storage.from('avatars').remove([oldAvatarPath]);
+                }
+            } catch (e) {
+                console.error("Failed to parse or delete old avatar URL:", e);
             }
-          } catch (e) {
-            console.error("Failed to parse or delete old avatar URL:", e);
-          }
         }
+    };
+    
+    if (deleteAvatar) {
+        await deleteOldAvatar();
+        avatarUrl = `https://i.pravatar.cc/150?u=${userId}`;
+    } else if (avatarFile && avatarFile.size > 0) {
+        await deleteOldAvatar();
+        
         const newFilePath = `public/${Date.now()}_${avatarFile.name}`;
         const { error: uploadError } = await supabase.storage
             .from('avatars')
