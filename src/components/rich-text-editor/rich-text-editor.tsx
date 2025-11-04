@@ -4,13 +4,13 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Toolbar } from './toolbar'
 import Underline from '@tiptap/extension-underline'
-import { useDebounce } from 'use-debounce'
 import { useEffect, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import type { Profile } from '@/lib/types'
 import { Button } from '../ui/button'
-import { Copy } from 'lucide-react'
+import { Copy, Save } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface RichTextEditorProps {
   taskId: string
@@ -24,7 +24,7 @@ export function RichTextEditor({
   userProfile,
 }: RichTextEditorProps) {
   const [content, setContent] = useState(initialContent)
-  const [debouncedContent] = useDebounce(content, 500)
+  const [isDirty, setIsDirty] = useState(false)
   const [isPending, startTransition] = useTransition()
   const supabase = createClient()
   const { toast } = useToast()
@@ -38,61 +38,81 @@ export function RichTextEditor({
     editable: isEditor,
     editorProps: {
       attributes: {
-        class:
-          'rounded-bl-md rounded-br-md border border-gray-300 p-4 prose dark:prose-invert max-w-full min-h-[150px] focus:outline-none',
+        class: cn(
+          'rounded-bl-md rounded-br-md border border-input p-4 prose dark:prose-invert max-w-full min-h-[150px] focus:outline-none',
+          !isEditor && 'bg-muted'
+        ),
       },
     },
     onUpdate: ({ editor }) => {
       setContent(editor.getJSON())
+      setIsDirty(true)
     },
   })
-  
+
+  // When initialContent changes (e.g., viewing a different task), reset the editor state.
   useEffect(() => {
     if (editor && !editor.isDestroyed) {
-        editor.setEditable(isEditor);
+      editor.commands.setContent(initialContent, false) // `false` prevents firing the onUpdate
+      setContent(initialContent)
+      setIsDirty(false)
     }
-  }, [isEditor, editor]);
-
+  }, [initialContent, editor])
 
   useEffect(() => {
-    if (debouncedContent) {
-      startTransition(async () => {
-        const { error } = await supabase
-          .from('tasks')
-          .update({ rich_description: debouncedContent })
-          .eq('id', taskId)
-
-        if (error) {
-          toast({
-            title: 'Error saving description',
-            description: error.message,
-            variant: 'destructive',
-          })
-        }
-      })
+    if (editor && !editor.isDestroyed) {
+      editor.setEditable(isEditor)
     }
-  }, [debouncedContent, taskId, supabase, toast])
+  }, [isEditor, editor])
+
+  const handleSave = () => {
+    startTransition(async () => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ rich_description: content })
+        .eq('id', taskId)
+
+      if (error) {
+        toast({
+          title: 'Error saving description',
+          description: error.message,
+          variant: 'destructive',
+        })
+      } else {
+        toast({ title: 'Description saved successfully!' })
+        setIsDirty(false)
+      }
+    })
+  }
 
   const handleCopy = () => {
     if (editor) {
-      const text = editor.getText();
+      const text = editor.getText()
       navigator.clipboard.writeText(text).then(() => {
-        toast({ title: 'Copied to clipboard!' });
-      });
+        toast({ title: 'Copied to clipboard!' })
+      })
     }
-  };
-
+  }
 
   return (
     <div className="flex flex-col justify-stretch">
       {isEditor ? (
         <>
-          <Toolbar editor={editor} />
+          <div className="flex justify-between items-center border border-b-0 border-input rounded-tl-md rounded-tr-md p-2">
+            <Toolbar editor={editor} />
+            {isDirty && (
+              <Button onClick={handleSave} size="sm" disabled={isPending}>
+                <Save className="h-4 w-4 mr-2" />
+                {isPending ? 'Saving...' : 'Save'}
+              </Button>
+            )}
+          </div>
+
           <EditorContent editor={editor} />
         </>
       ) : (
         <div className="relative">
-          <div className="prose dark:prose-invert max-w-full border border-gray-300 rounded-md p-4 min-h-[150px]">
+          <div className="prose dark:prose-invert max-w-full border border-input rounded-md p-4 min-h-[150px] bg-muted">
             {editor && <EditorContent editor={editor} />}
           </div>
           <Button
@@ -100,6 +120,7 @@ export function RichTextEditor({
             size="icon"
             className="absolute top-2 right-2"
             onClick={handleCopy}
+            title="Copy text"
           >
             <Copy className="h-4 w-4" />
           </Button>

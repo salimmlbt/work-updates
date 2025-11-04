@@ -24,11 +24,7 @@ export function Toolbar({ editor }: Props) {
     return null
   }
   return (
-    <div
-      className="px-4 py-3 rounded-tl-md rounded-tr-md flex justify-between items-start
-    gap-5 w-full flex-wrap border border-gray-300"
-    >
-      <div className="flex justify-start items-center gap-5 w-full lg:w-10/12 flex-wrap ">
+    <div className="flex flex-wrap items-center gap-1">
         <button
           onClick={(e) => {
             e.preventDefault()
@@ -36,9 +32,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('bold')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <Bold className="w-5 h-5" />
         </button>
@@ -49,9 +46,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('italic')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <Italic className="w-5 h-5" />
         </button>
@@ -62,9 +60,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('underline')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <Underline className="w-5 h-5" />
         </button>
@@ -75,9 +74,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('strike')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <Strikethrough className="w-5 h-5" />
         </button>
@@ -88,9 +88,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('heading', { level: 2 })
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <Heading2 className="w-5 h-5" />
         </button>
@@ -102,9 +103,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('bulletList')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <List className="w-5 h-5" />
         </button>
@@ -115,9 +117,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('orderedList')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <ListOrdered className="w-5 h-5" />
         </button>
@@ -128,9 +131,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('blockquote')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <Quote className="w-5 h-5" />
         </button>
@@ -141,9 +145,10 @@ export function Toolbar({ editor }: Props) {
           }}
           className={
             editor.isActive('code')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400'
+              ? 'bg-primary text-primary-foreground p-2 rounded-lg'
+              : 'p-2 rounded-lg hover:bg-accent'
           }
+          type="button"
         >
           <Code className="w-5 h-5" />
         </button>
@@ -152,11 +157,8 @@ export function Toolbar({ editor }: Props) {
             e.preventDefault()
             editor.chain().focus().undo().run()
           }}
-          className={
-            editor.isActive('undo')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400 hover:bg-sky-700 hover:text-white p-1 hover:rounded-lg'
-          }
+          className="p-2 rounded-lg hover:bg-accent"
+          type="button"
         >
           <Undo className="w-5 h-5" />
         </button>
@@ -165,15 +167,11 @@ export function Toolbar({ editor }: Props) {
             e.preventDefault()
             editor.chain().focus().redo().run()
           }}
-          className={
-            editor.isActive('redo')
-              ? 'bg-sky-700 text-white p-2 rounded-lg'
-              : 'text-sky-400 hover:bg-sky-700 hover:text-white p-1 hover:rounded-lg'
-          }
+          className="p-2 rounded-lg hover:bg-accent"
+          type="button"
         >
           <Redo className="w-5 h-5" />
         </button>
-      </div>
     </div>
   )
 }
