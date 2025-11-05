@@ -410,6 +410,7 @@ export type Database = {
           posting_status: "Planned" | "Scheduled" | "Posted" | null
           project_id: string | null
           rich_description: Json | null
+          schedule_id: string | null
           status: "todo" | "inprogress" | "done"
           tags: string[] | null
           type: string | null
@@ -427,6 +428,7 @@ export type Database = {
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           rich_description?: Json | null
+          schedule_id?: string | null
           status?: "todo" | "inprogress" | "done"
           tags?: string[] | null
           type?: string | null
@@ -444,6 +446,7 @@ export type Database = {
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           rich_description?: Json | null
+          schedule_id?: string | null
           status?: "todo" | "inprogress" | "done"
           tags?: string[] | null
           type?: string | null
@@ -475,6 +478,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "content_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -558,5 +568,3 @@ export type Database = {
     }
   }
 }
-
-    
