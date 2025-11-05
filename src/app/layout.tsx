@@ -11,10 +11,10 @@ export const metadata: Metadata = {
   description: 'A comprehensive platform for managing work updates, projects, and teams.',
   icons: {
     icon: '/icon.svg',
-    shortcut: '/favicon.ico',
+    shortcut: '/icon.svg',
     apple: '/icon.svg',
   },
-  manifest: '/manifest.json?v=2',
+  manifest: '/manifest.json',
 };
 
 
@@ -44,7 +44,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon.svg" sizes="any" />
       </head>
       <body className={cn("min-h-screen bg-background font-body font-sans antialiased")}>
         <PageLoader />
