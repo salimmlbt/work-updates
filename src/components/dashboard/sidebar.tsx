@@ -15,11 +15,12 @@ import {
   TeamUsersIcon,
   SettingsIcon,
   Logo,
+  SchedulerIcon,
 } from '@/components/icons';
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
-import { LogOut, ChevronLeft, ShieldQuestion, CalendarDays } from 'lucide-react';
+import { LogOut, ChevronLeft, ShieldQuestion } from 'lucide-react';
 import type { Profile, RoleWithPermissions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -30,7 +31,7 @@ const navItems = [
   { href: '/tasks', label: 'Tasks', icon: TasksIcon, id: 'tasks' },
   { href: '/clients', label: 'Clients', icon: ClientsIcon, id: 'clients' },
   { href: '/calendar', label: 'Calendar', icon: CalendarIconSvg, id: 'calendar' },
-  { href: '/scheduler', label: 'Scheduler', icon: CalendarDays, id: 'scheduler' },
+  { href: '/scheduler', label: 'Scheduler', icon: SchedulerIcon, id: 'scheduler' },
   { href: '/chat', label: 'Chat', icon: ChatIcon, id: 'chat' },
   { href: '/attendance', label: 'Attendance', icon: AttendanceIcon, id: 'attendance' },
   { href: '/billing', label: 'Billing', icon: BillingIcon, id: 'billing' },
