@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
-import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType } from '@/lib/types'
+import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
@@ -1203,4 +1203,38 @@ export async function deleteWorkType(id: number): Promise<{ error: string | null
     if (error) return { error: error.message };
     revalidatePath('/accessibility');
     return { error: null };
+}
+
+export async function addSchedule(formData: FormData): Promise<{ data?: ContentSchedule, error?: string }> {
+    const supabase = await createServerClient();
+
+    const rawData = {
+        client_id: formData.get('client_id') as string,
+        title: formData.get('title') as string,
+        content_type: formData.get('content_type') as string,
+        scheduled_date: formData.get('scheduled_date') as string,
+        notes: formData.get('notes') as string,
+    };
+
+    if (!rawData.client_id || !rawData.title || !rawData.scheduled_date) {
+        return { error: "Client, title, and scheduled date are required." };
+    }
+
+    const { data, error } = await supabase
+        .from('content_schedules')
+        .insert({
+            ...rawData,
+            status: 'Planned',
+            is_deleted: false,
+        })
+        .select()
+        .single();
+    
+    if (error) {
+        console.error("Error adding schedule:", error);
+        return { error: error.message };
+    }
+
+    revalidatePath('/scheduler');
+    return { data: data as ContentSchedule };
 }
