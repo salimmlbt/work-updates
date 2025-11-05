@@ -17,6 +17,7 @@ export type AppSettings = DB['public']['Tables']['app_settings']['Row'];
 export type OfficialHoliday = DB['public']['Tables']['official_holidays']['Row'];
 export type Industry = DB['public']['Tables']['industries']['Row'];
 export type WorkType = DB['public']['Tables']['work_types']['Row'];
+export type ContentSchedule = DB['public']['Tables']['content_schedules']['Row'];
 
 
 export type TaskWithAssignee = Task & {
