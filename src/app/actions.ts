@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
-import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule } from '@/lib/types'
+import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
@@ -387,22 +387,62 @@ export async function updateTask(taskId: string, formData: FormData) {
     return { data }
 }
 
-export async function updateTaskStatus(taskId: string, status: 'todo' | 'inprogress' | 'done') {
-  const supabase = await createServerClient();
-  const { error } = await supabase
-    .from('tasks')
-    .update({ status })
-    .eq('id', taskId);
-  
-  if (error) {
-    console.error('Error updating task status:', error);
-    return { error: error.message };
-  }
+export async function updateTaskStatus(
+    taskId: string,
+    status: Task['status'],
+    correction?: { note: string; authorId: string }
+) {
+    const supabase = await createServerClient();
 
-  revalidatePath('/tasks');
-  revalidatePath('/dashboard');
-  return { success: true };
+    const { data: currentTask, error: fetchError } = await supabase
+        .from('tasks')
+        .select('revisions, corrections')
+        .eq('id', taskId)
+        .single();
+    
+    if (fetchError) {
+        console.error('Error fetching task for status update:', fetchError);
+        return { error: 'Could not retrieve task to update status.' };
+    }
+
+    const updates: Partial<Task> = { status };
+    
+    // Handle revision counting
+    const revisions = (currentTask.revisions as { corrections?: number, recreations?: number } | null) || {};
+    if (status === 'corrections') {
+        revisions.corrections = (revisions.corrections || 0) + 1;
+        updates.revisions = revisions;
+        
+        const newCorrection: Correction = {
+            note: correction?.note || 'No note provided.',
+            author_id: correction?.authorId || '',
+            created_at: new Date().toISOString(),
+        };
+        const corrections = (currentTask.corrections as Correction[] | null) || [];
+        updates.corrections = [...corrections, newCorrection];
+
+    } else if (status === 'recreate') {
+        revisions.recreations = (revisions.recreations || 0) + 1;
+        updates.revisions = revisions;
+        updates.status = 'todo'; // Move back to active tasks
+    } else if (status === 'approved') {
+        updates.status = 'done'; // Final state for approval
+    }
+
+    const { error } = await supabase
+        .from('tasks')
+        .update(updates)
+        .eq('id', taskId);
+
+    if (error) {
+        console.error('Error updating task status:', error);
+        return { error: error.message };
+    }
+
+    revalidatePath('/tasks');
+    return { success: true };
 }
+
 
 export async function updateTaskPostingStatus(taskId: string, posting_status: 'Planned' | 'Scheduled' | 'Posted') {
     const supabase = await createServerClient();
@@ -1102,6 +1142,7 @@ export async function addHoliday(formData: FormData) {
             user_id: userId, 
             type,
             falaq_event_type: falaqEventType,
+            is_deleted: false,
         })
         .select()
         .single();

@@ -174,6 +174,7 @@ export type Database = {
           description: string | null
           falaq_event_type: "leave" | "event" | "meeting" | null
           id: number
+          is_deleted: boolean
           name: string
           type: "official" | "personal" | "special_day" | "weekend"
           user_id: string | null
@@ -184,6 +185,7 @@ export type Database = {
           description?: string | null
           falaq_event_type?: "leave" | "event" | "meeting" | null
           id?: number
+          is_deleted?: boolean
           name: string
           type: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
@@ -194,6 +196,7 @@ export type Database = {
           description?: string | null
           falaq_event_type?: "leave" | "event" | "meeting" | null
           id?: number
+          is_deleted?: boolean
           name?: string
           type?: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
@@ -401,6 +404,7 @@ export type Database = {
           assignee_id: string | null
           attachments: Json | null
           client_id: string | null
+          corrections: Json | null
           created_at: string
           deadline: string
           description: string
@@ -409,6 +413,7 @@ export type Database = {
           parent_task_id: string | null
           posting_status: "Planned" | "Scheduled" | "Posted" | null
           project_id: string | null
+          revisions: Json | null
           rich_description: Json | null
           schedule_id: string | null
           status: "todo" | "inprogress" | "under-review" | "done"
@@ -419,6 +424,7 @@ export type Database = {
           assignee_id?: string | null
           attachments?: Json | null
           client_id?: string | null
+          corrections?: Json | null
           created_at?: string
           deadline: string
           description: string
@@ -427,6 +433,7 @@ export type Database = {
           parent_task_id?: string | null
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
+          revisions?: Json | null
           rich_description?: Json | null
           schedule_id?: string | null
           status?: "todo" | "inprogress" | "under-review" | "done"
@@ -437,6 +444,7 @@ export type Database = {
           assignee_id?: string | null
           attachments?: Json | null
           client_id?: string | null
+          corrections?: Json | null
           created_at?: string
           deadline?: string
           description?: string
@@ -445,6 +453,7 @@ export type Database = {
           parent_task_id?: string | null
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
+          revisions?: Json | null
           rich_description?: Json | null
           schedule_id?: string | null
           status?: "todo" | "inprogress" | "under-review" | "done"
@@ -561,7 +570,15 @@ export type Database = {
     Enums: {
       falaq_event_type: "leave" | "event" | "meeting"
       posting_status_enum: "Planned" | "Scheduled" | "Posted"
-      task_status: "todo" | "inprogress" | "under-review" | "done"
+      task_status:
+        | "todo"
+        | "inprogress"
+        | "under-review"
+        | "done"
+        | "review"
+        | "corrections"
+        | "recreate"
+        | "approved"
     }
     CompositeTypes: {
       [_ in never]: never
