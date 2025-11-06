@@ -21,6 +21,7 @@ import {
   RefreshCcw,
   Loader2,
   Share2,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -859,6 +860,19 @@ interface TasksClientProps {
   currentUserProfile: Profile | null;
 }
 
+const processPayload = (payload: any, profiles: Profile[], allProjects: Project[], clients: Client[]): TaskWithDetails => {
+  const task = payload.new || payload;
+  return {
+    ...task,
+    profiles: profiles.find(p => p.id === task.assignee_id) || null,
+    projects: allProjects.find(p => p.id === task.project_id) || null,
+    clients: allProjects.find(p => p.id === task.project_id)?.client_id 
+        ? clients.find(c => c.id === allProjects.find(p => p.id === task.project_id)!.client_id)
+        : clients.find(c => c.id === task.client_id) || null,
+    attachments: processTaskAttachments(task),
+  };
+};
+
 const processTaskAttachments = (task: Task): Attachment[] | null => {
   if (!task.attachments) return null;
   try {
@@ -871,6 +885,9 @@ const processTaskAttachments = (task: Task): Attachment[] | null => {
     return null;
   }
 };
+
+type SortableKeys = 'description' | 'client' | 'project' | 'assignee' | 'type' | 'deadline';
+type SortDirection = 'ascending' | 'descending';
 
 export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile }: TasksClientProps) {
   const [view, setView] = useState('table');
@@ -896,17 +913,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const searchParams = useSearchParams();
   const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
-
-  useEffect(() => {
-    const taskId = searchParams.get('taskId');
-    if (taskId) {
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        setSelectedTask(task);
-      }
-    }
-  }, [searchParams, tasks]);
   
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'deadline', direction: 'ascending' });
+
+
   const supabase = createClient();
 
   const userPermissions = (currentUserProfile?.roles as RoleWithPermissions)?.permissions;
@@ -916,28 +926,18 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     setTasks(initialTasks);
   }, [initialTasks]);
 
-  useEffect(() => {
+ useEffect(() => {
     const channel = supabase
       .channel('realtime-tasks-all-fix')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
-        (payload) => {
-          const processPayload = (taskPayload: any): TaskWithDetails => {
-            return {
-              ...taskPayload,
-              profiles: profiles.find(p => p.id === taskPayload.assignee_id) || null,
-              projects: allProjects.find(p => p.id === taskPayload.project_id) || null,
-              clients: clients.find(c => c.id === taskPayload.client_id) || null,
-              attachments: processTaskAttachments(taskPayload),
-            };
-          };
-          
+        (payload: any) => {
           if (payload.eventType === 'INSERT') {
-            const newFullTask = processPayload(payload.new);
+            const newFullTask = processPayload(payload.new, profiles, allProjects, clients);
             setTasks(current => [newFullTask, ...current.filter(t => t.id !== newFullTask.id)]);
           } else if (payload.eventType === 'UPDATE') {
-            const updatedFullTask = processPayload(payload.new);
+            const updatedFullTask = processPayload(payload.new, profiles, allProjects, clients);
             setTasks(current => current.map(t => t.id === updatedFullTask.id ? updatedFullTask : t));
           } else if (payload.eventType === 'DELETE') {
             setTasks(current => current.filter(t => t.id !== payload.old.id));
@@ -970,24 +970,49 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return tasksToDisplay;
   }, [tasks, canEditTasks, currentUserProfile?.id, taskView, searchQuery]);
 
-  const activeTasks = useMemo(() => filteredTasks.filter(t => !t.is_deleted && t.status !== 'done' && t.posting_status !== 'Scheduled' && t.posting_status !== 'Posted'), [filteredTasks]);
+  const sortedTasks = useMemo(() => {
+    let sortableItems = [...filteredTasks];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue: any = '';
+        let bValue: any = '';
+
+        switch (sortConfig.key) {
+            case 'client':
+                aValue = a.clients?.name || '';
+                bValue = b.clients?.name || '';
+                break;
+            case 'assignee':
+                aValue = a.profiles?.full_name || '';
+                bValue = b.profiles?.full_name || '';
+                break;
+            case 'project':
+                aValue = a.projects?.name || '';
+                bValue = b.projects?.name || '';
+                break;
+            default:
+                aValue = a[sortConfig.key] || '';
+                bValue = b[sortConfig.key] || '';
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredTasks, sortConfig]);
+
+  const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status !== 'done' && t.posting_status !== 'Scheduled' && t.posting_status !== 'Posted'), [sortedTasks]);
   
   const completedTasks = useMemo(() => {
-    let tasksToFilter = tasks;
-    if (taskView === 'mine') {
-      tasksToFilter = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
-    }
-    
-    let completed = tasksToFilter.filter(t => !t.is_deleted && (t.status === 'done' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted'));
+    return sortedTasks.filter(t => !t.is_deleted && (t.status === 'done' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted'));
+  }, [sortedTasks]);
 
-    if (searchQuery) {
-      completed = completed.filter(task =>
-        task.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    return completed;
-  }, [tasks, taskView, currentUserProfile?.id, searchQuery]);
 
   const deletedTasks = useMemo(() => {
     // Deleted tasks should not be filtered by 'my tasks' view
@@ -1008,8 +1033,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }
 
   const handleTaskUpdated = (updatedTask: TaskWithDetails) => {
-    // This is handled by realtime, but we can keep it for local state updates
-    // that might be faster than the server roundtrip (e.g., from EditTaskDialog)
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
     if (selectedTask?.id === updatedTask.id) {
         setSelectedTask(updatedTask);
@@ -1120,6 +1143,27 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     }, 0);
   }
 
+   const requestSort = (key: SortableKeys) => {
+    let direction: SortDirection = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const SortableHeader = ({ sortKey, children }: { sortKey: SortableKeys, children: React.ReactNode }) => {
+    const isSorted = sortConfig?.key === sortKey;
+    return (
+      <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: sortKey === 'description' ? '250px' : '150px' }}>
+          <Button variant="ghost" onClick={() => requestSort(sortKey)} className="p-0 h-auto hover:bg-transparent">
+              {children}
+              {isSorted && (sortConfig?.direction === 'ascending' ? ' ▲' : ' ▼')}
+              {!isSorted && <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground" />}
+          </Button>
+      </th>
+    )
+  }
+
   const mainContent = () => {
     if (showBin) {
       return (
@@ -1221,12 +1265,12 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                     <table className="w-full text-left mt-2">
                       <thead>
                         <tr className="border-b border-gray-200">
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "250px" }}>Task Details</th>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Client</th>
+                          <SortableHeader sortKey="description">Task Details</SortableHeader>
+                          <SortableHeader sortKey="client">Client</SortableHeader>
                           <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
-                          {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "180px" }}>Responsible</th>}
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Type</th>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Due date</th>
+                          {canEditTasks && <SortableHeader sortKey="assignee">Responsible</SortableHeader>}
+                          <SortableHeader sortKey="type">Type</SortableHeader>
+                          <SortableHeader sortKey="deadline">Due date</SortableHeader>
                           <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
                           <th className="px-4 py-2" style={{ width: "50px" }}></th>
                         </tr>
@@ -1318,14 +1362,14 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                       <table className="w-full text-left mt-2">
                         <thead>
                           <tr className="border-b border-gray-200">
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "250px" }}>Task Details</th>
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Client</th>
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
-                            {canEditTasks && <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "180px" }}>Responsible</th>}
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Type</th>
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Due date</th>
-                            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
-                            <th className="px-4 py-2" style={{ width: "50px" }}></th>
+                          <SortableHeader sortKey="description">Task Details</SortableHeader>
+                          <SortableHeader sortKey="client">Client</SortableHeader>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
+                          {canEditTasks && <SortableHeader sortKey="assignee">Responsible</SortableHeader>}
+                          <SortableHeader sortKey="type">Type</SortableHeader>
+                          <SortableHeader sortKey="deadline">Due date</SortableHeader>
+                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
+                          <th className="px-4 py-2" style={{ width: "50px" }}></th>
                           </tr>
                         </thead>
                         <TaskTableBody
@@ -1350,7 +1394,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         )}
       </>
     ):(
-      <KanbanBoard tasks={filteredTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} />
+      <KanbanBoard tasks={sortedTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} />
     )
   }
 
@@ -1533,4 +1577,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
