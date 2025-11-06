@@ -46,7 +46,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isFuture, isPast } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, Correction } from '@/lib/types';
+import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, Correction, Revisions } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
 import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -443,18 +443,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
   const { toast } = useToast();
   
   const attachments = useMemo(() => {
-    if (!task.attachments) return [];
-    try {
-      if (typeof task.attachments === 'string') {
-        return JSON.parse(task.attachments) as Attachment[];
-      }
-      if (Array.isArray(task.attachments)) {
-        return task.attachments;
-      }
-    } catch (e) {
-      console.error("Failed to parse attachments in TaskRow:", e);
-    }
-    return [];
+    return task.attachments || [];
   }, [task.attachments]);
 
   useEffect(() => {
@@ -516,16 +505,17 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
   
   const getStatusOptions = () => {
     if (isPostingType) return postingStatusOptions;
+    
     if (isUnderReviewTab) {
+      // If user is a reviewer, show review options. Otherwise, show main options.
       return isReviewer ? reviewStatusOptions : mainStatusOptions;
     }
+    
     return mainStatusOptions;
   };
 
   const statusOptions = getStatusOptions();
-  const isStatusChangeDisabled = isUnderReviewTab && !isReviewer;
-
-
+  
   return (
     <>
       <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[250px] cursor-pointer">
@@ -535,12 +525,12 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
             <span className="truncate shrink">{task.description}</span>
           </div>
           {isReassigned && <Share2 className="h-4 w-4 text-blue-500 shrink-0" />}
-          {task.revisions?.recreations > 0 && (
+          {(task.revisions?.recreations ?? 0) > 0 && (
             <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
               <Repeat className="h-3 w-3 mr-1" /> {task.revisions.recreations}
             </Badge>
           )}
-          {task.revisions?.corrections > 0 && (
+          {(task.revisions?.corrections ?? 0) > 0 && (
             <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
               <MessageSquare className="h-3 w-3 mr-1" /> {task.revisions.corrections}
             </Badge>
@@ -587,8 +577,8 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
       </td>
       <td className="p-0">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild disabled={isStatusChangeDisabled}>
-            <div className={cn("group w-full h-full flex items-center justify-start px-4 py-3", !isStatusChangeDisabled && "cursor-pointer")}>
+          <DropdownMenuTrigger asChild>
+            <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
               <div className="flex items-center gap-2 whitespace-nowrap">
                 {currentStatusIcon}
                 <span>{currentStatusLabel}</span>
@@ -964,21 +954,10 @@ const processPayload = (payload: any, profiles: Profile[], allProjects: Project[
     profiles: profiles.find(p => p.id === task.assignee_id) || null,
     projects: project,
     clients: client,
-    attachments: processTaskAttachments(task),
+    attachments: task.attachments || [],
+    revisions: task.revisions,
+    corrections: task.corrections
   };
-};
-
-const processTaskAttachments = (task: Task): Attachment[] | null => {
-  if (!task.attachments) return null;
-  try {
-    const parsed = typeof task.attachments === 'string' 
-      ? JSON.parse(task.attachments) 
-      : task.attachments;
-    return Array.isArray(parsed) ? parsed : null;
-  } catch (e) {
-    console.error("Failed to parse attachments:", e);
-    return null;
-  }
 };
 
 type SortableKeys = 'description' | 'client' | 'project' | 'assignee' | 'type' | 'deadline';
