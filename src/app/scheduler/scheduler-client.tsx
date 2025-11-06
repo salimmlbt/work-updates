@@ -469,15 +469,15 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
         <main className="flex-1 overflow-y-auto">
           {selectedClientId ? (
-            <div className="border-t">
+            <div className="border-b">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-t-0">
-                    <TableHead>Schedule Date</TableHead>
-                    <TableHead>Schedule Detail</TableHead>
-                    <TableHead>Project</TableHead>
-                    <TableHead>Schedule Team</TableHead>
-                    <TableHead>Schedule Type</TableHead>
+                  <TableRow>
+                    <TableHead className="border-r">Schedule Date</TableHead>
+                    <TableHead className="border-r">Schedule Detail</TableHead>
+                    <TableHead className="border-r">Project</TableHead>
+                    <TableHead className="border-r">Schedule Team</TableHead>
+                    <TableHead className="border-r">Schedule Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[5%] text-right"></TableHead>
                   </TableRow>
