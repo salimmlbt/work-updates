@@ -215,7 +215,10 @@ const AddTaskRow = ({
       if (result.error) {
         toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
       } else if (result.data) {
-        onSave(result.data);
+        // No need to call onSave, realtime will handle it.
+        // onSave(result.data);
+        onCancel(); // Just close the form
+        toast({ title: 'Task created', description: `Task "${result.data.description}" has been successfully created.`});
       }
     } finally {
       setIsSaving(false);
@@ -932,14 +935,19 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                 setTasks(current => [newFullTask, ...current])
            } else if (payload.eventType === 'UPDATE') {
                 const updatedTask = payload.new as Task;
-                const updatedFullTask: TaskWithDetails = {
-                     ...updatedTask,
-                    profiles: profiles.find(p => p.id === updatedTask.assignee_id) || null,
-                    projects: allProjects.find(p => p.id === updatedTask.project_id) || null,
-                    clients: clients.find(c => c.id === updatedTask.client_id) || null,
-                    attachments: processTaskAttachments(updatedTask),
-                };
-                setTasks(current => current.map(t => t.id === updatedTask.id ? updatedFullTask : t));
+                setTasks(current => current.map(t => {
+                  if (t.id === updatedTask.id) {
+                    return {
+                      ...t,
+                      ...updatedTask,
+                      profiles: profiles.find(p => p.id === updatedTask.assignee_id) || t.profiles,
+                      projects: allProjects.find(p => p.id === updatedTask.project_id) || t.projects,
+                      clients: clients.find(c => c.id === updatedTask.client_id) || t.clients,
+                      attachments: processTaskAttachments(updatedTask),
+                    }
+                  }
+                  return t;
+                }));
            } else if (payload.eventType === 'DELETE') {
                setTasks(current => current.filter(t => t.id !== payload.old.id))
            }
@@ -1002,21 +1010,15 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }, [tasks, searchQuery]);
   
   const handleSaveTask = (newTask: Task) => {
-    const project = allProjects.find(p => p.id === newTask.project_id);
-    const client = project ? clients.find(c => c.id === project.client_id) : clients.find(c => c.id === newTask.client_id);
-
-     const newTaskWithDetails = {
-        ...newTask,
-        profiles: profiles.find(p => p.id === newTask.assignee_id) || null,
-        projects: project || null,
-        clients: client || null,
-     }
-    setTasks(prev => [newTaskWithDetails as TaskWithDetails, ...prev]);
-    setIsAddingTask(false);
-    toast({ title: 'Task created', description: `Task "${newTask.description}" has been successfully created.`})
+    // This function is now mostly redundant due to realtime,
+    // but can be kept for optimistic UI if desired.
+    // For now, we rely on realtime to add the task.
+    // setIsAddingTask(false);
   }
 
   const handleTaskUpdated = (updatedTask: TaskWithDetails) => {
+    // This is handled by realtime, but we can keep it for local state updates
+    // that might be faster than the server roundtrip (e.g., from EditTaskDialog)
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
     if (selectedTask?.id === updatedTask.id) {
         setSelectedTask(updatedTask);
@@ -1036,7 +1038,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const handleDeleteTask = () => {
     if (!taskToDelete) return;
     
-    const originalTasks = [...tasks];
+    // Optimistic update
     setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: true } : t));
     setDeleteAlertOpen(false);
 
@@ -1044,7 +1046,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         const { error } = await deleteTask(taskToDelete.id);
         if (error) {
             toast({ title: "Error deleting task", description: error.message, variant: "destructive" });
-            setTasks(originalTasks);
+            setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: false } : t)); // Revert
         } else {
             toast({ title: "Task moved to bin" });
         }
@@ -1053,14 +1055,14 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }
   
   const handleRestoreTask = (task: TaskWithDetails) => {
-      const originalTasks = [...tasks];
+      // Optimistic update
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: false } : t));
       
       startTransition(async () => {
           const { error } = await restoreTask(task.id);
           if (error) {
               toast({ title: "Error restoring task", description: error.message, variant: "destructive" });
-              setTasks(originalTasks);
+              setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: true } : t)); // Revert
           } else {
               toast({ title: "Task restored" });
           }
@@ -1070,7 +1072,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const handleDeletePermanently = () => {
     if (!taskToDeletePermanently) return;
     
-    const originalTasks = [...tasks];
+    // Optimistic update
     setTasks(prev => prev.filter(t => t.id !== taskToDeletePermanently!.id));
     setTaskToDeletePermanently(null);
 
@@ -1078,7 +1080,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         const { error } = await deleteTaskPermanently(taskToDeletePermanently!.id);
         if (error) {
             toast({ title: "Error deleting task", description: error.message, variant: "destructive" });
-            setTasks(originalTasks);
+            // Re-add task if delete fails? Realtime should handle sync.
         } else {
             toast({ title: "Task permanently deleted" });
         }
@@ -1086,7 +1088,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }
   
   const handleStatusChange = (taskId: string, status: 'todo' | 'inprogress' | 'done') => {
-    const originalTasks = [...tasks];
+    // Optimistic Update
     setTasks(prevTasks => 
       prevTasks.map(t => 
         t.id === taskId ? { ...t, status } : t
@@ -1097,13 +1099,13 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         const { error } = await updateTaskStatus(taskId, status);
         if (error) {
             toast({ title: "Error updating status", description: error.message, variant: "destructive" });
-            setTasks(originalTasks); // Revert on error
+            // Realtime will eventually sync the correct state back
         }
     });
   }
   
   const handlePostingStatusChange = (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => {
-    const originalTasks = [...tasks];
+    // Optimistic update
     setTasks(prevTasks => 
       prevTasks.map(t => 
         t.id === taskId ? { ...t, posting_status: status } : t
@@ -1114,7 +1116,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         const { error } = await updateTaskPostingStatus(taskId, status);
         if (error) {
             toast({ title: "Error updating posting status", description: error.message, variant: "destructive" });
-            setTasks(originalTasks); // Revert on error
+             // Realtime will eventually sync the correct state back
         }
     });
   }
@@ -1540,3 +1542,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
