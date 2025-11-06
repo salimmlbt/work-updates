@@ -299,7 +299,7 @@ const AssignTaskRow = ({
 };
 
 export default function SchedulerClient({ clients, initialSchedules, teams, profiles, projects }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[], projects: Project[] }) {
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(clients[0]?.id || null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAddingSchedule, setIsAddingSchedule] = useState(false);
   const { toast } = useToast();
@@ -312,7 +312,13 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   const [scheduleToEdit, setScheduleToEdit] = useState<ScheduleWithDetails | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [scheduleToDeletePermanently, setScheduleToDeletePermanently] = useState<ScheduleWithDetails | null>(null);
-
+  
+  useEffect(() => {
+    // Set initial client ID on the client to avoid hydration mismatch
+    if (clients.length > 0) {
+      setSelectedClientId(clients[0].id);
+    }
+  }, [clients]);
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
@@ -428,17 +434,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
             <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a client">
-                    {selectedClient && (
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={selectedClient.avatar} />
-                            <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
-                        </Avatar>
-                        {selectedClient.name}
-                      </div>
-                    )}
-                </SelectValue>
+                <SelectValue placeholder="Select a client" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
