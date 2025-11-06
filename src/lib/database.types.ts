@@ -411,7 +411,7 @@ export type Database = {
           project_id: string | null
           rich_description: Json | null
           schedule_id: string | null
-          status: "todo" | "inprogress" | "done"
+          status: "todo" | "inprogress" | "under-review" | "done"
           tags: string[] | null
           type: string | null
         }
@@ -429,7 +429,7 @@ export type Database = {
           project_id?: string | null
           rich_description?: Json | null
           schedule_id?: string | null
-          status?: "todo" | "inprogress" | "done"
+          status?: "todo" | "inprogress" | "under-review" | "done"
           tags?: string[] | null
           type?: string | null
         }
@@ -447,7 +447,7 @@ export type Database = {
           project_id?: string | null
           rich_description?: Json | null
           schedule_id?: string | null
-          status?: "todo" | "inprogress" | "done"
+          status?: "todo" | "inprogress" | "under-review" | "done"
           tags?: string[] | null
           type?: string | null
         }
@@ -561,7 +561,7 @@ export type Database = {
     Enums: {
       falaq_event_type: "leave" | "event" | "meeting"
       posting_status_enum: "Planned" | "Scheduled" | "Posted"
-      task_status: "todo" | "inprogress" | "done"
+      task_status: "todo" | "inprogress" | "under-review" | "done"
     }
     CompositeTypes: {
       [_ in never]: never

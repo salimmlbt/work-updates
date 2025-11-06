@@ -24,6 +24,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  Eye,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -52,9 +53,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import * as Collapsible from '@radix-ui/react-collapsible';
-import { motion, AnimatePresence } from 'framer-motion';
-import { EditTaskDialog } from './edit-task-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,20 +67,23 @@ import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
 import { useSearchParams } from 'next/navigation';
 import { ReassignTaskDialog } from './reassign-task-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const statusIcons = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
   'inprogress': <Rocket className="h-4 w-4 text-purple-600" />,
+  'under-review': <Eye className="h-4 w-4 text-yellow-600" />,
   'done': <CheckCircle2 className="h-4 w-4 text-green-500" />,
 };
 
 const statusLabels = {
     'todo': 'New task',
     'inprogress': 'In progress',
+    'under-review': 'Under review',
     'done': 'Completed'
 }
-const statusOptions: ('todo' | 'inprogress' | 'done')[] = ['todo', 'inprogress', 'done'];
+const statusOptions: ('todo' | 'inprogress' | 'under-review' | 'done')[] = ['todo', 'inprogress', 'under-review', 'done'];
 
 const postingStatusOptions: ('Planned' | 'Scheduled' | 'Posted')[] = ['Planned', 'Scheduled', 'Posted'];
 const postingStatusLabels = {
@@ -125,13 +126,15 @@ const AddTaskRow = ({
   onCancel,
   projects,
   clients,
-  profiles
+  profiles,
+  status,
 }: { 
   onSave: (task: any) => void; 
   onCancel: () => void; 
   projects: Project[],
   clients: Client[],
-  profiles: Profile[]
+  profiles: Profile[],
+  status: 'todo' | 'inprogress' | 'under-review' | 'done',
 }) => {
   const [taskName, setTaskName] = useState('');
   const [projectId, setProjectId] = useState('');
@@ -213,14 +216,13 @@ const AddTaskRow = ({
         assignee_id: assigneeId,
         type: taskType || null,
         attachments: attachments.length > 0 ? attachments : null,
+        status: status,
       });
 
       if (result.error) {
         toast({ title: "Error creating task", description: result.error, variant: 'destructive'});
       } else if (result.data) {
-        // No need to call onSave, realtime will handle it.
-        // onSave(result.data);
-        onCancel(); // Just close the form
+        onCancel();
         toast({ title: 'Task created', description: `Task "${result.data.description}" has been successfully created.`});
       }
     } finally {
@@ -384,8 +386,8 @@ const AddTaskRow = ({
       {/* Status */}
       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
         <div className="flex items-center gap-2">
-          {statusIcons['todo']}
-          <span>{statusLabels['todo']}</span>
+          {statusIcons[status]}
+          <span>{statusLabels[status]}</span>
         </div>
       </td>
 
@@ -419,7 +421,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isCompleted }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isCompleted: boolean; }) => {
+const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; }) => {
   const [dateText, setDateText] = useState('No date');
   
   const attachments = useMemo(() => {
@@ -585,7 +587,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
             <DropdownMenuItem onClick={() => onEdit(task)}>
               <Pencil className="mr-2 h-4 w-4" /> Edit
             </DropdownMenuItem>
-            {isCompleted && !task.parent_task_id && (
+            {task.status === 'done' && !task.parent_task_id && (
               <DropdownMenuItem onClick={() => onReassign(task)}>
                 <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
               </DropdownMenuItem>
@@ -603,7 +605,6 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
 
 
 const TaskTableBody = ({
-  isOpen,
   tasks,
   isAddingTask,
   onSaveTask,
@@ -618,66 +619,67 @@ const TaskTableBody = ({
   canEdit,
   onTaskClick,
   onReassign,
-  isCompleted,
+  status,
 }: {
-  isOpen: boolean
   tasks: TaskWithDetails[]
   isAddingTask?: boolean
   onSaveTask?: (task: any) => void
   onCancelAddTask?: () => void
   projects?: Project[]
   clients?: Client[]
-  profiles?: Profile[],
-  onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void
+  profiles?: Profile[]
+  onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => void
   onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void;
   onEdit: (task: TaskWithDetails) => void;
   onDelete: (task: TaskWithDetails) => void;
   canEdit: boolean;
   onTaskClick: (task: TaskWithDetails) => void;
   onReassign: (task: TaskWithDetails) => void;
-  isCompleted: boolean;
+  status: 'todo' | 'inprogress' | 'under-review' | 'done',
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
   return (
     <tbody>
-      <AnimatePresence>
-        {isOpen &&
-          tasks.map((task, index) => (
-            <motion.tr
-              key={task.id}
-              variants={{
-                hidden: { opacity: 0, y: -10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              transition={{ duration: 0.2, delay: index * 0.05 }}
-              className={`border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors`}
-              data-menu-open={openMenuId === task.id}
-            >
-              <TaskRow task={task} onStatusChange={onStatusChange} onPostingStatusChange={onPostingStatusChange} onEdit={onEdit} onDelete={onDelete} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} canEdit={canEdit} onTaskClick={onTaskClick} onReassign={onReassign} isCompleted={isCompleted} />
-            </motion.tr>
-          ))}
-      </AnimatePresence>
+      {tasks.map((task) => (
+        <tr
+          key={task.id}
+          className={`border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors`}
+          data-menu-open={openMenuId === task.id}
+        >
+          <TaskRow
+            task={task}
+            onStatusChange={onStatusChange}
+            onPostingStatusChange={onPostingStatusChange}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            openMenuId={openMenuId}
+            setOpenMenuId={setOpenMenuId}
+            canEdit={canEdit}
+            onTaskClick={onTaskClick}
+            onReassign={onReassign}
+          />
+        </tr>
+      ))}
       {isAddingTask && onSaveTask && onCancelAddTask && projects && clients && profiles && (
         <AddTaskRow 
             onSave={onSaveTask} 
             onCancel={onCancelAddTask} 
             projects={projects} 
             clients={clients} 
-            profiles={profiles} 
+            profiles={profiles}
+            status={status}
         />
       )}
     </tbody>
   )
 }
 
-const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
+const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
   const cardColors: { [key: string]: string } = {
     "todo": "bg-blue-100/50",
     "inprogress": "bg-purple-100/50",
+    "under-review": "bg-yellow-100/50",
     "done": "bg-gray-100",
   };
 
@@ -780,7 +782,7 @@ const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDel
                             Move to {statusLabels[status]}
                           </DropdownMenuItem>
                         ))}
-                     {isCompleted && !task.parent_task_id && (
+                     {(task.status === 'done' || task.status === 'under-review') && !task.parent_task_id && (
                       <DropdownMenuItem onClick={() => onReassign(task)}>
                         <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
                       </DropdownMenuItem>
@@ -796,12 +798,12 @@ const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDel
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'done') => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
-  const statuses = ['todo', 'inprogress', 'done'];
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
+  const statuses: ('todo' | 'inprogress' | 'under-review' | 'done')[] = ['todo', 'inprogress', 'under-review', 'done'];
 
   return (
     <div className="flex flex-col h-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-b">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border-b">
         {statuses.map((status) => {
           const tasksInStatus = allTasksProp.filter(
             (task) => task.status === status
@@ -821,7 +823,7 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onPostingStatusChang
           );
         })}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 flex-1">
         {statuses.map((status, index) => {
           const tasksInStatus = allTasksProp.filter(
             (task) => task.status === status
@@ -863,14 +865,16 @@ interface TasksClientProps {
 }
 
 const processPayload = (payload: any, profiles: Profile[], allProjects: Project[], clients: Client[]): TaskWithDetails => {
-  const task = payload.new || payload;
+  const task = payload.new || payload.old;
+  const project = allProjects.find(p => p.id === task.project_id) || null;
+  const client = project?.client_id
+    ? clients.find(c => c.id === project.client_id)
+    : clients.find(c => c.id === task.client_id) || null;
   return {
     ...task,
     profiles: profiles.find(p => p.id === task.assignee_id) || null,
-    projects: allProjects.find(p => p.id === task.project_id) || null,
-    clients: allProjects.find(p => p.id === task.project_id)?.client_id 
-        ? clients.find(c => c.id === allProjects.find(p => p.id === task.project_id)!.client_id)
-        : clients.find(c => c.id === task.client_id) || null,
+    projects: project,
+    clients: client,
     attachments: processTaskAttachments(task),
   };
 };
@@ -898,12 +902,9 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const [activeTasksOpen, setActiveTasksOpen] = useState(true)
-  const [completedTasksOpen, setCompletedTasksOpen] = useState(false)
   const [taskToEdit, setTaskToEdit] = useState<TaskWithDetails | null>(null);
   const [isEditTaskOpen, setEditTaskOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<TaskWithDetails | null>(null);
-  const [taskToRestore, setTaskToRestore] = useState<TaskWithDetails | null>(null);
   const [taskToDeletePermanently, setTaskToDeletePermanently] = useState<TaskWithDetails | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [showBin, setShowBin] = useState(false);
@@ -918,6 +919,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'deadline', direction: 'ascending' });
 
+  const [activeTab, setActiveTab] = useState('active');
 
   const supabase = createClient();
 
@@ -928,21 +930,22 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     setTasks(initialTasks);
   }, [initialTasks]);
 
- useEffect(() => {
+  useEffect(() => {
     const channel = supabase
-      .channel('realtime-tasks-all-fix')
+      .channel('realtime-tasks-client-fix')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
         (payload: any) => {
           if (payload.eventType === 'INSERT') {
-            const newFullTask = processPayload(payload.new, profiles, allProjects, clients);
+            const newFullTask = processPayload(payload, profiles, allProjects, clients);
             setTasks(current => [newFullTask, ...current.filter(t => t.id !== newFullTask.id)]);
           } else if (payload.eventType === 'UPDATE') {
-            const updatedFullTask = processPayload(payload.new, profiles, allProjects, clients);
+            const updatedFullTask = processPayload(payload, profiles, allProjects, clients);
             setTasks(current => current.map(t => t.id === updatedFullTask.id ? updatedFullTask : t));
           } else if (payload.eventType === 'DELETE') {
-            setTasks(current => current.filter(t => t.id !== payload.old.id));
+            const deletedTaskId = payload.old.id;
+            setTasks(current => current.filter(t => t.id !== deletedTaskId));
           }
         }
       )
@@ -962,7 +965,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     else if (!canEditTasks) {
        tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
     }
-
 
     if (searchQuery) {
         return tasksToDisplay.filter(task =>
@@ -1009,12 +1011,9 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return sortableItems;
   }, [filteredTasks, sortConfig]);
 
-  const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status !== 'done' && t.posting_status !== 'Scheduled' && t.posting_status !== 'Posted'), [sortedTasks]);
-  
-  const completedTasks = useMemo(() => {
-    return sortedTasks.filter(t => !t.is_deleted && (t.status === 'done' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted'));
-  }, [sortedTasks]);
-
+  const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'todo' || t.status === 'inprogress')), [sortedTasks]);
+  const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'under-review'), [sortedTasks]);
+  const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'done'), [sortedTasks]);
 
   const deletedTasks = useMemo(() => {
     // Deleted tasks should not be filtered by 'my tasks' view
@@ -1030,8 +1029,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const handleSaveTask = (newTask: Task) => {
     // This function is now mostly redundant due to realtime,
     // but can be kept for optimistic UI if desired.
-    // For now, we rely on realtime to add the task.
-    // setIsAddingTask(false);
+    setIsAddingTask(false);
   }
 
   const handleTaskUpdated = (updatedTask: TaskWithDetails) => {
@@ -1054,7 +1052,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const handleDeleteTask = () => {
     if (!taskToDelete) return;
     
-    // Optimistic update
     setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: true } : t));
     setDeleteAlertOpen(false);
 
@@ -1071,7 +1068,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }
   
   const handleRestoreTask = (task: TaskWithDetails) => {
-      // Optimistic update
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: false } : t));
       
       startTransition(async () => {
@@ -1088,7 +1084,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const handleDeletePermanently = () => {
     if (!taskToDeletePermanently) return;
     
-    // Optimistic update
     setTasks(prev => prev.filter(t => t.id !== taskToDeletePermanently!.id));
     setTaskToDeletePermanently(null);
 
@@ -1096,15 +1091,13 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         const { error } = await deleteTaskPermanently(taskToDeletePermanently!.id);
         if (error) {
             toast({ title: "Error deleting task", description: error.message, variant: "destructive" });
-            // Re-add task if delete fails? Realtime should handle sync.
         } else {
             toast({ title: "Task permanently deleted" });
         }
     });
   }
   
-  const handleStatusChange = (taskId: string, status: 'todo' | 'inprogress' | 'done') => {
-    // Optimistic Update
+  const handleStatusChange = (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => {
     setTasks(prevTasks => 
       prevTasks.map(t => 
         t.id === taskId ? { ...t, status } : t
@@ -1115,13 +1108,11 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         const { error } = await updateTaskStatus(taskId, status);
         if (error) {
             toast({ title: "Error updating status", description: error.message, variant: "destructive" });
-            // Realtime will eventually sync the correct state back
         }
     });
   }
   
   const handlePostingStatusChange = (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => {
-    // Optimistic update
     setTasks(prevTasks => 
       prevTasks.map(t => 
         t.id === taskId ? { ...t, posting_status: status } : t
@@ -1132,7 +1123,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         const { error } = await updateTaskPostingStatus(taskId, status);
         if (error) {
             toast({ title: "Error updating posting status", description: error.message, variant: "destructive" });
-             // Realtime will eventually sync the correct state back
         }
     });
   }
@@ -1166,6 +1156,42 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
               )}
           </Button>
       </th>
+    )
+  }
+
+  const renderTaskTable = (tasksToRender: TaskWithDetails[], status: 'todo' | 'inprogress' | 'under-review' | 'done') => {
+    return (
+      <table className="w-full text-left mt-2">
+        <thead>
+          <tr className="border-b border-gray-200">
+            <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
+            <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
+            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
+            {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
+            <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
+            <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
+            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
+            <th className="px-4 py-2" style={{ width: "50px" }}></th>
+          </tr>
+        </thead>
+        <TaskTableBody
+          tasks={tasksToRender}
+          isAddingTask={canEditTasks && isAddingTask}
+          onSaveTask={handleSaveTask}
+          onCancelAddTask={() => setIsAddingTask(false)}
+          projects={allProjects}
+          clients={clients}
+          profiles={profiles}
+          onStatusChange={handleStatusChange}
+          onPostingStatusChange={handlePostingStatusChange}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          canEdit={canEditTasks}
+          onTaskClick={setSelectedTask}
+          onReassign={(task) => setTaskToReassign(task)}
+          status={status}
+        />
+      </table>
     )
   }
 
@@ -1216,191 +1242,37 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       );
     }
     
-    return view === 'table' ? (
-      <>
-        {/* Active Tasks */}
-        <div className="mb-8 overflow-x-auto">
-          <Collapsible.Root open={activeTasksOpen} onOpenChange={setActiveTasksOpen}>
-            <div className="flex items-center gap-2">
-              <Collapsible.Trigger asChild>
-                <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
-                  <div className="flex items-center gap-2">
-                    {/* Chevron with lead rotation */}
-                    <motion.div
-                      animate={{ rotate: activeTasksOpen ? 0 : -90 }}
-                      transition={{
-                        duration: activeTasksOpen ? 0.55 : 0.65,
-                        ease: [0.16, 1, 0.3, 1],
-                      }}
-                    >
-                      <ChevronDown className="w-5 h-5" />
-                    </motion.div>
-    
-                    Active tasks
-                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
-                      {activeTasks.length}
-                    </span>
-                  </div>
+    if (view === 'table') {
+      return (
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="active">Active <Badge variant="secondary" className="ml-2">{activeTasks.length}</Badge></TabsTrigger>
+            <TabsTrigger value="under-review">Under review <Badge variant="secondary" className="ml-2">{underReviewTasks.length}</Badge></TabsTrigger>
+            <TabsTrigger value="completed">Completed <Badge variant="secondary" className="ml-2">{completedTasks.length}</Badge></TabsTrigger>
+          </TabsList>
+          <TabsContent value="active">
+            {renderTaskTable(activeTasks, 'todo')}
+            {canEditTasks && (
+                <Button
+                    variant="ghost"
+                    className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                    onClick={() => setIsAddingTask(true)}
+                >
+                    <Plus className="mr-2 h-4 w-4" /> Add task
                 </Button>
-              </Collapsible.Trigger>
-            </div>
-    
-            {/* AnimatePresence with fade + height delay */}
-            <AnimatePresence initial={false}>
-              {activeTasksOpen && (
-                <Collapsible.Content forceMount>
-                  <motion.div
-                    key="activeTasks"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{
-                      ease: [0.16, 1, 0.3, 1],
-                      opacity: {
-                        delay: activeTasksOpen ? 0.1 : 0,
-                        duration: activeTasksOpen ? 0.45 : 0.5,
-                      },
-                      height: {
-                        delay: activeTasksOpen ? 0.1 : 0,
-                        duration: activeTasksOpen ? 0.55 : 0.65,
-                      },
-                    }}
-                    className="overflow-hidden"
-                  >
-                    <table className="w-full text-left mt-2">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
-                          <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
-                          {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
-                          <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
-                          <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
-                          <th className="px-4 py-2" style={{ width: "50px" }}></th>
-                        </tr>
-                      </thead>
-                      <TaskTableBody
-                        isOpen={activeTasksOpen}
-                        tasks={activeTasks}
-                        isAddingTask={canEditTasks && isAddingTask}
-                        onSaveTask={handleSaveTask}
-                        onCancelAddTask={() => setIsAddingTask(false)}
-                        projects={allProjects}
-                        clients={clients}
-                        profiles={profiles}
-                        onStatusChange={handleStatusChange}
-                        onPostingStatusChange={handlePostingStatusChange}
-                        onEdit={handleEditClick}
-                        onDelete={handleDeleteClick}
-                        canEdit={canEditTasks}
-                        onTaskClick={setSelectedTask}
-                        onReassign={(task) => setTaskToReassign(task)}
-                        isCompleted={false}
-                      />
-                    </table>
-    
-                    {canEditTasks && (
-                      <Button
-                        variant="ghost"
-                        className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
-                        onClick={() => setIsAddingTask(true)}
-                      >
-                        <Plus className="mr-2 h-4 w-4" /> Add task
-                      </Button>
-                    )}
-                  </motion.div>
-                </Collapsible.Content>
-              )}
-            </AnimatePresence>
-          </Collapsible.Root>
-        </div>
-    
-        {completedTasks.length > 0 && (
-          <div className="mb-4 overflow-x-auto">
-            <Collapsible.Root open={completedTasksOpen} onOpenChange={setCompletedTasksOpen}>
-              <div className="flex items-center gap-2">
-                <Collapsible.Trigger asChild>
-                  <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
-                    <div className="flex items-center gap-2">
-                      {/* Chevron with lead rotation */}
-                      <motion.div
-                        animate={{ rotate: completedTasksOpen ? 0 : -90 }}
-                        transition={{
-                          duration: completedTasksOpen ? 0.55 : 0.65,
-                          ease: [0.16, 1, 0.3, 1],
-                        }}
-                      >
-                        <ChevronDown className="w-5 h-5" />
-                      </motion.div>
-    
-                      Completed tasks
-                      <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
-                        {completedTasks.length}
-                      </span>
-                    </div>
-                  </Button>
-                </Collapsible.Trigger>
-              </div>
-    
-              <AnimatePresence initial={false}>
-                {completedTasksOpen && (
-                  <Collapsible.Content forceMount>
-                    <motion.div
-                      key="completedTasks"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{
-                        ease: [0.16, 1, 0.3, 1],
-                        opacity: {
-                          delay: completedTasksOpen ? 0.1 : 0,
-                          duration: completedTasksOpen ? 0.45 : 0.5,
-                        },
-                        height: {
-                          delay: completedTasksOpen ? 0.1 : 0,
-                          duration: completedTasksOpen ? 0.55 : 0.65,
-                        },
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <table className="w-full text-left mt-2">
-                        <thead>
-                          <tr className="border-b border-gray-200">
-                          <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
-                          <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
-                          {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
-                          <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
-                          <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
-                          <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
-                          <th className="px-4 py-2" style={{ width: "50px" }}></th>
-                          </tr>
-                        </thead>
-                        <TaskTableBody
-                          isOpen={completedTasksOpen}
-                          tasks={completedTasks}
-                          onStatusChange={handleStatusChange}
-                          onPostingStatusChange={handlePostingStatusChange}
-                          onEdit={handleEditClick}
-                          onDelete={handleDeleteClick}
-                          canEdit={canEditTasks}
-                          onTaskClick={setSelectedTask}
-                          onReassign={(task) => setTaskToReassign(task)}
-                          isCompleted={true}
-                        />
-                      </table>
-                    </motion.div>
-                  </Collapsible.Content>
-                )}
-              </AnimatePresence>
-            </Collapsible.Root>
-          </div>
-        )}
-      </>
-    ):(
-      <KanbanBoard tasks={sortedTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} />
-    )
+            )}
+          </TabsContent>
+          <TabsContent value="under-review">
+            {renderTaskTable(underReviewTasks, 'under-review')}
+          </TabsContent>
+          <TabsContent value="completed">
+            {renderTaskTable(completedTasks, 'done')}
+          </TabsContent>
+        </Tabs>
+      )
+    } else {
+      return <KanbanBoard tasks={sortedTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} />
+    }
   }
 
   return (
@@ -1408,7 +1280,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tasks</h1>
-          {canEditTasks && !isAddingTask && (
+          {canEditTasks && !isAddingTask && view === 'table' && (
             <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
               <Plus className="mr-2 h-4 w-4" />
               Add new
@@ -1582,4 +1454,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-

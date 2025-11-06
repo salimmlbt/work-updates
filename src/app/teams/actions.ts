@@ -484,13 +484,13 @@ export async function createTask(taskData: {
     type: string | null;
     attachments?: Attachment[] | null;
     parent_task_id?: string | null;
+    status: 'todo' | 'inprogress' | 'under-review' | 'done';
 }) {
     const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('tasks')
         .insert({
             ...taskData,
-            status: 'todo',
             is_deleted: false,
         })
         .select()
