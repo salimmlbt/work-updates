@@ -113,6 +113,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           notes: string | null
+          project_id: string | null
           scheduled_date: string
           status: string
           team_id: string | null
@@ -125,6 +126,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           notes?: string | null
+          project_id?: string | null
           scheduled_date: string
           status?: string
           team_id?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           notes?: string | null
+          project_id?: string | null
           scheduled_date?: string
           status?: string
           team_id?: string | null
@@ -148,6 +151,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_schedules_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {

@@ -1254,6 +1254,7 @@ export async function addSchedule(formData: FormData): Promise<{ data?: ContentS
         content_type: formData.get('content_type') as string,
         scheduled_date: formData.get('scheduled_date') as string,
         team_id: formData.get('team_id') as string,
+        project_id: formData.get('project_id') === 'no-project' ? null : formData.get('project_id') as string | null,
     };
 
     if (!rawData.client_id || !rawData.title || !rawData.scheduled_date || !rawData.content_type || !rawData.team_id) {
@@ -1313,6 +1314,7 @@ export async function createTaskFromSchedule(schedule: ContentSchedule): Promise
         schedule_id: schedule.id,
         assignee_id: assigneeId,
         status: 'todo' as const,
+        project_id: schedule.project_id,
     };
 
     const { data: newTask, error: createTaskError } = await supabase

@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/card';
 import { getInitials, cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import type { Client, Team, Profile, Task, TaskWithDetails } from '@/lib/types';
+import type { Client, Team, Profile, Task, TaskWithDetails, Project } from '@/lib/types';
 import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { addSchedule, createTaskFromSchedule } from '@/app/actions';
@@ -40,16 +40,19 @@ const AddScheduleCard = ({
   onScheduleAdded,
   onCancel,
   teams,
+  projects,
 }: {
   clientId: string;
   onScheduleAdded: (schedule: ScheduleWithDetails) => void;
   onCancel: () => void;
   teams: Team[];
+  projects: Project[];
 }) => {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [teamId, setTeamId] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [contentType, setContentType] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
 
@@ -59,6 +62,10 @@ const AddScheduleCard = ({
     return selectedTeam?.default_tasks || [];
   }, [teamId, teams]);
   
+  const clientProjects = useMemo(() => {
+    return projects.filter(p => p.client_id === clientId);
+  }, [projects, clientId]);
+
   useEffect(() => {
     setContentType('');
   }, [teamId]);
@@ -79,6 +86,7 @@ const AddScheduleCard = ({
       formData.append('content_type', contentType);
       formData.append('scheduled_date', format(scheduledDate, 'yyyy-MM-dd'));
       formData.append('team_id', teamId);
+      if (projectId) formData.append('project_id', projectId);
 
       const result = await addSchedule(formData);
 
@@ -97,6 +105,7 @@ const AddScheduleCard = ({
           ...result.data,
           task: null,
           teams: teams.find(t => t.id === teamId) || null,
+          projects: projects.find(p => p.id === projectId) || null,
         }
         onScheduleAdded(newScheduleWithDetails);
       }
@@ -141,31 +150,47 @@ const AddScheduleCard = ({
                 </Select>
             </div>
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="new-date">Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={'outline'}
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !scheduledDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {scheduledDate ? format(scheduledDate, 'PPP') : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <CalendarComponent
-                  mode="single"
-                  selected={scheduledDate}
-                  onSelect={setScheduledDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+         <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="project">Project</Label>
+                 <Select onValueChange={setProjectId} value={projectId || 'no-project'}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="no-project">No project</SelectItem>
+                        {clientProjects.map(project => (
+                            <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="new-date">Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={'outline'}
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !scheduledDate && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {scheduledDate ? format(scheduledDate, 'PPP') : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={scheduledDate}
+                      onSelect={setScheduledDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+        </div>
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
@@ -178,7 +203,7 @@ const AddScheduleCard = ({
   );
 };
 
-export default function SchedulerClient({ clients, initialSchedules, teams, profiles }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[] }) {
+export default function SchedulerClient({ clients, initialSchedules, teams, profiles, projects }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[], projects: Project[] }) {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(clients[0]?.id || null);
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAdding, setIsAdding] = useState(false);
@@ -291,6 +316,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                   onScheduleAdded={handleScheduleAdded}
                   onCancel={() => setIsAdding(false)}
                   teams={teams}
+                  projects={projects}
                 />
               </div>
             ) : (
@@ -301,6 +327,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       <TableRow>
                         <TableHead>Schedule Date</TableHead>
                         <TableHead>Schedule Detail</TableHead>
+                        <TableHead>Project</TableHead>
                         <TableHead>Schedule Team</TableHead>
                         <TableHead>Schedule Type</TableHead>
                         <TableHead>Status</TableHead>
@@ -312,6 +339,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                           <TableRow key={schedule.id} className="group">
                             <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
                             <TableCell className="font-medium">{schedule.title}</TableCell>
+                            <TableCell>{schedule.projects?.name || 'N/A'}</TableCell>
                             <TableCell>{schedule.teams?.name || 'N/A'}</TableCell>
                             <TableCell>{schedule.content_type || 'N/A'}</TableCell>
                             <TableCell>{getScheduleStatus(schedule)}</TableCell>
