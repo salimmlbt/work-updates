@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -1526,4 +1525,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
