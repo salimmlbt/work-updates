@@ -434,7 +434,17 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
              <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a client" />
+                 {selectedClient ? (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                          <AvatarImage src={selectedClient.avatar} />
+                          <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                      </Avatar>
+                      {selectedClient.name}
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Select a client" />
+                  )}
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -470,7 +480,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         <main className="flex-1 overflow-y-auto">
           {selectedClientId ? (
             showBin ? (
-                 <div className="border rounded-lg">
+                 <div className="border-y">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -500,7 +510,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                     </Table>
                  </div>
             ) : (
-                <div className="border rounded-lg">
+                <div className="border-y">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-t-0">
