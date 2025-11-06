@@ -68,6 +68,7 @@ import { TaskDetailSheet } from './task-detail-sheet';
 import { useSearchParams } from 'next/navigation';
 import { ReassignTaskDialog } from './reassign-task-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatePresence, motion } from 'framer-motion';
 
 
 const statusIcons = {
@@ -932,7 +933,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   useEffect(() => {
     const channel = supabase
-      .channel('realtime-tasks-client-fix')
+      .channel('realtime-tasks-client')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
@@ -1146,7 +1147,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => {
     const isSorted = sortConfig?.key === sortKey;
     return (
-      <th className={cn("px-4 py-2 text-sm font-medium text-gray-500 group", className)}>
+      <th className={cn("px-4 py-2 text-sm font-medium text-gray-500", className)}>
           <Button variant="ghost" onClick={() => requestSort(sortKey)} className="p-0 h-auto hover:bg-transparent">
               {children}
               {isSorted ? (
