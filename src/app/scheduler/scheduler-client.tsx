@@ -434,17 +434,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
              <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a client">
-                  {selectedClient && (
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                          <AvatarImage src={selectedClient.avatar} />
-                          <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
-                      </Avatar>
-                      {selectedClient.name}
-                    </div>
-                  )}
-                </SelectValue>
+                <SelectValue placeholder="Select a client" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -479,67 +469,61 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
         <main className="flex-1 overflow-y-auto">
           {selectedClientId ? (
-            showBin ? (
-                 <div className="border-t">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="border-t-0">
-                                <TableHead>Schedule Date</TableHead>
-                                <TableHead>Schedule Detail</TableHead>
-                                <TableHead className="w-[20%] text-right"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {deletedSchedules.map(schedule => (
-                                <TableRow key={schedule.id} className="group">
-                                    <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                                    <TableCell className="font-medium">{schedule.title}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
-                                            <Button variant="ghost" size="sm" onClick={() => handleRestore(schedule.id)}>
-                                                <RefreshCcw className="mr-2 h-4 w-4" /> Restore
-                                            </Button>
-                                            <Button variant="destructive" size="sm" onClick={() => setScheduleToDeletePermanently(schedule)}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                             {deletedSchedules.length === 0 && (
-                                <TableRow>
-                                <TableCell colSpan={3} className="h-24 text-center">
-                                    The bin is empty for {selectedClient?.name}.
-                                </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                 </div>
-            ) : (
-                <div className="border-y">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-t-0">
-                        <TableHead>Schedule Date</TableHead>
-                        <TableHead>Schedule Detail</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Schedule Team</TableHead>
-                        <TableHead>Schedule Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-[5%] text-right"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                       {isAddingSchedule && (
-                            <AddScheduleRow
-                                clientId={selectedClientId}
-                                onScheduleAdded={handleScheduleAdded}
-                                onCancel={() => setIsAddingSchedule(false)}
-                                teams={teams}
-                                projects={projects}
-                            />
-                        )}
+            <div className="border-t">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-t-0">
+                    <TableHead>Schedule Date</TableHead>
+                    <TableHead>Schedule Detail</TableHead>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Schedule Team</TableHead>
+                    <TableHead>Schedule Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[5%] text-right"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {showBin ? (
+                    <>
+                      {deletedSchedules.map(schedule => (
+                        <TableRow key={schedule.id} className="group">
+                          <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                          <TableCell className="font-medium border-r">{schedule.title}</TableCell>
+                          <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
+                          <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
+                          <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
+                          <TableCell>Deleted</TableCell>
+                          <TableCell className="text-right">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleRestore(schedule.id)}>
+                                <RefreshCcw className="mr-2 h-4 w-4" /> Restore
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => setScheduleToDeletePermanently(schedule)}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {deletedSchedules.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                            The bin is empty for {selectedClient?.name}.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {isAddingSchedule && (
+                        <AddScheduleRow
+                          clientId={selectedClientId}
+                          onScheduleAdded={handleScheduleAdded}
+                          onCancel={() => setIsAddingSchedule(false)}
+                          teams={teams}
+                          projects={projects}
+                        />
+                      )}
                       {activeSchedules.map(schedule => (
                         <React.Fragment key={schedule.id}>
                           <TableRow className="group">
@@ -554,20 +538,20 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
+                                      <MoreVertical className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent>
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       disabled={!!schedule.task}
                                       onClick={() => handleAssignTask(schedule.id)}
                                     >
                                       Assign as Task
                                     </DropdownMenuItem>
-                                     {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
-                                        <DropdownMenuItem onClick={() => setScheduleToReassign(schedule)}>
-                                            <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
-                                        </DropdownMenuItem>
+                                    {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
+                                      <DropdownMenuItem onClick={() => setScheduleToReassign(schedule)}>
+                                        <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
+                                      </DropdownMenuItem>
                                     )}
                                     <DropdownMenuItem onClick={() => { setScheduleToEdit(schedule); setIsEditOpen(true); }}>
                                       <Pencil className="mr-2 h-4 w-4" /> Edit
@@ -581,11 +565,11 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                             </TableCell>
                           </TableRow>
                           {assigningScheduleId === schedule.id && (
-                            <AssignTaskRow 
-                                schedule={schedule}
-                                profiles={profiles}
-                                onSave={handleTaskCreated}
-                                onCancel={() => setAssigningScheduleId(null)}
+                            <AssignTaskRow
+                              schedule={schedule}
+                              profiles={profiles}
+                              onSave={handleTaskCreated}
+                              onCancel={() => setAssigningScheduleId(null)}
                             />
                           )}
                         </React.Fragment>
@@ -593,17 +577,18 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       {(activeSchedules.length === 0 && !isAddingSchedule) && (
                         <TableRow>
                           <TableCell colSpan={7} className="h-24 text-center">
-                              No schedules for {selectedClient?.name}. Click "Add Schedule" to get started.
+                            No schedules for {selectedClient?.name}. Click "Add Schedule" to get started.
                           </TableCell>
                         </TableRow>
                       )}
-                    </TableBody>
-                  </Table>
-                </div>
-            )
+                    </>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                <p className="text-lg font-medium">Please select a client to view their schedule.</p>
+              <p className="text-lg font-medium">Please select a client to view their schedule.</p>
             </div>
           )}
         </main>
