@@ -25,6 +25,8 @@ import {
   ArrowDown,
   ArrowUpDown,
   Eye,
+  MessageSquare,
+  Repeat,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -42,7 +44,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isFuture, isPast } from 'date-fns';
 import { Input } from '@/components/ui/input';
-import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment } from '@/lib/types';
+import { Textarea } from '@/components/ui/textarea';
+import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, Correction } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
 import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -74,17 +77,27 @@ import { AnimatePresence, motion } from 'framer-motion';
 const statusIcons = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
   'inprogress': <Rocket className="h-4 w-4 text-purple-600" />,
-  'under-review': <Eye className="h-4 w-4 text-yellow-600" />,
+  'review': <Eye className="h-4 w-4 text-yellow-600" />,
+  'corrections': <MessageSquare className="h-4 w-4 text-orange-600" />,
+  'recreate': <Repeat className="h-4 w-4 text-blue-600" />,
+  'approved': <CheckCircle2 className="h-4 w-4 text-green-500" />,
   'done': <CheckCircle2 className="h-4 w-4 text-green-500" />,
+  // under-review is a tab, not a status itself
 };
 
-const statusLabels = {
+const statusLabels: Record<Task['status'], string> = {
     'todo': 'New task',
     'inprogress': 'In progress',
-    'under-review': 'Under review',
-    'done': 'Completed'
+    'review': 'Review',
+    'corrections': 'Corrections',
+    'recreate': 'Recreate',
+    'approved': 'Approved',
+    'done': 'Completed',
+    'under-review': 'Under Review'
 }
-const statusOptions: ('todo' | 'inprogress' | 'under-review' | 'done')[] = ['todo', 'inprogress', 'under-review', 'done'];
+
+const mainStatusOptions: Task['status'][] = ['todo', 'inprogress', 'review'];
+const reviewStatusOptions: Task['status'][] = ['review', 'corrections', 'recreate', 'approved'];
 
 const postingStatusOptions: ('Planned' | 'Scheduled' | 'Posted')[] = ['Planned', 'Scheduled', 'Posted'];
 const postingStatusLabels = {
@@ -135,7 +148,7 @@ const AddTaskRow = ({
   projects: Project[],
   clients: Client[],
   profiles: Profile[],
-  status: 'todo' | 'inprogress' | 'under-review' | 'done',
+  status: Task['status'],
 }) => {
   const [taskName, setTaskName] = useState('');
   const [projectId, setProjectId] = useState('');
@@ -422,8 +435,13 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; }) => {
+const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; }) => {
   const [dateText, setDateText] = useState('No date');
+  const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
+  const [correctionNote, setCorrectionNote] = useState("");
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
   
   const attachments = useMemo(() => {
     if (!task.attachments) return [];
@@ -460,21 +478,44 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
   const handleRowClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     // Prevent sheet from opening if a button, dropdown or interactive element was clicked
-    if (target.closest('button, [role="menuitem"], a')) {
+    if (target.closest('button, [role="menuitem"], a, [role="dialog"]')) {
       return;
     }
     onTaskClick(task);
   }
 
+  const handleStatusChange = (status: Task['status']) => {
+    if (status === 'corrections') {
+      setIsCorrectionsOpen(true);
+    } else {
+      onStatusChange(task.id, status);
+    }
+  }
+
+  const handleCorrectionSubmit = () => {
+    if (!correctionNote.trim()) {
+      toast({ title: 'Correction note cannot be empty', variant: 'destructive' });
+      return;
+    }
+    onStatusChange(task.id, 'corrections', { note: correctionNote, authorId: 'CURRENT_USER_ID' }); // Replace with actual user ID
+    setIsCorrectionsOpen(false);
+    setCorrectionNote('');
+  }
+
   const isReassigned = !!task.parent_task_id;
   
-  const currentStatusLabel = isReassigned
+  const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
+  const isPostingType = task.type && postingTaskTypes.includes(task.type);
+
+  const currentStatusLabel = isPostingType
     ? postingStatusLabels[task.posting_status || 'Planned']
     : statusLabels[task.status];
   
-  const currentStatusIcon = isReassigned
+  const currentStatusIcon = isPostingType
     ? <CheckCircle2 className="h-4 w-4 text-blue-500" />
     : statusIcons[task.status];
+  
+  const statusOptions = task.status === 'review' ? reviewStatusOptions : mainStatusOptions;
 
   return (
     <>
@@ -485,6 +526,16 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
             <span className="truncate shrink">{task.description}</span>
           </div>
           {isReassigned && <Share2 className="h-4 w-4 text-blue-500 shrink-0" />}
+          {task.revisions?.recreations > 0 && (
+            <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+              <Repeat className="h-3 w-3 mr-1" /> {task.revisions.recreations}
+            </Badge>
+          )}
+          {task.revisions?.corrections > 0 && (
+            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
+              <MessageSquare className="h-3 w-3 mr-1" /> {task.revisions.corrections}
+            </Badge>
+          )}
           {task.tags?.map(tag => (
             <Badge
               key={tag}
@@ -536,7 +587,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-             {isReassigned
+             {isPostingType
               ? postingStatusOptions.map(status => (
                   <DropdownMenuItem
                     key={status}
@@ -550,7 +601,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
                   <DropdownMenuItem
                     key={status}
                     disabled={task.status === status}
-                    onClick={() => onStatusChange(task.id, status)}
+                    onClick={() => handleStatusChange(status)}
                     className={cn(task.status === status && 'bg-accent')}
                   >
                     <div className="flex items-center gap-2">
@@ -588,7 +639,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
             <DropdownMenuItem onClick={() => onEdit(task)}>
               <Pencil className="mr-2 h-4 w-4" /> Edit
             </DropdownMenuItem>
-            {task.status === 'done' && !task.parent_task_id && (
+            {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
               <DropdownMenuItem onClick={() => onReassign(task)}>
                 <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
               </DropdownMenuItem>
@@ -600,6 +651,28 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
         </DropdownMenu>
         )}
       </td>
+
+      <AlertDialog open={isCorrectionsOpen} onOpenChange={setIsCorrectionsOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request Corrections</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please provide feedback for the task: "{task.description}". The task will be moved back to 'In Progress'.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea 
+            placeholder="Type your correction notes here..."
+            value={correctionNote}
+            onChange={(e) => setCorrectionNote(e.target.value)}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCorrectionSubmit} disabled={!correctionNote.trim()}>
+              Submit Corrections
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
@@ -629,14 +702,14 @@ const TaskTableBody = ({
   projects?: Project[]
   clients?: Client[]
   profiles?: Profile[]
-  onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => void
+  onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void
   onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void;
   onEdit: (task: TaskWithDetails) => void;
   onDelete: (task: TaskWithDetails) => void;
   canEdit: boolean;
   onTaskClick: (task: TaskWithDetails) => void;
   onReassign: (task: TaskWithDetails) => void;
-  status: 'todo' | 'inprogress' | 'under-review' | 'done',
+  status: Task['status'],
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -676,7 +749,7 @@ const TaskTableBody = ({
   )
 }
 
-const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
+const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
   const cardColors: { [key: string]: string } = {
     "todo": "bg-blue-100/50",
     "inprogress": "bg-purple-100/50",
@@ -773,7 +846,7 @@ const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDel
                             Move to {postingStatusLabels[status]}
                           </DropdownMenuItem>
                         ))
-                      : statusOptions.map(status => (
+                      : mainStatusOptions.map(status => (
                           <DropdownMenuItem
                             key={status}
                             disabled={task.status === status}
@@ -783,7 +856,7 @@ const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDel
                             Move to {statusLabels[status]}
                           </DropdownMenuItem>
                         ))}
-                     {(task.status === 'done' || task.status === 'under-review') && !task.parent_task_id && (
+                     {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
                       <DropdownMenuItem onClick={() => onReassign(task)}>
                         <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
                       </DropdownMenuItem>
@@ -799,8 +872,8 @@ const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDel
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
-  const statuses: ('todo' | 'inprogress' | 'under-review' | 'done')[] = ['todo', 'inprogress', 'under-review', 'done'];
+const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
+  const statuses: ('todo' | 'inprogress' | 'review' | 'done')[] = ['todo', 'inprogress', 'review', 'done'];
 
   return (
     <div className="flex flex-col h-full">
@@ -1013,8 +1086,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }, [filteredTasks, sortConfig]);
 
   const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'todo' || t.status === 'inprogress')), [sortedTasks]);
-  const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'under-review'), [sortedTasks]);
-  const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'done'), [sortedTasks]);
+  const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'review'), [sortedTasks]);
+  const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'done' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted'), [sortedTasks]);
 
   const deletedTasks = useMemo(() => {
     // Deleted tasks should not be filtered by 'my tasks' view
@@ -1098,15 +1171,9 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     });
   }
   
-  const handleStatusChange = (taskId: string, status: 'todo' | 'inprogress' | 'under-review' | 'done') => {
-    setTasks(prevTasks => 
-      prevTasks.map(t => 
-        t.id === taskId ? { ...t, status } : t
-      )
-    );
-
+  const handleStatusChange = (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => {
     startTransition(async () => {
-        const { error } = await updateTaskStatus(taskId, status);
+        const { error } = await updateTaskStatus(taskId, status, correction);
         if (error) {
             toast({ title: "Error updating status", description: error.message, variant: "destructive" });
         }
@@ -1160,7 +1227,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     )
   }
 
-  const renderTaskTable = (tasksToRender: TaskWithDetails[], status: 'todo' | 'inprogress' | 'under-review' | 'done') => {
+  const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status']) => {
     return (
       <table className="w-full text-left mt-2">
         <thead>
@@ -1177,7 +1244,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         </thead>
         <TaskTableBody
           tasks={tasksToRender}
-          isAddingTask={canEditTasks && isAddingTask}
+          isAddingTask={canEditTasks && isAddingTask && activeTab === 'active'}
           onSaveTask={handleSaveTask}
           onCancelAddTask={() => setIsAddingTask(false)}
           projects={allProjects}
@@ -1264,7 +1331,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             )}
           </TabsContent>
           <TabsContent value="under-review">
-            {renderTaskTable(underReviewTasks, 'under-review')}
+            {renderTaskTable(underReviewTasks, 'review')}
           </TabsContent>
           <TabsContent value="completed">
             {renderTaskTable(completedTasks, 'done')}

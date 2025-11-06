@@ -41,11 +41,22 @@ export type Attachment = {
   name: string;
 }
 
+export type Correction = {
+  note: string;
+  author_id: string;
+  created_at: string;
+};
+
+export type Revisions = {
+  corrections: number;
+  recreations: number;
+};
+
 export type TaskWithDetails = Task & {
   profiles: Profile | null;
   projects: Project | null;
   clients: Client | null;
   attachments: Attachment[] | null;
+  revisions: Revisions | null;
+  corrections: Correction[] | null;
 }
-
-    

@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
-import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction } from '@/lib/types'
+import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction, Revisions } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
@@ -407,8 +407,7 @@ export async function updateTaskStatus(
 
     const updates: Partial<Task> = { status };
     
-    // Handle revision counting
-    const revisions = (currentTask.revisions as { corrections?: number, recreations?: number } | null) || {};
+    const revisions: Revisions = (currentTask.revisions as Revisions | null) || { corrections: 0, recreations: 0 };
     if (status === 'corrections') {
         revisions.corrections = (revisions.corrections || 0) + 1;
         updates.revisions = revisions;
@@ -420,7 +419,7 @@ export async function updateTaskStatus(
         };
         const corrections = (currentTask.corrections as Correction[] | null) || [];
         updates.corrections = [...corrections, newCorrection];
-
+        updates.status = 'inprogress'; // Move back to active tasks
     } else if (status === 'recreate') {
         revisions.recreations = (revisions.recreations || 0) + 1;
         updates.revisions = revisions;
