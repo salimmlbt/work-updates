@@ -436,7 +436,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; }) => {
+const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
@@ -486,7 +486,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
       toast({ title: 'Correction note cannot be empty', variant: 'destructive' });
       return;
     }
-    onStatusChange(task.id, 'corrections', { note: correctionNote, authorId: 'CURRENT_USER_ID' }); // Replace with actual user ID
+    onStatusChange(task.id, 'corrections', { note: correctionNote, authorId: currentUserProfile?.id || '' });
     setIsCorrectionsOpen(false);
     setCorrectionNote('');
   }
@@ -508,7 +508,11 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
     if (isPostingType) return postingStatusOptions;
     
     if (activeTab === 'under-review') {
-      return isReviewer ? reviewStatusOptions : mainStatusOptions;
+        const isAssignee = currentUserProfile?.id === task.assignee_id;
+        if (isReviewer && isAssignee) {
+             return [...reviewStatusOptions, 'inprogress', 'todo'];
+        }
+        return isReviewer ? reviewStatusOptions : mainStatusOptions;
     }
 
     if (activeTab === 'completed') {
@@ -520,7 +524,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
 
   const statusOptions = getStatusOptions();
   
-  const isStatusChangeDisabled = (activeTab === 'completed' && !isReviewer) || (activeTab === 'under-review' && !isReviewer && !isPostingType) || statusOptions.length === 0;
+  const isStatusChangeDisabled = (activeTab === 'completed' && !isReviewer) || (activeTab === 'under-review' && !isReviewer && !isPostingType && currentUserProfile?.id !== task.assignee_id) || statusOptions.length === 0;
 
   return (
     <>
@@ -701,6 +705,7 @@ const TaskTableBody = ({
   status,
   isReviewer,
   activeTab,
+  currentUserProfile,
 }: {
   tasks: TaskWithDetails[]
   isAddingTask?: boolean
@@ -719,6 +724,7 @@ const TaskTableBody = ({
   status: Task['status'],
   isReviewer: boolean,
   activeTab: string;
+  currentUserProfile: Profile | null;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -743,6 +749,7 @@ const TaskTableBody = ({
             onReassign={onReassign}
             isReviewer={isReviewer}
             activeTab={activeTab}
+            currentUserProfile={currentUserProfile}
           />
         </tr>
       ))}
@@ -1268,6 +1275,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           status={status}
           isReviewer={isReviewer}
           activeTab={activeTab}
+          currentUserProfile={currentUserProfile}
         />
       </table>
     )
@@ -1543,3 +1551,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
