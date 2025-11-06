@@ -434,7 +434,17 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
              <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a client" />
+                 {selectedClient ? (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={selectedClient.avatar} />
+                        <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                      </Avatar>
+                      {selectedClient.name}
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Select a client" />
+                  )}
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -472,12 +482,12 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <div className="border-b">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="border-r">Schedule Date</TableHead>
-                    <TableHead className="border-r">Schedule Detail</TableHead>
-                    <TableHead className="border-r">Project</TableHead>
-                    <TableHead className="border-r">Schedule Team</TableHead>
-                    <TableHead className="border-r">Schedule Type</TableHead>
+                  <TableRow className="border-b-0">
+                    <TableHead>Schedule Date</TableHead>
+                    <TableHead>Schedule Detail</TableHead>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Schedule Team</TableHead>
+                    <TableHead>Schedule Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[5%] text-right"></TableHead>
                   </TableRow>
@@ -656,3 +666,5 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     </>
   );
 }
+
+    
