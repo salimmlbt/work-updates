@@ -523,7 +523,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
   };
 
   const statusOptions = getStatusOptions();
-  const isStatusChangeDisabled = isUnderReviewTab && !isReviewer && !mainStatusOptions.includes(task.status);
+  const isStatusChangeDisabled = isUnderReviewTab && !isReviewer;
 
 
   return (
@@ -1103,7 +1103,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }, [filteredTasks, sortConfig]);
 
   const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'todo' || t.status === 'inprogress')), [sortedTasks]);
-  const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'review'), [sortedTasks]);
+  const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'review' || t.status === 'corrections' || t.status === 'recreate')), [sortedTasks]);
   const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'done' || t.status === 'approved' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted')), [sortedTasks]);
 
   const deletedTasks = useMemo(() => {
@@ -1189,25 +1189,31 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }
   
   const handleStatusChange = (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => {
+    const originalTasks = tasks;
+    const updatedTasks = tasks.map(t => t.id === taskId ? {...t, status} : t);
+    setTasks(updatedTasks);
+
     startTransition(async () => {
         const { error } = await updateTaskStatus(taskId, status, correction);
         if (error) {
             toast({ title: "Error updating status", description: error.message, variant: "destructive" });
+            setTasks(originalTasks); // Revert on error
         }
     });
   }
   
   const handlePostingStatusChange = (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => {
-    setTasks(prevTasks => 
-      prevTasks.map(t => 
+    const originalTasks = tasks;
+    const updatedTasks = tasks.map(t => 
         t.id === taskId ? { ...t, posting_status: status } : t
-      )
     );
+    setTasks(updatedTasks);
 
     startTransition(async () => {
         const { error } = await updateTaskPostingStatus(taskId, status);
         if (error) {
             toast({ title: "Error updating posting status", description: error.message, variant: "destructive" });
+            setTasks(originalTasks);
         }
     });
   }
@@ -1248,7 +1254,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return (
       <table className="w-full text-left mt-2">
         <thead>
-          <tr className="border-b border-gray-200">
+          <tr className="border-b border-gray-200 group">
             <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
             <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
             <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
@@ -1541,3 +1547,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
