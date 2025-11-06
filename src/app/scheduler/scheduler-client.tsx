@@ -124,7 +124,7 @@ const AddScheduleRow = ({
 
   return (
      <TableRow className="bg-muted/50 hover:bg-muted/50">
-        <TableCell>
+        <TableCell className="border-r">
              <Popover>
                 <PopoverTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start font-normal">
@@ -137,10 +137,10 @@ const AddScheduleRow = ({
                 </PopoverContent>
             </Popover>
         </TableCell>
-        <TableCell>
+        <TableCell className="border-r">
             <Input ref={titleInputRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Content Title" />
         </TableCell>
-         <TableCell>
+         <TableCell className="border-r">
              <Select onValueChange={setProjectId} value={projectId || 'no-project'}>
                 <SelectTrigger>
                     <SelectValue placeholder="Select project" />
@@ -153,7 +153,7 @@ const AddScheduleRow = ({
                 </SelectContent>
             </Select>
         </TableCell>
-        <TableCell>
+        <TableCell className="border-r">
              <Select onValueChange={setTeamId}>
                 <SelectTrigger>
                     <SelectValue placeholder="Select team" />
@@ -165,7 +165,7 @@ const AddScheduleRow = ({
                 </SelectContent>
             </Select>
         </TableCell>
-        <TableCell>
+        <TableCell className="border-r">
             <Select onValueChange={setContentType} value={contentType} disabled={!teamId}>
                 <SelectTrigger>
                     <SelectValue placeholder="Select type" />
@@ -177,7 +177,7 @@ const AddScheduleRow = ({
                 </SelectContent>
             </Select>
         </TableCell>
-        <TableCell>
+        <TableCell className="border-r">
            <span className="text-muted-foreground italic">Planned</span>
         </TableCell>
         <TableCell className="text-right">
@@ -255,10 +255,10 @@ const AssignTaskRow = ({
 
   return (
     <tr className="bg-muted/30">
-      <TableCell colSpan={3} className="py-2 pl-12">
+      <TableCell colSpan={3} className="py-2 pl-12 border-r">
         <p className="font-medium text-xs text-muted-foreground">Assigning Task...</p>
       </TableCell>
-      <TableCell className="py-2">
+      <TableCell className="py-2 border-r">
         <Select onValueChange={setAssigneeId} value={assigneeId}>
           <SelectTrigger className="h-8">
             <SelectValue placeholder="Select Assignee" />
@@ -272,7 +272,7 @@ const AssignTaskRow = ({
           </SelectContent>
         </Select>
       </TableCell>
-      <TableCell className="py-2">
+      <TableCell className="py-2 border-r">
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" className="h-8 w-full justify-start text-left font-normal">
@@ -315,10 +315,10 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   
   useEffect(() => {
     // Set initial client ID on the client to avoid hydration mismatch
-    if (!selectedClientId && clients.length > 0) {
+    if (clients.length > 0) {
       setSelectedClientId(clients[0].id);
     }
-  }, [clients, selectedClientId]);
+  }, []);
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
@@ -434,17 +434,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
              <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                 {selectedClient ? (
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                          <AvatarImage src={selectedClient.avatar} />
-                          <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
-                      </Avatar>
-                      {selectedClient.name}
-                    </div>
-                  ) : (
-                    <SelectValue placeholder="Select a client" />
-                  )}
+                <SelectValue placeholder="Select a client" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -484,16 +474,16 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Schedule Date</TableHead>
-                                <TableHead>Schedule Detail</TableHead>
+                                <TableHead className="border-r">Schedule Date</TableHead>
+                                <TableHead className="border-r">Schedule Detail</TableHead>
                                 <TableHead className="w-[20%] text-right"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {deletedSchedules.map(schedule => (
                                 <TableRow key={schedule.id} className="group">
-                                    <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                                    <TableCell className="font-medium">{schedule.title}</TableCell>
+                                    <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                                    <TableCell className="font-medium border-r">{schedule.title}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
                                             <Button variant="ghost" size="sm" onClick={() => handleRestore(schedule.id)}>
@@ -506,6 +496,13 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                     </TableCell>
                                 </TableRow>
                             ))}
+                             {deletedSchedules.length === 0 && (
+                                <TableRow>
+                                <TableCell colSpan={3} className="h-24 text-center">
+                                    The bin is empty for {selectedClient?.name}.
+                                </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                  </div>
@@ -514,12 +511,12 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                   <Table>
                     <TableHeader>
                       <TableRow className="border-t-0">
-                        <TableHead>Schedule Date</TableHead>
-                        <TableHead>Schedule Detail</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Schedule Team</TableHead>
-                        <TableHead>Schedule Type</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="border-r">Schedule Date</TableHead>
+                        <TableHead className="border-r">Schedule Detail</TableHead>
+                        <TableHead className="border-r">Project</TableHead>
+                        <TableHead className="border-r">Schedule Team</TableHead>
+                        <TableHead className="border-r">Schedule Type</TableHead>
+                        <TableHead className="border-r">Status</TableHead>
                         <TableHead className="w-[5%] text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -536,12 +533,12 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       {activeSchedules.map(schedule => (
                         <React.Fragment key={schedule.id}>
                           <TableRow className="group">
-                            <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                            <TableCell className="font-medium">{schedule.title}</TableCell>
-                            <TableCell>{schedule.projects?.name || 'N/A'}</TableCell>
-                            <TableCell>{schedule.teams?.name || 'N/A'}</TableCell>
-                            <TableCell>{schedule.content_type || 'N/A'}</TableCell>
-                            <TableCell>{getScheduleStatus(schedule)}</TableCell>
+                            <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                            <TableCell className="font-medium border-r">{schedule.title}</TableCell>
+                            <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
+                            <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
+                            <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
+                            <TableCell className="border-r">{getScheduleStatus(schedule)}</TableCell>
                             <TableCell className="text-right">
                               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                 <DropdownMenu>
