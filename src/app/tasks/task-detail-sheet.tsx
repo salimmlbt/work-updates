@@ -16,6 +16,9 @@ import {
   Save,
   Loader2,
   Link as LinkIcon,
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -74,6 +77,12 @@ export function TaskDetailSheet({
   const [isDescriptionDirty, setIsDescriptionDirty] = useState(false)
   const supabase = createClient()
   const { toast } = useToast()
+  const [currentCorrectionIndex, setCurrentCorrectionIndex] = useState(0)
+
+  const corrections = useMemo(() => {
+    if (!task.corrections || !Array.isArray(task.corrections)) return []
+    return task.corrections
+  }, [task.corrections])
 
   const formatDate = (date: string | null) => {
     if (!date) return 'No due date'
@@ -126,6 +135,15 @@ export function TaskDetailSheet({
       }
     })
   }
+  
+  const handlePrevCorrection = () => {
+    setCurrentCorrectionIndex(prev => (prev > 0 ? prev - 1 : corrections.length - 1));
+  };
+  
+  const handleNextCorrection = () => {
+    setCurrentCorrectionIndex(prev => (prev < corrections.length - 1 ? prev + 1 : 0));
+  };
+
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -207,6 +225,39 @@ export function TaskDetailSheet({
               isDirty={isDescriptionDirty}
             />
           </section>
+
+          {corrections.length > 0 && (
+            <>
+              <Separator />
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="font-semibold text-xl">Corrections</h3>
+                    </div>
+                     {corrections.length > 1 && (
+                      <div className="flex items-center gap-2">
+                         <span className="text-sm text-muted-foreground">
+                            {currentCorrectionIndex + 1} of {corrections.length}
+                        </span>
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={handlePrevCorrection}>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleNextCorrection}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                </div>
+                <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/50 rounded-lg p-4">
+                  <p className="text-sm text-orange-900 dark:text-orange-200">{corrections[currentCorrectionIndex].note}</p>
+                   <p className="text-xs text-orange-700 dark:text-orange-400 mt-2">
+                      {format(parseISO(corrections[currentCorrectionIndex].created_at), 'd MMM yyyy, h:mm a')}
+                  </p>
+                </div>
+              </section>
+            </>
+          )}
 
           <Separator />
 
