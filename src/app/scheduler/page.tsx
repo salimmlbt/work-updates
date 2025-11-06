@@ -32,7 +32,7 @@ export default async function SchedulerPage() {
     supabase.from('content_schedules').select('*, teams(*), projects(*)').eq('is_deleted', false),
     supabase.from('tasks').select('*, profiles(*), projects(*), clients(*)').eq('is_deleted', false).not('schedule_id', 'is', null),
     supabase.from('teams').select('*'),
-    supabase.from('profiles').select('*'),
+    supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))'),
     supabase.from('projects').select('*'),
   ]);
 
