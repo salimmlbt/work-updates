@@ -9,12 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -23,17 +23,28 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getInitials, cn } from '@/lib/utils';
 import { format, parseISO, isToday, isTomorrow, isYesterday } from 'date-fns';
 import type { Client, Team, Profile, Task, TaskWithDetails, Project } from '@/lib/types';
 import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { addSchedule, createTaskFromSchedule } from '@/app/actions';
+import { addSchedule, createTaskFromSchedule, deleteSchedule, restoreSchedule, deleteSchedulePermanently } from '@/app/actions';
 import { createTask } from '@/app/teams/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReassignTaskDialog } from '@/app/tasks/reassign-task-dialog';
+import { EditScheduleDialog } from './edit-schedule-dialog';
 
 
 const AddScheduleCard = ({
@@ -221,6 +232,7 @@ const AssignTaskRow = ({
   const { toast } = useToast();
 
   const teamMembers = useMemo(() => {
+    if (!schedule.team_id) return [];
     return profiles.filter(p => p.teams.some(t => t.teams?.id === schedule.team_id));
   }, [profiles, schedule.team_id]);
 
@@ -315,15 +327,30 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   const { toast } = useToast();
   const [scheduleToReassign, setScheduleToReassign] = useState<ScheduleWithDetails | null>(null);
   const [assigningScheduleId, setAssigningScheduleId] = useState<string | null>(null);
+  const [showBin, setShowBin] = useState(false);
+
+  const [isPending, startTransition] = useTransition();
+  const [scheduleToDelete, setScheduleToDelete] = useState<ScheduleWithDetails | null>(null);
+  const [scheduleToEdit, setScheduleToEdit] = useState<ScheduleWithDetails | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [scheduleToDeletePermanently, setScheduleToDeletePermanently] = useState<ScheduleWithDetails | null>(null);
+
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
   }, [selectedClientId, clients]);
-
-  const filteredSchedules = useMemo(() => {
+  
+  const activeSchedules = useMemo(() => {
     if (!selectedClientId) return [];
     return schedules
-      .filter(s => s.client_id === selectedClientId)
+      .filter(s => s.client_id === selectedClientId && !s.is_deleted)
+      .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+  }, [selectedClientId, schedules]);
+
+  const deletedSchedules = useMemo(() => {
+    if (!selectedClientId) return [];
+    return schedules
+      .filter(s => s.client_id === selectedClientId && s.is_deleted)
       .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
   }, [selectedClientId, schedules]);
 
@@ -353,6 +380,10 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     setSchedules(prev => [newSchedule, ...prev]);
     setIsAdding(false);
   }
+  
+  const handleScheduleUpdated = (updatedSchedule: ScheduleWithDetails) => {
+    setSchedules(prev => prev.map(s => s.id === updatedSchedule.id ? updatedSchedule : s));
+  }
 
   const handleAssignTask = (scheduleId: string) => {
     setAssigningScheduleId(prev => (prev === scheduleId ? null : scheduleId));
@@ -365,6 +396,50 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         } : s));
         setAssigningScheduleId(null);
     };
+    
+    const handleDeleteClick = (schedule: ScheduleWithDetails) => {
+      setScheduleToDelete(schedule);
+    };
+
+    const handleDelete = () => {
+      if (!scheduleToDelete) return;
+      startTransition(async () => {
+        const { error } = await deleteSchedule(scheduleToDelete.id);
+        if (error) {
+          toast({ title: 'Error deleting schedule', description: error, variant: 'destructive' });
+        } else {
+          toast({ title: 'Schedule moved to bin' });
+          setSchedules(prev => prev.map(s => s.id === scheduleToDelete.id ? { ...s, is_deleted: true } : s));
+        }
+        setScheduleToDelete(null);
+      });
+    };
+
+    const handleRestore = (scheduleId: string) => {
+      startTransition(async () => {
+        const { error } = await restoreSchedule(scheduleId);
+        if (error) {
+          toast({ title: 'Error restoring schedule', description: error, variant: 'destructive' });
+        } else {
+          toast({ title: 'Schedule restored' });
+          setSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, is_deleted: false } : s));
+        }
+      });
+    };
+
+    const handleDeletePermanently = () => {
+      if (!scheduleToDeletePermanently) return;
+      startTransition(async () => {
+        const { error } = await deleteSchedulePermanently(scheduleToDeletePermanently.id);
+        if (error) {
+          toast({ title: 'Error permanently deleting schedule', description: error, variant: 'destructive' });
+        } else {
+          toast({ title: 'Schedule permanently deleted' });
+          setSchedules(prev => prev.filter(s => s.id !== scheduleToDeletePermanently.id));
+        }
+        setScheduleToDeletePermanently(null);
+      });
+    };
 
 
   return (
@@ -373,7 +448,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         <header className="flex items-center justify-between pb-4 mb-4 border-b">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold">Content Scheduler</h1>
-            <Select onValueChange={setSelectedClientId} value={selectedClientId || undefined}>
+            <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
                 <div className="flex items-center gap-2">
                   {selectedClient && <Avatar className="h-6 w-6">
@@ -398,14 +473,55 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => setIsAdding(true)} disabled={!selectedClientId}>
-            <Plus className="mr-2 h-4 w-4" /> Add Schedule
-          </Button>
+          <div className="flex items-center gap-2">
+            {showBin ? (
+              <Button onClick={() => setShowBin(false)} variant="outline">Back to Schedules</Button>
+            ) : (
+              <>
+                <Button onClick={() => setIsAdding(true)} disabled={!selectedClientId}>
+                  <Plus className="mr-2 h-4 w-4" /> Add Schedule
+                </Button>
+                <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(true)}>
+                  <Trash2 className="mr-2 h-4 w-4" /> Bin
+                </Button>
+              </>
+            )}
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto">
           {selectedClientId ? (
-            isAdding ? (
+            showBin ? (
+                 <div className="border rounded-lg">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Schedule Date</TableHead>
+                                <TableHead>Schedule Detail</TableHead>
+                                <TableHead className="w-[20%] text-right"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {deletedSchedules.map(schedule => (
+                                <TableRow key={schedule.id} className="group">
+                                    <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                                    <TableCell className="font-medium">{schedule.title}</TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                                            <Button variant="ghost" size="sm" onClick={() => handleRestore(schedule.id)}>
+                                                <RefreshCcw className="mr-2 h-4 w-4" /> Restore
+                                            </Button>
+                                            <Button variant="destructive" size="sm" onClick={() => setScheduleToDeletePermanently(schedule)}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                 </div>
+            ) : isAdding ? (
               <div className="max-w-2xl mx-auto">
                 <AddScheduleCard 
                   clientId={selectedClientId} 
@@ -416,7 +532,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                 />
               </div>
             ) : (
-              filteredSchedules.length > 0 ? (
+              activeSchedules.length > 0 ? (
                 <div className="border rounded-lg">
                   <Table>
                     <TableHeader>
@@ -431,7 +547,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredSchedules.map(schedule => (
+                      {activeSchedules.map(schedule => (
                         <React.Fragment key={schedule.id}>
                           <TableRow className="group">
                             <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
@@ -460,8 +576,12 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                             <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
                                         </DropdownMenuItem>
                                     )}
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => { setScheduleToEdit(schedule); setIsEditOpen(true); }}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-600 focus:text-red-500" onClick={() => handleDeleteClick(schedule)}>
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
@@ -503,6 +623,57 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
               onTaskCreated={handleTaskCreated}
           />
       )}
+      {scheduleToEdit && (
+        <EditScheduleDialog
+          isOpen={isEditOpen}
+          setIsOpen={setIsEditOpen}
+          schedule={scheduleToEdit}
+          onScheduleUpdated={handleScheduleUpdated}
+          teams={teams}
+          projects={projects}
+        />
+      )}
+       <AlertDialog open={!!scheduleToDelete} onOpenChange={(open) => !open && setScheduleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the schedule for "{scheduleToDelete?.title}" to the bin. You can restore it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className={buttonVariants({ variant: 'destructive' })}
+              disabled={isPending}
+            >
+              {isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!scheduleToDeletePermanently} onOpenChange={(open) => !open && setScheduleToDeletePermanently(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone and will permanently delete the schedule "{scheduleToDeletePermanently?.title}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePermanently}
+              className={buttonVariants({ variant: 'destructive' })}
+              disabled={isPending}
+            >
+              {isPending ? 'Deleting...' : 'Delete Permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

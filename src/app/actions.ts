@@ -1280,6 +1280,67 @@ export async function addSchedule(formData: FormData): Promise<{ data?: ContentS
     return { data: data as ContentSchedule };
 }
 
+export async function updateSchedule(scheduleId: string, formData: FormData): Promise<{ data?: ContentSchedule, error?: string }> {
+    const supabase = await createServerClient();
+
+    const rawData = {
+        title: formData.get('title') as string,
+        content_type: formData.get('content_type') as string,
+        scheduled_date: formData.get('scheduled_date') as string,
+        team_id: formData.get('team_id') as string,
+        project_id: formData.get('project_id') === 'no-project' ? null : formData.get('project_id') as string | null,
+    };
+
+    if (!rawData.title || !rawData.scheduled_date || !rawData.content_type || !rawData.team_id) {
+        return { error: "Title, content type, team, and scheduled date are required." };
+    }
+
+    const { data, error } = await supabase
+        .from('content_schedules')
+        .update(rawData)
+        .eq('id', scheduleId)
+        .select()
+        .single();
+    
+    if (error) {
+        console.error("Error updating schedule:", error);
+        return { error: error.message };
+    }
+
+    revalidatePath('/scheduler');
+    return { data: data as ContentSchedule };
+}
+
+export async function deleteSchedule(scheduleId: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = await createServerClient();
+    const { error } = await supabase.from('content_schedules').update({ is_deleted: true }).eq('id', scheduleId);
+    if (error) {
+        return { success: false, error: error.message };
+    }
+    revalidatePath('/scheduler');
+    return { success: true };
+}
+
+export async function restoreSchedule(scheduleId: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = await createServerClient();
+    const { error } = await supabase.from('content_schedules').update({ is_deleted: false }).eq('id', scheduleId);
+    if (error) {
+        return { success: false, error: error.message };
+    }
+    revalidatePath('/scheduler');
+    return { success: true };
+}
+
+export async function deleteSchedulePermanently(scheduleId: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = await createServerClient();
+    const { error } = await supabase.from('content_schedules').delete().eq('id', scheduleId);
+    if (error) {
+        return { success: false, error: error.message };
+    }
+    revalidatePath('/scheduler');
+    return { success: true };
+}
+
 export async function createTaskFromSchedule(schedule: ContentSchedule): Promise<{ data?: Task, error?: string }> {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
