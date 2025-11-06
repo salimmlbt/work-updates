@@ -72,7 +72,7 @@ import { TaskDetailSheet } from './task-detail-sheet';
 import { useSearchParams } from 'next/navigation';
 import { ReassignTaskDialog } from './reassign-task-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 const statusIcons = {
@@ -83,7 +83,7 @@ const statusIcons = {
   'recreate': <Repeat className="h-4 w-4 text-blue-600" />,
   'approved': <CheckCircle2 className="h-4 w-4 text-green-500" />,
   'done': <CheckCircle2 className="h-4 w-4 text-green-500" />,
-  // under-review is a tab, not a status itself
+  'under-review': <Eye className="h-4 w-4 text-yellow-600" />,
 };
 
 const statusLabels: Record<Task['status'], string> = {
@@ -436,13 +436,11 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; }) => {
+const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, isUnderReviewTab }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; isUnderReviewTab: boolean; }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
-
   
   const attachments = useMemo(() => {
     if (!task.attachments) return [];
@@ -516,9 +514,17 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
     ? <CheckCircle2 className="h-4 w-4 text-blue-500" />
     : statusIcons[task.status];
   
-  const statusOptions = task.status === 'review' ? reviewStatusOptions : mainStatusOptions;
+  const getStatusOptions = () => {
+    if (isPostingType) return postingStatusOptions;
+    if (isUnderReviewTab) {
+      return isReviewer ? reviewStatusOptions : mainStatusOptions;
+    }
+    return mainStatusOptions;
+  };
 
-  const isStatusChangeDisabled = task.status === 'review' && !isReviewer;
+  const statusOptions = getStatusOptions();
+  const isStatusChangeDisabled = isUnderReviewTab && !isReviewer && !mainStatusOptions.includes(task.status);
+
 
   return (
     <>
@@ -608,8 +614,8 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
                     className={cn(task.status === status && 'bg-accent')}
                   >
                     <div className="flex items-center gap-2">
-                      {statusIcons[status]}
-                      <span>{statusLabels[status]}</span>
+                      {statusIcons[status as keyof typeof statusIcons]}
+                      <span>{statusLabels[status as keyof typeof statusLabels]}</span>
                     </div>
                   </DropdownMenuItem>
                 ))}
@@ -698,6 +704,7 @@ const TaskTableBody = ({
   onReassign,
   status,
   isReviewer,
+  isUnderReviewTab,
 }: {
   tasks: TaskWithDetails[]
   isAddingTask?: boolean
@@ -715,6 +722,7 @@ const TaskTableBody = ({
   onReassign: (task: TaskWithDetails) => void;
   status: Task['status'],
   isReviewer: boolean,
+  isUnderReviewTab: boolean;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -738,6 +746,7 @@ const TaskTableBody = ({
             onTaskClick={onTaskClick}
             onReassign={onReassign}
             isReviewer={isReviewer}
+            isUnderReviewTab={isUnderReviewTab}
           />
         </tr>
       ))}
@@ -1005,6 +1014,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const userPermissions = (currentUserProfile?.roles as RoleWithPermissions)?.permissions;
   const canEditTasks = userPermissions?.tasks === 'Editor';
+  const isReviewer = canEditTasks;
+
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -1233,7 +1244,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     )
   }
 
-  const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status'], isReviewer: boolean) => {
+  const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status'], isReviewer: boolean, isUnderReviewTab: boolean) => {
     return (
       <table className="w-full text-left mt-2">
         <thead>
@@ -1265,6 +1276,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           onReassign={(task) => setTaskToReassign(task)}
           status={status}
           isReviewer={isReviewer}
+          isUnderReviewTab={isUnderReviewTab}
         />
       </table>
     )
@@ -1322,11 +1334,11 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="active">Active <Badge variant="secondary" className="ml-2">{activeTasks.length}</Badge></TabsTrigger>
-            {canEditTasks && <TabsTrigger value="under-review">Under review <Badge variant="secondary" className="ml-2">{underReviewTasks.length}</Badge></TabsTrigger>}
+            <TabsTrigger value="under-review">Under review <Badge variant="secondary" className="ml-2">{underReviewTasks.length}</Badge></TabsTrigger>
             <TabsTrigger value="completed">Completed <Badge variant="secondary" className="ml-2">{completedTasks.length}</Badge></TabsTrigger>
           </TabsList>
           <TabsContent value="active">
-            {renderTaskTable(activeTasks, 'todo', false)}
+            {renderTaskTable(activeTasks, 'todo', false, false)}
             {canEditTasks && (
                 <Button
                     variant="ghost"
@@ -1337,13 +1349,11 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                 </Button>
             )}
           </TabsContent>
-          {canEditTasks && (
-            <TabsContent value="under-review">
-              {renderTaskTable(underReviewTasks, 'review', true)}
-            </TabsContent>
-          )}
+          <TabsContent value="under-review">
+              {renderTaskTable(underReviewTasks, 'review', isReviewer, true)}
+          </TabsContent>
           <TabsContent value="completed">
-            {renderTaskTable(completedTasks, 'done', false)}
+            {renderTaskTable(completedTasks, 'done', false, false)}
           </TabsContent>
         </Tabs>
       )
