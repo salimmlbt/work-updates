@@ -30,7 +30,7 @@ import { format, parseISO, isToday, isTomorrow, isYesterday } from 'date-fns';
 import type { Client, Team, Profile, Task, TaskWithDetails, Project } from '@/lib/types';
 import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { addSchedule, createTaskFromSchedule, deleteSchedule, restoreSchedule, deleteSchedulePermanently } from '@/app/actions';
+import { addSchedule, deleteSchedule, restoreSchedule, deleteSchedulePermanently, updateSchedule } from '@/app/actions';
 import { createTask } from '@/app/teams/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -428,15 +428,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
             <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                 <div className="flex items-center gap-3">
-                  {selectedClient && (
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={selectedClient.avatar} />
-                      <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
-                    </Avatar>
-                  )}
-                  <SelectValue placeholder="Select a client" />
-                </div>
+                <SelectValue placeholder="Select a client" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
