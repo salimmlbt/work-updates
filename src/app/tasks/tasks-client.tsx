@@ -918,46 +918,37 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   useEffect(() => {
     const channel = supabase
-      .channel('realtime-tasks-all')
+      .channel('realtime-tasks-all-fix')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
         (payload) => {
-           if (payload.eventType === 'INSERT') {
-                const newTask = payload.new as Task;
-                const newFullTask: TaskWithDetails = {
-                    ...newTask,
-                    profiles: profiles.find(p => p.id === newTask.assignee_id) || null,
-                    projects: allProjects.find(p => p.id === newTask.project_id) || null,
-                    clients: clients.find(c => c.id === newTask.client_id) || null,
-                    attachments: processTaskAttachments(newTask),
-                };
-                setTasks(current => [newFullTask, ...current])
-           } else if (payload.eventType === 'UPDATE') {
-                const updatedTask = payload.new as Task;
-                setTasks(current => current.map(t => {
-                  if (t.id === updatedTask.id) {
-                    return {
-                      ...t,
-                      ...updatedTask,
-                      profiles: profiles.find(p => p.id === updatedTask.assignee_id) || t.profiles,
-                      projects: allProjects.find(p => p.id === updatedTask.project_id) || t.projects,
-                      clients: clients.find(c => c.id === updatedTask.client_id) || t.clients,
-                      attachments: processTaskAttachments(updatedTask),
-                    }
-                  }
-                  return t;
-                }));
-           } else if (payload.eventType === 'DELETE') {
-               setTasks(current => current.filter(t => t.id !== payload.old.id))
-           }
+          const processPayload = (taskPayload: any): TaskWithDetails => {
+            return {
+              ...taskPayload,
+              profiles: profiles.find(p => p.id === taskPayload.assignee_id) || null,
+              projects: allProjects.find(p => p.id === taskPayload.project_id) || null,
+              clients: clients.find(c => c.id === taskPayload.client_id) || null,
+              attachments: processTaskAttachments(taskPayload),
+            };
+          };
+          
+          if (payload.eventType === 'INSERT') {
+            const newFullTask = processPayload(payload.new);
+            setTasks(current => [newFullTask, ...current.filter(t => t.id !== newFullTask.id)]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedFullTask = processPayload(payload.new);
+            setTasks(current => current.map(t => t.id === updatedFullTask.id ? updatedFullTask : t));
+          } else if (payload.eventType === 'DELETE') {
+            setTasks(current => current.filter(t => t.id !== payload.old.id));
+          }
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
+      supabase.removeChannel(channel);
+    };
   }, [supabase, allProjects, clients, profiles]);
 
   const filteredTasks = useMemo(() => {
