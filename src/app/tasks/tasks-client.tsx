@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -518,7 +519,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
 
   const statusOptions = getStatusOptions();
   
-  const isStatusChangeDisabled = (activeTab === 'completed' && !isReviewer) || (activeTab === 'under-review' && !isReviewer);
+  const isStatusChangeDisabled = (activeTab === 'completed' && !isReviewer) || (activeTab === 'under-review' && !isReviewer && !isPostingType) || statusOptions.length === 0;
 
   return (
     <>
@@ -1319,32 +1320,43 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     }
     
     if (view === 'table') {
+      const tabs = [
+        { value: 'active', label: 'Active', count: activeTasks.length, content: renderTaskTable(activeTasks, 'todo', isReviewer, 'active') },
+        { value: 'under-review', label: 'Under review', count: underReviewTasks.length, content: renderTaskTable(underReviewTasks, 'review', isReviewer, 'under-review') },
+        { value: 'completed', label: 'Completed', count: completedTasks.length, content: renderTaskTable(completedTasks, 'done', isReviewer, 'completed') },
+      ];
       return (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="active">Active <Badge variant="secondary" className="ml-2">{activeTasks.length}</Badge></TabsTrigger>
-            <TabsTrigger value="under-review">Under review <Badge variant="secondary" className="ml-2">{underReviewTasks.length}</Badge></TabsTrigger>
-            <TabsTrigger value="completed">Completed <Badge variant="secondary" className="ml-2">{completedTasks.length}</Badge></TabsTrigger>
-          </TabsList>
-          <TabsContent value="active">
-            {renderTaskTable(activeTasks, 'todo', false, 'active')}
-            {canEditTasks && (
+        <div className="w-full">
+            <div className="flex items-center rounded-full bg-muted p-1 mb-4">
+              {tabs.map(tab => (
                 <Button
-                    variant="ghost"
-                    className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
-                    onClick={() => setIsAddingTask(true)}
+                  key={tab.value}
+                  variant={activeTab === tab.value ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.value)}
+                  className={cn('rounded-full flex-1', activeTab === tab.value ? 'bg-white shadow' : '')}
                 >
-                    <Plus className="mr-2 h-4 w-4" /> Add task
+                  {tab.label}
+                  <Badge variant="secondary" className="ml-2">{tab.count}</Badge>
                 </Button>
-            )}
-          </TabsContent>
-          <TabsContent value="under-review">
-              {renderTaskTable(underReviewTasks, 'review', isReviewer, 'under-review')}
-          </TabsContent>
-          <TabsContent value="completed">
-            {renderTaskTable(completedTasks, 'done', isReviewer, 'completed')}
-          </TabsContent>
-        </Tabs>
+              ))}
+            </div>
+          {tabs.map(tab => (
+            <div key={tab.value} className={activeTab === tab.value ? 'block' : 'hidden'}>
+              {tab.content}
+            </div>
+          ))}
+          
+          {activeTab === 'active' && canEditTasks && (
+            <Button
+                variant="ghost"
+                className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
+                onClick={() => setIsAddingTask(true)}
+            >
+                <Plus className="mr-2 h-4 w-4" /> Add task
+            </Button>
+          )}
+        </div>
       )
     } else {
       return <KanbanBoard tasks={sortedTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} />
@@ -1530,3 +1542,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
