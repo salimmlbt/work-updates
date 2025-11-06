@@ -428,7 +428,17 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
             <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a client" />
+                <SelectValue placeholder="Select a client">
+                    {selectedClient && (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                            <AvatarImage src={selectedClient.avatar} />
+                            <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                        </Avatar>
+                        {selectedClient.name}
+                      </div>
+                    )}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
