@@ -21,6 +21,8 @@ import {
   RefreshCcw,
   Loader2,
   Share2,
+  ArrowUp,
+  ArrowDown,
   ArrowUpDown,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -1151,14 +1153,17 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     setSortConfig({ key, direction });
   };
   
-  const SortableHeader = ({ sortKey, children }: { sortKey: SortableKeys, children: React.ReactNode }) => {
+  const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => {
     const isSorted = sortConfig?.key === sortKey;
     return (
-      <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: sortKey === 'description' ? '250px' : '150px' }}>
+      <th className={cn("px-4 py-2 text-sm font-medium text-gray-500 group", className)}>
           <Button variant="ghost" onClick={() => requestSort(sortKey)} className="p-0 h-auto hover:bg-transparent">
               {children}
-              {isSorted && (sortConfig?.direction === 'ascending' ? ' ▲' : ' ▼')}
-              {!isSorted && <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground" />}
+              {isSorted ? (
+                sortConfig?.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+              ) : (
+                <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
+              )}
           </Button>
       </th>
     )
@@ -1265,12 +1270,12 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                     <table className="w-full text-left mt-2">
                       <thead>
                         <tr className="border-b border-gray-200">
-                          <SortableHeader sortKey="description">Task Details</SortableHeader>
-                          <SortableHeader sortKey="client">Client</SortableHeader>
+                          <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
+                          <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
                           <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
-                          {canEditTasks && <SortableHeader sortKey="assignee">Responsible</SortableHeader>}
-                          <SortableHeader sortKey="type">Type</SortableHeader>
-                          <SortableHeader sortKey="deadline">Due date</SortableHeader>
+                          {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
+                          <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
+                          <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
                           <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
                           <th className="px-4 py-2" style={{ width: "50px" }}></th>
                         </tr>
@@ -1362,12 +1367,12 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                       <table className="w-full text-left mt-2">
                         <thead>
                           <tr className="border-b border-gray-200">
-                          <SortableHeader sortKey="description">Task Details</SortableHeader>
-                          <SortableHeader sortKey="client">Client</SortableHeader>
+                          <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
+                          <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
                           <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
-                          {canEditTasks && <SortableHeader sortKey="assignee">Responsible</SortableHeader>}
-                          <SortableHeader sortKey="type">Type</SortableHeader>
-                          <SortableHeader sortKey="deadline">Due date</SortableHeader>
+                          {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
+                          <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
+                          <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
                           <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
                           <th className="px-4 py-2" style={{ width: "50px" }}></th>
                           </tr>
@@ -1577,3 +1582,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
