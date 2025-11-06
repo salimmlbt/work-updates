@@ -177,7 +177,7 @@ const AddScheduleRow = ({
                 </SelectContent>
             </Select>
         </TableCell>
-        <TableCell className="border-r">
+        <TableCell>
            <span className="text-muted-foreground italic">Planned</span>
         </TableCell>
         <TableCell className="text-right">
@@ -480,7 +480,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         <main className="flex-1 overflow-y-auto">
           {selectedClientId ? (
             showBin ? (
-                 <div className="border-y">
+                 <div className="border-t">
                     <Table>
                         <TableHeader>
                             <TableRow className="border-t-0">
@@ -493,7 +493,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                             {deletedSchedules.map(schedule => (
                                 <TableRow key={schedule.id} className="group">
                                     <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                                    <TableCell className="font-medium border-r">{schedule.title}</TableCell>
+                                    <TableCell className="font-medium">{schedule.title}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
                                             <Button variant="ghost" size="sm" onClick={() => handleRestore(schedule.id)}>
@@ -548,7 +548,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                             <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
                             <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
                             <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
-                            <TableCell className="border-r">{getScheduleStatus(schedule)}</TableCell>
+                            <TableCell>{getScheduleStatus(schedule)}</TableCell>
                             <TableCell className="text-right">
                               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                 <DropdownMenu>
