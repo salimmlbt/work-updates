@@ -29,7 +29,7 @@ export default async function SchedulerPage() {
     projectsRes,
   ] = await Promise.all([
     supabase.from('clients').select('*').order('name'),
-    supabase.from('content_schedules').select('*, teams(*), projects(*)').eq('is_deleted', false),
+    supabase.from('content_schedules').select('*, teams(*), projects(*)'),
     supabase.from('tasks').select('*, profiles(*), projects(*), clients(*)').eq('is_deleted', false).not('schedule_id', 'is', null),
     supabase.from('teams').select('*'),
     supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))'),
