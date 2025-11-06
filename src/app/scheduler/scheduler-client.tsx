@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, X } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, X, MoreVertical } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -29,6 +29,8 @@ import type { Client, ContentSchedule, Task, Team } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { addSchedule } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type ScheduleWithTask = ContentSchedule & { task: Task | null };
 
@@ -285,20 +287,41 @@ export default function SchedulerClient({ clients, initialSchedules, teams }: Sc
                   sortedDates.map(date => (
                       <div key={date}>
                           <h2 className="font-semibold text-lg mb-4">{format(parseISO(date), 'EEEE, MMMM d')}</h2>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                              {groupedSchedules[date].map(schedule => (
-                                  <Card key={schedule.id} className="group">
-                                      <CardHeader>
-                                          <CardTitle className="text-base">{schedule.title}</CardTitle>
-                                          <CardDescription>{schedule.content_type || 'No type'}</CardDescription>
-                                      </CardHeader>
-                                      <CardContent>
-                                          <div className="text-sm">
-                                              <p><strong>Status:</strong> {getScheduleStatus(schedule)}</p>
-                                          </div>
-                                      </CardContent>
-                                  </Card>
-                              ))}
+                          <div className="border rounded-lg">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-1/2">Title</TableHead>
+                                  <TableHead>Content Type</TableHead>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead className="w-[5%] text-right"></TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {groupedSchedules[date].map(schedule => (
+                                    <TableRow key={schedule.id} className="group">
+                                      <TableCell className="font-medium">{schedule.title}</TableCell>
+                                      <TableCell>{schedule.content_type || 'N/A'}</TableCell>
+                                      <TableCell>{getScheduleStatus(schedule)}</TableCell>
+                                      <TableCell className="text-right">
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                  <MoreVertical className="h-4 w-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                              <DropdownMenuItem>Edit</DropdownMenuItem>
+                                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
                           </div>
                       </div>
                   ))
