@@ -183,21 +183,21 @@ export default function Header() {
   };
 
   if (!hasMounted) {
-    return <header className="bg-background border-b h-20 flex items-center p-4 md:p-6" />;
+    return <header className="bg-background h-20 flex items-center p-4 md:p-6" />;
   }
 
   const buttonContent = getButtonContent();
 
   if (isLoading) {
     return (
-      <header className="bg-background border-b p-4 md:p-6 h-20 flex items-center">
+      <header className="bg-background p-4 md:p-6 h-20 flex items-center">
         <Skeleton className="h-10 w-32 rounded-full" />
       </header>
     );
   }
 
   if (status === 'session-complete') {
-    return <header className="bg-background border-b h-20 flex items-center" />;
+    return <header className="bg-background h-20 flex items-center" />;
   }
 
   const headerHeight = isExpanded ? '5rem' : '10px';
@@ -210,7 +210,7 @@ export default function Header() {
         animate={{ height: headerHeight }}
         transition={{ duration: 0.5, ease: 'easeInOut' }}
         className={cn(
-          "border-b w-full flex items-center overflow-hidden transition-all duration-500 ease-in-out",
+          "w-full flex items-center overflow-hidden transition-all duration-500 ease-in-out",
           isRightSide ? "justify-end" : "justify-start",
           isExpanded && "backdrop-blur-md"
         )}
