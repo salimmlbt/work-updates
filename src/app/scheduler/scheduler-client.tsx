@@ -479,15 +479,15 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
         <main className="flex-1 overflow-y-auto">
           {selectedClientId ? (
-            <div className="border-b">
+            <div className="border-t border-b">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b-0">
-                    <TableHead>Schedule Date</TableHead>
-                    <TableHead>Schedule Detail</TableHead>
-                    <TableHead>Project</TableHead>
-                    <TableHead>Schedule Team</TableHead>
-                    <TableHead>Schedule Type</TableHead>
+                  <TableRow className="border-b-0 hover:bg-transparent">
+                    <TableHead className="border-r">Schedule Date</TableHead>
+                    <TableHead className="border-r">Schedule Detail</TableHead>
+                    <TableHead className="border-r">Project</TableHead>
+                    <TableHead className="border-r">Schedule Team</TableHead>
+                    <TableHead className="border-r">Schedule Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[5%] text-right"></TableHead>
                   </TableRow>
@@ -497,12 +497,12 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                     <>
                       {deletedSchedules.map(schedule => (
                         <TableRow key={schedule.id} className="group">
-                          <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                          <TableCell className="font-medium border-r">{schedule.title}</TableCell>
-                          <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
-                          <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
-                          <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
-                          <TableCell>Deleted</TableCell>
+                           <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                            <TableCell className="font-medium border-r">{schedule.title}</TableCell>
+                            <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
+                            <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
+                            <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
+                            <TableCell>Deleted</TableCell>
                           <TableCell className="text-right">
                             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
                               <Button variant="ghost" size="sm" onClick={() => handleRestore(schedule.id)}>
@@ -542,7 +542,19 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                             <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
                             <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
                             <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
-                            <TableCell>{getScheduleStatus(schedule)}</TableCell>
+                             <TableCell>
+                              {schedule.task ? (
+                                getScheduleStatus(schedule)
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleAssignTask(schedule.id)}
+                                >
+                                  Assign as task
+                                </Button>
+                              )}
+                            </TableCell>
                             <TableCell className="text-right">
                               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                 <DropdownMenu>
@@ -552,12 +564,6 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent>
-                                    <DropdownMenuItem
-                                      disabled={!!schedule.task}
-                                      onClick={() => handleAssignTask(schedule.id)}
-                                    >
-                                      Assign as Task
-                                    </DropdownMenuItem>
                                     {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
                                       <DropdownMenuItem onClick={() => setScheduleToReassign(schedule)}>
                                         <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
