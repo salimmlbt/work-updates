@@ -1253,11 +1253,10 @@ export async function addSchedule(formData: FormData): Promise<{ data?: ContentS
         title: formData.get('title') as string,
         content_type: formData.get('content_type') as string,
         scheduled_date: formData.get('scheduled_date') as string,
-        notes: formData.get('notes') as string,
     };
 
-    if (!rawData.client_id || !rawData.title || !rawData.scheduled_date) {
-        return { error: "Client, title, and scheduled date are required." };
+    if (!rawData.client_id || !rawData.title || !rawData.scheduled_date || !rawData.content_type) {
+        return { error: "Client, title, content type, and scheduled date are required." };
     }
 
     const { data, error } = await supabase

@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/card';
 import { getInitials, cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import type { Client, ContentSchedule, Task } from '@/lib/types';
+import type { Client, ContentSchedule, Task, Team } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { addSchedule } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +35,7 @@ type ScheduleWithTask = ContentSchedule & { task: Task | null };
 interface SchedulerClientProps {
   clients: Client[];
   initialSchedules: ScheduleWithTask[];
+  teams: Team[];
 }
 
 const getScheduleStatus = (schedule: ScheduleWithTask): string => {
@@ -58,23 +59,35 @@ const AddScheduleCard = ({
   clientId,
   onScheduleAdded,
   onCancel,
+  teams,
 }: {
   clientId: string;
   onScheduleAdded: (schedule: ContentSchedule) => void;
   onCancel: () => void;
+  teams: Team[];
 }) => {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [title, setTitle] = useState('');
+  const [teamId, setTeamId] = useState<string | null>(null);
   const [contentType, setContentType] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
-  const [notes, setNotes] = useState('');
+
+  const availableWorkTypes = useMemo(() => {
+    if (!teamId) return [];
+    const selectedTeam = teams.find(t => t.id === teamId);
+    return selectedTeam?.default_tasks || [];
+  }, [teamId, teams]);
+  
+  useEffect(() => {
+    setContentType('');
+  }, [teamId]);
 
   const handleSave = () => {
-    if (!title || !scheduledDate) {
+    if (!title || !scheduledDate || !teamId || !contentType) {
       toast({
         title: 'Missing Fields',
-        description: 'Title and Scheduled Date are required.',
+        description: 'Title, Date, Team, and Content Type are required.',
         variant: 'destructive',
       });
       return;
@@ -83,9 +96,8 @@ const AddScheduleCard = ({
       const formData = new FormData();
       formData.append('client_id', clientId);
       formData.append('title', title);
-      if (contentType) formData.append('content_type', contentType);
+      formData.append('content_type', contentType);
       formData.append('scheduled_date', format(scheduledDate, 'yyyy-MM-dd'));
-      if (notes) formData.append('notes', notes);
 
       const result = await addSchedule(formData);
 
@@ -116,7 +128,34 @@ const AddScheduleCard = ({
           <Input id="new-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Content Title" />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
+            <div className="space-y-2">
+                <Label htmlFor="team">Team</Label>
+                <Select onValueChange={setTeamId}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {teams.map(team => (
+                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="new-content-type">Content Type</Label>
+                <Select onValueChange={setContentType} value={contentType} disabled={!teamId}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {availableWorkTypes.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+        <div className="space-y-2">
             <Label htmlFor="new-date">Date</Label>
             <Popover>
               <PopoverTrigger asChild>
@@ -141,15 +180,6 @@ const AddScheduleCard = ({
               </PopoverContent>
             </Popover>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="new-content-type">Content Type</Label>
-            <Input id="new-content-type" value={contentType} onChange={(e) => setContentType(e.target.value)} placeholder="e.g., Blog Post" />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="new-notes">Notes</Label>
-          <Input id="new-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes" />
-        </div>
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
@@ -163,7 +193,7 @@ const AddScheduleCard = ({
 };
 
 
-export default function SchedulerClient({ clients, initialSchedules }: SchedulerClientProps) {
+export default function SchedulerClient({ clients, initialSchedules, teams }: SchedulerClientProps) {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(clients[0]?.id || null);
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAdding, setIsAdding] = useState(false);
@@ -203,7 +233,17 @@ export default function SchedulerClient({ clients, initialSchedules }: Scheduler
             <h1 className="text-xl font-bold">Content Scheduler</h1>
             <Select onValueChange={setSelectedClientId} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a client" />
+                {selectedClient ? (
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                        <AvatarImage src={selectedClient.avatar} />
+                        <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                    </Avatar>
+                    {selectedClient.name}
+                  </div>
+                ) : (
+                  <SelectValue placeholder="Select a client" />
+                )}
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -236,6 +276,7 @@ export default function SchedulerClient({ clients, initialSchedules }: Scheduler
                       clientId={selectedClientId} 
                       onScheduleAdded={handleScheduleAdded}
                       onCancel={() => setIsAdding(false)}
+                      teams={teams}
                     />
                   </div>
                 </div>
@@ -254,7 +295,6 @@ export default function SchedulerClient({ clients, initialSchedules }: Scheduler
                                       <CardContent>
                                           <div className="text-sm">
                                               <p><strong>Status:</strong> {getScheduleStatus(schedule)}</p>
-                                              {schedule.notes && <p className="text-muted-foreground mt-2">{schedule.notes}</p>}
                                           </div>
                                       </CardContent>
                                   </Card>
