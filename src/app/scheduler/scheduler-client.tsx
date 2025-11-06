@@ -16,14 +16,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw } from 'lucide-react';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -47,7 +39,7 @@ import { ReassignTaskDialog } from '@/app/tasks/reassign-task-dialog';
 import { EditScheduleDialog } from './edit-schedule-dialog';
 
 
-const AddScheduleCard = ({
+const AddScheduleRow = ({
   clientId,
   onScheduleAdded,
   onCancel,
@@ -67,6 +59,12 @@ const AddScheduleCard = ({
   const [projectId, setProjectId] = useState<string | null>(null);
   const [contentType, setContentType] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
+  
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    titleInputRef.current?.focus();
+  }, []);
 
   const availableWorkTypes = useMemo(() => {
     if (!teamId) return [];
@@ -125,93 +123,73 @@ const AddScheduleCard = ({
   };
 
   return (
-    <Card className="bg-muted/50">
-      <CardHeader>
-        <CardTitle className="text-base">New Schedule</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="new-title">Title</Label>
-          <Input id="new-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Content Title" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <Label htmlFor="team">Team</Label>
-                <Select onValueChange={setTeamId}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {teams.map(team => (
-                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="new-content-type">Content Type</Label>
-                <Select onValueChange={setContentType} value={contentType} disabled={!teamId}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availableWorkTypes.map(type => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-         <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <Label htmlFor="project">Project</Label>
-                 <Select onValueChange={setProjectId} value={projectId || 'no-project'}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="no-project">No project</SelectItem>
-                        {clientProjects.map(project => (
-                            <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="new-date">Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={'outline'}
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !scheduledDate && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {scheduledDate ? format(scheduledDate, 'PPP') : <span>Pick a date</span>}
+     <TableRow className="bg-muted/50 hover:bg-muted/50">
+        <TableCell>
+             <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-start font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {scheduledDate ? format(scheduledDate, 'MMM d, yyyy') : 'Pick a date'}
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <CalendarComponent
-                      mode="single"
-                      selected={scheduledDate}
-                      onSelect={setScheduledDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-end gap-2">
-        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button onClick={handleSave} disabled={isPending}>
-          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save
-        </Button>
-      </CardFooter>
-    </Card>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <CalendarComponent mode="single" selected={scheduledDate} onSelect={setScheduledDate} initialFocus />
+                </PopoverContent>
+            </Popover>
+        </TableCell>
+        <TableCell>
+            <Input ref={titleInputRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Content Title" />
+        </TableCell>
+         <TableCell>
+             <Select onValueChange={setProjectId} value={projectId || 'no-project'}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="no-project">No project</SelectItem>
+                    {clientProjects.map(project => (
+                        <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </TableCell>
+        <TableCell>
+             <Select onValueChange={setTeamId}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                    {teams.map(team => (
+                        <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </TableCell>
+        <TableCell>
+            <Select onValueChange={setContentType} value={contentType} disabled={!teamId}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                    {availableWorkTypes.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </TableCell>
+        <TableCell>
+           <span className="text-muted-foreground italic">Planned</span>
+        </TableCell>
+        <TableCell className="text-right">
+           <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={onCancel} disabled={isPending}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isPending}>
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </div>
+        </TableCell>
+     </TableRow>
   );
 };
 
@@ -323,7 +301,7 @@ const AssignTaskRow = ({
 export default function SchedulerClient({ clients, initialSchedules, teams, profiles, projects }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[], projects: Project[] }) {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(clients[0]?.id || null);
   const [schedules, setSchedules] = useState(initialSchedules);
-  const [isAdding, setIsAdding] = useState(false);
+  const [isAddingSchedule, setIsAddingSchedule] = useState(false);
   const { toast } = useToast();
   const [scheduleToReassign, setScheduleToReassign] = useState<ScheduleWithDetails | null>(null);
   const [assigningScheduleId, setAssigningScheduleId] = useState<string | null>(null);
@@ -378,7 +356,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
   const handleScheduleAdded = (newSchedule: ScheduleWithDetails) => {
     setSchedules(prev => [newSchedule, ...prev]);
-    setIsAdding(false);
+    setIsAddingSchedule(false);
   }
   
   const handleScheduleUpdated = (updatedSchedule: ScheduleWithDetails) => {
@@ -480,7 +458,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
               <Button onClick={() => setShowBin(false)} variant="outline">Back to Schedules</Button>
             ) : (
               <>
-                <Button onClick={() => setIsAdding(true)} disabled={!selectedClientId}>
+                <Button onClick={() => setIsAddingSchedule(true)} disabled={!selectedClientId}>
                   <Plus className="mr-2 h-4 w-4" /> Add Schedule
                 </Button>
                 <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(true)}>
@@ -523,18 +501,8 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                         </TableBody>
                     </Table>
                  </div>
-            ) : isAdding ? (
-              <div className="max-w-2xl mx-auto">
-                <AddScheduleCard 
-                  clientId={selectedClientId} 
-                  onScheduleAdded={handleScheduleAdded}
-                  onCancel={() => setIsAdding(false)}
-                  teams={teams}
-                  projects={projects}
-                />
-              </div>
             ) : (
-              activeSchedules.length > 0 ? (
+              activeSchedules.length > 0 || isAddingSchedule ? (
                 <div className="border rounded-lg">
                   <Table>
                     <TableHeader>
@@ -549,6 +517,15 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+                       {isAddingSchedule && (
+                            <AddScheduleRow
+                                clientId={selectedClientId}
+                                onScheduleAdded={handleScheduleAdded}
+                                onCancel={() => setIsAddingSchedule(false)}
+                                teams={teams}
+                                projects={projects}
+                            />
+                        )}
                       {activeSchedules.map(schedule => (
                         <React.Fragment key={schedule.id}>
                           <TableRow className="group">
