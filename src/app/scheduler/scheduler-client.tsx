@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, X, MoreVertical } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -25,37 +25,13 @@ import {
 } from '@/components/ui/card';
 import { getInitials, cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import type { Client, ContentSchedule, Task, Team } from '@/lib/types';
+import type { Client, Team } from '@/lib/types';
+import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { addSchedule } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-
-type ScheduleWithTask = ContentSchedule & { task: Task | null };
-
-interface SchedulerClientProps {
-  clients: Client[];
-  initialSchedules: ScheduleWithTask[];
-  teams: Team[];
-}
-
-const getScheduleStatus = (schedule: ScheduleWithTask): string => {
-  if (!schedule.task) return 'Planned';
-  
-  const task = schedule.task;
-  // This logic now matches the updated flow
-  if (task.parent_task_id) { // It's a re-assigned posting task
-    return task.posting_status || 'Posting';
-  }
-  
-  switch (task.status) {
-    case 'todo': return 'Assigned';
-    case 'inprogress': return 'On Progress';
-    case 'done': return 'Created';
-    default: return 'Planned';
-  }
-};
 
 const AddScheduleCard = ({
   clientId,
@@ -64,7 +40,7 @@ const AddScheduleCard = ({
   teams,
 }: {
   clientId: string;
-  onScheduleAdded: (schedule: ContentSchedule) => void;
+  onScheduleAdded: (schedule: ScheduleWithDetails) => void;
   onCancel: () => void;
   teams: Team[];
 }) => {
@@ -89,7 +65,7 @@ const AddScheduleCard = ({
     if (!title || !scheduledDate || !teamId || !contentType) {
       toast({
         title: 'Missing Fields',
-        description: 'Title, Date, Team, and Content Type are required.',
+        description: 'All fields are required to create a schedule.',
         variant: 'destructive',
       });
       return;
@@ -100,6 +76,7 @@ const AddScheduleCard = ({
       formData.append('title', title);
       formData.append('content_type', contentType);
       formData.append('scheduled_date', format(scheduledDate, 'yyyy-MM-dd'));
+      formData.append('team_id', teamId);
 
       const result = await addSchedule(formData);
 
@@ -114,7 +91,12 @@ const AddScheduleCard = ({
           title: 'Schedule Added',
           description: 'The new schedule has been added successfully.',
         });
-        onScheduleAdded(result.data);
+        const newScheduleWithDetails: ScheduleWithDetails = {
+          ...result.data,
+          task: null,
+          teams: teams.find(t => t.id === teamId) || null,
+        }
+        onScheduleAdded(newScheduleWithDetails);
       }
     });
   };
@@ -194,8 +176,7 @@ const AddScheduleCard = ({
   );
 };
 
-
-export default function SchedulerClient({ clients, initialSchedules, teams }: SchedulerClientProps) {
+export default function SchedulerClient({ clients, initialSchedules, teams }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[] }) {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(clients[0]?.id || null);
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAdding, setIsAdding] = useState(false);
@@ -206,141 +187,128 @@ export default function SchedulerClient({ clients, initialSchedules, teams }: Sc
 
   const filteredSchedules = useMemo(() => {
     if (!selectedClientId) return [];
-    return schedules.filter(s => s.client_id === selectedClientId);
+    return schedules
+      .filter(s => s.client_id === selectedClientId)
+      .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
   }, [selectedClientId, schedules]);
-  
-  const groupedSchedules = useMemo(() => {
-    return filteredSchedules.reduce((acc, schedule) => {
-      const date = format(parseISO(schedule.scheduled_date), 'yyyy-MM-dd');
-      if (!acc[date]) {
-        acc[date] = [];
-      }
-      acc[date].push(schedule);
-      return acc;
-    }, {} as Record<string, ScheduleWithTask[]>);
-  }, [filteredSchedules]);
 
-  const sortedDates = Object.keys(groupedSchedules).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const getScheduleStatus = (schedule: ScheduleWithDetails): string => {
+    if (!schedule.task) return 'Planned';
+    const task = schedule.task;
+    if (task.parent_task_id) {
+      return task.posting_status || 'Posting';
+    }
+    switch (task.status) {
+      case 'todo': return 'Assigned';
+      case 'inprogress': return 'On Progress';
+      case 'done': return 'Created';
+      default: return 'Planned';
+    }
+  };
 
-  const handleScheduleAdded = (newSchedule: ContentSchedule) => {
-    setSchedules(prev => [{ ...newSchedule, task: null }, ...prev]);
+  const handleScheduleAdded = (newSchedule: ScheduleWithDetails) => {
+    setSchedules(prev => [newSchedule, ...prev]);
     setIsAdding(false);
   }
 
   return (
-    <>
-      <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
-        <header className="flex items-center justify-between pb-4 mb-4 border-b">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold">Content Scheduler</h1>
-            <Select onValueChange={setSelectedClientId} value={selectedClientId || undefined}>
-              <SelectTrigger className="w-[280px]">
-                {selectedClient ? (
+    <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
+      <header className="flex items-center justify-between pb-4 mb-4 border-b">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold">Content Scheduler</h1>
+          <Select onValueChange={setSelectedClientId} value={selectedClientId || undefined}>
+            <SelectTrigger className="w-[280px]">
+              <div className="flex items-center gap-2">
+                {selectedClient && <Avatar className="h-6 w-6"><AvatarImage src={selectedClient.avatar} /><AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback></Avatar>}
+                <SelectValue placeholder="Select a client" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map(client => (
+                <SelectItem key={client.id} value={client.id}>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
-                        <AvatarImage src={selectedClient.avatar} />
-                        <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                        <AvatarImage src={client.avatar} />
+                        <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
                     </Avatar>
-                    {selectedClient.name}
+                    {client.name}
                   </div>
-                ) : (
-                  <SelectValue placeholder="Select a client" />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map(client => (
-                  <SelectItem key={client.id} value={client.id}>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                          <AvatarImage src={client.avatar} />
-                          <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
-                      </Avatar>
-                      {client.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button onClick={() => setIsAdding(true)} disabled={!selectedClientId}>
-            <Plus className="mr-2 h-4 w-4" /> Add Schedule
-          </Button>
-        </header>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={() => setIsAdding(true)} disabled={!selectedClientId}>
+          <Plus className="mr-2 h-4 w-4" /> Add Schedule
+        </Button>
+      </header>
 
-        <main className="flex-1 overflow-y-auto">
-          {selectedClientId ? (
-            <div className="space-y-8">
-              {isAdding && (
-                <div>
-                  <h2 className="font-semibold text-lg mb-4">New Schedule</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <AddScheduleCard 
-                      clientId={selectedClientId} 
-                      onScheduleAdded={handleScheduleAdded}
-                      onCancel={() => setIsAdding(false)}
-                      teams={teams}
-                    />
-                  </div>
-                </div>
-              )}
-              {sortedDates.length > 0 ? (
-                  sortedDates.map(date => (
-                      <div key={date}>
-                          <h2 className="font-semibold text-lg mb-4">{format(parseISO(date), 'EEEE, MMMM d')}</h2>
-                          <div className="border rounded-lg">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-1/2">Title</TableHead>
-                                  <TableHead>Content Type</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="w-[5%] text-right"></TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {groupedSchedules[date].map(schedule => (
-                                    <TableRow key={schedule.id} className="group">
-                                      <TableCell className="font-medium">{schedule.title}</TableCell>
-                                      <TableCell>{schedule.content_type || 'N/A'}</TableCell>
-                                      <TableCell>{getScheduleStatus(schedule)}</TableCell>
-                                      <TableCell className="text-right">
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                  <MoreVertical className="h-4 w-4" />
-                                              </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                          </DropdownMenu>
-                                        </div>
-                                      </TableCell>
-                                    </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                      </div>
-                  ))
-              ) : (
-                !isAdding && (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                      <p className="text-lg font-medium">No schedules for {selectedClient?.name}.</p>
-                      <p>Click "Add Schedule" to get started.</p>
-                  </div>
-                )
-              )}
+      <main className="flex-1 overflow-y-auto">
+        {selectedClientId ? (
+          isAdding ? (
+            <div className="max-w-2xl mx-auto">
+              <AddScheduleCard 
+                clientId={selectedClientId} 
+                onScheduleAdded={handleScheduleAdded}
+                onCancel={() => setIsAdding(false)}
+                teams={teams}
+              />
             </div>
           ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                  <p className="text-lg font-medium">Please select a client to view their schedule.</p>
+            filteredSchedules.length > 0 ? (
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Schedule Date</TableHead>
+                      <TableHead>Schedule Detail</TableHead>
+                      <TableHead>Schedule Team</TableHead>
+                      <TableHead>Schedule Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[5%] text-right"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSchedules.map(schedule => (
+                        <TableRow key={schedule.id} className="group">
+                          <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                          <TableCell className="font-medium">{schedule.title}</TableCell>
+                          <TableCell>{schedule.teams?.name || 'N/A'}</TableCell>
+                          <TableCell>{schedule.content_type || 'N/A'}</TableCell>
+                          <TableCell>{getScheduleStatus(schedule)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-          )}
-        </main>
-      </div>
-    </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                  <p className="text-lg font-medium">No schedules for {selectedClient?.name}.</p>
+                  <p>Click "Add Schedule" to get started.</p>
+              </div>
+            )
+          )
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+              <p className="text-lg font-medium">Please select a client to view their schedule.</p>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

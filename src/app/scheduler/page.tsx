@@ -6,7 +6,10 @@ import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export type ScheduleWithTask = ContentSchedule & { task: Task | null };
+export type ScheduleWithDetails = ContentSchedule & {
+  task: Task | null;
+  teams: Team | null;
+};
 
 export default async function SchedulerPage() {
   const supabase = await createServerClient();
@@ -23,7 +26,7 @@ export default async function SchedulerPage() {
     teamsRes,
   ] = await Promise.all([
     supabase.from('clients').select('*').order('name'),
-    supabase.from('content_schedules').select('*').eq('is_deleted', false),
+    supabase.from('content_schedules').select('*, teams(*)').eq('is_deleted', false),
     supabase.from('tasks').select('*').eq('is_deleted', false).not('schedule_id', 'is', null),
     supabase.from('teams').select('*')
   ]);
@@ -40,15 +43,15 @@ export default async function SchedulerPage() {
 
   const tasksByScheduleId = new Map(tasks?.map(task => [task.schedule_id, task]));
 
-  const schedulesWithTasks: ScheduleWithTask[] = (schedules || []).map(schedule => ({
+  const schedulesWithDetails: ScheduleWithDetails[] = (schedules as any[] || []).map(schedule => ({
     ...schedule,
-    task: tasksByScheduleId.get(schedule.id) || null
+    task: tasksByScheduleId.get(schedule.id) || null,
   }));
 
   return (
     <SchedulerClient
       clients={clients as Client[] ?? []}
-      initialSchedules={schedulesWithTasks}
+      initialSchedules={schedulesWithDetails}
       teams={teams as Team[] ?? []}
     />
   );

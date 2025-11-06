@@ -115,6 +115,7 @@ export type Database = {
           notes: string | null
           scheduled_date: string
           status: string
+          team_id: string | null
           title: string
         }
         Insert: {
@@ -126,6 +127,7 @@ export type Database = {
           notes?: string | null
           scheduled_date: string
           status?: string
+          team_id?: string | null
           title: string
         }
         Update: {
@@ -137,6 +139,7 @@ export type Database = {
           notes?: string | null
           scheduled_date?: string
           status?: string
+          team_id?: string | null
           title?: string
         }
         Relationships: [
@@ -145,6 +148,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_schedules_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
