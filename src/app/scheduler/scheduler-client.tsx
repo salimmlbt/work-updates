@@ -315,10 +315,10 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   
   useEffect(() => {
     // Set initial client ID on the client to avoid hydration mismatch
-    if (clients.length > 0) {
+    if (!selectedClientId && clients.length > 0) {
       setSelectedClientId(clients[0].id);
     }
-  }, []);
+  }, [clients, selectedClientId]);
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
@@ -432,9 +432,9 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         <header className="flex items-center justify-between pb-4 mb-4 border-b">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold">Content Scheduler</h1>
-            <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
+             <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                 <SelectValue placeholder="Select a client" />
+                <SelectValue placeholder="Select a client" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -503,7 +503,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                 <div className="border rounded-lg">
                   <Table>
                     <TableHeader>
-                      <TableRow>
+                      <TableRow className="border-t-0">
                         <TableHead>Schedule Date</TableHead>
                         <TableHead>Schedule Detail</TableHead>
                         <TableHead>Project</TableHead>
