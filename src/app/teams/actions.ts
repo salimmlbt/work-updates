@@ -484,7 +484,8 @@ export async function createTask(taskData: {
     type: string | null;
     attachments?: Attachment[] | null;
     parent_task_id?: string | null;
-    status: 'todo' | 'inprogress' | 'under-review' | 'done';
+    status?: Task['status'];
+    schedule_id?: string | null;
 }) {
     const supabase = await createServerClient();
     const { data, error } = await supabase
@@ -493,7 +494,7 @@ export async function createTask(taskData: {
             ...taskData,
             is_deleted: false,
         })
-        .select()
+        .select('*, profiles(*), projects(*), clients(*)')
         .single();
     
     if (error) {
@@ -501,5 +502,6 @@ export async function createTask(taskData: {
     }
     
     revalidatePath('/tasks');
+    revalidatePath('/scheduler');
     return { data: data as Task };
 }

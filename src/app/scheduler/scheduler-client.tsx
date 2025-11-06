@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -25,13 +25,15 @@ import {
 } from '@/components/ui/card';
 import { getInitials, cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import type { Client, Team } from '@/lib/types';
+import type { Client, Team, Profile, Task, TaskWithDetails } from '@/lib/types';
 import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { addSchedule, createTaskFromSchedule } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ReassignTaskDialog } from '@/app/tasks/reassign-task-dialog';
+
 
 const AddScheduleCard = ({
   clientId,
@@ -176,12 +178,13 @@ const AddScheduleCard = ({
   );
 };
 
-export default function SchedulerClient({ clients, initialSchedules, teams }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[] }) {
+export default function SchedulerClient({ clients, initialSchedules, teams, profiles }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[] }) {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(clients[0]?.id || null);
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAdding, setIsAdding] = useState(false);
   const [isAssigning, startAssignTransition] = useTransition();
   const { toast } = useToast();
+  const [scheduleToReassign, setScheduleToReassign] = useState<ScheduleWithDetails | null>(null);
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
@@ -197,16 +200,25 @@ export default function SchedulerClient({ clients, initialSchedules, teams }: { 
   const getScheduleStatus = (schedule: ScheduleWithDetails): string => {
     if (!schedule.task) return 'Planned';
     const task = schedule.task;
+    
     if (task.parent_task_id) {
-      return task.posting_status || 'Posting';
+        return task.posting_status || 'Posting';
     }
-    switch (task.status) {
-      case 'todo': return 'Assigned';
-      case 'inprogress': return 'On Progress';
-      case 'done': return 'Created';
-      default: return 'Planned';
-    }
-  };
+    
+    // This logic needs to align with what's in tasks-client.tsx statusLabels
+    const statusMap: Record<Task['status'], string> = {
+        'todo': 'Assigned',
+        'inprogress': 'In Progress',
+        'done': 'Created',
+        'under-review': 'Under Review',
+        'review': 'Review',
+        'corrections': 'Corrections',
+        'recreate': 'Recreate',
+        'approved': 'Approved',
+    };
+    return statusMap[task.status] || 'Planned';
+};
+
 
   const handleScheduleAdded = (newSchedule: ScheduleWithDetails) => {
     setSchedules(prev => [newSchedule, ...prev]);
@@ -225,108 +237,139 @@ export default function SchedulerClient({ clients, initialSchedules, teams }: { 
     });
   }
 
-  return (
-    <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
-      <header className="flex items-center justify-between pb-4 mb-4 border-b">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold">Content Scheduler</h1>
-          <Select onValueChange={setSelectedClientId} value={selectedClientId || undefined}>
-            <SelectTrigger className="w-[280px]">
-               <SelectValue placeholder="Select a client" />
-            </SelectTrigger>
-            <SelectContent>
-              {clients.map(client => (
-                <SelectItem key={client.id} value={client.id}>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                        <AvatarImage src={client.avatar} />
-                        <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
-                    </Avatar>
-                    {client.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={() => setIsAdding(true)} disabled={!selectedClientId}>
-          <Plus className="mr-2 h-4 w-4" /> Add Schedule
-        </Button>
-      </header>
+   const handleTaskCreated = (newTask: Task) => {
+        // This is called after re-assignment. We need to find the parent schedule and update its task.
+        const parentSchedule = schedules.find(s => s.task?.id === newTask.parent_task_id);
+        if (parentSchedule) {
+            setSchedules(prev => prev.map(s => s.id === parentSchedule.id ? {...s, task: newTask as TaskWithDetails['task'] } : s));
+        }
+    };
 
-      <main className="flex-1 overflow-y-auto">
-        {selectedClientId ? (
-          isAdding ? (
-            <div className="max-w-2xl mx-auto">
-              <AddScheduleCard 
-                clientId={selectedClientId} 
-                onScheduleAdded={handleScheduleAdded}
-                onCancel={() => setIsAdding(false)}
-                teams={teams}
-              />
-            </div>
-          ) : (
-            filteredSchedules.length > 0 ? (
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Schedule Date</TableHead>
-                      <TableHead>Schedule Detail</TableHead>
-                      <TableHead>Schedule Team</TableHead>
-                      <TableHead>Schedule Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[5%] text-right"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSchedules.map(schedule => (
-                        <TableRow key={schedule.id} className="group">
-                          <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                          <TableCell className="font-medium">{schedule.title}</TableCell>
-                          <TableCell>{schedule.teams?.name || 'N/A'}</TableCell>
-                          <TableCell>{schedule.content_type || 'N/A'}</TableCell>
-                          <TableCell>{getScheduleStatus(schedule)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem 
-                                    disabled={!!schedule.task || isAssigning}
-                                    onClick={() => handleAssignTask(schedule)}
-                                  >
-                                    {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Assign as Task
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+
+  return (
+    <>
+      <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
+        <header className="flex items-center justify-between pb-4 mb-4 border-b">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold">Content Scheduler</h1>
+            <Select onValueChange={setSelectedClientId} value={selectedClientId || undefined}>
+              <SelectTrigger className="w-[280px]">
+                <div className="flex items-center gap-2">
+                  {selectedClient && <Avatar className="h-6 w-6">
+                      <AvatarImage src={selectedClient.avatar} />
+                      <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                  </Avatar>}
+                  <SelectValue placeholder="Select a client" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map(client => (
+                  <SelectItem key={client.id} value={client.id}>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                          <AvatarImage src={client.avatar} />
+                          <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
+                      </Avatar>
+                      {client.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={() => setIsAdding(true)} disabled={!selectedClientId}>
+            <Plus className="mr-2 h-4 w-4" /> Add Schedule
+          </Button>
+        </header>
+
+        <main className="flex-1 overflow-y-auto">
+          {selectedClientId ? (
+            isAdding ? (
+              <div className="max-w-2xl mx-auto">
+                <AddScheduleCard 
+                  clientId={selectedClientId} 
+                  onScheduleAdded={handleScheduleAdded}
+                  onCancel={() => setIsAdding(false)}
+                  teams={teams}
+                />
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                  <p className="text-lg font-medium">No schedules for {selectedClient?.name}.</p>
-                  <p>Click "Add Schedule" to get started.</p>
-              </div>
+              filteredSchedules.length > 0 ? (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Schedule Date</TableHead>
+                        <TableHead>Schedule Detail</TableHead>
+                        <TableHead>Schedule Team</TableHead>
+                        <TableHead>Schedule Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-[5%] text-right"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSchedules.map(schedule => (
+                          <TableRow key={schedule.id} className="group">
+                            <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                            <TableCell className="font-medium">{schedule.title}</TableCell>
+                            <TableCell>{schedule.teams?.name || 'N/A'}</TableCell>
+                            <TableCell>{schedule.content_type || 'N/A'}</TableCell>
+                            <TableCell>{getScheduleStatus(schedule)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem 
+                                      disabled={!!schedule.task || isAssigning}
+                                      onClick={() => handleAssignTask(schedule)}
+                                    >
+                                      {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                      Assign as Task
+                                    </DropdownMenuItem>
+                                     {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
+                                        <DropdownMenuItem onClick={() => setScheduleToReassign(schedule)}>
+                                            <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
+                                        </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                    <p className="text-lg font-medium">No schedules for {selectedClient?.name}.</p>
+                    <p>Click "Add Schedule" to get started.</p>
+                </div>
+              )
             )
-          )
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-              <p className="text-lg font-medium">Please select a client to view their schedule.</p>
-          </div>
-        )}
-      </main>
-    </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                <p className="text-lg font-medium">Please select a client to view their schedule.</p>
+            </div>
+          )}
+        </main>
+      </div>
+      {scheduleToReassign && scheduleToReassign.task && (
+          <ReassignTaskDialog
+              isOpen={!!scheduleToReassign}
+              setIsOpen={() => setScheduleToReassign(null)}
+              task={scheduleToReassign.task as TaskWithDetails}
+              profiles={profiles}
+              onTaskCreated={handleTaskCreated}
+          />
+      )}
+    </>
   );
 }

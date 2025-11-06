@@ -1,7 +1,7 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import SchedulerClient from './scheduler-client';
-import type { Client, ContentSchedule, Task, Team } from '@/lib/types';
+import type { Client, ContentSchedule, Task, Team, Profile } from '@/lib/types';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -24,20 +24,23 @@ export default async function SchedulerPage() {
     schedulesRes,
     tasksRes,
     teamsRes,
+    profilesRes,
   ] = await Promise.all([
     supabase.from('clients').select('*').order('name'),
     supabase.from('content_schedules').select('*, teams(*)').eq('is_deleted', false),
-    supabase.from('tasks').select('*').eq('is_deleted', false).not('schedule_id', 'is', null),
-    supabase.from('teams').select('*')
+    supabase.from('tasks').select('*, profiles(*), projects(*), clients(*)').eq('is_deleted', false).not('schedule_id', 'is', null),
+    supabase.from('teams').select('*'),
+    supabase.from('profiles').select('*'),
   ]);
 
   const { data: clients, error: clientsError } = clientsRes;
   const { data: schedules, error: schedulesError } = schedulesRes;
   const { data: tasks, error: tasksError } = tasksRes;
   const { data: teams, error: teamsError } = teamsRes;
+  const { data: profiles, error: profilesError } = profilesRes;
 
-  if (clientsError || schedulesError || tasksError || teamsError) {
-    console.error({ clientsError, schedulesError, tasksError, teamsError });
+  if (clientsError || schedulesError || tasksError || teamsError || profilesError) {
+    console.error({ clientsError, schedulesError, tasksError, teamsError, profilesError });
     // Handle error display appropriately
   }
 
@@ -53,6 +56,7 @@ export default async function SchedulerPage() {
       clients={clients as Client[] ?? []}
       initialSchedules={schedulesWithDetails}
       teams={teams as Team[] ?? []}
+      profiles={profiles as Profile[] ?? []}
     />
   );
 }
