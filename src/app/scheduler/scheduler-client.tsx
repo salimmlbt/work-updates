@@ -210,8 +210,8 @@ const AssignTaskRow = ({
   const { toast } = useToast();
 
   const teamMembers = useMemo(() => {
-    if (!schedule.team_id) return [];
-    return profiles.filter(p => p.teams.some(t => t.teams?.id === schedule.team_id));
+    if (!schedule.team_id || !profiles) return [];
+    return profiles.filter(p => p.teams && p.teams.some(t => t.teams?.id === schedule.team_id));
   }, [profiles, schedule.team_id]);
 
   const handleSave = async () => {
@@ -318,7 +318,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     if (clients.length > 0) {
       setSelectedClientId(clients[0].id);
     }
-  }, [clients]);
+  }, []);
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
@@ -434,7 +434,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
             <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a client" />
+                 <SelectValue placeholder="Select a client" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -500,7 +500,6 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                     </Table>
                  </div>
             ) : (
-              activeSchedules.length > 0 || isAddingSchedule ? (
                 <div className="border rounded-lg">
                   <Table>
                     <TableHeader>
@@ -574,15 +573,16 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                           )}
                         </React.Fragment>
                       ))}
+                      {(activeSchedules.length === 0 && !isAddingSchedule) && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                              No schedules for {selectedClient?.name}. Click "Add Schedule" to get started.
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                    <p className="text-lg font-medium">No schedules for {selectedClient?.name}.</p>
-                    <p>Click "Add Schedule" to get started.</p>
-                </div>
-              )
             )
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
