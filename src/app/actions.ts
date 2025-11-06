@@ -1278,3 +1278,54 @@ export async function addSchedule(formData: FormData): Promise<{ data?: ContentS
     revalidatePath('/scheduler');
     return { data: data as ContentSchedule };
 }
+
+export async function createTaskFromSchedule(schedule: ContentSchedule): Promise<{ data?: Task, error?: string }> {
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: "You must be logged in to assign tasks." };
+    }
+
+    if (!schedule.team_id) {
+        return { error: "Cannot assign task: schedule is not associated with a team." };
+    }
+
+    // Find the first member of the team to assign the task to.
+    // In a real-world scenario, this logic might be more complex (e.g., round-robin, load balancing, etc.)
+    const { data: teamMembers, error: teamMembersError } = await supabase
+        .from('profile_teams')
+        .select('profile_id')
+        .eq('team_id', schedule.team_id)
+        .limit(1);
+
+    if (teamMembersError || !teamMembers || teamMembers.length === 0) {
+        return { error: `No members found for team to assign the task. Error: ${teamMembersError?.message}` };
+    }
+    
+    const assigneeId = teamMembers[0].profile_id;
+
+    const taskData = {
+        description: schedule.title,
+        client_id: schedule.client_id,
+        deadline: schedule.scheduled_date,
+        type: schedule.content_type,
+        schedule_id: schedule.id,
+        assignee_id: assigneeId,
+        status: 'todo' as const,
+    };
+
+    const { data: newTask, error: createTaskError } = await supabase
+        .from('tasks')
+        .insert(taskData)
+        .select()
+        .single();
+    
+    if (createTaskError) {
+        console.error('Error creating task from schedule:', createTaskError);
+        return { error: createTaskError.message };
+    }
+
+    // No need to revalidate here, as the client-side will handle the optimistic update
+    return { data: newTask as Task };
+}

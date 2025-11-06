@@ -28,7 +28,7 @@ import { format, parseISO } from 'date-fns';
 import type { Client, Team } from '@/lib/types';
 import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { addSchedule } from '@/app/actions';
+import { addSchedule, createTaskFromSchedule } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -180,6 +180,8 @@ export default function SchedulerClient({ clients, initialSchedules, teams }: { 
   const [selectedClientId, setSelectedClientId] = useState<string | null>(clients[0]?.id || null);
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAdding, setIsAdding] = useState(false);
+  const [isAssigning, startAssignTransition] = useTransition();
+  const { toast } = useToast();
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
@@ -211,6 +213,18 @@ export default function SchedulerClient({ clients, initialSchedules, teams }: { 
     setIsAdding(false);
   }
 
+  const handleAssignTask = (schedule: ScheduleWithDetails) => {
+    startAssignTransition(async () => {
+      const { error, data } = await createTaskFromSchedule(schedule);
+      if (error) {
+        toast({ title: "Error assigning task", description: error, variant: "destructive" });
+      } else if (data) {
+        toast({ title: "Task Assigned", description: "A new task has been created from this schedule."});
+        setSchedules(prev => prev.map(s => s.id === schedule.id ? {...s, task: data} : s));
+      }
+    });
+  }
+
   return (
     <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
@@ -218,10 +232,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams }: { 
           <h1 className="text-xl font-bold">Content Scheduler</h1>
           <Select onValueChange={setSelectedClientId} value={selectedClientId || undefined}>
             <SelectTrigger className="w-[280px]">
-              <div className="flex items-center gap-2">
-                {selectedClient && <Avatar className="h-6 w-6"><AvatarImage src={selectedClient.avatar} /><AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback></Avatar>}
-                <SelectValue placeholder="Select a client" />
-              </div>
+               <SelectValue placeholder="Select a client" />
             </SelectTrigger>
             <SelectContent>
               {clients.map(client => (
@@ -285,6 +296,13 @@ export default function SchedulerClient({ clients, initialSchedules, teams }: { 
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
+                                  <DropdownMenuItem 
+                                    disabled={!!schedule.task || isAssigning}
+                                    onClick={() => handleAssignTask(schedule)}
+                                  >
+                                    {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Assign as Task
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem>Edit</DropdownMenuItem>
                                   <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                                 </DropdownMenuContent>
