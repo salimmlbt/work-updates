@@ -315,10 +315,10 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   
   useEffect(() => {
     // Set initial client ID on the client to avoid hydration mismatch
-    if (clients.length > 0) {
+    if (clients.length > 0 && !selectedClientId) {
       setSelectedClientId(clients[0].id);
     }
-  }, []);
+  }, [clients, selectedClientId]);
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
@@ -434,7 +434,17 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
             <h1 className="text-xl font-bold">Content Scheduler</h1>
              <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a client" />
+                <SelectValue placeholder="Select a client">
+                  {selectedClient && (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                          <AvatarImage src={selectedClient.avatar} />
+                          <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                      </Avatar>
+                      {selectedClient.name}
+                    </div>
+                  )}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -473,9 +483,9 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                  <div className="border-y">
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead className="border-r">Schedule Date</TableHead>
-                                <TableHead className="border-r">Schedule Detail</TableHead>
+                            <TableRow className="border-t-0">
+                                <TableHead>Schedule Date</TableHead>
+                                <TableHead>Schedule Detail</TableHead>
                                 <TableHead className="w-[20%] text-right"></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -511,12 +521,12 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                   <Table>
                     <TableHeader>
                       <TableRow className="border-t-0">
-                        <TableHead className="border-r">Schedule Date</TableHead>
-                        <TableHead className="border-r">Schedule Detail</TableHead>
-                        <TableHead className="border-r">Project</TableHead>
-                        <TableHead className="border-r">Schedule Team</TableHead>
-                        <TableHead className="border-r">Schedule Type</TableHead>
-                        <TableHead className="border-r">Status</TableHead>
+                        <TableHead>Schedule Date</TableHead>
+                        <TableHead>Schedule Detail</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead>Schedule Team</TableHead>
+                        <TableHead>Schedule Type</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead className="w-[5%] text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
