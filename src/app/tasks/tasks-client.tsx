@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -435,7 +436,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; }) => {
+const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
@@ -517,6 +518,8 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
   
   const statusOptions = task.status === 'review' ? reviewStatusOptions : mainStatusOptions;
 
+  const isStatusChangeDisabled = task.status === 'review' && !isReviewer;
+
   return (
     <>
       <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[250px] cursor-pointer">
@@ -578,8 +581,8 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
       </td>
       <td className="p-0">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="group w-full h-full flex items-center justify-start px-4 py-3 cursor-pointer">
+          <DropdownMenuTrigger asChild disabled={isStatusChangeDisabled}>
+            <div className={cn("group w-full h-full flex items-center justify-start px-4 py-3", !isStatusChangeDisabled && "cursor-pointer")}>
               <div className="flex items-center gap-2 whitespace-nowrap">
                 {currentStatusIcon}
                 <span>{currentStatusLabel}</span>
@@ -694,6 +697,7 @@ const TaskTableBody = ({
   onTaskClick,
   onReassign,
   status,
+  isReviewer,
 }: {
   tasks: TaskWithDetails[]
   isAddingTask?: boolean
@@ -710,6 +714,7 @@ const TaskTableBody = ({
   onTaskClick: (task: TaskWithDetails) => void;
   onReassign: (task: TaskWithDetails) => void;
   status: Task['status'],
+  isReviewer: boolean,
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -732,6 +737,7 @@ const TaskTableBody = ({
             canEdit={canEdit}
             onTaskClick={onTaskClick}
             onReassign={onReassign}
+            isReviewer={isReviewer}
           />
         </tr>
       ))}
@@ -1087,7 +1093,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'todo' || t.status === 'inprogress')), [sortedTasks]);
   const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'review'), [sortedTasks]);
-  const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && t.status === 'done' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted'), [sortedTasks]);
+  const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'done' || t.status === 'approved' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted')), [sortedTasks]);
 
   const deletedTasks = useMemo(() => {
     // Deleted tasks should not be filtered by 'my tasks' view
@@ -1227,7 +1233,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     )
   }
 
-  const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status']) => {
+  const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status'], isReviewer: boolean) => {
     return (
       <table className="w-full text-left mt-2">
         <thead>
@@ -1258,6 +1264,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           onTaskClick={setSelectedTask}
           onReassign={(task) => setTaskToReassign(task)}
           status={status}
+          isReviewer={isReviewer}
         />
       </table>
     )
@@ -1315,26 +1322,28 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="active">Active <Badge variant="secondary" className="ml-2">{activeTasks.length}</Badge></TabsTrigger>
-            <TabsTrigger value="under-review">Under review <Badge variant="secondary" className="ml-2">{underReviewTasks.length}</Badge></TabsTrigger>
+            {canEditTasks && <TabsTrigger value="under-review">Under review <Badge variant="secondary" className="ml-2">{underReviewTasks.length}</Badge></TabsTrigger>}
             <TabsTrigger value="completed">Completed <Badge variant="secondary" className="ml-2">{completedTasks.length}</Badge></TabsTrigger>
           </TabsList>
           <TabsContent value="active">
-            {renderTaskTable(activeTasks, 'todo')}
+            {renderTaskTable(activeTasks, 'todo', false)}
             {canEditTasks && (
                 <Button
                     variant="ghost"
-                    className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                    className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
                     onClick={() => setIsAddingTask(true)}
                 >
                     <Plus className="mr-2 h-4 w-4" /> Add task
                 </Button>
             )}
           </TabsContent>
-          <TabsContent value="under-review">
-            {renderTaskTable(underReviewTasks, 'review')}
-          </TabsContent>
+          {canEditTasks && (
+            <TabsContent value="under-review">
+              {renderTaskTable(underReviewTasks, 'review', true)}
+            </TabsContent>
+          )}
           <TabsContent value="completed">
-            {renderTaskTable(completedTasks, 'done')}
+            {renderTaskTable(completedTasks, 'done', false)}
           </TabsContent>
         </Tabs>
       )
