@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useTransition, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useTransition, useEffect, useRef } from 'react';
 import {
   Select,
   SelectContent,
@@ -28,7 +28,8 @@ import { format, parseISO, isToday, isTomorrow, isYesterday } from 'date-fns';
 import type { Client, Team, Profile, Task, TaskWithDetails, Project } from '@/lib/types';
 import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { addSchedule, createTaskFromSchedule, createTask } from '@/app/actions';
+import { addSchedule, createTaskFromSchedule } from '@/app/actions';
+import { createTask } from '@/app/teams/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
