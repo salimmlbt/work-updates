@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useTransition, useEffect } from 'react';
+import { useState, useMemo, useTransition, useEffect, useRef } from 'react';
 import {
   Select,
   SelectContent,
@@ -24,11 +24,11 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { getInitials, cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isToday, isTomorrow, isYesterday } from 'date-fns';
 import type { Client, Team, Profile, Task, TaskWithDetails, Project } from '@/lib/types';
 import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { addSchedule, createTaskFromSchedule } from '@/app/actions';
+import { addSchedule, createTaskFromSchedule, createTask } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -203,13 +203,117 @@ const AddScheduleCard = ({
   );
 };
 
+const AssignTaskRow = ({
+  schedule,
+  profiles,
+  onSave,
+  onCancel,
+}: {
+  schedule: ScheduleWithDetails;
+  profiles: Profile[];
+  onSave: (task: any) => void;
+  onCancel: () => void;
+}) => {
+  const [isSaving, setIsSaving] = useState(false);
+  const [assigneeId, setAssigneeId] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>(new Date(schedule.scheduled_date));
+  const { toast } = useToast();
+
+  const teamMembers = useMemo(() => {
+    return profiles.filter(p => p.teams.some(t => t.teams?.id === schedule.team_id));
+  }, [profiles, schedule.team_id]);
+
+  const handleSave = async () => {
+    if (!assigneeId || !dueDate) {
+      toast({
+        title: 'Missing fields',
+        description: 'Assignee and Due Date are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsSaving(true);
+    const result = await createTask({
+      description: schedule.title,
+      project_id: schedule.project_id,
+      client_id: schedule.client_id,
+      deadline: dueDate.toISOString(),
+      assignee_id: assigneeId,
+      type: schedule.content_type,
+      schedule_id: schedule.id,
+      status: 'todo',
+    });
+
+    if (result.error) {
+      toast({ title: 'Error creating task', description: result.error, variant: 'destructive' });
+      setIsSaving(false);
+    } else if (result.data) {
+      onSave(result.data); // This will trigger a re-render via Supabase realtime
+      toast({ title: 'Task created successfully!' });
+      onCancel();
+    }
+  };
+
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return <span>Pick a date</span>;
+    if (isToday(date)) return 'Today';
+    if (isTomorrow(date)) return 'Tomorrow';
+    if (isYesterday(date)) return 'Yesterday';
+    return format(date, "dd MMM");
+  };
+
+  return (
+    <tr className="bg-muted/30">
+      <TableCell colSpan={3} className="py-2 pl-12">
+        <p className="font-medium text-xs text-muted-foreground">Assigning Task...</p>
+      </TableCell>
+      <TableCell className="py-2">
+        <Select onValueChange={setAssigneeId} value={assigneeId}>
+          <SelectTrigger className="h-8">
+            <SelectValue placeholder="Select Assignee" />
+          </SelectTrigger>
+          <SelectContent>
+            {teamMembers.map(p => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.full_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="py-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-8 w-full justify-start text-left font-normal">
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {formatDate(dueDate)}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <CalendarComponent mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+          </PopoverContent>
+        </Popover>
+      </TableCell>
+      <TableCell colSpan={2} className="py-2 text-right">
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Task
+          </Button>
+        </div>
+      </TableCell>
+    </tr>
+  );
+};
+
 export default function SchedulerClient({ clients, initialSchedules, teams, profiles, projects }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[], projects: Project[] }) {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(clients[0]?.id || null);
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAdding, setIsAdding] = useState(false);
-  const [isAssigning, startAssignTransition] = useTransition();
   const { toast } = useToast();
   const [scheduleToReassign, setScheduleToReassign] = useState<ScheduleWithDetails | null>(null);
+  const [assigningScheduleId, setAssigningScheduleId] = useState<string | null>(null);
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
@@ -230,7 +334,6 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         return task.posting_status || 'Posting';
     }
     
-    // This logic needs to align with what's in tasks-client.tsx statusLabels
     const statusMap: Record<Task['status'], string> = {
         'todo': 'Assigned',
         'inprogress': 'In Progress',
@@ -250,24 +353,16 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     setIsAdding(false);
   }
 
-  const handleAssignTask = (schedule: ScheduleWithDetails) => {
-    startAssignTransition(async () => {
-      const { error, data } = await createTaskFromSchedule(schedule);
-      if (error) {
-        toast({ title: "Error assigning task", description: error, variant: "destructive" });
-      } else if (data) {
-        toast({ title: "Task Assigned", description: "A new task has been created from this schedule."});
-        setSchedules(prev => prev.map(s => s.id === schedule.id ? {...s, task: data} : s));
-      }
-    });
-  }
+  const handleAssignTask = (scheduleId: string) => {
+    setAssigningScheduleId(prev => (prev === scheduleId ? null : scheduleId));
+  };
 
    const handleTaskCreated = (newTask: Task) => {
-        // This is called after re-assignment. We need to find the parent schedule and update its task.
-        const parentSchedule = schedules.find(s => s.task?.id === newTask.parent_task_id);
-        if (parentSchedule) {
-            setSchedules(prev => prev.map(s => s.id === parentSchedule.id ? {...s, task: newTask as TaskWithDetails['task'] } : s));
-        }
+        setSchedules(prev => prev.map(s => s.id === newTask.schedule_id ? {
+            ...s,
+            task: newTask as TaskWithDetails['task']
+        } : s));
+        setAssigningScheduleId(null);
     };
 
 
@@ -336,7 +431,8 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                     </TableHeader>
                     <TableBody>
                       {filteredSchedules.map(schedule => (
-                          <TableRow key={schedule.id} className="group">
+                        <React.Fragment key={schedule.id}>
+                          <TableRow className="group">
                             <TableCell>{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
                             <TableCell className="font-medium">{schedule.title}</TableCell>
                             <TableCell>{schedule.projects?.name || 'N/A'}</TableCell>
@@ -353,10 +449,9 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent>
                                     <DropdownMenuItem 
-                                      disabled={!!schedule.task || isAssigning}
-                                      onClick={() => handleAssignTask(schedule)}
+                                      disabled={!!schedule.task}
+                                      onClick={() => handleAssignTask(schedule.id)}
                                     >
-                                      {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                       Assign as Task
                                     </DropdownMenuItem>
                                      {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
@@ -371,6 +466,15 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                               </div>
                             </TableCell>
                           </TableRow>
+                          {assigningScheduleId === schedule.id && (
+                            <AssignTaskRow 
+                                schedule={schedule}
+                                profiles={profiles}
+                                onSave={handleTaskCreated}
+                                onCancel={() => setAssigningScheduleId(null)}
+                            />
+                          )}
+                        </React.Fragment>
                       ))}
                     </TableBody>
                   </Table>

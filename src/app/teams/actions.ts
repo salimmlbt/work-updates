@@ -503,5 +503,5 @@ export async function createTask(taskData: {
     
     revalidatePath('/tasks');
     revalidatePath('/scheduler');
-    return { data: data as Task };
+    return { data };
 }
