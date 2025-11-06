@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -443,7 +442,8 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
   const { toast } = useToast();
   
   const attachments = useMemo(() => {
-    return task.attachments || [];
+    if (!task.attachments || !Array.isArray(task.attachments)) return [];
+    return task.attachments as Attachment[];
   }, [task.attachments]);
 
   useEffect(() => {
