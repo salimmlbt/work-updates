@@ -105,13 +105,86 @@ export type Database = {
         }
         Relationships: []
       }
+      content_schedules: {
+        Row: {
+          client_id: string
+          content_type: string | null
+          created_at: string
+          id: string
+          is_deleted: boolean
+          notes: string | null
+          scheduled_date: string
+          status: string
+          team_id: string | null
+          title: string
+        }
+        Insert: {
+          client_id: string
+          content_type?: string | null
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          notes?: string | null
+          scheduled_date: string
+          status?: string
+          team_id?: string | null
+          title: string
+        }
+        Update: {
+          client_id?: string
+          content_type?: string | null
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          notes?: string | null
+          scheduled_date?: string
+          status?: string
+          team_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_schedules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_schedules_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      industries: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       official_holidays: {
         Row: {
           created_at: string
           date: string
           description: string | null
-          falaq_event_type: "leave" | "event" | "meeting" | null
+          falaq_event_type: "leave" | "event" | "meeting" | "working_sunday" | null
           id: number
+          is_deleted: boolean
           name: string
           type: "official" | "personal" | "special_day" | "weekend"
           user_id: string | null
@@ -120,8 +193,9 @@ export type Database = {
           created_at?: string
           date: string
           description?: string | null
-          falaq_event_type?: "leave" | "event" | "meeting" | null
+          falaq_event_type?: "leave" | "event" | "meeting" | "working_sunday" | null
           id?: number
+          is_deleted?: boolean
           name: string
           type: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
@@ -130,8 +204,9 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string | null
-          falaq_event_type?: "leave" | "event" | "meeting" | null
+          falaq_event_type?: "leave" | "event" | "meeting" | "working_sunday" | null
           id?: number
+          is_deleted?: boolean
           name?: string
           type?: "official" | "personal" | "special_day" | "weekend"
           user_id?: string | null
@@ -339,14 +414,27 @@ export type Database = {
           assignee_id: string | null
           attachments: Json | null
           client_id: string | null
+          corrections: Json | null
           created_at: string
           deadline: string
           description: string
           id: string
           is_deleted: boolean
+          parent_task_id: string | null
+          posting_status: "Planned" | "Scheduled" | "Posted" | null
           project_id: string | null
+          revisions: Json | null
           rich_description: Json | null
-          status: "todo" | "inprogress" | "done"
+          schedule_id: string | null
+          status:
+            | "todo"
+            | "inprogress"
+            | "under-review"
+            | "done"
+            | "review"
+            | "corrections"
+            | "recreate"
+            | "approved"
           tags: string[] | null
           type: string | null
         }
@@ -354,14 +442,27 @@ export type Database = {
           assignee_id?: string | null
           attachments?: Json | null
           client_id?: string | null
+          corrections?: Json | null
           created_at?: string
           deadline: string
           description: string
           id?: string
           is_deleted?: boolean
+          parent_task_id?: string | null
+          posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
+          revisions?: Json | null
           rich_description?: Json | null
-          status?: "todo" | "inprogress" | "done"
+          schedule_id?: string | null
+          status?:
+            | "todo"
+            | "inprogress"
+            | "under-review"
+            | "done"
+            | "review"
+            | "corrections"
+            | "recreate"
+            | "approved"
           tags?: string[] | null
           type?: string | null
         }
@@ -369,14 +470,27 @@ export type Database = {
           assignee_id?: string | null
           attachments?: Json | null
           client_id?: string | null
+          corrections?: Json | null
           created_at?: string
           deadline?: string
           description?: string
           id?: string
           is_deleted?: boolean
+          parent_task_id?: string | null
+          posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
+          revisions?: Json | null
           rich_description?: Json | null
-          status?: "todo" | "inprogress" | "done"
+          schedule_id?: string | null
+          status?:
+            | "todo"
+            | "inprogress"
+            | "under-review"
+            | "done"
+            | "review"
+            | "corrections"
+            | "recreate"
+            | "approved"
           tags?: string[] | null
           type?: string | null
         }
@@ -396,10 +510,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "content_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -436,6 +564,24 @@ export type Database = {
           },
         ]
       }
+      work_types: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -456,8 +602,17 @@ export type Database = {
       }
     }
     Enums: {
-      falaq_event_type: "leave" | "event" | "meeting"
-      task_status: "todo" | "inprogress" | "done"
+      falaq_event_type: "leave" | "event" | "meeting" | "working_sunday"
+      posting_status_enum: "Planned" | "Scheduled" | "Posted"
+      task_status:
+        | "todo"
+        | "inprogress"
+        | "under-review"
+        | "done"
+        | "review"
+        | "corrections"
+        | "recreate"
+        | "approved"
     }
     CompositeTypes: {
       [_ in never]: never
