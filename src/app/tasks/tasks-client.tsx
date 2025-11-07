@@ -563,11 +563,11 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
         />
       </td>
       <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[250px] cursor-pointer">
-        <div className="flex items-center gap-3">
-          {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-muted-foreground shrink-0" fill="currentColor"/>}
+        <div className="flex items-center gap-2">
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
             <span className="truncate shrink">{task.description}</span>
           </div>
+          {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-green-600 shrink-0 transform -rotate-30" fill="currentColor"/>}
           {isReassigned && <Share2 className="h-4 w-4 text-blue-500 shrink-0" />}
           {(task.revisions?.recreations ?? 0) > 0 && (
             <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
