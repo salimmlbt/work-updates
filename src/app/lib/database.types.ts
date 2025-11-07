@@ -262,6 +262,7 @@ export type Database = {
           instagram: string | null
           is_archived: boolean
           linkedin: string | null
+          monthly_salary: number | null
           role_id: string | null
           status: string | null
           work_end_time: string | null
@@ -277,6 +278,7 @@ export type Database = {
           instagram?: string | null
           is_archived?: boolean
           linkedin?: string | null
+          monthly_salary?: number | null
           role_id?: string | null
           status?: string | null
           work_end_time?: string | null
@@ -292,6 +294,7 @@ export type Database = {
           instagram?: string | null
           is_archived?: boolean
           linkedin?: string | null
+          monthly_salary?: number | null
           role_id?: string | null
           status?: string | null
           work_end_time?: string | null

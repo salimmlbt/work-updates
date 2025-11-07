@@ -133,6 +133,7 @@ export async function addUser(formData: FormData) {
     const avatarFile = formData.get('avatar') as File | null;
     const workStartTime = formData.get('work_start_time') as string;
     const workEndTime = formData.get('work_end_time') as string;
+    const monthlySalary = formData.get('monthly_salary') as string;
     
     let avatarUrl = `https://i.pravatar.cc/150?u=${email}`;
 
@@ -188,6 +189,7 @@ export async function addUser(formData: FormData) {
         role_id: roleId,
         work_start_time: workStartTime,
         work_end_time: workEndTime,
+        monthly_salary: monthlySalary ? parseFloat(monthlySalary) : null,
       });
       
     if (profileError) {
@@ -238,6 +240,7 @@ export async function updateUser(userId: string, formData: FormData) {
     const avatarFile = formData.get('avatar') as File | null;
     const workStartTime = formData.get('work_start_time') as string;
     const workEndTime = formData.get('work_end_time') as string;
+    const monthlySalary = formData.get('monthly_salary') as string;
     const deleteAvatar = formData.get('delete_avatar') === 'true';
     
     const { data: currentProfile, error: fetchError } = await supabase
@@ -296,6 +299,7 @@ export async function updateUser(userId: string, formData: FormData) {
             avatar_url: avatarUrl,
             work_start_time: workStartTime,
             work_end_time: workEndTime,
+            monthly_salary: monthlySalary ? parseFloat(monthlySalary) : null,
         })
         .eq('id', userId)
         .select('full_name, avatar_url, roles(*)')

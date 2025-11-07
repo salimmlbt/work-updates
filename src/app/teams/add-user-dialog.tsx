@@ -53,6 +53,7 @@ const initialFormState = {
     avatar: null as File | null,
     workStartTime: '',
     workEndTime: '',
+    monthlySalary: '',
 };
 
 export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: AddUserDialogProps) {
@@ -137,6 +138,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     formData.append('team_ids', formState.teamIds.join(','));
     formData.append('work_start_time', formState.workStartTime);
     formData.append('work_end_time', formState.workEndTime);
+    if(formState.monthlySalary) formData.append('monthly_salary', formState.monthlySalary);
     if (formState.avatar) {
       formData.append('avatar', formState.avatar);
     }
@@ -247,6 +249,10 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                     </DropdownMenu>
                   </div>
                 </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="monthlySalary">Salary</Label>
+                    <Input id="monthlySalary" name="monthlySalary" type="number" placeholder="Enter monthly salary" value={formState.monthlySalary} onChange={handleInputChange} />
+                  </div>
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-2">
                     <Label htmlFor="workStartTime">Check In Time</Label>

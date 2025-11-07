@@ -83,8 +83,8 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
     const totalWorkingDays = totalDaysInMonth - nonWorkingDaysCount;
 
     // 🧮 Build salary data for each user
-    const salaryData: SalaryData[] = users.map((user) => {
-        const userAttendance = attendance.filter((a) => a.user_id === user.id);
+    const salaryData: SalaryData[] = (users || []).map((user) => {
+        const userAttendance = (attendance || []).filter((a) => a.user_id === user.id);
         
         let fullDays = 0;
         let halfDays = 0;
@@ -98,31 +98,29 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             : 8;
 
         userAttendance.forEach((att) => {
-            if (att.total_hours) {
-                let actualWorkMinutes = (att.total_hours || 0) * 60;
-                
-                // Lunch calculation for work time
+            if (att.check_in && att.check_out) {
+                const checkInTime = new Date(att.check_in);
+                const checkOutTime = new Date(att.check_out);
+                let sessionMinutes = differenceInMinutes(checkOutTime, checkInTime);
+
+                // Lunch calculation
                 if (att.lunch_out && att.lunch_in) {
                     const lunchMinutes = differenceInMinutes(new Date(att.lunch_in), new Date(att.lunch_out));
-                    if (lunchMinutes > 60) {
-                        actualWorkMinutes -= (lunchMinutes - 60); // Deduct extra lunch time from work hours
-                    }
+                    sessionMinutes -= Math.max(60, lunchMinutes); // Deduct at least 1 hour, or more if lunch was longer
+                } else {
+                    sessionMinutes -= 60; // No lunch recorded, deduct standard 1 hour
                 }
 
-                // Overtime calculation for extra hours
-                if (workEndTime && att.check_out) {
-                    const checkOutTime = new Date(att.check_out);
+                const actualWorkHours = sessionMinutes / 60;
+                
+                // Overtime calculation
+                if (workEndTime && checkOutTime > new Date(checkOutTime).setHours(workEndTime.getHours(), workEndTime.getMinutes(), workEndTime.getSeconds())) {
                     const expectedCheckOutDateTime = new Date(checkOutTime);
                     expectedCheckOutDateTime.setHours(workEndTime.getHours(), workEndTime.getMinutes(), workEndTime.getSeconds());
 
-                    if (checkOutTime > expectedCheckOutDateTime) {
-                        const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
-                        totalExtraMinutes += overtimeMinutes;
-                        actualWorkMinutes -= overtimeMinutes; // Remove overtime from main work hours to avoid double counting
-                    }
+                    const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
+                    totalExtraMinutes += overtimeMinutes;
                 }
-                
-                const actualWorkHours = actualWorkMinutes / 60;
 
                 if (actualWorkHours >= expectedWorkHours) {
                     fullDays++;
@@ -135,7 +133,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
         const presentDays = fullDays + halfDays;
         const absentDays = totalWorkingDays - presentDays;
 
-        const monthlySalary = 30000;
+        const monthlySalary = user.monthly_salary || 0;
         const perDaySalary = totalWorkingDays > 0 ? monthlySalary / totalWorkingDays : 0;
         const payableSalary = fullDays * perDaySalary + halfDays * (perDaySalary / 2);
 

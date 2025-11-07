@@ -54,6 +54,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     avatar: null as File | null,
     workStartTime: user.work_start_time || '',
     workEndTime: user.work_end_time || '',
+    monthlySalary: user.monthly_salary?.toString() || '',
     deleteAvatar: false,
   });
   const [isFormValid, setIsFormValid] = useState(false);
@@ -84,6 +85,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
           avatar: null,
           workStartTime: user.work_start_time || '',
           workEndTime: user.work_end_time || '',
+          monthlySalary: user.monthly_salary?.toString() || '',
           deleteAvatar: false,
       });
       setAvatarPreview(user.avatar_url);
@@ -143,6 +145,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     formData.append('team_ids', formState.teamIds.join(','));
     formData.append('work_start_time', formState.workStartTime);
     formData.append('work_end_time', formState.workEndTime);
+    formData.append('monthly_salary', formState.monthlySalary);
     if (formState.password) {
       formData.append('password', formState.password);
     }
@@ -266,6 +269,10 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                           </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="monthlySalary">Salary</Label>
+                    <Input id="monthlySalary" name="monthlySalary" type="number" placeholder="Enter monthly salary" value={formState.monthlySalary} onChange={handleInputChange} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
