@@ -163,7 +163,7 @@ export function TaskDetailSheet({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mt-8 text-sm">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-8 text-sm">
             <div>
               <p className="text-muted-foreground text-xs mb-1">Responsible</p>
               {task.profiles ? (
@@ -204,17 +204,6 @@ export function TaskDetailSheet({
               </div>
             </div>
 
-            {task.post_date && (
-                <div>
-                  <p className="text-muted-foreground text-xs mb-1">Post Date</p>
-                  <div className="flex items-center gap-2">
-                    <Send className="h-4 w-4 text-muted-foreground" />
-                    <span>{formatDate(task.post_date)}</span>
-                  </div>
-                </div>
-            )}
-
-
             <div>
               <p className="text-muted-foreground text-xs mb-1">Priority</p>
               <span className="text-muted-foreground">None</span>
@@ -224,6 +213,17 @@ export function TaskDetailSheet({
 
         {/* CONTENT */}
         <div className="flex-1 overflow-y-auto px-8 py-10 space-y-10">
+          
+          {task.post_date && (
+            <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4 flex items-center gap-4">
+              <Send className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div>
+                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Scheduled Post Date</h4>
+                <p className="text-blue-700 dark:text-blue-300">{formatDate(task.post_date)}</p>
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <section>
             <div className="flex items-center gap-2 mb-4">
