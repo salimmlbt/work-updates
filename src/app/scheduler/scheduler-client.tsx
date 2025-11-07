@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -466,18 +466,19 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold">Content Scheduler</h1>
              <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
-              <SelectTrigger className="w-[280px]">
+              <SelectTrigger className="w-[320px] h-12 rounded-full border-0 shadow-none bg-green-100 text-green-800 hover:bg-green-200 group focus:ring-green-300">
                  {selectedClient ? (
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
                         <AvatarImage src={selectedClient.avatar} />
                         <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
                       </Avatar>
-                      {selectedClient.name}
+                      <span className="font-semibold">{selectedClient.name}</span>
                     </div>
                   ) : (
                     <SelectValue placeholder="Select a client" />
                   )}
+                  <ChevronDown className="h-5 w-5 opacity-0 group-hover:opacity-60 transition-opacity" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
@@ -496,13 +497,13 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
           </div>
           <div className="flex items-center gap-2">
             {showBin ? (
-              <Button onClick={() => setShowBin(false)} variant="outline">Back to Schedules</Button>
+              <Button onClick={() => setShowBin(false)} variant="outline" className="rounded-full">Back to Schedules</Button>
             ) : (
               <>
-                <Button onClick={() => setIsAddingSchedule(true)} disabled={!selectedClientId}>
+                <Button onClick={() => setIsAddingSchedule(true)} disabled={!selectedClientId} className="rounded-full">
                   <Plus className="mr-2 h-4 w-4" /> Add Schedule
                 </Button>
-                <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200" onClick={() => setShowBin(true)}>
+                <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200 rounded-full" onClick={() => setShowBin(true)}>
                   <Trash2 className="mr-2 h-4 w-4" /> Bin
                 </Button>
               </>
@@ -705,5 +706,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     </>
   );
 }
+
+    
 
     
