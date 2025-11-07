@@ -65,6 +65,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
@@ -1651,7 +1652,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
        <AlertDialog open={!!taskToDeletePermanently} onOpenChange={(open) => !open && setTaskToDeletePermanently(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
+            <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone and will permanently delete the task "{taskToDeletePermanently?.description}".
             </AlertDialogDescription>
