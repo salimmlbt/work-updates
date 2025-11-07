@@ -66,7 +66,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
@@ -1019,7 +1018,7 @@ const processPayload = (payload: any, profiles: Profile[], allProjects: Project[
 
 type SortableKeys = 'description' | 'client' | 'project' | 'assignee' | 'type' | 'deadline';
 type SortDirection = 'ascending' | 'descending';
-type FilterType = 'client' | 'responsible' | 'type' | 'dueDate' | 'createdDate' | 'month' | 'dateRange';
+type FilterType = 'client' | 'responsible' | 'type' | 'dueDate' | 'createdDate' | 'dateRange';
 type FilterValue = string | Date | { from: Date; to: Date } | { month: number; year: number } | null;
 interface ActiveFilter {
   id: string;
@@ -1125,11 +1124,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
               return task.deadline && format(parseISO(task.deadline), 'yyyy-MM-dd') === format(filter.value as Date, 'yyyy-MM-dd');
             case 'createdDate':
               return task.created_at && format(parseISO(task.created_at), 'yyyy-MM-dd') === format(filter.value as Date, 'yyyy-MM-dd');
-            case 'month': {
-              const { month, year } = filter.value as { month: number, year: number };
-              const taskDate = parseISO(task.created_at);
-              return getMonth(taskDate) === month && getYear(taskDate) === year;
-            }
             case 'dateRange': {
               const { from, to } = filter.value as { from: Date, to: Date };
               const taskDate = parseISO(task.created_at);
@@ -1252,8 +1246,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             setTasks(originalTasks); // Revert on error
         } else {
             toast({ title: `${selectedTaskIds.length} tasks moved to bin` });
-            setSelectedTaskIds([]);
         }
+        setSelectedTaskIds([]);
     });
   };
 
@@ -1268,8 +1262,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             setTasks(originalTasks); // Revert on error
         } else {
             toast({ title: `${selectedTaskIds.length} tasks restored` });
-            setSelectedTaskIds([]);
         }
+        setSelectedTaskIds([]);
     });
   };
 
@@ -1284,8 +1278,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             setTasks(originalTasks); // Revert on error
         } else {
             toast({ title: `${selectedTaskIds.length} tasks permanently deleted` });
-            setSelectedTaskIds([]);
         }
+        setSelectedTaskIds([]);
     });
   };
   
@@ -1587,8 +1581,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const FilterManager = () => {
     const [filterType, setFilterType] = useState<FilterType | null>(null);
     const [filterValue, setFilterValue] = useState<FilterValue>(null);
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  
+    const [editingFilterId, setEditingFilterId] = useState<string | null>(null);
+    
     const addFilter = () => {
       if (filterType && filterValue) {
         let finalValue = filterValue;
@@ -1605,6 +1599,11 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     const removeFilter = (id: string) => {
       setActiveFilters(prev => prev.filter(f => f.id !== id));
     };
+
+    const updateFilter = (id: string, value: FilterValue) => {
+      setActiveFilters(prev => prev.map(f => f.id === id ? {...f, value} : f));
+      setEditingFilterId(null);
+    };
   
     const renderFilterValue = (filter: ActiveFilter) => {
       if (filter.value === null) return 'N/A';
@@ -1616,9 +1615,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         case 'dueDate':
         case 'createdDate':
           return format(filter.value as Date, 'MMM d, yyyy');
-        case 'month':
-          const { month, year } = filter.value as { month: number, year: number };
-          return `${months[month]} ${year}`;
         case 'dateRange':
           const { from, to } = filter.value as { from: Date, to: Date };
           return `${format(from, 'MMM d')} - ${format(to, 'MMM d, yyyy')}`;
@@ -1627,18 +1623,18 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       }
     };
   
-    const renderFilterInput = () => {
-      switch (filterType) {
+    const renderFilterInput = (type: FilterType | null, value: FilterValue, onChange: (v: FilterValue) => void) => {
+      switch (type) {
         case 'client':
           return (
-            <Select onValueChange={(v) => setFilterValue(v)}>
+            <Select onValueChange={onChange} value={value as string || undefined}>
               <SelectTrigger><SelectValue placeholder="Select Client" /></SelectTrigger>
               <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           );
         case 'responsible':
           return (
-            <Select onValueChange={(v) => setFilterValue(v)}>
+            <Select onValueChange={onChange} value={value as string || undefined}>
               <SelectTrigger><SelectValue placeholder="Select User" /></SelectTrigger>
               <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
             </Select>
@@ -1646,7 +1642,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         case 'type':
            const allTypes = [...new Set(tasks.map(t => t.type).filter(Boolean))];
           return (
-            <Select onValueChange={(v) => setFilterValue(v)}>
+            <Select onValueChange={onChange} value={value as string || undefined}>
               <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
               <SelectContent>{allTypes.map(t => <SelectItem key={t} value={t!}>{t}</SelectItem>)}</SelectContent>
             </Select>
@@ -1658,32 +1654,22 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full justify-start text-left font-normal">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {filterValue ? format(filterValue as Date, "PPP") : <span>Pick a date</span>}
+                  {value ? format(value as Date, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0"><CalendarComponent mode="single" selected={filterValue as Date} onSelect={(d) => setFilterValue(d || null)} initialFocus /></PopoverContent>
+              <PopoverContent className="w-auto p-0"><CalendarComponent mode="single" selected={value as Date} onSelect={(d) => onChange(d || null)} initialFocus /></PopoverContent>
             </Popover>
           );
-        case 'month':
-            return (
-                <div className="flex gap-2">
-                    <Select onValueChange={(m) => setFilterValue(v => ({ ...(v as object), month: parseInt(m) }))}>
-                        <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
-                        <SelectContent>{months.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Input type="number" placeholder="Year" defaultValue={new Date().getFullYear()} onChange={(e) => setFilterValue(v => ({ ...(v as object), year: parseInt(e.target.value) }))} />
-                </div>
-            );
         case 'dateRange':
           return (
              <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full justify-start text-left font-normal">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {filterValue && 'from' in filterValue && (filterValue as {from:Date, to?:Date}).to ? `${format((filterValue as {from:Date}).from, "LLL dd, y")} - ${format((filterValue as {from:Date, to:Date}).to, "LLL dd, y")}` : <span>Pick a date range</span>}
+                  {value && 'from' in value && (value as {from:Date, to?:Date}).to ? `${format((value as {from:Date}).from, "LLL dd, y")} - ${format((value as {from:Date, to:Date}).to, "LLL dd, y")}` : <span>Pick a date range</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0"><CalendarComponent mode="range" selected={filterValue as { from: Date; to: Date }} onSelect={(range) => setFilterValue(range || null)} /></PopoverContent>
+              <PopoverContent className="w-auto p-0"><CalendarComponent mode="range" selected={value as { from: Date; to: Date }} onSelect={(range) => onChange(range || null)} /></PopoverContent>
             </Popover>
           );
         default:
@@ -1691,6 +1677,29 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       }
     };
   
+    const EditFilterPopover = ({ filter }: { filter: ActiveFilter }) => {
+      const [localValue, setLocalValue] = useState(filter.value);
+      return (
+        <Popover onOpenChange={(open) => !open && setEditingFilterId(null)}>
+          <PopoverTrigger asChild>
+             <Badge role="button" variant="secondary" className="flex items-center gap-1 cursor-pointer">
+              {filter.type}: {renderFilterValue(filter)}
+            </Badge>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="space-y-2">
+              <h4 className="font-medium text-sm capitalize">{filter.type}</h4>
+              {renderFilterInput(filter.type, localValue, setLocalValue)}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="ghost" size="sm" onClick={() => removeFilter(filter.id)}>Remove</Button>
+                <Button size="sm" onClick={() => updateFilter(filter.id, localValue)}>Save</Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      );
+    };
+
     return (
       <Popover>
         <PopoverTrigger asChild>
@@ -1708,22 +1717,18 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                   <SelectItem value="type">Type</SelectItem>
                   <SelectItem value="dueDate">Due Date</SelectItem>
                   <SelectItem value="createdDate">Created Date</SelectItem>
-                  <SelectItem value="month">Month</SelectItem>
                   <SelectItem value="dateRange">Date Range</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={addFilter} disabled={!filterType || !filterValue}>Add</Button>
             </div>
-            {filterType && <div className="p-2 border rounded-md">{renderFilterInput()}</div>}
+            {filterType && <div className="p-2 border rounded-md">{renderFilterInput(filterType, filterValue, setFilterValue)}</div>}
             <div className="space-y-2">
               <h5 className="text-sm font-medium">Active Filters</h5>
               {activeFilters.length === 0 ? <p className="text-xs text-muted-foreground">No filters applied.</p> : (
                 <div className="flex flex-wrap gap-2">
                   {activeFilters.map(f => (
-                    <Badge key={f.id} variant="secondary" className="flex items-center gap-1">
-                      {f.type}: {renderFilterValue(f)}
-                      <button onClick={() => removeFilter(f.id)} className="rounded-full hover:bg-muted-foreground/20"><X className="h-3 w-3" /></button>
-                    </Badge>
+                    <EditFilterPopover key={f.id} filter={f} />
                   ))}
                 </div>
               )}
