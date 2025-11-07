@@ -66,6 +66,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
@@ -1753,7 +1754,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                             <AlertDialogContent>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
@@ -1854,6 +1855,9 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                 <Search className="h-5 w-5" />
             </Button>
           </div>
+          
+          <FilterManager />
+
           {canEditTasks ? (
             <div className="flex items-center rounded-full bg-gray-100 p-1">
               <Button
@@ -1873,9 +1877,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                 My Tasks
               </Button>
             </div>
-          ) : (
-            <FilterManager />
-          )}
+          ) : null}
           {canEditTasks && (
             <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200 rounded-full" onClick={() => setShowBin(!showBin)}>
               <Trash2 className="mr-2 h-4 w-4" />
@@ -1972,4 +1974,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
