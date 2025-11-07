@@ -32,6 +32,7 @@ import { RichTextEditor } from '@/components/rich-text-editor/rich-text-editor'
 import { useMemo, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import Image from 'next/image'
 
 const typeColors: Record<string, string> = {
   Poster: 'bg-pink-100 text-pink-800',
@@ -291,25 +292,28 @@ export function TaskDetailSheet({
                     href={att.publicUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative rounded-lg overflow-hidden border border-gray-200 dark:border-neutral-800 hover:shadow-lg transition-all"
+                    className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-neutral-800 hover:shadow-lg transition-all"
                   >
-                    {att.name.match(/\.(jpeg|jpg|gif|png)$/) ? (
-                      <img
+                    {att.name.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+                      <Image
                         src={att.publicUrl}
                         alt={att.name}
-                        className="object-cover h-40 w-full"
+                        layout="fill"
+                        className="object-cover"
                       />
                     ) : (
-                      <div className="h-40 flex flex-col items-center justify-center bg-gray-50 dark:bg-neutral-900 p-3">
+                      <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-neutral-900 p-3">
                         <p
-                          className="text-xs text-muted-foreground text-center truncate w-full mt-2"
+                          className="text-xs text-muted-foreground text-center break-all"
                           title={att.name}
                         >
                           {att.name}
                         </p>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">{att.name}</span>
+                    </div>
                   </a>
                 ))}
               </div>
