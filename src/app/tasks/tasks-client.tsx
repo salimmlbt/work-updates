@@ -535,7 +535,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
 
   return (
     <>
-       <td className="px-4 py-3">
+      <td className="px-4 py-3">
         <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onSelect(task.id, !!checked)}
@@ -1206,7 +1206,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     startTransition(async () => {
         const { error } = await restoreTasks(selectedTaskIds);
         if (error) {
-            toast({ title: "Error restoring tasks", description: error, variant: "destructive" });
+            toast({ title: "Error restoring tasks", description: error.message, variant: "destructive" });
             setTasks(originalTasks); // Revert on error
         } else {
             toast({ title: `${selectedTaskIds.length} tasks restored` });
@@ -1222,7 +1222,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     startTransition(async () => {
         const { error } = await deleteTasksPermanently(selectedTaskIds);
         if (error) {
-            toast({ title: "Error deleting tasks", description: error, variant: "destructive" });
+            toast({ title: "Error deleting tasks", description: error.variant, variant: "destructive" });
             setTasks(originalTasks); // Revert on error
         } else {
             toast({ title: `${selectedTaskIds.length} tasks permanently deleted` });
@@ -1573,7 +1573,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                                     {isPending ? 'Deleting...' : 'Delete'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
-                        </AlertDialog>
+                        </AlertDialogContent>
                     </AlertDialog>
                 )}
             </div>
