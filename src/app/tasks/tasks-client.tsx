@@ -541,7 +541,14 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
 
   const statusOptions = getStatusOptions();
   
-  const isStatusChangeDisabled = (activeTab === 'completed' && !isReviewer) || (activeTab === 'under-review' && !isReviewer && !isPostingType && currentUserProfile?.id !== task.assignee_id) || statusOptions.length === 0;
+  const isStatusChangeDisabled = 
+    // Completed tab is read-only for non-reviewers
+    (activeTab === 'completed' && !isReviewer) ||
+    // Under-review tab is read-only for non-reviewers/non-assignees
+    (activeTab === 'under-review' && !isReviewer && !isPostingType && currentUserProfile?.id !== task.assignee_id) ||
+    // Active tab is read-only for anyone who is not the assignee
+    (activeTab === 'active' && currentUserProfile?.id !== task.assignee_id) ||
+    statusOptions.length === 0;
 
   const hasChildTask = useMemo(() => allTasks.some(t => t.parent_task_id === task.id), [allTasks, task.id]);
 
