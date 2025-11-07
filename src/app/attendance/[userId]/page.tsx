@@ -1,6 +1,6 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parse, differenceInMinutes } from 'date-fns';
 import AttendanceDetailClient from './attendance-detail-client';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,7 @@ export default async function UserAttendancePage({ params, searchParams }: { par
     return <p className="p-8">Error fetching user data: {userError?.message || 'User not found'}</p>;
   }
 
-  const selectedDate = searchParams.month ? new Date(searchParams.month) : new Date();
+  const selectedDate = searchParams.month ? new Date(`${searchParams.month}-01T00:00:00Z`) : new Date();
   const firstDayOfMonth = startOfMonth(selectedDate);
   const lastDayOfMonth = endOfMonth(selectedDate);
   const prevMonth = format(new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth() - 1, 1), 'yyyy-MM-dd');
@@ -43,6 +43,22 @@ export default async function UserAttendancePage({ params, searchParams }: { par
   const monthlyAttendance = allDaysInMonth.map(day => {
     const dayString = format(day, 'yyyy-MM-dd');
     const record = attendanceMap.get(dayString);
+
+    let extraMinutes = 0;
+    if (record && user.work_end_time && record.check_out) {
+        try {
+            const checkOutTime = new Date(record.check_out);
+            const attendanceDate = new Date(record.date); // Use attendance date as base
+            const expectedCheckOutDateTime = parse(user.work_end_time, 'HH:mm:ss', attendanceDate);
+            
+            if (checkOutTime > expectedCheckOutDateTime) {
+                extraMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
+            }
+        } catch (e) {
+            console.error(`Could not parse work_end_time '${user.work_end_time}' for user ${user.id}`);
+        }
+    }
+
     return {
       date: dayString,
       check_in: record?.check_in || null,
@@ -50,6 +66,7 @@ export default async function UserAttendancePage({ params, searchParams }: { par
       lunch_in: record?.lunch_in || null,
       lunch_out: record?.lunch_out || null,
       total_hours: record?.total_hours || 0,
+      extra_hours: extraMinutes / 60,
     };
   });
 

@@ -33,6 +33,7 @@ interface MonthlyAttendance {
     lunch_in: string | null;
     lunch_out: string | null;
     total_hours: number;
+    extra_hours: number;
 }
 
 interface AttendanceDetailClientProps {
@@ -72,6 +73,13 @@ function formatHours(hours: number | null): string {
   if (hours === null || typeof hours === 'undefined') return '0.00';
   return hours.toFixed(2);
 }
+
+function formatExtraHours(hours: number | null): string {
+  if (hours === null || typeof hours === 'undefined' || hours <= 0) return '-';
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
 
 export default function AttendanceDetailClient({
   user,
@@ -115,6 +123,7 @@ export default function AttendanceDetailClient({
                 lunch_in: newRecord.lunch_in,
                 lunch_out: newRecord.lunch_out,
                 total_hours: newRecord.total_hours || 0,
+                extra_hours: updatedAttendance[recordIndex].extra_hours, // This won't be live updated
               };
             }
             return updatedAttendance;
@@ -131,6 +140,7 @@ export default function AttendanceDetailClient({
 
   const totalHours = monthlyAttendance.reduce((sum, day) => sum + (day.total_hours || 0), 0);
   const totalDaysPresent = monthlyAttendance.filter(day => day.check_in).length;
+  const totalExtraHours = monthlyAttendance.reduce((sum, day) => sum + (day.extra_hours || 0), 0);
 
   return (
     <div className="p-4 md:p-8 lg:p-10">
@@ -166,13 +176,21 @@ export default function AttendanceDetailClient({
         </div>
       </header>
 
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total Working Hours</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-2xl font-bold">{totalHours.toFixed(2)}</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Extra Hours</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-2xl font-bold">{formatExtraHours(totalExtraHours)}</p>
                 </CardContent>
             </Card>
             <Card>
@@ -204,6 +222,7 @@ export default function AttendanceDetailClient({
               <TableHead>Lunch In</TableHead>
               <TableHead>Check Out</TableHead>
               <TableHead>Total Hours</TableHead>
+              <TableHead>Extra Time</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -218,6 +237,7 @@ export default function AttendanceDetailClient({
                 <TableCell><TimeDisplay time={item.lunch_in} /></TableCell>
                 <TableCell><TimeDisplay time={item.check_out} /></TableCell>
                 <TableCell>{formatHours(item.total_hours)}</TableCell>
+                <TableCell className="font-medium text-blue-600">{formatExtraHours(item.extra_hours)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
