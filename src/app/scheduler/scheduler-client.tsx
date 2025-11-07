@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown, Search } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +38,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ReassignTaskDialog } from '@/app/tasks/reassign-task-dialog';
 import { EditScheduleDialog } from './edit-schedule-dialog';
 import { createClient } from '@/lib/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const AddScheduleRow = ({
@@ -314,6 +315,10 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [scheduleToDeletePermanently, setScheduleToDeletePermanently] = useState<ScheduleWithDetails | null>(null);
   
+  const [isClientSearchOpen, setClientSearchOpen] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const clientSearchInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     // Set initial client ID on the client to avoid hydration mismatch
     if (clients.length > 0 && !selectedClientId) {
@@ -370,6 +375,25 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
       .filter(s => s.client_id === selectedClientId && s.is_deleted)
       .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
   }, [selectedClientId, schedules]);
+
+  const filteredClients = useMemo(() => {
+    if (!clientSearchQuery) return clients;
+    return clients.filter(c => c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()));
+  }, [clients, clientSearchQuery]);
+
+  const handleClientSelect = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setClientSearchQuery("");
+    setClientSearchOpen(false);
+  };
+  
+  const handleClientSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (filteredClients.length > 0) {
+        handleClientSelect(filteredClients[0].id);
+      }
+    }
+  };
 
   const getScheduleStatus = (schedule: ScheduleWithDetails): string => {
     if (!schedule.task) return 'Planned';
@@ -465,35 +489,55 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         <header className="flex items-center justify-between pb-4 mb-4 border-b">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold">Content Scheduler</h1>
-             <Select onValueChange={(value) => { setSelectedClientId(value); setShowBin(false); }} value={selectedClientId || undefined}>
-              <SelectTrigger className="w-[320px] h-12 rounded-full border-0 shadow-none bg-green-100 text-green-800 hover:bg-green-200 group focus:ring-green-300">
-                 {selectedClient ? (
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={selectedClient.avatar} />
-                        <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-semibold">{selectedClient.name}</span>
-                    </div>
-                  ) : (
-                    <SelectValue placeholder="Select a client" />
-                  )}
-                  <ChevronDown className="h-5 w-5 opacity-0 group-hover:opacity-60 transition-opacity" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map(client => (
-                  <SelectItem key={client.id} value={client.id}>
-                    <div className="flex items-center gap-2">
+            <Popover open={isClientSearchOpen} onOpenChange={setClientSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" className="w-[320px] h-12 rounded-full border-0 shadow-none bg-green-100 text-green-800 hover:bg-green-200 group focus:ring-green-300 justify-start">
+                   {selectedClient ? (
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={selectedClient.avatar} />
+                          <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-semibold">{selectedClient.name}</span>
+                      </div>
+                    ) : (
+                      <span>Select a client</span>
+                    )}
+                    <ChevronDown className="h-5 w-5 opacity-0 group-hover:opacity-60 transition-opacity ml-auto" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[320px] p-0">
+                <div className="p-2 border-b">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      ref={clientSearchInputRef}
+                      placeholder="Search clients..."
+                      className="pl-9"
+                      value={clientSearchQuery}
+                      onChange={(e) => setClientSearchQuery(e.target.value)}
+                      onKeyDown={handleClientSearchKeyDown}
+                    />
+                  </div>
+                </div>
+                <ScrollArea className="h-60">
+                   {filteredClients.map(client => (
+                    <div
+                      key={client.id}
+                      role="button"
+                      className="flex items-center gap-2 p-2 hover:bg-accent cursor-pointer"
+                      onClick={() => handleClientSelect(client.id)}
+                    >
                       <Avatar className="h-6 w-6">
                           <AvatarImage src={client.avatar} />
                           <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
                       </Avatar>
                       {client.name}
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  ))}
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex items-center gap-2">
             {showBin ? (
