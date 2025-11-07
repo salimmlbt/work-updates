@@ -72,12 +72,12 @@ export function ReassignTaskDialog({
 
   useEffect(() => {
     if (isOpen) {
-        const today = new Date();
+        const today = startOfDay(new Date());
         reset({
             assignee_id: '',
             type: 'Posting',
             post_date: today,
-            deadline: today, // Default to today, will be recalculated by the effect below
+            deadline: today,
         });
     }
   }, [isOpen, reset]);
@@ -202,10 +202,22 @@ export function ReassignTaskDialog({
                   name="deadline"
                   control={control}
                   render={({ field }) => (
-                     <Button variant="outline" className="w-full justify-start text-left font-normal" disabled>
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {formatDate(field.value)}
-                    </Button>
+                     <Popover>
+                      <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-full justify-start text-left font-normal">
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {formatDate(field.value)}
+                          </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                          <CalendarComponent
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={{ after: postDate }}
+                          />
+                      </PopoverContent>
+                    </Popover>
                   )}
                 />
                 {errors.deadline && <p className="text-sm text-destructive">{errors.deadline.message}</p>}
