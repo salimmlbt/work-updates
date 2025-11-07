@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useTransition, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -301,7 +302,10 @@ const AssignTaskRow = ({
 };
 
 export default function SchedulerClient({ clients, initialSchedules, teams, profiles, projects }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[], projects: Project[] }) {
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(searchParams.get('client'));
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAddingSchedule, setIsAddingSchedule] = useState(false);
   const { toast } = useToast();
@@ -323,8 +327,9 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     // Set initial client ID on the client to avoid hydration mismatch
     if (clients.length > 0 && !selectedClientId) {
       setSelectedClientId(clients[0].id);
+      router.replace(`/scheduler?client=${clients[0].id}`);
     }
-  }, [clients, selectedClientId]);
+  }, [clients, selectedClientId, router]);
 
   useEffect(() => {
     setSchedules(initialSchedules);
@@ -355,16 +360,20 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
       
     const tasksChannel = supabase
         .channel('realtime-scheduler-tasks')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' },
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' },
           (payload) => {
             const updatedTask = payload.new as Task;
-            if (updatedTask.schedule_id) {
+            const scheduleId = payload.eventType === 'DELETE' ? payload.old.schedule_id : updatedTask.schedule_id;
+            
+            if (scheduleId) {
               setSchedules(prevSchedules => 
-                prevSchedules.map(schedule => 
-                  schedule.id === updatedTask.schedule_id 
-                  ? { ...schedule, task: { ...schedule.task, ...updatedTask } as Task } 
-                  : schedule
-                )
+                prevSchedules.map(schedule => {
+                  if (schedule.id === scheduleId) {
+                    const taskToUpdate = payload.eventType === 'DELETE' ? null : { ...schedule.task, ...updatedTask } as Task;
+                    return { ...schedule, task: taskToUpdate };
+                  }
+                  return schedule;
+                })
               );
             }
           }
@@ -404,6 +413,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     setSelectedClientId(clientId);
     setClientSearchQuery("");
     setClientSearchOpen(false);
+    router.push(`/scheduler?client=${clientId}`);
   };
   
   const handleClientSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -773,4 +783,5 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     
 
     
+
 
