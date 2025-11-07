@@ -103,26 +103,24 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             if (att.check_in && att.check_out) {
                 const checkInTime = new Date(att.check_in);
                 const checkOutTime = new Date(att.check_out);
+                
                 let sessionMinutes = differenceInMinutes(checkOutTime, checkInTime);
-
-                // Lunch calculation
-                if (att.lunch_out && att.lunch_in) {
-                    const lunchMinutes = differenceInMinutes(new Date(att.lunch_in), new Date(att.lunch_out));
-                    sessionMinutes -= Math.max(60, lunchMinutes); // Deduct at least 1 hour, or more if lunch was longer
-                } else {
-                    sessionMinutes -= 60; // No lunch recorded, deduct standard 1 hour
-                }
+                
+                // Deduct 1 hour for lunch, regardless of actual break time
+                sessionMinutes -= 60; 
 
                 totalMinutesWorked += sessionMinutes;
                 const actualWorkHours = sessionMinutes / 60;
                 
                 // Overtime calculation
-                if (workEndTime && checkOutTime > new Date(checkOutTime).setHours(workEndTime.getHours(), workEndTime.getMinutes(), workEndTime.getSeconds())) {
+                if (workEndTime) {
                     const expectedCheckOutDateTime = new Date(checkOutTime);
-                    expectedCheckOutDateTime.setHours(workEndTime.getHours(), workEndTime.getMinutes(), workEndTime.getSeconds());
+                    expectedCheckOutDateTime.setHours(workEndTime.getHours(), workEndTime.getMinutes(), workEndTime.getSeconds(), 0);
 
-                    const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
-                    totalExtraMinutes += overtimeMinutes;
+                    if(checkOutTime > expectedCheckOutDateTime) {
+                        const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
+                        totalExtraMinutes += overtimeMinutes;
+                    }
                 }
 
                 if (actualWorkHours >= expectedWorkHours) {
