@@ -20,6 +20,7 @@ import { createClient } from '@/lib/supabase/client';
 
 type AttendanceWithProfile = Attendance & {
   profiles: Profile;
+  extra_hours: number;
 };
 
 function TimeDisplay({ time }: { time: string | null }) {
@@ -50,6 +51,13 @@ function formatHours(hours: number | null): string {
   if (hours === null || typeof hours === 'undefined') return '-';
   return `${hours.toFixed(2)} hrs`;
 }
+
+function formatExtraHours(hours: number | null): string {
+  if (hours === null || typeof hours === 'undefined' || hours <= 0) return '-';
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
 
 function getStatus(attendance: AttendanceWithProfile) {
   if (attendance.check_in && !attendance.check_out) {
@@ -83,9 +91,11 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
             const index = newList.findIndex(item => item.user_id === record.user_id);
             if (index !== -1) {
               const profile = newList[index].profiles;
+               // Note: extra_hours won't be live updated here without a re-fetch or recalculation
               newList[index] = {
                 ...record,
                 profiles: profile,
+                extra_hours: newList[index].extra_hours, 
               } as AttendanceWithProfile;
             }
             return newList;
@@ -117,6 +127,7 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
               <TableHead>Check In</TableHead>
               <TableHead>Check Out</TableHead>
               <TableHead>Total Hours</TableHead>
+              <TableHead>Extra Hours</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -139,6 +150,7 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
                 <TableCell><TimeDisplay time={item.check_in} /></TableCell>
                 <TableCell><TimeDisplay time={item.check_out} /></TableCell>
                 <TableCell>{formatHours(item.total_hours)}</TableCell>
+                <TableCell className="text-blue-600 font-medium">{formatExtraHours(item.extra_hours)}</TableCell>
                 <TableCell>{getStatus(item)}</TableCell>
               </TableRow>
             ))}

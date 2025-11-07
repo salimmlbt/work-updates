@@ -2,6 +2,7 @@
 import { createServerClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import AttendanceClient from './attendance-client';
+import { differenceInMinutes, parse } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,33 @@ export default async function AttendancePage() {
 
   const attendanceList = profiles.map(profile => {
     const attendanceRecord = attendanceMap.get(profile.id);
+    
+    let extraMinutes = 0;
+    if (attendanceRecord) {
+        // Lunch calculation
+        if (attendanceRecord.lunch_out && attendanceRecord.lunch_in) {
+            const lunchMinutes = differenceInMinutes(new Date(attendanceRecord.lunch_in), new Date(attendanceRecord.lunch_out));
+            if (lunchMinutes < 60) {
+                extraMinutes += (60 - lunchMinutes);
+            }
+        } else if (attendanceRecord.check_out) {
+            // If they completed work and didn't take lunch, they get the full hour as extra
+            extraMinutes += 60;
+        }
+
+        // Overtime calculation
+        if (profile.work_end_time && attendanceRecord.check_out) {
+            const checkOutTime = new Date(attendanceRecord.check_out);
+            const expectedCheckOutDateTime = parse(profile.work_end_time, 'HH:mm:ss', new Date(checkOutTime));
+
+            if (checkOutTime > expectedCheckOutDateTime) {
+                const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
+                extraMinutes += overtimeMinutes;
+            }
+        }
+    }
+
+
     return {
       ...(attendanceRecord || {
         id: `${profile.id}-${today}`, // synthetic id
@@ -39,6 +67,7 @@ export default async function AttendancePage() {
       user_id: profile.id,
       date: today,
       profiles: profile,
+      extra_hours: extraMinutes / 60,
     };
   })
 
