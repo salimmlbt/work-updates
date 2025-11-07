@@ -30,7 +30,6 @@ export default function Header() {
   const { toast } = useToast();
 
   const [showLunchButton, setShowLunchButton] = useState(false);
-  const [isRightSide, setIsRightSide] = useState(false);
   const [lunchTimeSetting, setLunchTimeSetting] = useState('13:00');
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -59,22 +58,17 @@ export default function Header() {
       if (attendanceData) {
         if (attendanceData.check_in && !attendanceData.lunch_out && !attendanceData.check_out) {
           setStatus('checked-in');
-          setIsRightSide(false);
         } else if (attendanceData.lunch_out && !attendanceData.lunch_in) {
           setStatus('on-lunch');
-          setIsRightSide(true);
         } else if (attendanceData.lunch_in && !attendanceData.check_out) {
           setStatus('lunch-complete');
-          setIsRightSide(false);
         } else if (attendanceData.check_out) {
           setStatus('session-complete');
         } else {
           setStatus('checked-out');
-          setIsRightSide(false);
         }
       } else {
         setStatus('checked-out');
-        setIsRightSide(false);
       }
 
       const { data: settingsData } = settingsRes;
@@ -97,7 +91,9 @@ export default function Header() {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [supabase, hasMounted]);
 
   // Check time
@@ -134,18 +130,12 @@ export default function Header() {
     };
 
     const originalStatus = status;
-    const originalIsRightSide = isRightSide;
-
+    
     setStatus(optimisticStateMap[action]);
-    if (action === 'checkIn') setIsRightSide(false);
-    if (action === 'lunchOut') setIsRightSide(true);
-    if (action === 'lunchIn') setIsRightSide(false);
-    if (action === 'checkOut') setIsRightSide(true);
-
+    
     const { error } = await actionMap[action]();
     if (error) {
       setStatus(originalStatus);
-      setIsRightSide(originalIsRightSide);
       toast({ title: 'Error', description: error, variant: 'destructive' });
     } else {
       toast({ title: toastMessages[action] });
@@ -190,7 +180,7 @@ export default function Header() {
 
   if (isLoading) {
     return (
-      <header className="bg-background p-4 md:p-6 h-20 flex items-center">
+      <header className="bg-background p-4 md:p-6 h-20 flex items-center justify-center">
         <Skeleton className="h-10 w-32 rounded-full" />
       </header>
     );
@@ -210,8 +200,7 @@ export default function Header() {
         animate={{ height: headerHeight }}
         transition={{ duration: 0.5, ease: 'easeInOut' }}
         className={cn(
-          "w-full flex items-center overflow-hidden transition-all duration-500 ease-in-out",
-          isRightSide ? "justify-end" : "justify-start",
+          "w-full flex items-center justify-center overflow-hidden transition-all duration-500 ease-in-out",
           isExpanded && "backdrop-blur-md"
         )}
         style={{
@@ -231,7 +220,7 @@ export default function Header() {
             >
               <Button
                 onClick={handleMainButtonClick}
-                className="rounded-full px-6 py-2 font-medium transition-all duration-500 bg-white hover:bg-gray-100"
+                className="rounded-full px-6 py-2 font-medium transition-all duration-500 bg-white hover:bg-gray-100 w-36 justify-center"
               >
                 <span
                   className="flex items-center gap-2"
