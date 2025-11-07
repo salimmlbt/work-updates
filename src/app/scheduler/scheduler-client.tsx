@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown, Search } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown, Search, Rocket, AlertCircle, CheckCircle2, Eye, MessageSquare, Repeat } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +40,41 @@ import { ReassignTaskDialog } from '@/app/tasks/reassign-task-dialog';
 import { EditScheduleDialog } from './edit-schedule-dialog';
 import { createClient } from '@/lib/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+
+const statusIcons: Record<Task['status'], React.ReactNode> = {
+  'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
+  'inprogress': <Rocket className="h-4 w-4 text-purple-600" />,
+  'review': <Eye className="h-4 w-4 text-yellow-600" />,
+  'corrections': <MessageSquare className="h-4 w-4 text-orange-600" />,
+  'recreate': <Repeat className="h-4 w-4 text-blue-600" />,
+  'approved': <CheckCircle2 className="h-4 w-4 text-green-500" />,
+  'done': <CheckCircle2 className="h-4 w-4 text-green-500" />,
+  'under-review': <Eye className="h-4 w-4 text-yellow-600" />,
+};
+
+const statusLabels: Record<Task['status'], string> = {
+    'todo': 'Assigned',
+    'inprogress': 'In Progress',
+    'review': 'Review',
+    'corrections': 'Corrections',
+    'recreate': 'Recreate',
+    'approved': 'Approved',
+    'done': 'Created',
+    'under-review': 'Under Review'
+}
+
+const postingStatusIcons = {
+    'Planned': <AlertCircle className="h-4 w-4 text-gray-400" />,
+    'Scheduled': <CalendarIcon className="h-4 w-4 text-blue-500" />,
+    'Posted': <CheckCircle2 className="h-4 w-4 text-green-500" />,
+};
+
+const postingStatusLabels = {
+    'Planned': 'Planned',
+    'Scheduled': 'Scheduled',
+    'Posted': 'Posted',
+};
 
 
 const AddScheduleRow = ({
@@ -181,7 +216,10 @@ const AddScheduleRow = ({
             </Select>
         </TableCell>
         <TableCell>
-           <span className="text-muted-foreground italic">Planned</span>
+           <div className="flex items-center gap-2 text-muted-foreground italic">
+                {postingStatusIcons['Planned']}
+                <span>Planned</span>
+            </div>
         </TableCell>
         <TableCell className="text-right">
            <div className="flex justify-end gap-2">
@@ -424,26 +462,16 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     }
   };
 
-  const getScheduleStatus = (schedule: ScheduleWithDetails): string => {
-    if (!schedule.task) return 'Planned';
+  const getScheduleStatus = (schedule: ScheduleWithDetails): { status: Task['status'] | 'Planned' | 'Posting', isPosting: boolean, postingStatus?: 'Planned' | 'Scheduled' | 'Posted' | null } => {
+    if (!schedule.task) return { status: 'Planned', isPosting: false };
     const task = schedule.task;
     
     if (task.parent_task_id) {
-        return task.posting_status || 'Posting';
+        return { status: 'Posting', isPosting: true, postingStatus: task.posting_status };
     }
     
-    const statusMap: Record<Task['status'], string> = {
-        'todo': 'Assigned',
-        'inprogress': 'In Progress',
-        'done': 'Created',
-        'under-review': 'Under Review',
-        'review': 'Review',
-        'corrections': 'Corrections',
-        'recreate': 'Recreate',
-        'approved': 'Approved',
-    };
-    return statusMap[task.status] || 'Planned';
-};
+    return { status: task.status, isPosting: false };
+  };
 
 
   const handleScheduleAdded = (newSchedule: ScheduleWithDetails) => {
@@ -641,62 +669,79 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                           projects={projects}
                         />
                       )}
-                      {activeSchedules.map(schedule => (
-                        <React.Fragment key={schedule.id}>
-                          <TableRow className="group">
-                            <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                            <TableCell className="font-medium border-r">{schedule.title}</TableCell>
-                            <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
-                            <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
-                            <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
-                             <TableCell>
-                              {schedule.task ? (
-                                getScheduleStatus(schedule)
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleAssignTask(schedule.id)}
-                                >
-                                  Assign as task
-                                </Button>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
-                                      <DropdownMenuItem onClick={() => setScheduleToReassign(schedule)}>
-                                        <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
+                      {activeSchedules.map(schedule => {
+                        const statusInfo = getScheduleStatus(schedule);
+                        let icon, label;
+
+                        if (statusInfo.isPosting) {
+                          const postStatus = schedule.task?.posting_status || 'Planned';
+                          icon = postingStatusIcons[postStatus];
+                          label = postingStatusLabels[postStatus];
+                        } else {
+                          const taskStatus = statusInfo.status as Task['status'];
+                          icon = statusIcons[taskStatus] || postingStatusIcons['Planned'];
+                          label = statusLabels[taskStatus] || 'Planned';
+                        }
+                        return (
+                          <React.Fragment key={schedule.id}>
+                            <TableRow className="group">
+                              <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                              <TableCell className="font-medium border-r">{schedule.title}</TableCell>
+                              <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
+                              <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
+                              <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
+                              <TableCell>
+                                {schedule.task ? (
+                                  <div className="flex items-center gap-2">
+                                    {icon}
+                                    <span>{label}</span>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAssignTask(schedule.id)}
+                                  >
+                                    Assign as task
+                                  </Button>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
+                                        <DropdownMenuItem onClick={() => setScheduleToReassign(schedule)}>
+                                          <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
+                                        </DropdownMenuItem>
+                                      )}
+                                      <DropdownMenuItem onClick={() => { setScheduleToEdit(schedule); setIsEditOpen(true); }}>
+                                        <Pencil className="mr-2 h-4 w-4" /> Edit
                                       </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem onClick={() => { setScheduleToEdit(schedule); setIsEditOpen(true); }}>
-                                      <Pencil className="mr-2 h-4 w-4" /> Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-red-600 focus:text-red-500" onClick={() => handleDeleteClick(schedule)}>
-                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                          {assigningScheduleId === schedule.id && (
-                            <AssignTaskRow
-                              schedule={schedule}
-                              profiles={profiles}
-                              onSave={handleTaskCreated}
-                              onCancel={() => setAssigningScheduleId(null)}
-                            />
-                          )}
-                        </React.Fragment>
-                      ))}
+                                      <DropdownMenuItem className="text-red-600 focus:text-red-500" onClick={() => handleDeleteClick(schedule)}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            {assigningScheduleId === schedule.id && (
+                              <AssignTaskRow
+                                schedule={schedule}
+                                profiles={profiles}
+                                onSave={handleTaskCreated}
+                                onCancel={() => setAssigningScheduleId(null)}
+                              />
+                            )}
+                          </React.Fragment>
+                        )
+                      })}
                       {(activeSchedules.length === 0 && !isAddingSchedule) && (
                         <TableRow>
                           <TableCell colSpan={7} className="h-24 text-center">
@@ -781,7 +826,3 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 }
 
     
-
-    
-
-
