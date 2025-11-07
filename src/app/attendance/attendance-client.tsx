@@ -16,6 +16,7 @@ import { getInitials } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import type { Attendance, Profile } from '@/lib/types';
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 type AttendanceWithProfile = Attendance & {
   profiles: Profile;
@@ -62,6 +63,41 @@ function getStatus(attendance: AttendanceWithProfile) {
 
 export default function AttendanceClient({ initialData }: { initialData: AttendanceWithProfile[] }) {
   const router = useRouter();
+  const [attendanceList, setAttendanceList] = useState(initialData);
+
+  useEffect(() => {
+    setAttendanceList(initialData);
+  }, [initialData]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime-attendance-list')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'attendance' },
+        (payload) => {
+           setAttendanceList((prevList) => {
+            const newList = [...prevList];
+            const record = payload.new as Attendance;
+            const index = newList.findIndex(item => item.user_id === record.user_id);
+            if (index !== -1) {
+              const profile = newList[index].profiles;
+              newList[index] = {
+                ...record,
+                profiles: profile,
+              } as AttendanceWithProfile;
+            }
+            return newList;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleRowClick = (userId: string) => {
     router.push(`/attendance/${userId}`);
@@ -85,7 +121,7 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
             </TableRow>
           </TableHeader>
           <TableBody>
-            {initialData.map((item) => (
+            {attendanceList.map((item) => (
               <TableRow 
                 key={item.user_id} 
                 onClick={() => handleRowClick(item.user_id)}

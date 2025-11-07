@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/card"
 import type { Profile } from '@/lib/types';
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { Attendance } from '@/lib/types';
 
 interface MonthlyAttendance {
     date: string;
@@ -73,12 +75,59 @@ function formatHours(hours: number | null): string {
 
 export default function AttendanceDetailClient({
   user,
-  monthlyAttendance,
+  monthlyAttendance: initialMonthlyAttendance,
   selectedDate,
   prevMonth,
   nextMonth,
   allDaysCount,
 }: AttendanceDetailClientProps) {
+
+  const [monthlyAttendance, setMonthlyAttendance] = useState(initialMonthlyAttendance);
+
+  useEffect(() => {
+    setMonthlyAttendance(initialMonthlyAttendance);
+  }, [initialMonthlyAttendance]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`realtime-attendance-detail-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newRecord = payload.new as Attendance;
+          setMonthlyAttendance((prevAttendance) => {
+            const updatedAttendance = [...prevAttendance];
+            const recordIndex = updatedAttendance.findIndex(
+              (day) => day.date === newRecord.date
+            );
+            if (recordIndex !== -1) {
+              updatedAttendance[recordIndex] = {
+                date: newRecord.date,
+                check_in: newRecord.check_in,
+                check_out: newRecord.check_out,
+                lunch_in: newRecord.lunch_in,
+                lunch_out: newRecord.lunch_out,
+                total_hours: newRecord.total_hours || 0,
+              };
+            }
+            return updatedAttendance;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id]);
+
 
   const totalHours = monthlyAttendance.reduce((sum, day) => sum + (day.total_hours || 0), 0);
   const totalDaysPresent = monthlyAttendance.filter(day => day.check_in).length;

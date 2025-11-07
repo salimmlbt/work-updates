@@ -37,6 +37,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReassignTaskDialog } from '@/app/tasks/reassign-task-dialog';
 import { EditScheduleDialog } from './edit-schedule-dialog';
+import { createClient } from '@/lib/supabase/client';
 
 
 const AddScheduleRow = ({
@@ -319,6 +320,38 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
       setSelectedClientId(clients[0].id);
     }
   }, [clients, selectedClientId]);
+
+  useEffect(() => {
+    setSchedules(initialSchedules);
+  }, [initialSchedules]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime-scheduler')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'content_schedules' },
+        (payload) => {
+           const newRecord = payload.new as ScheduleWithDetails;
+           const oldRecord = payload.old as ScheduleWithDetails;
+           const recordId = newRecord?.id || oldRecord?.id;
+          
+           if (payload.eventType === 'INSERT') {
+             setSchedules((prev) => [newRecord, ...prev]);
+           } else if (payload.eventType === 'UPDATE') {
+             setSchedules((prev) => prev.map((s) => (s.id === newRecord.id ? newRecord : s)));
+           } else if (payload.eventType === 'DELETE') {
+             setSchedules((prev) => prev.filter((s) => s.id !== recordId));
+           }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const selectedClient = useMemo(() => {
     return clients.find(c => c.id === selectedClientId);
