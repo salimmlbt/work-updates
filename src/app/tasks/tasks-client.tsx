@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -401,7 +400,8 @@ const AddTaskRow = ({
           </PopoverContent>
         </Popover>
       </td>
-
+       {/* New column placeholder */}
+       <td className="px-4 py-3 border-r"></td>
       {/* Status */}
       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
         <div className="flex items-center gap-2">
@@ -467,6 +467,18 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
       setDateText('No date');
     }
   }, [task.deadline]);
+  
+  const dynamicDate = useMemo(() => {
+    let dateToShow: string | null = null;
+    if (activeTab === 'active' || !task.status_updated_at) {
+        dateToShow = task.created_at;
+    } else {
+        dateToShow = task.status_updated_at;
+    }
+    if (!dateToShow) return '-';
+    return format(parseISO(dateToShow), 'MMM d, h:mm a');
+  }, [activeTab, task.created_at, task.status_updated_at]);
+
 
   const handleRowClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -597,6 +609,11 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
       <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dateText}</span>
+        </div>
+      </td>
+      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
+        <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
+            <span className="truncate">{dynamicDate}</span>
         </div>
       </td>
       <td className="p-0">
@@ -1222,7 +1239,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     startTransition(async () => {
         const { error } = await deleteTasksPermanently(selectedTaskIds);
         if (error) {
-            toast({ title: "Error deleting tasks", description: error.variant, variant: "destructive" });
+            toast({ title: "Error deleting tasks", description: error.message, variant: "destructive" });
             setTasks(originalTasks); // Revert on error
         } else {
             toast({ title: `${selectedTaskIds.length} tasks permanently deleted` });
@@ -1349,6 +1366,14 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       </th>
     )
   }
+  
+  const getDynamicDateColumnHeader = () => {
+      switch(activeTab) {
+          case 'under-review': return 'Submitted Date';
+          case 'completed': return 'Completed Date';
+          default: return 'Created at';
+      }
+  }
 
   const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status'], isReviewer: boolean, activeTab: string) => {
     const allVisibleTasksSelected = tasksToRender.length > 0 && tasksToRender.every(t => selectedTaskIds.includes(t.id));
@@ -1375,6 +1400,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
             <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
             <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
+            <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[150px]">{getDynamicDateColumnHeader()}</th>
             <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
             <th className="px-4 py-2" style={{ width: "50px" }}></th>
           </tr>

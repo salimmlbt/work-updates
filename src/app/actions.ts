@@ -7,6 +7,7 @@ import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType,
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export async function checkIn() {
   const supabase = await createServerClient();
@@ -405,7 +406,7 @@ export async function updateTaskStatus(
         return { error: 'Could not retrieve task to update status.' };
     }
 
-    const updates: Partial<Task> = { status };
+    const updates: Partial<Task> = { status, status_updated_at: new Date().toISOString() };
     
     const revisions: Revisions = (currentTask.revisions as Revisions | null) || { corrections: 0, recreations: 0 };
     if (status === 'corrections') {
