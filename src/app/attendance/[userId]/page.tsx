@@ -48,6 +48,7 @@ export default async function UserAttendancePage({ params, searchParams }: { par
     if (record && user.work_end_time && record.check_out) {
         try {
             const checkOutTime = new Date(record.check_out);
+            // Use the date part from the record itself to build the expected checkout time
             const attendanceDate = parseISO(record.date);
             const expectedCheckOutDateTime = parse(user.work_end_time, 'HH:mm:ss', attendanceDate);
             
