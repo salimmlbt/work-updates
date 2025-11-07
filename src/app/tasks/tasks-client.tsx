@@ -73,6 +73,7 @@ import { useSearchParams } from 'next/navigation';
 import { ReassignTaskDialog } from './reassign-task-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
+import { EditTaskDialog } from './edit-task-dialog';
 
 
 const statusIcons = {
@@ -1551,4 +1552,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
