@@ -262,6 +262,7 @@ export type Database = {
           instagram: string | null
           is_archived: boolean
           linkedin: string | null
+          monthly_salary: number | null
           role_id: string | null
           status: string | null
           work_end_time: string | null
@@ -277,6 +278,7 @@ export type Database = {
           instagram?: string | null
           is_archived?: boolean
           linkedin?: string | null
+          monthly_salary?: number | null
           role_id?: string | null
           status?: string | null
           work_end_time?: string | null
@@ -292,6 +294,7 @@ export type Database = {
           instagram?: string | null
           is_archived?: boolean
           linkedin?: string | null
+          monthly_salary?: number | null
           role_id?: string | null
           status?: string | null
           work_end_time?: string | null
@@ -421,6 +424,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           parent_task_id: string | null
+          post_date: string | null
           posting_status: "Planned" | "Scheduled" | "Posted" | null
           project_id: string | null
           revisions: Json | null
@@ -441,6 +445,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           parent_task_id?: string | null
+          post_date?: string | null
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           revisions?: Json | null
@@ -461,6 +466,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           parent_task_id?: string | null
+          post_date?: string | null
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           revisions?: Json | null
@@ -499,7 +505,7 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
-           {
+          {
             foreignKeyName: "tasks_schedule_id_fkey"
             columns: ["schedule_id"]
             isOneToOne: false

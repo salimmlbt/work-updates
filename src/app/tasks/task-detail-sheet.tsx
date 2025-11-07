@@ -19,6 +19,7 @@ import {
   MessageSquare,
   ChevronLeft,
   ChevronRight,
+  Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -162,7 +163,7 @@ export function TaskDetailSheet({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-8 text-sm">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mt-8 text-sm">
             <div>
               <p className="text-muted-foreground text-xs mb-1">Responsible</p>
               {task.profiles ? (
@@ -202,6 +203,17 @@ export function TaskDetailSheet({
                 <span>{formatDate(task.deadline)}</span>
               </div>
             </div>
+
+            {task.post_date && (
+                <div>
+                  <p className="text-muted-foreground text-xs mb-1">Post Date</p>
+                  <div className="flex items-center gap-2">
+                    <Send className="h-4 w-4 text-muted-foreground" />
+                    <span>{formatDate(task.post_date)}</span>
+                  </div>
+                </div>
+            )}
+
 
             <div>
               <p className="text-muted-foreground text-xs mb-1">Priority</p>

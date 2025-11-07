@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { format, isToday, isTomorrow, isYesterday } from 'date-fns'
+import { format, isToday, isTomorrow, subDays } from 'date-fns'
 import { Calendar, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -33,7 +33,8 @@ import { createTask } from '@/app/teams/actions'
 const reassignSchema = z.object({
   assignee_id: z.string().min(1, 'Assignee is required.'),
   type: z.string().min(1, 'Type is required.'),
-  deadline: z.date({ required_error: 'Deadline is required.' }),
+  post_date: z.date({ required_error: 'Post date is required.' }),
+  deadline: z.date({ required_error: 'Due date is required.' }),
 })
 
 type ReassignFormData = z.infer<typeof reassignSchema>
@@ -60,21 +61,40 @@ export function ReassignTaskDialog({
     control,
     reset,
     watch,
+    setValue,
     formState: { errors, isValid },
   } = useForm<ReassignFormData>({
     resolver: zodResolver(reassignSchema),
     mode: 'onChange',
   })
 
+  const postDate = watch('post_date');
+
   useEffect(() => {
     if (isOpen) {
       reset({
         assignee_id: '',
         type: 'Posting',
+        post_date: new Date(),
         deadline: new Date(),
       })
     }
   }, [isOpen, reset])
+  
+  useEffect(() => {
+    if (postDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize today
+        const normalizedPostDate = new Date(postDate);
+        normalizedPostDate.setHours(0, 0, 0, 0); // Normalize postDate
+
+        if (isToday(normalizedPostDate) || isTomorrow(normalizedPostDate)) {
+            setValue('deadline', today);
+        } else {
+            setValue('deadline', subDays(normalizedPostDate, 1));
+        }
+    }
+  }, [postDate, setValue]);
 
   const assigneeId = watch('assignee_id')
   const selectedAssignee = profiles.find(p => p.id === assigneeId)
@@ -88,6 +108,7 @@ export function ReassignTaskDialog({
         project_id: task.project_id,
         client_id: task.client_id,
         deadline: data.deadline.toISOString(),
+        post_date: data.post_date.toISOString(),
         assignee_id: data.assignee_id,
         type: data.type,
         parent_task_id: task.id,
@@ -105,9 +126,6 @@ export function ReassignTaskDialog({
 
   const formatDate = (date: Date | undefined) => {
     if (!date) return <span>Pick a date</span>
-    if (isToday(date)) return 'Today'
-    if (isTomorrow(date)) return 'Tomorrow'
-    if (isYesterday(date)) return 'Yesterday'
     return format(date, "dd MMM")
   }
 
@@ -155,26 +173,43 @@ export function ReassignTaskDialog({
             {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
           </div>
           
-          <div className="grid gap-2">
-            <label>Due Date</label>
-             <Controller
-              name="deadline"
-              control={control}
-              render={({ field }) => (
-                <Popover>
-                  <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {formatDate(field.value)}
-                      </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                      <CalendarComponent mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              )}
-            />
-            {errors.deadline && <p className="text-sm text-destructive">{errors.deadline.message}</p>}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+                <label>Schedule/Post Date</label>
+                <Controller
+                  name="post_date"
+                  control={control}
+                  render={({ field }) => (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-full justify-start text-left font-normal">
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {formatDate(field.value)}
+                          </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                          <CalendarComponent mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
+                {errors.post_date && <p className="text-sm text-destructive">{errors.post_date.message}</p>}
+            </div>
+
+            <div className="grid gap-2">
+                <label>Due Date</label>
+                <Controller
+                  name="deadline"
+                  control={control}
+                  render={({ field }) => (
+                     <Button variant="outline" className="w-full justify-start text-left font-normal" disabled>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {formatDate(field.value)}
+                    </Button>
+                  )}
+                />
+                {errors.deadline && <p className="text-sm text-destructive">{errors.deadline.message}</p>}
+            </div>
           </div>
           
           <DialogFooter>

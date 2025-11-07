@@ -434,6 +434,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           parent_task_id: string | null
+          post_date: string | null
           posting_status: "Planned" | "Scheduled" | "Posted" | null
           project_id: string | null
           revisions: Json | null
@@ -462,6 +463,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           parent_task_id?: string | null
+          post_date?: string | null
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           revisions?: Json | null
@@ -490,6 +492,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           parent_task_id?: string | null
+          post_date?: string | null
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           revisions?: Json | null
