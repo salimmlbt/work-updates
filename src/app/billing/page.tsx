@@ -120,7 +120,9 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
                 // Overtime calculation
                 if (user.work_end_time) {
                     try {
-                        const expectedCheckOutDateTime = parse(user.work_end_time, 'HH:mm:ss', checkOutTime);
+                        const attendanceDate = new Date(att.date);
+                        const expectedCheckOutDateTime = parse(user.work_end_time, 'HH:mm:ss', attendanceDate);
+                        
                         if(checkOutTime > expectedCheckOutDateTime) {
                             const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
                             totalExtraMinutes += overtimeMinutes;
@@ -167,4 +169,3 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
         />
     );
 }
-
