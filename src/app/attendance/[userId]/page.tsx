@@ -22,8 +22,8 @@ export default async function UserAttendancePage({ params, searchParams }: { par
   const selectedDate = searchParams.month ? new Date(`${searchParams.month}-01T00:00:00Z`) : new Date();
   const firstDayOfMonth = startOfMonth(selectedDate);
   const lastDayOfMonth = endOfMonth(selectedDate);
-  const prevMonth = format(new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth() - 1, 1), 'yyyy-MM-dd');
-  const nextMonth = format(new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth() + 1, 1), 'yyyy-MM-dd');
+  const prevMonth = format(new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth() - 1, 1), 'yyyy-MM');
+  const nextMonth = format(new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth() + 1, 1), 'yyyy-MM');
 
   const { data: attendanceData, error: attendanceError } = await supabase
     .from('attendance')
@@ -48,7 +48,8 @@ export default async function UserAttendancePage({ params, searchParams }: { par
     if (record && user.work_end_time && record.check_out) {
         try {
             const checkOutTime = new Date(record.check_out);
-            const attendanceDate = new Date(record.date); // Use attendance date as base
+            // IMPORTANT: Use the date from the record, not from the checkout time itself
+            const attendanceDate = parseISO(record.date + 'T00:00:00Z');
             const expectedCheckOutDateTime = parse(user.work_end_time, 'HH:mm:ss', attendanceDate);
             
             if (checkOutTime > expectedCheckOutDateTime) {

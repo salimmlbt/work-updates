@@ -1,5 +1,5 @@
 
-'use client'
+'use client';
 
 import {
   Table,
@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -90,6 +90,7 @@ export default function AttendanceDetailClient({
   allDaysCount,
 }: AttendanceDetailClientProps) {
 
+  const router = useRouter();
   const [monthlyAttendance, setMonthlyAttendance] = useState(initialMonthlyAttendance);
 
   useEffect(() => {
@@ -142,13 +143,18 @@ export default function AttendanceDetailClient({
   const totalDaysPresent = monthlyAttendance.filter(day => day.check_in).length;
   const totalExtraHours = monthlyAttendance.reduce((sum, day) => sum + (day.extra_hours || 0), 0);
 
+  const handleNavClick = (href: string) => {
+    router.push(href);
+  };
+
+
   return (
     <div className="p-4 md:p-8 lg:p-10">
       <header className="mb-8">
-        <Link href="/attendance" className="text-sm text-primary hover:underline flex items-center gap-1 mb-4">
+        <Button variant="link" className="p-0 text-sm text-primary hover:underline flex items-center gap-1 mb-4" onClick={() => handleNavClick('/attendance')}>
             <ChevronLeft className="h-4 w-4" />
             Back to Attendance
-        </Link>
+        </Button>
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
@@ -161,16 +167,12 @@ export default function AttendanceDetailClient({
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="outline" asChild>
-                    <Link href={`/attendance/${user.id}?month=${prevMonth}`}>
-                        <ChevronLeft className="h-4 w-4" />
-                    </Link>
+                <Button variant="outline" onClick={() => handleNavClick(`/attendance/${user.id}?month=${prevMonth}`)}>
+                    <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-lg font-semibold w-32 text-center">{format(parseISO(selectedDate), 'MMMM yyyy')}</span>
-                <Button variant="outline" asChild>
-                    <Link href={`/attendance/${user.id}?month=${nextMonth}`}>
-                        <ChevronRight className="h-4 w-4" />
-                    </Link>
+                <Button variant="outline" onClick={() => handleNavClick(`/attendance/${user.id}?month=${nextMonth}`)}>
+                    <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
         </div>
