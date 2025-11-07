@@ -497,9 +497,33 @@ export async function restoreTask(taskId: string) {
   return { success: true }
 }
 
+export async function restoreTasks(taskIds: string[]) {
+  const supabase = await createServerClient()
+  const { error } = await supabase.from('tasks').update({ is_deleted: false }).in('id', taskIds)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
 export async function deleteTaskPermanently(taskId: string) {
   const supabase = await createServerClient()
   const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
+export async function deleteTasksPermanently(taskIds: string[]) {
+  const supabase = await createServerClient()
+  const { error } = await supabase.from('tasks').delete().in('id', taskIds)
   
   if (error) {
     return { error: error.message }

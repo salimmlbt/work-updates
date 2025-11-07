@@ -48,7 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, Correction, Revisions } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
-import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus, deleteTasks } from '@/app/actions';
+import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus, deleteTasks, restoreTasks, deleteTasksPermanently } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -1140,7 +1140,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   useEffect(() => {
     setSelectedTaskIds([]);
-  }, [activeTab]);
+  }, [activeTab, showBin]);
 
   const handleSaveTask = (newTask: Task) => {
     // This function is now mostly redundant due to realtime,
@@ -1190,10 +1190,42 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     startTransition(async () => {
         const { error } = await deleteTasks(selectedTaskIds);
         if (error) {
-            toast({ title: "Error deleting tasks", description: error, variant: "destructive" });
+            toast({ title: "Error deleting tasks", description: error.message, variant: "destructive" });
             setTasks(originalTasks); // Revert on error
         } else {
             toast({ title: `${selectedTaskIds.length} tasks moved to bin` });
+            setSelectedTaskIds([]);
+        }
+    });
+  };
+
+  const handleBulkRestore = () => {
+    const originalTasks = [...tasks];
+    setTasks(prev => prev.map(t => selectedTaskIds.includes(t.id) ? { ...t, is_deleted: false } : t));
+    
+    startTransition(async () => {
+        const { error } = await restoreTasks(selectedTaskIds);
+        if (error) {
+            toast({ title: "Error restoring tasks", description: error, variant: "destructive" });
+            setTasks(originalTasks); // Revert on error
+        } else {
+            toast({ title: `${selectedTaskIds.length} tasks restored` });
+            setSelectedTaskIds([]);
+        }
+    });
+  };
+
+  const handleBulkDeletePermanently = () => {
+    const originalTasks = [...tasks];
+    setTasks(prev => prev.filter(t => !selectedTaskIds.includes(t.id)));
+    
+    startTransition(async () => {
+        const { error } = await deleteTasksPermanently(selectedTaskIds);
+        if (error) {
+            toast({ title: "Error deleting tasks", description: error, variant: "destructive" });
+            setTasks(originalTasks); // Revert on error
+        } else {
+            toast({ title: `${selectedTaskIds.length} tasks permanently deleted` });
             setSelectedTaskIds([]);
         }
     });
@@ -1376,49 +1408,69 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const mainContent = () => {
     if (showBin) {
-      return (
-        <div className="mb-4 overflow-x-auto">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">
-              Deleted Tasks
-              <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 ml-2">{deletedTasks.length}</span>
-            </h2>
-          </div>
-          {deletedTasks.length > 0 ? (
-            <table className="w-full text-left mt-2">
-              <thead>
-                <tr className="border-b">
-                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[40%]">Task Details</th>
-                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Project</th>
-                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Assignee</th>
-                  <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {deletedTasks.map(task => (
-                  <tr key={task.id} className="border-b group hover:bg-muted/50">
-                    <td className="px-4 py-3">{task.description}</td>
-                    <td className="px-4 py-3">{task.projects?.name || '-'}</td>
-                    <td className="px-4 py-3">{task.profiles?.full_name || '-'}</td>
-                    <td className="px-4 py-3 text-right">
-                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleRestoreTask(task)}>
-                              <RefreshCcw className="h-4 w-4 mr-2" /> Restore
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => setTaskToDeletePermanently(task)}>
-                              <Trash2 className="h-4 w-4 mr-2" /> Delete Permanently
-                          </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="text-muted-foreground mt-4 text-center py-8">The bin is empty.</p>
-          )}
-        </div>
-      );
+        const allBinTasksSelected = deletedTasks.length > 0 && deletedTasks.every(t => selectedTaskIds.includes(t.id));
+        return (
+            <div className="mb-4 overflow-x-auto">
+            <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                Deleted Tasks
+                <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 ml-2">{deletedTasks.length}</span>
+                </h2>
+            </div>
+            {deletedTasks.length > 0 ? (
+                <table className="w-full text-left mt-2">
+                <thead>
+                    <tr className="border-b">
+                    <th className="px-4 py-2 w-12">
+                        <Checkbox
+                            checked={allBinTasksSelected}
+                            onCheckedChange={(checked) => {
+                                const taskIds = deletedTasks.map(t => t.id);
+                                if (checked) {
+                                    setSelectedTaskIds(taskIds);
+                                } else {
+                                    setSelectedTaskIds([]);
+                                }
+                            }}
+                        />
+                    </th>
+                    <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[40%]">Task Details</th>
+                    <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Project</th>
+                    <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Assignee</th>
+                    <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {deletedTasks.map(task => (
+                    <tr key={task.id} className="border-b group hover:bg-muted/50">
+                        <td className="px-4 py-3">
+                            <Checkbox
+                                checked={selectedTaskIds.includes(task.id)}
+                                onCheckedChange={(checked) => handleSelectTask(task.id, !!checked)}
+                            />
+                        </td>
+                        <td className="px-4 py-3">{task.description}</td>
+                        <td className="px-4 py-3">{task.projects?.name || '-'}</td>
+                        <td className="px-4 py-3">{task.profiles?.full_name || '-'}</td>
+                        <td className="px-4 py-3 text-right">
+                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleRestoreTask(task)}>
+                                  <RefreshCcw className="h-4 w-4 mr-2" /> Restore
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => setTaskToDeletePermanently(task)}>
+                                  <Trash2 className="h-4 w-4 mr-2" /> Delete Permanently
+                              </Button>
+                          </div>
+                        </td>
+                    </tr>
+                    ))}
+                </tbody>
+                </table>
+            ) : (
+                <p className="text-muted-foreground mt-4 text-center py-8">The bin is empty.</p>
+            )}
+            </div>
+        );
     }
     
     if (view === 'table') {
@@ -1470,35 +1522,64 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tasks</h1>
-          {canEditTasks && selectedTaskIds.length > 0 ? (
+          {selectedTaskIds.length > 0 ? (
             <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">{selectedTaskIds.length} selected</span>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                {showBin ? (
+                    <>
+                        <Button variant="outline" size="sm" onClick={handleBulkRestore}>
+                            <RefreshCcw className="mr-2 h-4 w-4" /> Restore
                         </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This will move {selectedTaskIds.length} task(s) to the bin. This action can be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleBulkDelete} className={cn(buttonVariants({ variant: "destructive" }))}>
-                                {isPending ? 'Deleting...' : 'Delete'}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete {selectedTaskIds.length} task(s). This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleBulkDeletePermanently} className={cn(buttonVariants({ variant: "destructive" }))}>
+                                        {isPending ? 'Deleting...' : 'Delete Permanently'}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </>
+                ) : (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will move {selectedTaskIds.length} task(s) to the bin. This action can be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleBulkDelete} className={cn(buttonVariants({ variant: "destructive" }))}>
+                                    {isPending ? 'Deleting...' : 'Delete'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialog>
+                    </AlertDialog>
+                )}
             </div>
           ) : (
             <>
-              {canEditTasks && !isAddingTask && view === 'table' && (
+              {canEditTasks && !isAddingTask && view === 'table' && !showBin && (
                 <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
                   <Plus className="mr-2 h-4 w-4" />
                   Add new
@@ -1643,7 +1724,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteTask}
-              className={cn(buttonVariants({ variant: 'destructive' }))}
+              className={cn(buttonVariants({ variant: "destructive" }))}
               disabled={isPending}
             >
               {isPending ? "Deleting..." : "Delete"}
@@ -1656,7 +1737,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           <AlertDialogHeader>
             <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone and will permanently delete the task "{taskToDeletePermanently?.description}".
+              This action cannot be undone. This will permanently delete the task "{taskToDeletePermanently?.description}".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
