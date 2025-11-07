@@ -437,7 +437,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile }: { task: TaskWithDetails; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; }) => {
+const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
@@ -526,6 +526,9 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
   const statusOptions = getStatusOptions();
   
   const isStatusChangeDisabled = (activeTab === 'completed' && !isReviewer) || (activeTab === 'under-review' && !isReviewer && !isPostingType && currentUserProfile?.id !== task.assignee_id) || statusOptions.length === 0;
+
+  const hasChildTask = useMemo(() => allTasks.some(t => t.parent_task_id === task.id), [allTasks, task.id]);
+
 
   return (
     <>
@@ -650,7 +653,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
               <Pencil className="mr-2 h-4 w-4" /> Edit
             </DropdownMenuItem>
             {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
-              <DropdownMenuItem onClick={() => onReassign(task)}>
+              <DropdownMenuItem onClick={() => onReassign(task)} disabled={hasChildTask}>
                 <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
               </DropdownMenuItem>
             )}
@@ -690,6 +693,7 @@ const TaskRow = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete
 
 const TaskTableBody = ({
   tasks,
+  allTasks,
   isAddingTask,
   onSaveTask,
   onCancelAddTask,
@@ -708,7 +712,8 @@ const TaskTableBody = ({
   activeTab,
   currentUserProfile,
 }: {
-  tasks: TaskWithDetails[]
+  tasks: TaskWithDetails[];
+  allTasks: TaskWithDetails[];
   isAddingTask?: boolean
   onSaveTask?: (task: any) => void
   onCancelAddTask?: () => void
@@ -739,6 +744,7 @@ const TaskTableBody = ({
         >
           <TaskRow
             task={task}
+            allTasks={allTasks}
             onStatusChange={onStatusChange}
             onPostingStatusChange={onPostingStatusChange}
             onEdit={onEdit}
@@ -768,7 +774,7 @@ const TaskTableBody = ({
   )
 }
 
-const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
+const KanbanCard = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, allTasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
   const cardColors: { [key: string]: string } = {
     "todo": "bg-blue-100/50",
     "inprogress": "bg-purple-100/50",
@@ -803,6 +809,8 @@ const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDel
 
   const isCompleted = task.status === 'done' || task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
   const isReassigned = !!task.parent_task_id;
+  const hasChildTask = useMemo(() => allTasks.some(t => t.parent_task_id === task.id), [allTasks, task.id]);
+
 
   return (
     <Card 
@@ -876,7 +884,7 @@ const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDel
                           </DropdownMenuItem>
                         ))}
                      {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
-                      <DropdownMenuItem onClick={() => onReassign(task)}>
+                      <DropdownMenuItem onClick={() => onReassign(task)} disabled={hasChildTask}>
                         <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
                       </DropdownMenuItem>
                     )}
@@ -891,14 +899,14 @@ const KanbanCard = ({ task, onStatusChange, onPostingStatusChange, onEdit, onDel
 };
 
 
-const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
+const KanbanBoard = ({ tasks: allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
   const statuses: ('todo' | 'inprogress' | 'review' | 'done')[] = ['todo', 'inprogress', 'review', 'done'];
 
   return (
     <div className="flex flex-col h-full">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border-b">
         {statuses.map((status) => {
-          const tasksInStatus = allTasksProp.filter(
+          const tasksInStatus = allTasks.filter(
             (task) => task.status === status
           );
           return (
@@ -918,7 +926,7 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onPostingStatusChang
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 flex-1">
         {statuses.map((status, index) => {
-          const tasksInStatus = allTasksProp.filter(
+          const tasksInStatus = allTasks.filter(
             (task) => task.status === status
           );
           return (
@@ -931,6 +939,7 @@ const KanbanBoard = ({ tasks: allTasksProp, onStatusChange, onPostingStatusChang
                   <KanbanCard
                     key={task.id}
                     task={task}
+                    allTasks={allTasks}
                     onStatusChange={onStatusChange}
                     onPostingStatusChange={onPostingStatusChange}
                     onEdit={onEdit}
@@ -1260,6 +1269,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         </thead>
         <TaskTableBody
           tasks={tasksToRender}
+          allTasks={tasks}
           isAddingTask={canEditTasks && isAddingTask && activeTab === 'active'}
           onSaveTask={handleSaveTask}
           onCancelAddTask={() => setIsAddingTask(false)}
@@ -1369,7 +1379,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         </div>
       )
     } else {
-      return <KanbanBoard tasks={sortedTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} />
+      return <KanbanBoard tasks={sortedTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} allTasks={tasks} />
     }
   }
 
@@ -1552,3 +1562,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
