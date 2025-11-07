@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -278,6 +279,7 @@ const AddTaskRow = ({
 
   return (
     <tr className="border-b bg-gray-50">
+      <td></td>
       <td className="px-4 py-3 border-r">
         <Input 
           placeholder="Type Task Details" 
