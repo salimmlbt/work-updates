@@ -93,10 +93,9 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
         let totalMinutesWorked = 0;
 
         const workStartTime = user.work_start_time ? parse(user.work_start_time, 'HH:mm:ss', new Date()) : null;
-        const workEndTime = user.work_end_time ? parse(user.work_end_time, 'HH:mm:ss', new Date()) : null;
-
-        const expectedWorkHours = workStartTime && workEndTime 
-            ? differenceInHours(workEndTime, workStartTime) - 1 // 1 hour lunch break
+        
+        const expectedWorkHours = workStartTime && user.work_end_time 
+            ? differenceInHours(parse(user.work_end_time, 'HH:mm:ss', new Date()), workStartTime) - 1 // 1 hour lunch break
             : 8;
 
         userAttendance.forEach((att) => {
@@ -104,22 +103,30 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
                 const checkInTime = new Date(att.check_in);
                 const checkOutTime = new Date(att.check_out);
                 
-                let sessionMinutes = differenceInMinutes(checkOutTime, checkInTime);
-                
-                // Deduct 1 hour for lunch, regardless of actual break time
-                sessionMinutes -= 60; 
+                let lunchMinutes = 60; // Default 1 hour lunch break
+                if (att.lunch_in && att.lunch_out) {
+                    const actualLunchMinutes = differenceInMinutes(new Date(att.lunch_in), new Date(att.lunch_out));
+                    if (actualLunchMinutes > 60) {
+                        lunchMinutes = actualLunchMinutes;
+                    }
+                }
 
-                totalMinutesWorked += sessionMinutes;
-                const actualWorkHours = sessionMinutes / 60;
+                let sessionMinutes = differenceInMinutes(checkOutTime, checkInTime);
+                const actualWorkMinutes = sessionMinutes - lunchMinutes;
+                
+                totalMinutesWorked += actualWorkMinutes;
+                const actualWorkHours = actualWorkMinutes / 60;
                 
                 // Overtime calculation
-                if (workEndTime) {
-                    const expectedCheckOutDateTime = new Date(checkOutTime);
-                    expectedCheckOutDateTime.setHours(workEndTime.getHours(), workEndTime.getMinutes(), workEndTime.getSeconds(), 0);
-
-                    if(checkOutTime > expectedCheckOutDateTime) {
-                        const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
-                        totalExtraMinutes += overtimeMinutes;
+                if (user.work_end_time) {
+                    try {
+                        const expectedCheckOutDateTime = parse(user.work_end_time, 'HH:mm:ss', checkOutTime);
+                        if(checkOutTime > expectedCheckOutDateTime) {
+                            const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
+                            totalExtraMinutes += overtimeMinutes;
+                        }
+                    } catch (e) {
+                         console.error(`Could not parse work_end_time '${user.work_end_time}' for user ${user.id}`);
                     }
                 }
 
@@ -160,3 +167,4 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
         />
     );
 }
+
