@@ -29,6 +29,7 @@ interface SalaryData {
     monthlySalary: number;
     payableSalary: number;
     extraHours: number;
+    totalHours: number;
 }
 
 interface SalaryClientProps {
@@ -106,6 +107,7 @@ export default function SalaryClient({ initialData, selectedDate, prevMonth, nex
                     <TableHead className="text-center">Full Days</TableHead>
                     <TableHead className="text-center">Half Days</TableHead>
                     <TableHead className="text-center">Absent Days</TableHead>
+                    <TableHead className="text-center">Total Hours</TableHead>
                     <TableHead className="text-center">Extra Hours</TableHead>
                     <TableHead className="text-right">Monthly Salary</TableHead>
                     <TableHead className="text-right">Payable Salary</TableHead>
@@ -130,6 +132,7 @@ export default function SalaryClient({ initialData, selectedDate, prevMonth, nex
                     <TableCell className="text-center text-green-600 font-medium">{data.totalFullDays}</TableCell>
                     <TableCell className="text-center text-yellow-600 font-medium">{data.totalHalfDays}</TableCell>
                     <TableCell className="text-center text-red-600 font-medium">{data.totalAbsentDays}</TableCell>
+                    <TableCell className="text-center font-medium">{formatHours(data.totalHours)}</TableCell>
                     <TableCell className="text-center text-blue-600 font-medium">{formatHours(data.extraHours)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(data.monthlySalary)}</TableCell>
                     <TableCell className="text-right font-semibold text-primary">{formatCurrency(data.payableSalary)}</TableCell>

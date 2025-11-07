@@ -20,6 +20,7 @@ export interface SalaryData {
     monthlySalary: number;
     payableSalary: number;
     extraHours: number;
+    totalHours: number;
 }
 
 const sidebarNavItems = [

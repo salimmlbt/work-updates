@@ -26,6 +26,7 @@ interface SalaryData {
     monthlySalary: number;
     payableSalary: number;
     extraHours: number;
+    totalHours: number;
 }
 
 export default async function BillingPage({ searchParams }: { searchParams: { month?: string } }) {
@@ -89,6 +90,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
         let fullDays = 0;
         let halfDays = 0;
         let totalExtraMinutes = 0;
+        let totalMinutesWorked = 0;
 
         const workStartTime = user.work_start_time ? parse(user.work_start_time, 'HH:mm:ss', new Date()) : null;
         const workEndTime = user.work_end_time ? parse(user.work_end_time, 'HH:mm:ss', new Date()) : null;
@@ -111,6 +113,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
                     sessionMinutes -= 60; // No lunch recorded, deduct standard 1 hour
                 }
 
+                totalMinutesWorked += sessionMinutes;
                 const actualWorkHours = sessionMinutes / 60;
                 
                 // Overtime calculation
@@ -146,6 +149,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             monthlySalary,
             payableSalary,
             extraHours: totalExtraMinutes / 60,
+            totalHours: totalMinutesWorked / 60,
         };
     });
 
