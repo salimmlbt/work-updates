@@ -332,7 +332,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
+    const schedulesChannel = supabase
       .channel('realtime-scheduler')
       .on(
         'postgres_changes',
@@ -352,9 +352,28 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         }
       )
       .subscribe();
+      
+    const tasksChannel = supabase
+        .channel('realtime-scheduler-tasks')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' },
+          (payload) => {
+            const updatedTask = payload.new as Task;
+            if (updatedTask.schedule_id) {
+              setSchedules(prevSchedules => 
+                prevSchedules.map(schedule => 
+                  schedule.id === updatedTask.schedule_id 
+                  ? { ...schedule, task: { ...schedule.task, ...updatedTask } as Task } 
+                  : schedule
+                )
+              );
+            }
+          }
+        )
+        .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(schedulesChannel);
+      supabase.removeChannel(tasksChannel);
     };
   }, []);
 
@@ -754,3 +773,4 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     
 
     
+
