@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { format, isToday, isTomorrow, subDays } from 'date-fns'
+import { format, isToday, isTomorrow, subDays, startOfDay } from 'date-fns'
 import { Calendar, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -72,29 +72,29 @@ export function ReassignTaskDialog({
 
   useEffect(() => {
     if (isOpen) {
-      reset({
-        assignee_id: '',
-        type: 'Posting',
-        post_date: new Date(),
-        deadline: new Date(),
-      })
+        const today = new Date();
+        reset({
+            assignee_id: '',
+            type: 'Posting',
+            post_date: today,
+            deadline: today, // Default to today, will be recalculated by the effect below
+        });
     }
-  }, [isOpen, reset])
-  
+  }, [isOpen, reset]);
+
   useEffect(() => {
     if (postDate) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize today
-        const normalizedPostDate = new Date(postDate);
-        normalizedPostDate.setHours(0, 0, 0, 0); // Normalize postDate
+      const today = startOfDay(new Date());
+      const normalizedPostDate = startOfDay(postDate);
 
-        if (isToday(normalizedPostDate) || isTomorrow(normalizedPostDate)) {
-            setValue('deadline', today);
-        } else {
-            setValue('deadline', subDays(normalizedPostDate, 1));
-        }
+      if (isToday(normalizedPostDate) || isTomorrow(normalizedPostDate)) {
+        setValue('deadline', today, { shouldValidate: true });
+      } else {
+        setValue('deadline', subDays(normalizedPostDate, 1), { shouldValidate: true });
+      }
     }
   }, [postDate, setValue]);
+
 
   const assigneeId = watch('assignee_id')
   const selectedAssignee = profiles.find(p => p.id === assigneeId)
