@@ -108,7 +108,7 @@ export function ReassignTaskDialog({
         project_id: task.project_id,
         client_id: task.client_id,
         deadline: data.deadline.toISOString(),
-        post_date: data.post_date.toISOString(),
+        post_date: format(data.post_date, 'yyyy-MM-dd'),
         assignee_id: data.assignee_id,
         type: data.type,
         parent_task_id: task.id,
