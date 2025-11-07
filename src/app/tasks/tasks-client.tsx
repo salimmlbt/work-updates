@@ -66,6 +66,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
@@ -1019,7 +1020,7 @@ const processPayload = (payload: any, profiles: Profile[], allProjects: Project[
 type SortableKeys = 'description' | 'client' | 'project' | 'assignee' | 'type' | 'deadline';
 type SortDirection = 'ascending' | 'descending';
 type FilterType = 'client' | 'responsible' | 'type' | 'dueDate' | 'createdDate' | 'dateRange';
-type FilterValue = string | Date | { from: Date; to: Date } | { month: number; year: number } | null;
+type FilterValue = string | Date | { from: Date; to: Date } | null;
 interface ActiveFilter {
   id: string;
   type: FilterType;
