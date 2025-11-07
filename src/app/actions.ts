@@ -473,6 +473,18 @@ export async function deleteTask(taskId: string) {
   return { success: true }
 }
 
+export async function deleteTasks(taskIds: string[]) {
+  const supabase = await createServerClient()
+  const { error } = await supabase.from('tasks').update({ is_deleted: true }).in('id', taskIds)
+  
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/tasks')
+  return { success: true }
+}
+
 export async function restoreTask(taskId: string) {
   const supabase = await createServerClient()
   const { error } = await supabase.from('tasks').update({ is_deleted: false }).eq('id', taskId)

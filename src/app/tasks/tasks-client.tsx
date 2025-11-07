@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -48,7 +47,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, Correction, Revisions } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
-import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus } from '@/app/actions';
+import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus, deleteTasks } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -74,6 +73,7 @@ import { ReassignTaskDialog } from './reassign-task-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditTaskDialog } from './edit-task-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 const statusIcons = {
@@ -437,7 +437,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; }) => {
+const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile, isSelected, onSelect }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; isSelected: boolean; onSelect: (taskId: string, isSelected: boolean) => void; }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
@@ -468,7 +468,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
   const handleRowClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     // Prevent sheet from opening if a button, dropdown or interactive element was clicked
-    if (target.closest('button, [role="menuitem"], a, [role="dialog"]')) {
+    if (target.closest('button, [role="menuitem"], a, [role="dialog"], label, [role="checkbox"]')) {
       return;
     }
     onTaskClick(task);
@@ -532,6 +532,13 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
 
   return (
     <>
+       <td className="px-4 py-3">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect(task.id, !!checked)}
+          aria-label="Select task"
+        />
+      </td>
       <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[250px] cursor-pointer">
         <div className="flex items-center gap-3">
           {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-muted-foreground shrink-0" fill="currentColor"/>}
@@ -711,6 +718,8 @@ const TaskTableBody = ({
   isReviewer,
   activeTab,
   currentUserProfile,
+  selectedTaskIds,
+  onSelectTask,
 }: {
   tasks: TaskWithDetails[];
   allTasks: TaskWithDetails[];
@@ -731,6 +740,8 @@ const TaskTableBody = ({
   isReviewer: boolean,
   activeTab: string;
   currentUserProfile: Profile | null;
+  selectedTaskIds: string[];
+  onSelectTask: (taskId: string, isSelected: boolean) => void;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -757,6 +768,8 @@ const TaskTableBody = ({
             isReviewer={isReviewer}
             activeTab={activeTab}
             currentUserProfile={currentUserProfile}
+            isSelected={selectedTaskIds.includes(task.id)}
+            onSelect={onSelectTask}
           />
         </tr>
       ))}
@@ -1012,6 +1025,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const [activeTab, setActiveTab] = useState('active');
 
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+
   const supabase = createClient();
 
   const userPermissions = (currentUserProfile?.roles as RoleWithPermissions)?.permissions;
@@ -1039,6 +1054,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           } else if (payload.eventType === 'DELETE') {
             const deletedTaskId = payload.old.id;
             setTasks(current => current.filter(t => t.id !== deletedTaskId));
+            setSelectedTaskIds(current => current.filter(id => id !== deletedTaskId));
           }
         }
       )
@@ -1119,6 +1135,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return allDeleted;
   }, [tasks, searchQuery]);
   
+  useEffect(() => {
+    setSelectedTaskIds([]);
+  }, [activeTab]);
+
   const handleSaveTask = (newTask: Task) => {
     // This function is now mostly redundant due to realtime,
     // but can be kept for optimistic UI if desired.
@@ -1159,6 +1179,22 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         setTaskToDelete(null);
     });
   }
+
+  const handleBulkDelete = () => {
+    const originalTasks = [...tasks];
+    setTasks(prev => prev.map(t => selectedTaskIds.includes(t.id) ? { ...t, is_deleted: true } : t));
+    
+    startTransition(async () => {
+        const { error } = await deleteTasks(selectedTaskIds);
+        if (error) {
+            toast({ title: "Error deleting tasks", description: error, variant: "destructive" });
+            setTasks(originalTasks); // Revert on error
+        } else {
+            toast({ title: `${selectedTaskIds.length} tasks moved to bin` });
+            setSelectedTaskIds([]);
+        }
+    });
+  };
   
   const handleRestoreTask = (task: TaskWithDetails) => {
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: false } : t));
@@ -1235,6 +1271,33 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     }
     setSortConfig({ key, direction });
   };
+
+  const handleSelectTask = (taskId: string, isSelected: boolean) => {
+    setSelectedTaskIds(prev =>
+      isSelected ? [...prev, taskId] : prev.filter(id => id !== taskId)
+    );
+  };
+  
+  const getTasksForCurrentTab = () => {
+    switch (activeTab) {
+      case 'active': return activeTasks;
+      case 'under-review': return underReviewTasks;
+      case 'completed': return completedTasks;
+      default: return [];
+    }
+  };
+
+  const handleSelectAll = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const tasksForCurrentTab = getTasksForCurrentTab();
+    const currentTabTaskIds = tasksForCurrentTab.map(t => t.id);
+    const allSelectedOnCurrentTab = currentTabTaskIds.length > 0 && currentTabTaskIds.every(id => selectedTaskIds.includes(id));
+
+    if (allSelectedOnCurrentTab) {
+      setSelectedTaskIds(prev => prev.filter(id => !currentTabTaskIds.includes(id)));
+    } else {
+      setSelectedTaskIds(prev => [...new Set([...prev, ...currentTabTaskIds])]);
+    }
+  };
   
   const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => {
     const isSorted = sortConfig?.key === sortKey;
@@ -1253,10 +1316,24 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }
 
   const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status'], isReviewer: boolean, activeTab: string) => {
+    const allVisibleTasksSelected = tasksToRender.length > 0 && tasksToRender.every(t => selectedTaskIds.includes(t.id));
     return (
       <table className="w-full text-left mt-2">
         <thead>
           <tr className="border-b border-gray-200 group">
+             <th className="px-4 py-2 w-12">
+              <Checkbox
+                checked={allVisibleTasksSelected}
+                onCheckedChange={(checked) => {
+                   const taskIds = tasksToRender.map(t => t.id);
+                  if (checked) {
+                    setSelectedTaskIds(prev => [...new Set([...prev, ...taskIds])]);
+                  } else {
+                    setSelectedTaskIds(prev => prev.filter(id => !taskIds.includes(id)));
+                  }
+                }}
+              />
+            </th>
             <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
             <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
             <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
@@ -1287,6 +1364,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           isReviewer={isReviewer}
           activeTab={activeTab}
           currentUserProfile={currentUserProfile}
+          selectedTaskIds={selectedTaskIds}
+          onSelectTask={handleSelectTask}
         />
       </table>
     )
@@ -1388,32 +1467,62 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Tasks</h1>
-          {canEditTasks && !isAddingTask && view === 'table' && (
-            <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
-              <Plus className="mr-2 h-4 w-4" />
-              Add new
-            </Button>
+          {canEditTasks && selectedTaskIds.length > 0 ? (
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{selectedTaskIds.length} selected</span>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will move {selectedTaskIds.length} task(s) to the bin. This action can be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleBulkDelete} className={cn(buttonVariants({ variant: "destructive" }))}>
+                                {isPending ? 'Deleting...' : 'Delete'}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+          ) : (
+            <>
+              {canEditTasks && !isAddingTask && view === 'table' && (
+                <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add new
+                </Button>
+              )}
+              <div className="flex items-center rounded-full bg-gray-100 p-1">
+                <Button
+                  variant={view === 'table' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setView('table')}
+                  className={cn('rounded-full', view === 'table' ? 'bg-white shadow' : '')}
+                >
+                  <Table className="mr-2 h-4 w-4" />
+                  Table view
+                </Button>
+                <Button
+                  variant={view === 'kanban' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setView('kanban')}
+                  className={cn('rounded-full', view === 'kanban' ? 'bg-white shadow' : '')}
+                >
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Kanban board
+                </Button>
+              </div>
+            </>
           )}
-          <div className="flex items-center rounded-full bg-gray-100 p-1">
-            <Button
-              variant={view === 'table' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setView('table')}
-              className={cn('rounded-full', view === 'table' ? 'bg-white shadow' : '')}
-            >
-              <Table className="mr-2 h-4 w-4" />
-              Table view
-            </Button>
-            <Button
-              variant={view === 'kanban' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setView('kanban')}
-              className={cn('rounded-full', view === 'kanban' ? 'bg-white shadow' : '')}
-            >
-              <LayoutGrid className="mr-2 h-4 w-4" />
-              Kanban board
-            </Button>
-          </div>
         </div>
         <div className="flex items-center gap-2">
            <div
@@ -1551,7 +1660,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeletePermanently}
-              className={cn(buttonVariants({ variant: 'destructive' }))}
+              className={cn(buttonVariants({ variant: "destructive" }))}
               disabled={isPending}
             >
               {isPending ? "Deleting..." : "Delete Permanently"}
@@ -1562,4 +1671,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
