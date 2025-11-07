@@ -1024,7 +1024,7 @@ const processPayload = (payload: any, profiles: Profile[], allProjects: Project[
   };
 };
 
-type SortableKeys = 'description' | 'client' | 'project' | 'assignee' | 'type' | 'deadline';
+type SortableKeys = 'description' | 'client' | 'project' | 'assignee' | 'type' | 'deadline' | 'created_at' | 'status_updated_at';
 type SortDirection = 'ascending' | 'descending';
 type FilterType = 'client' | 'responsible' | 'type' | 'dueDate' | 'createdDate' | 'dateRange';
 type FilterValue = string | Date | { from: Date; to: Date } | null;
@@ -1056,7 +1056,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const searchParams = useSearchParams();
   const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
   
-  const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'deadline', direction: 'ascending' });
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'created_at', direction: 'descending' });
 
   const [activeTab, setActiveTab] = useState('active');
 
@@ -1165,6 +1165,14 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             case 'project':
                 aValue = a.projects?.name || '';
                 bValue = b.projects?.name || '';
+                break;
+            case 'created_at':
+                aValue = a.created_at ? parseISO(a.created_at).getTime() : 0;
+                bValue = b.created_at ? parseISO(b.created_at).getTime() : 0;
+                break;
+            case 'status_updated_at':
+                aValue = a.status_updated_at ? parseISO(a.status_updated_at).getTime() : parseISO(a.created_at).getTime();
+                bValue = b.status_updated_at ? parseISO(b.status_updated_at).getTime() : parseISO(b.created_at).getTime();
                 break;
             default:
                 aValue = a[sortConfig.key] || '';
@@ -1443,7 +1451,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
             <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
             <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
-            <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[150px]">{getDynamicDateColumnHeader()}</th>
+            <SortableHeader sortKey={activeTab === 'active' ? 'created_at' : 'status_updated_at'} className="w-[150px]">{getDynamicDateColumnHeader()}</SortableHeader>
             <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
             <th className="px-4 py-2" style={{ width: "50px" }}></th>
           </tr>
@@ -1711,7 +1719,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+           <Button variant="outline" className="rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200"><Filter className="mr-2 h-4 w-4" />Filter</Button>
         </PopoverTrigger>
         <PopoverContent className="w-96">
           <div className="space-y-4">
