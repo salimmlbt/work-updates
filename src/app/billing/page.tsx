@@ -14,6 +14,7 @@ import {
     parse,
     differenceInHours,
     getDaysInMonth,
+    differenceInMinutes,
 } from 'date-fns';
 
 interface SalaryData {
@@ -24,6 +25,7 @@ interface SalaryData {
     totalAbsentDays: number;
     monthlySalary: number;
     payableSalary: number;
+    extraHours: number;
 }
 
 export default async function BillingPage({ searchParams }: { searchParams: { month?: string } }) {
@@ -73,8 +75,6 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
         const dayStr = format(day, 'yyyy-MM-dd');
         const isSunday = getDay(day) === 0;
 
-        // It's a non-working day if it's a Sunday (and not explicitly a working Sunday)
-        // OR if it's an official leave day.
         if ((isSunday && !workingSundays.has(dayStr)) || leaveDates.has(dayStr)) {
             nonWorkingDaysCount++;
         }
@@ -85,35 +85,64 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
     // 🧮 Build salary data for each user
     const salaryData: SalaryData[] = users.map((user) => {
         const userAttendance = attendance.filter((a) => a.user_id === user.id);
-        const presentDays = userAttendance.length;
-
+        
         let fullDays = 0;
         let halfDays = 0;
+        let totalExtraMinutes = 0;
 
-        const workStartTime = user.work_start_time
-            ? parse(user.work_start_time, 'HH:mm:ss', new Date())
-            : null;
-        const workEndTime = user.work_end_time
-            ? parse(user.work_end_time, 'HH:mm:ss', new Date())
-            : null;
+        const workStartTime = user.work_start_time ? parse(user.work_start_time, 'HH:mm:ss', new Date()) : null;
+        const workEndTime = user.work_end_time ? parse(user.work_end_time, 'HH:mm:ss', new Date()) : null;
 
-        const expectedWorkHours =
-            workStartTime && workEndTime ? differenceInHours(workEndTime, workStartTime) : 8;
+        const expectedWorkHours = workStartTime && workEndTime 
+            ? differenceInHours(workEndTime, workStartTime) - 1 // 1 hour lunch break
+            : 8;
 
         userAttendance.forEach((att) => {
             if (att.total_hours) {
-                if (att.total_hours >= expectedWorkHours) {
-                    fullDays++;
+                let dailyExtraMinutes = 0;
+                let actualWorkMinutes = (att.total_hours || 0) * 60;
+                
+                // Lunch calculation
+                if (att.lunch_out && att.lunch_in) {
+                    const lunchMinutes = differenceInMinutes(new Date(att.lunch_in), new Date(att.lunch_out));
+                    if (lunchMinutes > 60) {
+                        actualWorkMinutes -= (lunchMinutes - 60); // Deduct extra lunch time from work hours
+                    } else {
+                        dailyExtraMinutes += (60 - lunchMinutes); // Add saved lunch time to extra time
+                    }
                 } else {
+                    // If no lunch was taken, still add the 1 hour saved to extra
+                    dailyExtraMinutes += 60;
+                }
+
+                // Overtime calculation
+                if (workEndTime && att.check_out) {
+                    const checkOutTime = new Date(att.check_out);
+                    const expectedCheckOutDateTime = new Date(checkOutTime);
+                    expectedCheckOutDateTime.setHours(workEndTime.getHours(), workEndTime.getMinutes(), workEndTime.getSeconds());
+
+                    if (checkOutTime > expectedCheckOutDateTime) {
+                        const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
+                        dailyExtraMinutes += overtimeMinutes;
+                        actualWorkMinutes -= overtimeMinutes; // Remove overtime from main work hours to avoid double counting
+                    }
+                }
+
+                totalExtraMinutes += dailyExtraMinutes;
+                
+                const actualWorkHours = actualWorkMinutes / 60;
+
+                if (actualWorkHours >= expectedWorkHours) {
+                    fullDays++;
+                } else if (actualWorkHours > 0) {
                     halfDays++;
                 }
             }
         });
-
-        // Absent days are total working days minus days they were present (full or half)
+        
+        const presentDays = fullDays + halfDays;
         const absentDays = totalWorkingDays - presentDays;
 
-        // 🟩 Salary logic (can be replaced with your real data)
         const monthlySalary = 30000;
         const perDaySalary = totalWorkingDays > 0 ? monthlySalary / totalWorkingDays : 0;
         const payableSalary = fullDays * perDaySalary + halfDays * (perDaySalary / 2);
@@ -123,9 +152,10 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             totalWorkingDays,
             totalFullDays: fullDays,
             totalHalfDays: halfDays,
-            totalAbsentDays: absentDays > 0 ? absentDays : 0, // Ensure absent days is not negative
+            totalAbsentDays: absentDays > 0 ? absentDays : 0,
             monthlySalary,
             payableSalary,
+            extraHours: totalExtraMinutes / 60,
         };
     });
 
@@ -138,3 +168,4 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
         />
     );
 }
+

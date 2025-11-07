@@ -1,4 +1,5 @@
 
+
 import type { Profile } from '@/lib/types';
 import SalaryClient from './salary-client';
 import type { SalaryData } from './billing-client';

@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState } from 'react';
@@ -18,6 +19,7 @@ export interface SalaryData {
     totalAbsentDays: number;
     monthlySalary: number;
     payableSalary: number;
+    extraHours: number;
 }
 
 const sidebarNavItems = [

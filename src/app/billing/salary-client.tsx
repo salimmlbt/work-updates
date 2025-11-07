@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,6 +28,7 @@ interface SalaryData {
     totalAbsentDays: number;
     monthlySalary: number;
     payableSalary: number;
+    extraHours: number;
 }
 
 interface SalaryClientProps {
@@ -42,6 +44,13 @@ const formatCurrency = (amount: number) => {
         currency: 'INR',
         minimumFractionDigits: 2,
     }).format(amount);
+};
+
+const formatHours = (hours: number): string => {
+  if (hours === null || typeof hours === 'undefined') return '0.00';
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
 export default function SalaryClient({ initialData, selectedDate, prevMonth, nextMonth }: SalaryClientProps) {
@@ -92,11 +101,12 @@ export default function SalaryClient({ initialData, selectedDate, prevMonth, nex
             <Table>
             <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="w-[250px]">User</TableHead>
+                    <TableHead className="w-[200px]">User</TableHead>
                     <TableHead className="text-center">Total Working Days</TableHead>
-                    <TableHead className="text-center">Total Full Days</TableHead>
-                    <TableHead className="text-center">Total Half Days</TableHead>
-                    <TableHead className="text-center">Total Absent Days</TableHead>
+                    <TableHead className="text-center">Full Days</TableHead>
+                    <TableHead className="text-center">Half Days</TableHead>
+                    <TableHead className="text-center">Absent Days</TableHead>
+                    <TableHead className="text-center">Extra Hours</TableHead>
                     <TableHead className="text-right">Monthly Salary</TableHead>
                     <TableHead className="text-right">Payable Salary</TableHead>
                 </TableRow>
@@ -120,6 +130,7 @@ export default function SalaryClient({ initialData, selectedDate, prevMonth, nex
                     <TableCell className="text-center text-green-600 font-medium">{data.totalFullDays}</TableCell>
                     <TableCell className="text-center text-yellow-600 font-medium">{data.totalHalfDays}</TableCell>
                     <TableCell className="text-center text-red-600 font-medium">{data.totalAbsentDays}</TableCell>
+                    <TableCell className="text-center text-blue-600 font-medium">{formatHours(data.extraHours)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(data.monthlySalary)}</TableCell>
                     <TableCell className="text-right font-semibold text-primary">{formatCurrency(data.payableSalary)}</TableCell>
                 </TableRow>
