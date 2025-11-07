@@ -1,5 +1,3 @@
-
-
 import { createServerClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import BillingClient from './billing-client';
@@ -111,24 +109,25 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
                     }
                 }
 
-                let sessionMinutes = differenceInMinutes(checkOutTime, checkInTime);
+                const sessionMinutes = differenceInMinutes(checkOutTime, checkInTime);
                 const actualWorkMinutes = sessionMinutes - lunchMinutes;
-                
                 totalMinutesWorked += actualWorkMinutes;
+
                 const actualWorkHours = actualWorkMinutes / 60;
-                
-                // Overtime calculation
-                if (user.work_end_time) {
+
+                // ✅ FIXED overtime calculation
+                if (user.work_end_time && att.check_out) {
                     try {
-                        const attendanceDate = new Date(att.date);
-                        const expectedCheckOutDateTime = parse(user.work_end_time, 'HH:mm:ss', attendanceDate);
-                        
-                        if(checkOutTime > expectedCheckOutDateTime) {
+                        const [year, month, day] = att.date.split('-').map(Number);
+                        const [endHours, endMinutes, endSeconds] = user.work_end_time.split(':').map(Number);
+                        const expectedCheckOutDateTime = new Date(year, month - 1, day, endHours, endMinutes, endSeconds);
+
+                        if (checkOutTime > expectedCheckOutDateTime) {
                             const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
                             totalExtraMinutes += overtimeMinutes;
                         }
                     } catch (e) {
-                         console.error(`Could not parse work_end_time '${user.work_end_time}' for user ${user.id}`);
+                        console.error(`Overtime calc failed for user ${user.id}:`, e);
                     }
                 }
 
@@ -155,10 +154,21 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             totalAbsentDays: absentDays > 0 ? absentDays : 0,
             monthlySalary,
             payableSalary,
-            extraHours: totalExtraMinutes / 60,
-            totalHours: totalMinutesWorked / 60,
+            extraHours: Math.round((totalExtraMinutes / 60) * 100) / 100,
+            totalHours: Math.round((totalMinutesWorked / 60) * 100) / 100,
         };
     });
+
+    // 🧾 Monthly Summary Totals
+    const totalExtraHours = salaryData.reduce((sum, s) => sum + s.extraHours, 0);
+    const totalWorkedHours = salaryData.reduce((sum, s) => sum + s.totalHours, 0);
+    const averageExtraHours = salaryData.length > 0 ? totalExtraHours / salaryData.length : 0;
+
+    const summary = {
+        totalExtraHours: Math.round(totalExtraHours * 100) / 100,
+        totalWorkedHours: Math.round(totalWorkedHours * 100) / 100,
+        averageExtraHours: Math.round(averageExtraHours * 100) / 100,
+    };
 
     return (
         <BillingClient
@@ -166,6 +176,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
             selectedDate={format(selectedDate, 'yyyy-MM-dd')}
             prevMonth={prevMonth}
             nextMonth={nextMonth}
+            summary={summary} // 👈 Pass the new summary object
         />
     );
 }
