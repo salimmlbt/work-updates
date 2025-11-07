@@ -99,23 +99,17 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
 
         userAttendance.forEach((att) => {
             if (att.total_hours) {
-                let dailyExtraMinutes = 0;
                 let actualWorkMinutes = (att.total_hours || 0) * 60;
                 
-                // Lunch calculation
+                // Lunch calculation for work time
                 if (att.lunch_out && att.lunch_in) {
                     const lunchMinutes = differenceInMinutes(new Date(att.lunch_in), new Date(att.lunch_out));
                     if (lunchMinutes > 60) {
                         actualWorkMinutes -= (lunchMinutes - 60); // Deduct extra lunch time from work hours
-                    } else {
-                        dailyExtraMinutes += (60 - lunchMinutes); // Add saved lunch time to extra time
                     }
-                } else {
-                    // If no lunch was taken, still add the 1 hour saved to extra
-                    dailyExtraMinutes += 60;
                 }
 
-                // Overtime calculation
+                // Overtime calculation for extra hours
                 if (workEndTime && att.check_out) {
                     const checkOutTime = new Date(att.check_out);
                     const expectedCheckOutDateTime = new Date(checkOutTime);
@@ -123,12 +117,10 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
 
                     if (checkOutTime > expectedCheckOutDateTime) {
                         const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
-                        dailyExtraMinutes += overtimeMinutes;
+                        totalExtraMinutes += overtimeMinutes;
                         actualWorkMinutes -= overtimeMinutes; // Remove overtime from main work hours to avoid double counting
                     }
                 }
-
-                totalExtraMinutes += dailyExtraMinutes;
                 
                 const actualWorkHours = actualWorkMinutes / 60;
 
@@ -168,4 +160,3 @@ export default async function BillingPage({ searchParams }: { searchParams: { mo
         />
     );
 }
-

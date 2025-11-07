@@ -33,17 +33,6 @@ export default async function AttendancePage() {
     
     let extraMinutes = 0;
     if (attendanceRecord) {
-        // Lunch calculation
-        if (attendanceRecord.lunch_out && attendanceRecord.lunch_in) {
-            const lunchMinutes = differenceInMinutes(new Date(attendanceRecord.lunch_in), new Date(attendanceRecord.lunch_out));
-            if (lunchMinutes < 60) {
-                extraMinutes += (60 - lunchMinutes);
-            }
-        } else if (attendanceRecord.check_out) {
-            // If they completed work and didn't take lunch, they get the full hour as extra
-            extraMinutes += 60;
-        }
-
         // Overtime calculation
         if (profile.work_end_time && attendanceRecord.check_out) {
             const checkOutTime = new Date(attendanceRecord.check_out);
