@@ -1694,7 +1694,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+          <Button variant="outline" className="rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200"><Filter className="mr-2 h-4 w-4" />Filter</Button>
         </PopoverTrigger>
         <PopoverContent className="w-96">
           <div className="space-y-4">
