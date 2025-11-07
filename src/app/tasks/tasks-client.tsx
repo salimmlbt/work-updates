@@ -27,6 +27,7 @@ import {
   Eye,
   MessageSquare,
   Repeat,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -42,7 +43,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isFuture, isPast } from 'date-fns';
+import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isFuture, isPast, startOfMonth, endOfMonth, isWithinInterval, getMonth, getYear } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, Correction, Revisions } from '@/lib/types';
@@ -65,7 +66,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
@@ -913,7 +913,7 @@ const KanbanCard = ({ task, allTasks, onStatusChange, onPostingStatusChange, onE
                             onClick={() => onStatusChange(task.id, status)}
                             className={cn(task.status === status && 'bg-accent')}
                           >
-                            Move to {statusLabels[status]}
+                            Move to {statusLabels[status as keyof typeof statusLabels]}
                           </DropdownMenuItem>
                         ))}
                      {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
@@ -1018,6 +1018,13 @@ const processPayload = (payload: any, profiles: Profile[], allProjects: Project[
 
 type SortableKeys = 'description' | 'client' | 'project' | 'assignee' | 'type' | 'deadline';
 type SortDirection = 'ascending' | 'descending';
+type FilterType = 'client' | 'responsible' | 'type' | 'dueDate' | 'createdDate' | 'month' | 'dateRange';
+type FilterValue = string | Date | { from: Date; to: Date } | { month: number; year: number } | null;
+interface ActiveFilter {
+  id: string;
+  type: FilterType;
+  value: FilterValue;
+}
 
 export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile }: TasksClientProps) {
   const [view, setView] = useState('table');
@@ -1052,6 +1059,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const userPermissions = (currentUserProfile?.roles as RoleWithPermissions)?.permissions;
   const canEditTasks = userPermissions?.tasks === 'Editor';
   const isReviewer = canEditTasks;
+  
+  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
 
 
   useEffect(() => {
@@ -1096,12 +1105,43 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     }
 
     if (searchQuery) {
-        return tasksToDisplay.filter(task =>
+        tasksToDisplay = tasksToDisplay.filter(task =>
           task.description.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }
+
+    if (activeFilters.length > 0) {
+      tasksToDisplay = tasksToDisplay.filter(task => {
+        return activeFilters.every(filter => {
+          switch (filter.type) {
+            case 'client':
+              return task.client_id === filter.value;
+            case 'responsible':
+              return task.assignee_id === filter.value;
+            case 'type':
+              return task.type === filter.value;
+            case 'dueDate':
+              return task.deadline && format(parseISO(task.deadline), 'yyyy-MM-dd') === format(filter.value as Date, 'yyyy-MM-dd');
+            case 'createdDate':
+              return task.created_at && format(parseISO(task.created_at), 'yyyy-MM-dd') === format(filter.value as Date, 'yyyy-MM-dd');
+            case 'month': {
+              const { month, year } = filter.value as { month: number, year: number };
+              const taskDate = parseISO(task.created_at);
+              return getMonth(taskDate) === month && getYear(taskDate) === year;
+            }
+            case 'dateRange': {
+              const { from, to } = filter.value as { from: Date, to: Date };
+              const taskDate = parseISO(task.created_at);
+              return isWithinInterval(taskDate, { start: from, end: to });
+            }
+            default:
+              return true;
+          }
+        });
+      });
+    }
     return tasksToDisplay;
-  }, [tasks, canEditTasks, currentUserProfile?.id, taskView, searchQuery]);
+  }, [tasks, canEditTasks, currentUserProfile?.id, taskView, searchQuery, activeFilters]);
 
   const sortedTasks = useMemo(() => {
     let sortableItems = [...filteredTasks];
@@ -1157,7 +1197,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   useEffect(() => {
     setSelectedTaskIds([]);
-  }, [activeTab, showBin]);
+  }, [activeTab, showBin, activeFilters]);
 
   const handleSaveTask = (newTask: Task) => {
     // This function is now mostly redundant due to realtime,
@@ -1280,7 +1320,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   const handleStatusChange = (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => {
     const originalTasks = tasks;
-    const updatedTasks = tasks.map(t => t.id === taskId ? {...t, status} : t);
+    const updatedTasks = tasks.map(t => t.id === taskId ? {...t, status, status_updated_at: new Date().toISOString()} : t);
     setTasks(updatedTasks);
 
     startTransition(async () => {
@@ -1542,6 +1582,157 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       return <KanbanBoard tasks={sortedTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} allTasks={tasks} />
     }
   }
+  
+  const FilterManager = () => {
+    const [filterType, setFilterType] = useState<FilterType | null>(null);
+    const [filterValue, setFilterValue] = useState<FilterValue>(null);
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  
+    const addFilter = () => {
+      if (filterType && filterValue) {
+        let finalValue = filterValue;
+        if (filterType === 'dateRange' && typeof filterValue === 'object' && filterValue !== null && 'from' in filterValue && !('to' in filterValue)) {
+          finalValue = { from: (filterValue as { from: Date }).from, to: (filterValue as { from: Date }).from };
+        }
+  
+        setActiveFilters(prev => [...prev, { id: Date.now().toString(), type: filterType, value: finalValue }]);
+        setFilterType(null);
+        setFilterValue(null);
+      }
+    };
+  
+    const removeFilter = (id: string) => {
+      setActiveFilters(prev => prev.filter(f => f.id !== id));
+    };
+  
+    const renderFilterValue = (filter: ActiveFilter) => {
+      if (filter.value === null) return 'N/A';
+      switch (filter.type) {
+        case 'client':
+          return clients.find(c => c.id === filter.value)?.name;
+        case 'responsible':
+          return profiles.find(p => p.id === filter.value)?.full_name;
+        case 'dueDate':
+        case 'createdDate':
+          return format(filter.value as Date, 'MMM d, yyyy');
+        case 'month':
+          const { month, year } = filter.value as { month: number, year: number };
+          return `${months[month]} ${year}`;
+        case 'dateRange':
+          const { from, to } = filter.value as { from: Date, to: Date };
+          return `${format(from, 'MMM d')} - ${format(to, 'MMM d, yyyy')}`;
+        default:
+          return filter.value as string;
+      }
+    };
+  
+    const renderFilterInput = () => {
+      switch (filterType) {
+        case 'client':
+          return (
+            <Select onValueChange={(v) => setFilterValue(v)}>
+              <SelectTrigger><SelectValue placeholder="Select Client" /></SelectTrigger>
+              <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          );
+        case 'responsible':
+          return (
+            <Select onValueChange={(v) => setFilterValue(v)}>
+              <SelectTrigger><SelectValue placeholder="Select User" /></SelectTrigger>
+              <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
+            </Select>
+          );
+        case 'type':
+           const allTypes = [...new Set(tasks.map(t => t.type).filter(Boolean))];
+          return (
+            <Select onValueChange={(v) => setFilterValue(v)}>
+              <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
+              <SelectContent>{allTypes.map(t => <SelectItem key={t} value={t!}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          );
+        case 'dueDate':
+        case 'createdDate':
+          return (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {filterValue ? format(filterValue as Date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0"><CalendarComponent mode="single" selected={filterValue as Date} onSelect={(d) => setFilterValue(d || null)} initialFocus /></PopoverContent>
+            </Popover>
+          );
+        case 'month':
+            return (
+                <div className="flex gap-2">
+                    <Select onValueChange={(m) => setFilterValue(v => ({ ...(v as object), month: parseInt(m) }))}>
+                        <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
+                        <SelectContent>{months.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Input type="number" placeholder="Year" defaultValue={new Date().getFullYear()} onChange={(e) => setFilterValue(v => ({ ...(v as object), year: parseInt(e.target.value) }))} />
+                </div>
+            );
+        case 'dateRange':
+          return (
+             <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {filterValue && 'from' in filterValue && (filterValue as {from:Date, to?:Date}).to ? `${format((filterValue as {from:Date}).from, "LLL dd, y")} - ${format((filterValue as {from:Date, to:Date}).to, "LLL dd, y")}` : <span>Pick a date range</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0"><CalendarComponent mode="range" selected={filterValue as { from: Date; to: Date }} onSelect={(range) => setFilterValue(range || null)} /></PopoverContent>
+            </Popover>
+          );
+        default:
+          return null;
+      }
+    };
+  
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-96">
+          <div className="space-y-4">
+            <h4 className="font-medium leading-none">Filters</h4>
+            <div className="flex gap-2">
+              <Select onValueChange={(v: FilterType) => { setFilterType(v); setFilterValue(null); }}>
+                <SelectTrigger><SelectValue placeholder="Select a filter" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="client">Client</SelectItem>
+                  <SelectItem value="responsible">Responsible</SelectItem>
+                  <SelectItem value="type">Type</SelectItem>
+                  <SelectItem value="dueDate">Due Date</SelectItem>
+                  <SelectItem value="createdDate">Created Date</SelectItem>
+                  <SelectItem value="month">Month</SelectItem>
+                  <SelectItem value="dateRange">Date Range</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={addFilter} disabled={!filterType || !filterValue}>Add</Button>
+            </div>
+            {filterType && <div className="p-2 border rounded-md">{renderFilterInput()}</div>}
+            <div className="space-y-2">
+              <h5 className="text-sm font-medium">Active Filters</h5>
+              {activeFilters.length === 0 ? <p className="text-xs text-muted-foreground">No filters applied.</p> : (
+                <div className="flex flex-wrap gap-2">
+                  {activeFilters.map(f => (
+                    <Badge key={f.id} variant="secondary" className="flex items-center gap-1">
+                      {f.type}: {renderFilterValue(f)}
+                      <button onClick={() => removeFilter(f.id)} className="rounded-full hover:bg-muted-foreground/20"><X className="h-3 w-3" /></button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+  
 
   return (
     <div className="bg-white p-6 rounded-lg h-full w-full flex flex-col">
@@ -1683,7 +1874,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
               </Button>
             </div>
           ) : (
-            <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+            <FilterManager />
           )}
           {canEditTasks && (
             <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200 rounded-full" onClick={() => setShowBin(!showBin)}>
@@ -1781,3 +1972,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
