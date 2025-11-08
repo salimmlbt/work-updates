@@ -555,7 +555,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
   return (
     <>
       {canEdit && (
-        <td className={cn("px-4 py-3", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+        <td className={cn("px-4 py-3", isHighlighted && "bg-blue-50")}>
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelect(task.id, !!checked)}
@@ -563,7 +563,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           />
         </td>
       )}
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[250px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[250px] cursor-pointer", isHighlighted && "bg-blue-50")}>
         <div className="flex items-center gap-2">
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
             <span className="truncate shrink">{task.description}</span>
@@ -591,14 +591,14 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           ))}
         </div>
       </td>
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}>
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
       </td>
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}>
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
       {canEdit && (
-        <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[180px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+        <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[180px] cursor-pointer", isHighlighted && "bg-blue-50")}>
           {task.profiles ? (
             <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
               <Avatar className="h-6 w-6 shrink-0">
@@ -610,22 +610,22 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           ) : <div className="flex justify-center">-</div>}
         </td>
       )}
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[120px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[120px] cursor-pointer", isHighlighted && "bg-blue-50")}>
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
           {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
         </div>
       </td>
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}>
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dateText}</span>
         </div>
       </td>
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}>
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dynamicDate}</span>
         </div>
       </td>
-      <td className={cn(isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+      <td className={cn(isHighlighted && "bg-blue-50")}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild disabled={isStatusChangeDisabled}>
             <div className={cn("group w-full h-full flex items-center justify-start px-4 py-3", !isStatusChangeDisabled && "cursor-pointer")}>
@@ -662,7 +662,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           </DropdownMenuContent>
         </DropdownMenu>
       </td>
-      <td className={cn("px-4 py-3 text-right", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
+      <td className={cn("px-4 py-3 text-right", isHighlighted && "bg-blue-50")}>
         {canEdit && (
         <DropdownMenu
           onOpenChange={(open) => setOpenMenuId(open ? task.id : null)}
@@ -750,7 +750,6 @@ const TaskTableBody = ({
   selectedTaskIds,
   onSelectTask,
   highlightedTaskId,
-  clearHighlight,
 }: {
   tasks: TaskWithDetails[];
   allTasks: TaskWithDetails[];
@@ -774,7 +773,6 @@ const TaskTableBody = ({
   selectedTaskIds: string[];
   onSelectTask: (taskId: string, isSelected: boolean) => void;
   highlightedTaskId: string | null;
-  clearHighlight: () => void;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -783,9 +781,8 @@ const TaskTableBody = ({
       {tasks.map((task) => (
         <tr
           key={task.id}
-          className={cn("border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors", highlightedTaskId === task.id && 'bg-blue-100/50 animate-pulse-once')}
+          className={cn("border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors")}
           data-menu-open={openMenuId === task.id}
-          onClick={clearHighlight}
         >
           <TaskRow
             task={task}
@@ -1067,7 +1064,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const [activeTab, setActiveTab] = useState('active');
   
-  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(initialHighlightedTaskId || null);
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(initialHighlightedTaskId);
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
@@ -1080,15 +1077,13 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
 
   useEffect(() => {
-    const handleClickOutside = () => {
-        setHighlightedTaskId(null);
-    };
     if (highlightedTaskId) {
-        window.addEventListener('click', handleClickOutside, { once: true });
+      const timer = setTimeout(() => {
+        setHighlightedTaskId(null);
+      }, 5000); // Highlight for 5 seconds
+
+      return () => clearTimeout(timer);
     }
-    return () => {
-        window.removeEventListener('click', handleClickOutside);
-    };
   }, [highlightedTaskId]);
 
   useEffect(() => {
@@ -1501,7 +1496,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           selectedTaskIds={selectedTaskIds}
           onSelectTask={handleSelectTask}
           highlightedTaskId={highlightedTaskId}
-          clearHighlight={() => setHighlightedTaskId(null)}
         />
       </table>
     )
