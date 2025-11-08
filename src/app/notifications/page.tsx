@@ -13,11 +13,11 @@ export default function NotificationsPage() {
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
           <CardDescription>
-            Here are your recent notifications.
+            This page is for displaying notification settings and history. For real-time updates, please use the bell icon in the sidebar.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p>Notification content will be displayed here.</p>
+          <p>Full notification history will be displayed here.</p>
         </CardContent>
       </Card>
     </div>
