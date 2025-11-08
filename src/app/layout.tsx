@@ -3,7 +3,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { createServerClient } from '@/lib/supabase/server';
 import ClientLayout from './client-layout';
-import type { Profile, Notification } from '@/lib/types';
+import type { Profile } from '@/lib/types';
 import { type Metadata } from 'next';
 import { PageLoader } from '@/components/page-loader';
 
@@ -75,6 +75,3 @@ export default async function RootLayout({
     </html>
   );
 }
-
-// Helper functions to be used within the RootLayout
-import { format, addDays } from 'date-fns';
