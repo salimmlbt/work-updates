@@ -67,7 +67,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
@@ -1075,15 +1074,14 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   useEffect(() => {
     const taskId = searchParams.get('taskId');
-    if (taskId) {
-        const task = tasks.find(t => t.id === taskId);
+    if (taskId && initialTasks.length > 0) {
+        const task = initialTasks.find(t => t.id === taskId);
         if (task) {
             setSelectedTask(task);
-            // Optional: remove the query param from URL without reloading
             router.replace('/tasks', { scroll: false });
         }
     }
-  }, [searchParams, tasks, router]);
+  }, [searchParams, initialTasks, router]);
 
 
   useEffect(() => {
@@ -2013,3 +2011,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   );
 }
 
+    
