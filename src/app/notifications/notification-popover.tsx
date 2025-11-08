@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,10 +25,12 @@ export function NotificationPopover({
   isCollapsed,
   notifications,
   setNotifications,
+  audioRef,
 }: {
   isCollapsed: boolean,
   notifications: Notification[],
   setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>
+  audioRef: React.RefObject<HTMLAudioElement>;
 }) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
@@ -43,6 +44,22 @@ export function NotificationPopover({
     }, []);
 
     const unreadNotifications = notifications.filter(n => !readNotifications.includes(n.id));
+
+    const handlePopoverTriggerClick = async () => {
+      if (Notification.permission !== "granted") {
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted' && audioRef.current) {
+            // Play and pause the audio to "unlock" it for autoplay
+            audioRef.current.play().catch(() => {});
+            audioRef.current.pause();
+          }
+        } catch (error) {
+          console.error("Error requesting notification permission:", error);
+        }
+      }
+    };
+
 
     const handleNotificationClick = (notification: Notification) => {
         const taskId = notification.id.split('-').pop();
@@ -67,6 +84,7 @@ export function NotificationPopover({
     const triggerButton = (
         <div
           role="button"
+          onClick={handlePopoverTriggerClick}
           className={cn(
             'flex w-full items-center gap-4 rounded-lg px-4 py-2 text-sidebar-foreground transition-all duration-300',
             isOpen ? 'bg-sidebar-accent' : 'hover:bg-sidebar-accent/50'

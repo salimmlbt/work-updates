@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -250,17 +249,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
     return <Link href={item.href}>{linkContent}</Link>;
   };
 
-  const handleNotificationClick = async () => {
-    if (Notification.permission !== "granted") {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        audioRef.current?.play().catch(() => {});
-        audioRef.current?.pause();
-      }
-    }
-  };
-
-
   return (
     <TooltipProvider>
       <div
@@ -317,13 +305,12 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
               {hasMounted && (
-                <div onClick={handleNotificationClick}>
-                    <NotificationPopover 
-                      isCollapsed={isCollapsed} 
-                      notifications={notifications} 
-                      setNotifications={setNotifications}
-                    />
-                </div>
+                <NotificationPopover 
+                  isCollapsed={isCollapsed} 
+                  notifications={notifications} 
+                  setNotifications={setNotifications}
+                  audioRef={audioRef}
+                />
               )}
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
