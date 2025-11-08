@@ -58,6 +58,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
   const [notifications, setNotifications] = useState(initialNotifications);
 
   useEffect(() => {
+    setNotifications(initialNotifications);
+  }, [initialNotifications]);
+
+  useEffect(() => {
     if (!profile) return;
 
     const supabase = createClient();
@@ -72,11 +76,11 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
         (payload) => {
-          const newTask = payload.new;
-          const oldTask = payload.old;
+          const newTask = payload.new as TaskWithDetails;
+          const oldTask = payload.old as TaskWithDetails;
 
           // New Task Assigned
-          if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id && isAfter(parseISO(newTask.created_at), twentyFourHoursAgo)) {
+          if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id) {
             const newNotification: Notification = {
               id: `new-${newTask.id}`,
               type: 'new',
@@ -92,8 +96,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
             payload.eventType === 'UPDATE' &&
             newTask.status === 'review' &&
             oldTask.status !== 'review' &&
-            newTask.assignee_id !== profile.id &&
-            newTask.status_updated_at && isAfter(parseISO(newTask.status_updated_at), twentyFourHoursAgo)
+            newTask.assignee_id !== profile.id
           ) {
              const reviewNotification: Notification = {
                 id: `review-${newTask.id}`,

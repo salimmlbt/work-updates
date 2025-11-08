@@ -40,19 +40,21 @@ export default async function RootLayout({
     profile = profileData as Profile;
     
     if (profile) {
-        // Fetch tasks with deadlines due tomorrow
-        const { data: dueTomorrowTasksData } = await supabase
+        const twentyFourHoursAgo = subDays(new Date(), 1);
+        const userPermissions = (profile.roles as RoleWithPermissions)?.permissions || {};
+        const isEditor = userPermissions.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
+
+        // Fetch tasks assigned to the user
+        const { data: assignedTasksData } = await supabase
             .from('tasks')
-            .select('id, description, deadline')
+            .select('id, description, deadline, created_at')
             .eq('assignee_id', user.id)
             .eq('is_deleted', false)
-            .gte('deadline', format(new Date(), 'yyyy-MM-dd'))
-            .lte('deadline', format(addDays(new Date(), 1), 'yyyy-MM-dd'))
             .or('status.neq.done,status.is.null');
 
-        const dueTomorrowTasks = dueTomorrowTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'deadline'>[] || [];
+        const assignedTasks = assignedTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'deadline' | 'created_at'>[] || [];
             
-        notifications = dueTomorrowTasks
+        const deadlineNotifications = assignedTasks
             .filter(task => task.deadline && isTomorrow(parseISO(task.deadline)))
             .map(task => ({
                 id: `due-${task.id}`,
@@ -60,6 +62,37 @@ export default async function RootLayout({
                 title: 'Project Deadline',
                 description: `Task "${task.description}" is due tomorrow.`,
             }));
+
+        const newNotifications = assignedTasks
+            .filter(task => task.created_at && isAfter(parseISO(task.created_at), twentyFourHoursAgo))
+            .map(task => ({
+              id: `new-${task.id}`,
+              type: 'new' as const,
+              title: 'New task assigned',
+              description: `You have been assigned a new task: "${task.description}".`,
+            }));
+
+        let reviewNotifications: Notification[] = [];
+        if (isEditor) {
+            const { data: reviewTasksData } = await supabase
+                .from('tasks')
+                .select('id, description, status_updated_at')
+                .eq('status', 'review')
+                .eq('is_deleted', false);
+            
+            const reviewTasks = reviewTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'status_updated_at'>[] || [];
+
+            reviewNotifications = reviewTasks
+                .filter(task => task.status_updated_at && isAfter(parseISO(task.status_updated_at), twentyFourHoursAgo))
+                .map(task => ({
+                    id: `review-${task.id}`,
+                    type: 'review' as const,
+                    title: 'Task ready for review',
+                    description: `Task "${task.description}" is now ready for your review.`,
+                }));
+        }
+
+        notifications = [...deadlineNotifications, ...newNotifications, ...reviewNotifications];
     }
   }
 
