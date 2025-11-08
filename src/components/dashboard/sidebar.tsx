@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   DashboardIcon,
   ProjectsIcon,
@@ -56,6 +56,7 @@ interface SidebarProps {
 export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: SidebarProps) {
   const pathname = usePathname();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
@@ -153,6 +154,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
                         body: notification.description,
                         icon: '/icon.svg'
                     });
+                    audioRef.current?.play().catch(e => console.error("Error playing sound:", e));
                 }
             }
           }
@@ -248,6 +250,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
           isCollapsed ? 'w-20' : 'w-64'
         )}
       >
+        <audio id="notification-sound" src="/notification.mp3" preload="auto" ref={audioRef}></audio>
         <Button
           variant="ghost"
           size="icon"
