@@ -1,3 +1,4 @@
+
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { createServerClient } from '@/lib/supabase/server';
@@ -56,6 +57,7 @@ export default async function RootLayout({
             .filter(task => isAfter(parseISO(task.created_at), twentyFourHoursAgo))
             .map(task => ({
                 id: `new-${task.id}`,
+                type: 'new' as const,
                 title: 'New task assigned',
                 description: `You have been assigned a new task: "${task.description}".`,
             }));
@@ -64,6 +66,7 @@ export default async function RootLayout({
             .filter(task => task.deadline && isTomorrow(parseISO(task.deadline)))
             .map(task => ({
                 id: `due-${task.id}`,
+                type: 'deadline' as const,
                 title: 'Project Deadline',
                 description: `Task "${task.description}" is due tomorrow.`,
             }));
@@ -88,6 +91,7 @@ export default async function RootLayout({
                 .filter(task => task.assignee_id !== user.id) // Don't notify on your own tasks
                 .map(task => ({
                     id: `review-${task.id}`,
+                    type: 'review' as const,
                     title: 'Task ready for review',
                     description: `Task "${task.description}" is now ready for your review.`,
                 }));

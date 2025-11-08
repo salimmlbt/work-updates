@@ -1,3 +1,4 @@
+
 import type { Database as DB } from './database.types';
 
 export type Database = DB;
@@ -62,6 +63,7 @@ export type TaskWithDetails = Task & {
 
 export type Notification = {
     id: string;
+    type: 'new' | 'deadline' | 'review';
     title: string;
     description: string;
 }
