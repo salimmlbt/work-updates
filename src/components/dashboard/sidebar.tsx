@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -16,6 +15,7 @@ import {
   SettingsIcon,
   Logo,
   SchedulerIcon,
+  BellIcon,
 } from '@/components/icons';
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -177,6 +177,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
           {/* Bottom nav + profile */}
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
+              <NavLink item={{ href: '/notifications', label: 'Notifications', icon: BellIcon, id: 'notifications' }} />
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
