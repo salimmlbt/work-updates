@@ -21,10 +21,13 @@ import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
 import { LogOut, ChevronLeft, ShieldQuestion } from 'lucide-react';
-import type { Profile, RoleWithPermissions, Notification } from '@/lib/types';
+import type { Profile, RoleWithPermissions, Notification, TaskWithDetails } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { NotificationPopover } from '@/app/notifications/notification-popover';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { isAfter, parseISO, subDays } from 'date-fns';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon, id: 'dashboard' },
@@ -50,8 +53,66 @@ interface SidebarProps {
   notifications: Notification[];
 }
 
-export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifications }: SidebarProps) {
+export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifications: initialNotifications }: SidebarProps) {
   const pathname = usePathname();
+  const [notifications, setNotifications] = useState(initialNotifications);
+
+  useEffect(() => {
+    if (!profile) return;
+
+    const supabase = createClient();
+    const userPermissions = (profile.roles as RoleWithPermissions)?.permissions || {};
+    const isEditor = userPermissions.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
+    
+    const twentyFourHoursAgo = subDays(new Date(), 1);
+
+    const channel = supabase
+      .channel('realtime-notifications')
+      .on<TaskWithDetails>(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        (payload) => {
+          const newTask = payload.new;
+          const oldTask = payload.old;
+
+          // New Task Assigned
+          if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id && isAfter(parseISO(newTask.created_at), twentyFourHoursAgo)) {
+            const newNotification: Notification = {
+              id: `new-${newTask.id}`,
+              type: 'new',
+              title: 'New task assigned',
+              description: `You have been assigned a new task: "${newTask.description}".`,
+            };
+            setNotifications(prev => [newNotification, ...prev]);
+          }
+
+          // Task marked for review
+          if (
+            isEditor &&
+            payload.eventType === 'UPDATE' &&
+            newTask.status === 'review' &&
+            oldTask.status !== 'review' &&
+            newTask.assignee_id !== profile.id &&
+            newTask.status_updated_at && isAfter(parseISO(newTask.status_updated_at), twentyFourHoursAgo)
+          ) {
+             const reviewNotification: Notification = {
+                id: `review-${newTask.id}`,
+                type: 'review',
+                title: 'Task ready for review',
+                description: `Task "${newTask.description}" is now ready for your review.`,
+              };
+             setNotifications(prev => [reviewNotification, ...prev]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile]);
+
+
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 

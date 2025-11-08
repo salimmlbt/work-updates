@@ -59,6 +59,7 @@ export type TaskWithDetails = Task & {
   attachments: Attachment[] | null;
   revisions: Revisions | null;
   corrections: Correction[] | null;
+  status_updated_at: string | null;
 }
 
 export type Notification = {
