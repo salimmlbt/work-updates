@@ -448,7 +448,7 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
     const supabase = await createServerClient();
     const { error } = await supabase
         .from('tasks')
-        .update({ posting_status })
+        .update({ posting_status, status_updated_at: new Date().toISOString() })
         .eq('id', taskId);
 
     if (error) {

@@ -2,7 +2,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { createServerClient } from '@/lib/supabase/server';
 import ClientLayout from './client-layout';
-import type { Profile, TaskWithDetails, Notification } from '@/lib/types';
+import type { Profile, TaskWithDetails, Notification, RoleWithPermissions } from '@/lib/types';
 import { type Metadata } from 'next';
 import { PageLoader } from '@/components/page-loader';
 import { isToday, isTomorrow, isAfter, subDays, parseISO } from 'date-fns';
@@ -39,18 +39,20 @@ export default async function RootLayout({
     profile = profileData as Profile;
     
     if (profile) {
-        const { data: tasksData } = await supabase
+        const now = new Date();
+        const twentyFourHoursAgo = subDays(now, 1);
+
+        // Fetch tasks assigned to the user
+        const { data: assignedTasksData } = await supabase
             .from('tasks')
             .select('*, projects(name)')
             .eq('assignee_id', user.id)
             .eq('is_deleted', false)
             .or('status.neq.done,status.is.null');
 
-        const tasks = tasksData as TaskWithDetails[] || [];
-        const now = new Date();
-        const twentyFourHoursAgo = subDays(now, 1);
+        const assignedTasks = assignedTasksData as TaskWithDetails[] || [];
 
-        const newTasks = tasks
+        const newTasks = assignedTasks
             .filter(task => isAfter(parseISO(task.created_at), twentyFourHoursAgo))
             .map(task => ({
                 id: `new-${task.id}`,
@@ -58,15 +60,40 @@ export default async function RootLayout({
                 description: `You have been assigned a new task: "${task.description}".`,
             }));
             
-        const dueTomorrowTasks = tasks
-            .filter(task => isTomorrow(parseISO(task.deadline)))
+        const dueTomorrowTasks = assignedTasks
+            .filter(task => task.deadline && isTomorrow(parseISO(task.deadline)))
             .map(task => ({
                 id: `due-${task.id}`,
                 title: 'Project Deadline',
                 description: `Task "${task.description}" is due tomorrow.`,
             }));
-
+        
         notifications = [...newTasks, ...dueTomorrowTasks];
+
+        // Fetch tasks for review if user has editor permissions
+        const userPermissions = (profile.roles as RoleWithPermissions)?.permissions || {};
+        const isEditor = userPermissions.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
+
+        if (isEditor) {
+            const { data: reviewTasksData } = await supabase
+                .from('tasks')
+                .select('*, projects(name)')
+                .eq('status', 'review')
+                .eq('is_deleted', false)
+                .gte('status_updated_at', twentyFourHoursAgo.toISOString());
+            
+            const reviewTasks = reviewTasksData as TaskWithDetails[] || [];
+
+            const reviewNotifications = reviewTasks
+                .filter(task => task.assignee_id !== user.id) // Don't notify on your own tasks
+                .map(task => ({
+                    id: `review-${task.id}`,
+                    title: 'Task ready for review',
+                    description: `Task "${task.description}" is now ready for your review.`,
+                }));
+            
+            notifications = [...notifications, ...reviewNotifications];
+        }
     }
   }
 

@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -449,6 +448,7 @@ export type Database = {
             | "corrections"
             | "recreate"
             | "approved"
+          status_updated_at: string | null
           tags: string[] | null
           type: string | null
         }
@@ -478,6 +478,7 @@ export type Database = {
             | "corrections"
             | "recreate"
             | "approved"
+          status_updated_at?: string | null
           tags?: string[] | null
           type?: string | null
         }
@@ -507,6 +508,7 @@ export type Database = {
             | "corrections"
             | "recreate"
             | "approved"
+          status_updated_at?: string | null
           tags?: string[] | null
           type?: string | null
         }

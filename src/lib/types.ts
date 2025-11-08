@@ -1,10 +1,9 @@
-
 import type { Database as DB } from './database.types';
 
 export type Database = DB;
 
 export type Project = DB['public']['Tables']['projects']['Row'];
-export type Task = DB['public']['Tables']['tasks']['Row'];
+export type Task = DB['public']['Tables']['tasks']['Row'] & { status_updated_at?: string };
 export type Profile = Omit<DB['public']['Tables']['profiles']['Row'], 'role_id'> & {
     roles: Role | null;
     teams: { teams: Team | null }[];
