@@ -61,17 +61,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 
   useEffect(() => {
-    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!profile) return;
-    const supabase = createClient();
-    const isEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
-    
     const initializeNotifications = async () => {
+      if (!profile) return;
+      const supabase = createClient();
+      const isEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
       const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
 
       const { data: assignedTasksData } = await supabase
@@ -168,8 +161,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
       
       return channel;
     };
-
-    let channel: ReturnType<typeof supabase.channel> | undefined;
+    
+    let channel: ReturnType<typeof createClient>['channel'] | undefined;
     
     initializeNotifications().then(ch => {
       if (ch) channel = ch;
@@ -177,7 +170,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
     return () => {
       if (channel) {
-        supabase.removeChannel(channel);
+        createClient().removeChannel(channel);
       }
     };
   }, [profile]);
