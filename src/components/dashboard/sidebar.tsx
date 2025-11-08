@@ -159,7 +159,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
                 if (Notification.permission === 'granted') {
                     new Notification(notification.title, {
                         body: notification.description,
-                        icon: '/icon.svg'
+                        icon: '/icon.svg',
+                        silent: true
                     });
                     audioRef.current?.play().catch(e => console.error("Error playing sound:", e));
                 }
