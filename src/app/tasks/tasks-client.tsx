@@ -1006,6 +1006,7 @@ interface TasksClientProps {
   clients: Client[];
   profiles: Profile[];
   currentUserProfile: Profile | null;
+  initialSelectedTask: TaskWithDetails | null;
 }
 
 const processPayload = (payload: any, profiles: Profile[], allProjects: Project[], clients: Client[]): TaskWithDetails => {
@@ -1035,7 +1036,7 @@ interface ActiveFilter {
   value: FilterValue;
 }
 
-export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile }: TasksClientProps) {
+export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile, initialSelectedTask }: TasksClientProps) {
   const [view, setView] = useState('table');
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -1056,13 +1057,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(() => {
-    const taskId = searchParams.get('taskId');
-    if (taskId) {
-      return initialTasks.find(t => t.id === taskId) || null;
-    }
-    return null;
-  });
+  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(initialSelectedTask);
 
   const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
   
@@ -2015,5 +2010,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
-    

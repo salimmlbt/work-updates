@@ -5,7 +5,7 @@ import TasksPageLoader from './tasks-page-loader';
 
 export const dynamic = 'force-dynamic';
 
-export default async function TasksPage() {
+export default async function TasksPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined }}) {
     const supabase = await createServerClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -46,6 +46,9 @@ export default async function TasksPage() {
         return { ...task, clients: client || null };
     });
 
+    const taskId = searchParams?.taskId as string | undefined;
+    const initialSelectedTask = taskId ? (tasks.find(t => t.id === taskId) as TaskWithDetails | null) : null;
+
     return (
         <TasksPageLoader 
             initialTasks={tasks as TaskWithDetails[]} 
@@ -53,6 +56,7 @@ export default async function TasksPage() {
             clients={clientsData as Client[] || []}
             profiles={profilesData as Profile[] || []}
             currentUserProfile={userProfile}
+            initialSelectedTask={initialSelectedTask}
         />
     )
 }

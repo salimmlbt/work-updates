@@ -39,6 +39,7 @@ interface TasksPageLoaderProps {
     clients: Client[];
     profiles: Profile[];
     currentUserProfile: Profile | null;
+    initialSelectedTask: TaskWithDetails | null;
 }
 
 export default function TasksPageLoader(props: TasksPageLoaderProps) {
