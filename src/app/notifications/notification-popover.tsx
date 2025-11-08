@@ -12,9 +12,18 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Notification } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useRouter } from 'next/navigation';
 
 export function NotificationPopover({ isCollapsed, notifications }: { isCollapsed: boolean, notifications: Notification[] }) {
-    
+    const router = useRouter();
+
+    const handleNotificationClick = (id: string) => {
+        const taskId = id.split('-').pop();
+        if (taskId) {
+            router.push(`/tasks?taskId=${taskId}`);
+        }
+    }
+
     const triggerButton = (
         <div
           role="button"
@@ -73,7 +82,9 @@ export function NotificationPopover({ isCollapsed, notifications }: { isCollapse
                 notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="flex items-start gap-4 p-3 rounded-lg hover:bg-accent"
+                  role="button"
+                  onClick={() => handleNotificationClick(notification.id)}
+                  className="flex items-start gap-4 p-3 rounded-lg hover:bg-accent cursor-pointer"
                 >
                   <div className="mt-1">
                       <BellIcon className="h-5 w-5 text-blue-500" />

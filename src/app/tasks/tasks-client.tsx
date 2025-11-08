@@ -1,5 +1,6 @@
 
-'use client'
+
+'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
 import {
@@ -1056,6 +1057,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'created_at', direction: 'descending' });
@@ -1071,6 +1073,18 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const isReviewer = canEditTasks;
   
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
+
+  useEffect(() => {
+    const taskId = searchParams.get('taskId');
+    if (taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+            setSelectedTask(task);
+            // Optional: remove the query param from URL without reloading
+            router.replace('/tasks', { scroll: false });
+        }
+    }
+  }, [searchParams, tasks, router]);
 
 
   useEffect(() => {
