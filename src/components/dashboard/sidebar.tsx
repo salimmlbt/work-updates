@@ -62,12 +62,12 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
   useEffect(() => {
     if (!profile) return;
-
     const supabase = createClient();
     const isEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
-    const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
-
+    
     const initializeNotifications = async () => {
+      const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
+
       // Fetch initial notifications
       const { data: assignedTasksData } = await supabase
         .from('tasks')
@@ -105,7 +105,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
           .gte('status_updated_at', twentyFourHoursAgo);
 
         reviewNotifications = ((reviewTasksData as TaskWithDetails[]) || []).map(task => ({
-          id: `review-${task.id}`,
+          id: `review-${task.id}-${task.status_updated_at}`,
           type: 'review',
           title: 'Task ready for review',
           description: `Task "${task.description}" is now ready for your review.`,
@@ -141,12 +141,12 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
               oldTask.status !== 'review'
             ) {
               const reviewNotification: Notification = {
-                id: `review-${newTask.id}`,
+                id: `review-${newTask.id}-${newTask.status_updated_at}`,
                 type: 'review',
                 title: 'Task ready for review',
                 description: `Task "${newTask.description}" is now ready for your review.`,
               };
-              setNotifications(prev => [reviewNotification, ...prev.filter(n => n.id !== reviewNotification.id)]);
+              setNotifications(prev => [reviewNotification, ...prev]);
             }
           }
         )
