@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -63,103 +64,107 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
     if (!profile) return;
 
     const supabase = createClient();
-    const userPermissions = (profile.roles as RoleWithPermissions)?.permissions || {};
-    const isEditor = userPermissions.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
+    const isEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
     const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
 
-    const fetchInitialNotifications = async () => {
-        const { data: assignedTasksData } = await supabase
-            .from('tasks')
-            .select('id, description, deadline, created_at')
-            .eq('assignee_id', profile.id)
-            .eq('is_deleted', false)
-            .or('status.neq.done,status.is.null');
+    const initializeNotifications = async () => {
+      // Fetch initial notifications
+      const { data: assignedTasksData } = await supabase
+        .from('tasks')
+        .select('id, description, deadline, created_at, status, status_updated_at')
+        .eq('assignee_id', profile.id)
+        .eq('is_deleted', false);
+      
+      const assignedTasks = (assignedTasksData as TaskWithDetails[]) || [];
 
-        const assignedTasks = assignedTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'deadline' | 'created_at'>[] || [];
-            
-        const deadlineNotifications: Notification[] = assignedTasks
-            .filter(task => task.deadline && isTomorrow(parseISO(task.deadline)))
-            .map(task => ({
-                id: `due-${task.id}`,
-                type: 'deadline',
-                title: 'Project Deadline',
-                description: `Task "${task.description}" is due tomorrow.`,
-            }));
+      const deadlineNotifications: Notification[] = assignedTasks
+        .filter(task => task.deadline && task.status !== 'done' && isTomorrow(parseISO(task.deadline)))
+        .map(task => ({
+          id: `due-${task.id}`,
+          type: 'deadline',
+          title: 'Project Deadline',
+          description: `Task "${task.description}" is due tomorrow.`,
+        }));
 
-        const newNotifications: Notification[] = assignedTasks
-            .filter(task => task.created_at && isAfter(parseISO(task.created_at), new Date(twentyFourHoursAgo)))
-            .map(task => ({
-              id: `new-${task.id}`,
-              type: 'new',
-              title: 'New task assigned',
-              description: `You have been assigned a new task: "${task.description}".`,
-            }));
+      const newNotifications: Notification[] = assignedTasks
+        .filter(task => task.created_at && isAfter(parseISO(task.created_at), new Date(twentyFourHoursAgo)))
+        .map(task => ({
+          id: `new-${task.id}`,
+          type: 'new',
+          title: 'New task assigned',
+          description: `You have been assigned a new task: "${task.description}".`,
+        }));
 
-        let reviewNotifications: Notification[] = [];
-        if (isEditor) {
-            const { data: reviewTasksData } = await supabase
-                .from('tasks')
-                .select('id, description, status_updated_at')
-                .eq('status', 'review')
-                .eq('is_deleted', false)
-                .gte('status_updated_at', twentyFourHoursAgo);
-            
-            const reviewTasks = reviewTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'status_updated_at'>[] || [];
+      let reviewNotifications: Notification[] = [];
+      if (isEditor) {
+        const { data: reviewTasksData } = await supabase
+          .from('tasks')
+          .select('id, description, status_updated_at')
+          .eq('status', 'review')
+          .eq('is_deleted', false)
+          .gte('status_updated_at', twentyFourHoursAgo);
 
-            reviewNotifications = reviewTasks.map(task => ({
-                    id: `review-${task.id}`,
-                    type: 'review',
-                    title: 'Task ready for review',
-                    description: `Task "${task.description}" is now ready for your review.`,
-                }));
-        }
+        reviewNotifications = ((reviewTasksData as TaskWithDetails[]) || []).map(task => ({
+          id: `review-${task.id}`,
+          type: 'review',
+          title: 'Task ready for review',
+          description: `Task "${task.description}" is now ready for your review.`,
+        }));
+      }
 
-        setNotifications([...deadlineNotifications, ...newNotifications, ...reviewNotifications]);
-    };
+      setNotifications([...deadlineNotifications, ...newNotifications, ...reviewNotifications]);
 
-    fetchInitialNotifications();
-    
-    const channel = supabase
-      .channel('realtime-notifications-sidebar')
-      .on<TaskWithDetails>(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks' },
-        (payload) => {
-          const newTask = payload.new;
-          const oldTask = payload.old;
+      // Set up real-time channel
+      const channel = supabase
+        .channel('realtime-notifications-sidebar')
+        .on<TaskWithDetails>(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'tasks' },
+          (payload) => {
+            const newTask = payload.new as TaskWithDetails;
+            const oldTask = payload.old as TaskWithDetails;
 
-          // New Task Assigned to Me
-          if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id) {
-            const newNotification: Notification = {
-              id: `new-${newTask.id}`,
-              type: 'new',
-              title: 'New task assigned',
-              description: `You have been assigned a new task: "${newTask.description}".`,
-            };
-            setNotifications(prev => [newNotification, ...prev.filter(n => n.id !== newNotification.id)]);
-          }
+            if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id) {
+              const newNotification: Notification = {
+                id: `new-${newTask.id}`,
+                type: 'new',
+                title: 'New task assigned',
+                description: `You have been assigned a new task: "${newTask.description}".`,
+              };
+              setNotifications(prev => [newNotification, ...prev.filter(n => n.id !== newNotification.id)]);
+            }
 
-          // Task is ready for review (for editors)
-          if (
-            isEditor &&
-            payload.eventType === 'UPDATE' &&
-            newTask.status === 'review' &&
-            oldTask.status !== 'review'
-          ) {
-             const reviewNotification: Notification = {
+            if (
+              isEditor &&
+              payload.eventType === 'UPDATE' &&
+              newTask.status === 'review' &&
+              oldTask.status !== 'review'
+            ) {
+              const reviewNotification: Notification = {
                 id: `review-${newTask.id}`,
                 type: 'review',
                 title: 'Task ready for review',
                 description: `Task "${newTask.description}" is now ready for your review.`,
               };
-             setNotifications(prev => [reviewNotification, ...prev.filter(n => n.id !== reviewNotification.id)]);
+              setNotifications(prev => [reviewNotification, ...prev.filter(n => n.id !== reviewNotification.id)]);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+      
+      return channel;
+    };
+
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+    
+    initializeNotifications().then(ch => {
+      if (ch) channel = ch;
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [profile]);
 
@@ -285,6 +290,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
               <NotificationPopover 
                 isCollapsed={isCollapsed} 
                 notifications={notifications} 
+                setNotifications={setNotifications}
               />
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />

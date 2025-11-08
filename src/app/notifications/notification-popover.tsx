@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,15 @@ const notificationIcons = {
   review: <Eye className="h-5 w-5 text-purple-500" />,
 };
 
-export function NotificationPopover({ isCollapsed, notifications }: { isCollapsed: boolean, notifications: Notification[] }) {
+export function NotificationPopover({
+  isCollapsed,
+  notifications,
+  setNotifications,
+}: {
+  isCollapsed: boolean,
+  notifications: Notification[],
+  setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>
+}) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [readNotifications, setReadNotifications] = useState<string[]>([]);
@@ -41,7 +50,7 @@ export function NotificationPopover({ isCollapsed, notifications }: { isCollapse
             router.push(`/tasks?taskId=${taskId}`);
         }
         
-        const newReadNotifications = [...readNotifications, notification.id];
+        const newReadNotifications = [...new Set([...readNotifications, notification.id])];
         setReadNotifications(newReadNotifications);
         localStorage.setItem('readNotifications', JSON.stringify(newReadNotifications));
         
