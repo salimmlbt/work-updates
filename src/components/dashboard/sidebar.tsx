@@ -183,7 +183,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
         createClient().removeChannel(channel);
       }
     };
-  }, [profile, hasMounted]);
+  }, [profile, hasMounted, isFalaqAdmin, userPermissions]);
 
 
   const hasAccess = (itemId: string) => {
@@ -205,8 +205,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
       (item.href !== '/dashboard' || pathname === '/dashboard');
 
     const linkContent = (
-      <Link
-        href={item.href}
+      <div
         className={cn(
           'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300',
           {
@@ -225,7 +224,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
             )}
           />
         </span>
-
         <span
           className={cn(
             'text-sidebar-foreground truncate overflow-hidden whitespace-nowrap transition-[opacity,width] duration-300 ease-in-out',
@@ -234,21 +232,23 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
         >
           {item.label}
         </span>
-      </Link>
+      </div>
     );
 
     if (isCollapsed) {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            {linkContent}
+             <Link href={item.href}>
+              {linkContent}
+            </Link>
           </TooltipTrigger>
           <TooltipContent side="right">{item.label}</TooltipContent>
         </Tooltip>
       );
     }
 
-    return linkContent;
+    return  <Link href={item.href}>{linkContent}</Link>;
   };
   NavLink.displayName = "NavLink";
 
