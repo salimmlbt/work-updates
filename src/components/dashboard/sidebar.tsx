@@ -57,6 +57,11 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
   const pathname = usePathname();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
@@ -242,6 +247,18 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
     return <Link href={item.href}>{linkContent}</Link>;
   };
 
+  const handleNotificationClick = async () => {
+    if (Notification.permission !== "granted") {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        // Play and immediately pause the audio to "unlock" it for autoplay
+        audioRef.current?.play().catch(() => {});
+        audioRef.current?.pause();
+      }
+    }
+  };
+
+
   return (
     <TooltipProvider>
       <div
@@ -250,7 +267,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
           isCollapsed ? 'w-20' : 'w-64'
         )}
       >
-        <audio id="notification-sound" src="/notification.mp3" preload="auto" ref={audioRef}></audio>
+        {hasMounted && <audio id="notification-sound" src="/notification.mp3" preload="auto" ref={audioRef}></audio>}
         <Button
           variant="ghost"
           size="icon"
@@ -297,11 +314,13 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
-              <NotificationPopover 
-                isCollapsed={isCollapsed} 
-                notifications={notifications} 
-                setNotifications={setNotifications}
-              />
+              <div onClick={handleNotificationClick}>
+                  <NotificationPopover 
+                    isCollapsed={isCollapsed} 
+                    notifications={notifications} 
+                    setNotifications={setNotifications}
+                  />
+              </div>
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
