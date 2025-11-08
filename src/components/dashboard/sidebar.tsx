@@ -27,7 +27,7 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/comp
 import { NotificationPopover } from '@/app/notifications/notification-popover';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { isAfter, parseISO, subDays } from 'date-fns';
+import { isAfter, parseISO, subDays, isTomorrow } from 'date-fns';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon, id: 'dashboard' },
@@ -53,13 +53,9 @@ interface SidebarProps {
   notifications: Notification[];
 }
 
-export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifications: initialNotifications }: SidebarProps) {
+export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: SidebarProps) {
   const pathname = usePathname();
-  const [notifications, setNotifications] = useState(initialNotifications);
-
-  useEffect(() => {
-    setNotifications(initialNotifications);
-  }, [initialNotifications]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -67,9 +63,62 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
     const supabase = createClient();
     const userPermissions = (profile.roles as RoleWithPermissions)?.permissions || {};
     const isEditor = userPermissions.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
-    
-    const twentyFourHoursAgo = subDays(new Date(), 1);
+    const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
 
+    // Initial fetch for notifications
+    const fetchInitialNotifications = async () => {
+        const { data: assignedTasksData } = await supabase
+            .from('tasks')
+            .select('id, description, deadline, created_at')
+            .eq('assignee_id', profile.id)
+            .eq('is_deleted', false)
+            .or('status.neq.done,status.is.null');
+
+        const assignedTasks = assignedTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'deadline' | 'created_at'>[] || [];
+            
+        const deadlineNotifications: Notification[] = assignedTasks
+            .filter(task => task.deadline && isTomorrow(parseISO(task.deadline)))
+            .map(task => ({
+                id: `due-${task.id}`,
+                type: 'deadline',
+                title: 'Project Deadline',
+                description: `Task "${task.description}" is due tomorrow.`,
+            }));
+
+        const newNotifications: Notification[] = assignedTasks
+            .filter(task => task.created_at && isAfter(parseISO(task.created_at), new Date(twentyFourHoursAgo)))
+            .map(task => ({
+              id: `new-${task.id}`,
+              type: 'new',
+              title: 'New task assigned',
+              description: `You have been assigned a new task: "${task.description}".`,
+            }));
+
+        let reviewNotifications: Notification[] = [];
+        if (isEditor) {
+            const { data: reviewTasksData } = await supabase
+                .from('tasks')
+                .select('id, description, status_updated_at')
+                .eq('status', 'review')
+                .eq('is_deleted', false)
+                .filter('status_updated_at', 'gte', twentyFourHoursAgo);
+            
+            const reviewTasks = reviewTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'status_updated_at'>[] || [];
+
+            reviewNotifications = reviewTasks.map(task => ({
+                    id: `review-${task.id}`,
+                    type: 'review',
+                    title: 'Task ready for review',
+                    description: `Task "${task.description}" is now ready for your review.`,
+                }));
+        }
+
+        setNotifications([...deadlineNotifications, ...newNotifications, ...reviewNotifications]);
+    };
+
+    fetchInitialNotifications();
+    
+    // Real-time subscription
     const channel = supabase
       .channel('realtime-notifications')
       .on<TaskWithDetails>(
@@ -79,7 +128,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
           const newTask = payload.new as TaskWithDetails;
           const oldTask = payload.old as TaskWithDetails;
 
-          // New Task Assigned
+          // New Task Assigned to me
           if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id) {
             const newNotification: Notification = {
               id: `new-${newTask.id}`,
@@ -87,16 +136,15 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
               title: 'New task assigned',
               description: `You have been assigned a new task: "${newTask.description}".`,
             };
-            setNotifications(prev => [newNotification, ...prev]);
+            setNotifications(prev => [newNotification, ...prev.filter(n => n.id !== newNotification.id)]);
           }
 
-          // Task marked for review
+          // Task marked for review (for editors)
           if (
             isEditor &&
             payload.eventType === 'UPDATE' &&
             newTask.status === 'review' &&
-            oldTask.status !== 'review' &&
-            newTask.assignee_id !== profile.id
+            oldTask.status !== 'review'
           ) {
              const reviewNotification: Notification = {
                 id: `review-${newTask.id}`,
@@ -104,7 +152,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
                 title: 'Task ready for review',
                 description: `Task "${newTask.description}" is now ready for your review.`,
               };
-             setNotifications(prev => [reviewNotification, ...prev]);
+             setNotifications(prev => [reviewNotification, ...prev.filter(n => n.id !== reviewNotification.id)]);
           }
         }
       )
@@ -147,7 +195,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
           }
         )}
       >
-        {/* Fixed-width icon container */}
         <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
           <item.icon
             className={cn(
@@ -159,7 +206,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
           />
         </span>
 
-        {/* Label fade + width */}
         <span
           className={cn(
             'text-sidebar-foreground truncate overflow-hidden whitespace-nowrap transition-[opacity,width] duration-300 ease-in-out',
@@ -193,7 +239,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
           isCollapsed ? 'w-20' : 'w-64'
         )}
       >
-        {/* Collapse button */}
         <Button
           variant="ghost"
           size="icon"
@@ -209,7 +254,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
         </Button>
 
         <div className="flex h-full max-h-screen flex-col gap-2">
-          {/* Logo */}
           <div className="flex h-20 items-center px-6 border-b border-sidebar-border">
             <Link href="/dashboard" className="flex items-center gap-3 font-semibold">
               <div className="bg-primary text-primary-foreground h-10 w-10 rounded-lg flex items-center justify-center shrink-0">
@@ -231,7 +275,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
             </Link>
           </div>
 
-          {/* Main nav */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden py-4">
             <nav className={cn('grid items-start gap-1 text-base font-medium px-4')}>
               {filteredNavItems.map((item) => (
@@ -240,7 +283,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
             </nav>
           </div>
 
-          {/* Bottom nav + profile */}
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
               <NotificationPopover isCollapsed={isCollapsed} notifications={notifications} />
@@ -248,7 +290,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
                 <NavLink key={item.href} item={item} />
               ))}
 
-              {/* Logout */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <form action={logout}>
@@ -271,7 +312,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
               </Tooltip>
             </nav>
 
-            {/* Profile */}
             <div className="border-t border-sidebar-border pt-4">
               <Tooltip>
                 <TooltipTrigger>
@@ -286,7 +326,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifica
                       <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
                     </Avatar>
 
-                    {/* Only show label when expanded */}
                     {!isCollapsed && (
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-sidebar-foreground">{profile?.full_name}</span>
