@@ -554,15 +554,15 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
 
   return (
     <>
-      <td className="px-4 py-3">
-        {canEdit && (
-            <Checkbox
+      {canEdit && (
+        <td className="px-4 py-3">
+          <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelect(task.id, !!checked)}
             aria-label="Select task"
-            />
-        )}
-      </td>
+          />
+        </td>
+      )}
       <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[250px] cursor-pointer">
         <div className="flex items-center gap-2">
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
@@ -1435,20 +1435,19 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           <tr className="border-b border-gray-200 group">
              {canEditTasks && (
                 <th className="px-4 py-2 w-12">
-                <Checkbox
-                    checked={allVisibleTasksSelected}
-                    onCheckedChange={(checked) => {
-                    const taskIds = tasksToRender.map(t => t.id);
-                    if (checked) {
-                        setSelectedTaskIds(prev => [...new Set([...prev, ...taskIds])]);
-                    } else {
-                        setSelectedTaskIds(prev => prev.filter(id => !taskIds.includes(id)));
-                    }
-                    }}
-                />
+                  <Checkbox
+                      checked={allVisibleTasksSelected}
+                      onCheckedChange={(checked) => {
+                      const taskIds = tasksToRender.map(t => t.id);
+                      if (checked) {
+                          setSelectedTaskIds(prev => [...new Set([...prev, ...taskIds])]);
+                      } else {
+                          setSelectedTaskIds(prev => prev.filter(id => !taskIds.includes(id)));
+                      }
+                      }}
+                  />
                 </th>
              )}
-             {!canEditTasks && <th className="w-12"></th>}
             <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
             <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
             <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
