@@ -1053,9 +1053,17 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const [taskView, setTaskView] = useState<'all' | 'mine'>('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(() => {
+    const taskId = searchParams.get('taskId');
+    if (taskId) {
+      return initialTasks.find(t => t.id === taskId) || null;
+    }
+    return null;
+  });
+
   const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'created_at', direction: 'descending' });
@@ -1074,15 +1082,12 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   useEffect(() => {
     const taskId = searchParams.get('taskId');
-    if (taskId && initialTasks.length > 0) {
-        const task = initialTasks.find(t => t.id === taskId);
-        if (task) {
-            setSelectedTask(task);
-            router.replace('/tasks', { scroll: false });
-        }
+    if (taskId) {
+      router.replace('/tasks', { scroll: false });
     }
-  }, [searchParams, initialTasks, router]);
-
+  // We only want to run this once on mount to clear the URL
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setTasks(initialTasks);
