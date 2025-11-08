@@ -205,7 +205,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
       (item.href !== '/dashboard' || pathname === '/dashboard');
 
     const linkContent = (
-      <span
+      <Link
+        href={item.href}
         className={cn(
           'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300',
           {
@@ -233,22 +234,24 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
         >
           {item.label}
         </span>
-      </span>
+      </Link>
     );
 
     if (isCollapsed) {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Link href={item.href}>{linkContent}</Link>
+            {linkContent}
           </TooltipTrigger>
           <TooltipContent side="right">{item.label}</TooltipContent>
         </Tooltip>
       );
     }
 
-    return <Link href={item.href}>{linkContent}</Link>;
+    return linkContent;
   };
+  NavLink.displayName = "NavLink";
+
 
   return (
     <TooltipProvider>

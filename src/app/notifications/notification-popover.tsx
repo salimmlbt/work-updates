@@ -47,14 +47,16 @@ export function NotificationPopover({
     const unreadNotifications = notifications.filter(n => !readNotifications.includes(n.id));
 
     const handlePopoverTriggerClick = async () => {
+      // Unlock audio playback on user interaction
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        audioRef.current.pause();
+      }
+
+      // Request notification permission if not already granted
       if (Notification.permission !== "granted") {
         try {
-          const permission = await Notification.requestPermission();
-          if (permission === 'granted' && audioRef.current) {
-            // Play and pause the audio to "unlock" it for autoplay
-            audioRef.current.play().catch(() => {});
-            audioRef.current.pause();
-          }
+          await Notification.requestPermission();
         } catch (error) {
           console.error("Error requesting notification permission:", error);
         }
