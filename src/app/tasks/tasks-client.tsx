@@ -440,7 +440,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile, isSelected, onSelect }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; isSelected: boolean; onSelect: (taskId: string, isSelected: boolean) => void; }) => {
+const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile, isSelected, onSelect, isHighlighted }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; isSelected: boolean; onSelect: (taskId: string, isSelected: boolean) => void; isHighlighted: boolean; }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
@@ -555,7 +555,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
   return (
     <>
       {canEdit && (
-        <td className="px-4 py-3">
+        <td className={cn("px-4 py-3", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelect(task.id, !!checked)}
@@ -563,7 +563,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           />
         </td>
       )}
-      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[250px] cursor-pointer">
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[250px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
         <div className="flex items-center gap-2">
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
             <span className="truncate shrink">{task.description}</span>
@@ -591,14 +591,14 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           ))}
         </div>
       </td>
-      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
       </td>
-      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
       {canEdit && (
-        <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[180px] cursor-pointer">
+        <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[180px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
           {task.profiles ? (
             <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
               <Avatar className="h-6 w-6 shrink-0">
@@ -610,22 +610,22 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           ) : <div className="flex justify-center">-</div>}
         </td>
       )}
-      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[120px] cursor-pointer">
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[120px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
           {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
         </div>
       </td>
-      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dateText}</span>
         </div>
       </td>
-      <td onClick={handleRowClick} className="px-4 py-3 border-r max-w-[150px] cursor-pointer">
+      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dynamicDate}</span>
         </div>
       </td>
-      <td className="p-0">
+      <td className={cn(isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild disabled={isStatusChangeDisabled}>
             <div className={cn("group w-full h-full flex items-center justify-start px-4 py-3", !isStatusChangeDisabled && "cursor-pointer")}>
@@ -662,7 +662,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           </DropdownMenuContent>
         </DropdownMenu>
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className={cn("px-4 py-3 text-right", isHighlighted && "bg-blue-100 dark:bg-blue-900/30")}>
         {canEdit && (
         <DropdownMenu
           onOpenChange={(open) => setOpenMenuId(open ? task.id : null)}
@@ -749,6 +749,8 @@ const TaskTableBody = ({
   currentUserProfile,
   selectedTaskIds,
   onSelectTask,
+  highlightedTaskId,
+  clearHighlight,
 }: {
   tasks: TaskWithDetails[];
   allTasks: TaskWithDetails[];
@@ -771,6 +773,8 @@ const TaskTableBody = ({
   currentUserProfile: Profile | null;
   selectedTaskIds: string[];
   onSelectTask: (taskId: string, isSelected: boolean) => void;
+  highlightedTaskId: string | null;
+  clearHighlight: () => void;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -779,8 +783,9 @@ const TaskTableBody = ({
       {tasks.map((task) => (
         <tr
           key={task.id}
-          className={`border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors`}
+          className={cn("border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors", highlightedTaskId === task.id && 'bg-blue-100/50 animate-pulse-once')}
           data-menu-open={openMenuId === task.id}
+          onClick={clearHighlight}
         >
           <TaskRow
             task={task}
@@ -799,6 +804,7 @@ const TaskTableBody = ({
             currentUserProfile={currentUserProfile}
             isSelected={selectedTaskIds.includes(task.id)}
             onSelect={onSelectTask}
+            isHighlighted={highlightedTaskId === task.id}
           />
         </tr>
       ))}
@@ -1006,7 +1012,7 @@ interface TasksClientProps {
   clients: Client[];
   profiles: Profile[];
   currentUserProfile: Profile | null;
-  initialSelectedTask: TaskWithDetails | null;
+  highlightedTaskId?: string;
 }
 
 const processPayload = (payload: any, profiles: Profile[], allProjects: Project[], clients: Client[]): TaskWithDetails => {
@@ -1036,7 +1042,7 @@ interface ActiveFilter {
   value: FilterValue;
 }
 
-export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile, initialSelectedTask }: TasksClientProps) {
+export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile, highlightedTaskId: initialHighlightedTaskId }: TasksClientProps) {
   const [view, setView] = useState('table');
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -1054,12 +1060,14 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const [taskView, setTaskView] = useState<'all' | 'mine'>('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(initialSelectedTask);
+  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'created_at', direction: 'descending' });
 
   const [activeTab, setActiveTab] = useState('active');
+  
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(initialHighlightedTaskId || null);
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
@@ -1071,16 +1079,17 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
 
-  const router = useRouter();
-
   useEffect(() => {
-    // This effect handles clearing the URL after the initial load if a taskId was present.
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has('taskId')) {
-      // Use replaceState to avoid adding to browser history
-      window.history.replaceState(null, '', window.location.pathname);
+    const handleClickOutside = () => {
+        setHighlightedTaskId(null);
+    };
+    if (highlightedTaskId) {
+        window.addEventListener('click', handleClickOutside, { once: true });
     }
-  }, []);
+    return () => {
+        window.removeEventListener('click', handleClickOutside);
+    };
+  }, [highlightedTaskId]);
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -1491,6 +1500,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           currentUserProfile={currentUserProfile}
           selectedTaskIds={selectedTaskIds}
           onSelectTask={handleSelectTask}
+          highlightedTaskId={highlightedTaskId}
+          clearHighlight={() => setHighlightedTaskId(null)}
         />
       </table>
     )

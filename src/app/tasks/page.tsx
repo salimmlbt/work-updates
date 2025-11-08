@@ -47,7 +47,6 @@ export default async function TasksPage({ searchParams }: { searchParams: { [key
     });
 
     const taskId = searchParams?.taskId as string | undefined;
-    const initialSelectedTask = taskId ? (tasks.find(t => t.id === taskId) as TaskWithDetails | null) : null;
 
     return (
         <TasksPageLoader 
@@ -56,7 +55,7 @@ export default async function TasksPage({ searchParams }: { searchParams: { [key
             clients={clientsData as Client[] || []}
             profiles={profilesData as Profile[] || []}
             currentUserProfile={userProfile}
-            initialSelectedTask={initialSelectedTask}
+            highlightedTaskId={taskId}
         />
     )
 }
