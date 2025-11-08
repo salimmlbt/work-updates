@@ -67,6 +67,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 
   useEffect(() => {
+    if (!hasMounted) return;
+
     const initializeNotifications = async () => {
       if (!profile) return;
       const supabase = createClient();
@@ -180,7 +182,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
         createClient().removeChannel(channel);
       }
     };
-  }, [profile]);
+  }, [profile, hasMounted]);
 
 
   const hasAccess = (itemId: string) => {
@@ -251,7 +253,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
     if (Notification.permission !== "granted") {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
-        // Play and immediately pause the audio to "unlock" it for autoplay
         audioRef.current?.play().catch(() => {});
         audioRef.current?.pause();
       }
@@ -314,13 +315,15 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
-              <div onClick={handleNotificationClick}>
-                  <NotificationPopover 
-                    isCollapsed={isCollapsed} 
-                    notifications={notifications} 
-                    setNotifications={setNotifications}
-                  />
-              </div>
+              {hasMounted && (
+                <div onClick={handleNotificationClick}>
+                    <NotificationPopover 
+                      isCollapsed={isCollapsed} 
+                      notifications={notifications} 
+                      setNotifications={setNotifications}
+                    />
+                </div>
+              )}
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
