@@ -53,7 +53,6 @@ export default async function RootLayout({
         <ClientLayout
           isAuthenticated={isAuthenticated}
           profile={profile}
-          notifications={[]}
         >
           {children}
         </ClientLayout>

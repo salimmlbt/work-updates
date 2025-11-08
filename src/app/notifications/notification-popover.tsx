@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { BellIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { Notification } from '@/lib/types';
+import type { Notification, RoleWithPermissions, TaskWithDetails, Profile } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useRouter } from 'next/navigation';
 import { FilePlus2, Eye, AlertTriangle } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { isAfter, parseISO, subDays, isTomorrow } from 'date-fns';
 
 const notificationIcons = {
   new: <FilePlus2 className="h-5 w-5 text-blue-500" />,
@@ -22,10 +24,11 @@ const notificationIcons = {
   review: <Eye className="h-5 w-5 text-purple-500" />,
 };
 
-export function NotificationPopover({ isCollapsed, notifications: initialNotifications }: { isCollapsed: boolean, notifications: Notification[] }) {
+export function NotificationPopover({ isCollapsed, profile }: { isCollapsed: boolean, profile: Profile | null }) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [readNotifications, setReadNotifications] = useState<string[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     useEffect(() => {
         const storedRead = localStorage.getItem('readNotifications');
@@ -34,7 +37,110 @@ export function NotificationPopover({ isCollapsed, notifications: initialNotific
         }
     }, []);
 
-    const unreadNotifications = initialNotifications.filter(n => !readNotifications.includes(n.id));
+    useEffect(() => {
+        if (!profile) return;
+
+        const supabase = createClient();
+        const userPermissions = (profile.roles as RoleWithPermissions)?.permissions || {};
+        const isEditor = userPermissions.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
+        const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
+
+        const fetchInitialNotifications = async () => {
+            const { data: assignedTasksData } = await supabase
+                .from('tasks')
+                .select('id, description, deadline, created_at')
+                .eq('assignee_id', profile.id)
+                .eq('is_deleted', false)
+                .or('status.neq.done,status.is.null');
+
+            const assignedTasks = assignedTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'deadline' | 'created_at'>[] || [];
+                
+            const deadlineNotifications: Notification[] = assignedTasks
+                .filter(task => task.deadline && isTomorrow(parseISO(task.deadline)))
+                .map(task => ({
+                    id: `due-${task.id}`,
+                    type: 'deadline',
+                    title: 'Project Deadline',
+                    description: `Task "${task.description}" is due tomorrow.`,
+                }));
+
+            const newNotifications: Notification[] = assignedTasks
+                .filter(task => task.created_at && isAfter(parseISO(task.created_at), new Date(twentyFourHoursAgo)))
+                .map(task => ({
+                  id: `new-${task.id}`,
+                  type: 'new',
+                  title: 'New task assigned',
+                  description: `You have been assigned a new task: "${task.description}".`,
+                }));
+
+            let reviewNotifications: Notification[] = [];
+            if (isEditor) {
+                const { data: reviewTasksData } = await supabase
+                    .from('tasks')
+                    .select('id, description, status_updated_at')
+                    .eq('status', 'review')
+                    .eq('is_deleted', false)
+                    .filter('status_updated_at', 'gte', twentyFourHoursAgo);
+                
+                const reviewTasks = reviewTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'status_updated_at'>[] || [];
+
+                reviewNotifications = reviewTasks.map(task => ({
+                        id: `review-${task.id}`,
+                        type: 'review',
+                        title: 'Task ready for review',
+                        description: `Task "${task.description}" is now ready for your review.`,
+                    }));
+            }
+
+            setNotifications([...deadlineNotifications, ...newNotifications, ...reviewNotifications]);
+        };
+
+        fetchInitialNotifications();
+        
+        const channel = supabase
+          .channel('realtime-notifications-popover')
+          .on<TaskWithDetails>(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'tasks' },
+            (payload) => {
+              const newTask = payload.new as TaskWithDetails;
+              const oldTask = payload.old as TaskWithDetails;
+
+              if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id) {
+                const newNotification: Notification = {
+                  id: `new-${newTask.id}`,
+                  type: 'new',
+                  title: 'New task assigned',
+                  description: `You have been assigned a new task: "${newTask.description}".`,
+                };
+                setNotifications(prev => [newNotification, ...prev.filter(n => n.id !== newNotification.id)]);
+              }
+
+              if (
+                isEditor &&
+                payload.eventType === 'UPDATE' &&
+                newTask.status === 'review' &&
+                oldTask.status !== 'review'
+              ) {
+                 const reviewNotification: Notification = {
+                    id: `review-${newTask.id}`,
+                    type: 'review',
+                    title: 'Task ready for review',
+                    description: `Task "${newTask.description}" is now ready for your review.`,
+                  };
+                 setNotifications(prev => [reviewNotification, ...prev.filter(n => n.id !== reviewNotification.id)]);
+              }
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }, [profile]);
+
+
+    const unreadNotifications = notifications.filter(n => !readNotifications.includes(n.id));
 
     const handleNotificationClick = (notification: Notification) => {
         const taskId = notification.id.split('-').pop();

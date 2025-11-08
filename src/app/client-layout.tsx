@@ -15,12 +15,10 @@ export default function ClientLayout({
   children,
   isAuthenticated: initialIsAuthenticated,
   profile,
-  notifications,
 }: {
   children: React.ReactNode;
   isAuthenticated: boolean;
   profile: Profile | null;
-  notifications: Notification[];
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -70,7 +68,6 @@ export default function ClientLayout({
             profile={profile} 
             isCollapsed={isSidebarCollapsed}
             setIsCollapsed={setSidebarCollapsed}
-            notifications={notifications}
         />
       )}
       <div className={cn(
