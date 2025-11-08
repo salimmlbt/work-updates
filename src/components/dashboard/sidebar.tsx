@@ -61,6 +61,12 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 
   useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
     if (!profile) return;
     const supabase = createClient();
     const isEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
@@ -68,7 +74,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
     const initializeNotifications = async () => {
       const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
 
-      // Fetch initial notifications
       const { data: assignedTasksData } = await supabase
         .from('tasks')
         .select('id, description, deadline, created_at, status, status_updated_at')
@@ -114,7 +119,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
       setNotifications([...deadlineNotifications, ...newNotifications, ...reviewNotifications]);
 
-      // Set up real-time channel
       const channel = supabase
         .channel('realtime-notifications-sidebar')
         .on<TaskWithDetails>(
@@ -124,14 +128,15 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
             const newTask = payload.new as TaskWithDetails;
             const oldTask = payload.old as TaskWithDetails;
 
+            let notification: Notification | null = null;
+
             if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id) {
-              const newNotification: Notification = {
+              notification = {
                 id: `new-${newTask.id}`,
                 type: 'new',
                 title: 'New task assigned',
                 description: `You have been assigned a new task: "${newTask.description}".`,
               };
-              setNotifications(prev => [newNotification, ...prev.filter(n => n.id !== newNotification.id)]);
             }
 
             if (
@@ -140,13 +145,22 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
               newTask.status === 'review' &&
               oldTask.status !== 'review'
             ) {
-              const reviewNotification: Notification = {
+              notification = {
                 id: `review-${newTask.id}-${newTask.status_updated_at}`,
                 type: 'review',
                 title: 'Task ready for review',
                 description: `Task "${newTask.description}" is now ready for your review.`,
               };
-              setNotifications(prev => [reviewNotification, ...prev]);
+            }
+            
+            if (notification) {
+                setNotifications(prev => [notification!, ...prev.filter(n => n.id !== notification!.id)]);
+                if (Notification.permission === 'granted') {
+                    new Notification(notification.title, {
+                        body: notification.description,
+                        icon: '/icon.svg'
+                    });
+                }
             }
           }
         )
