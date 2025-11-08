@@ -2,9 +2,10 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { createServerClient } from '@/lib/supabase/server';
 import ClientLayout from './client-layout';
-import type { Profile } from '@/lib/types';
+import type { Profile, TaskWithDetails, Notification } from '@/lib/types';
 import { type Metadata } from 'next';
 import { PageLoader } from '@/components/page-loader';
+import { isToday, isTomorrow, isAfter, subDays, parseISO } from 'date-fns';
 
 export const metadata: Metadata = {
   title: 'Falaq - Work Updates',
@@ -27,13 +28,46 @@ export default async function RootLayout({
   const { data: { user } } = await supabase.auth.getUser();
   
   let profile: Profile | null = null;
+  let notifications: Notification[] = [];
+
   if (user) {
-    const { data } = await supabase
+    const { data: profileData } = await supabase
       .from('profiles')
       .select('*, roles(*), teams:profile_teams(teams(*))')
       .eq('id', user.id)
       .single();
-    profile = data as Profile;
+    profile = profileData as Profile;
+    
+    if (profile) {
+        const { data: tasksData } = await supabase
+            .from('tasks')
+            .select('*, projects(name)')
+            .eq('assignee_id', user.id)
+            .eq('is_deleted', false)
+            .or('status.neq.done,status.is.null');
+
+        const tasks = tasksData as TaskWithDetails[] || [];
+        const now = new Date();
+        const twentyFourHoursAgo = subDays(now, 1);
+
+        const newTasks = tasks
+            .filter(task => isAfter(parseISO(task.created_at), twentyFourHoursAgo))
+            .map(task => ({
+                id: `new-${task.id}`,
+                title: 'New task assigned',
+                description: `You have been assigned a new task: "${task.description}".`,
+            }));
+            
+        const dueTomorrowTasks = tasks
+            .filter(task => isTomorrow(parseISO(task.deadline)))
+            .map(task => ({
+                id: `due-${task.id}`,
+                title: 'Project Deadline',
+                description: `Task "${task.description}" is due tomorrow.`,
+            }));
+
+        notifications = [...newTasks, ...dueTomorrowTasks];
+    }
   }
 
   const isAuthenticated = !!user;
@@ -51,6 +85,7 @@ export default async function RootLayout({
         <ClientLayout
           isAuthenticated={isAuthenticated}
           profile={profile}
+          notifications={notifications}
         >
           {children}
         </ClientLayout>

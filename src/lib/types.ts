@@ -60,3 +60,9 @@ export type TaskWithDetails = Task & {
   revisions: Revisions | null;
   corrections: Correction[] | null;
 }
+
+export type Notification = {
+    id: string;
+    title: string;
+    description: string;
+}

@@ -8,17 +8,19 @@ import { logout } from './login/actions';
 import { cn } from '@/lib/utils';
 import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
-import type { Profile } from '@/lib/types';
+import type { Profile, Notification } from '@/lib/types';
 import { Toaster } from "@/components/ui/toaster";
 
 export default function ClientLayout({
   children,
   isAuthenticated: initialIsAuthenticated,
   profile,
+  notifications,
 }: {
   children: React.ReactNode;
   isAuthenticated: boolean;
   profile: Profile | null;
+  notifications: Notification[];
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -68,6 +70,7 @@ export default function ClientLayout({
             profile={profile} 
             isCollapsed={isSidebarCollapsed}
             setIsCollapsed={setSidebarCollapsed}
+            notifications={notifications}
         />
       )}
       <div className={cn(

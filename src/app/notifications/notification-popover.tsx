@@ -10,35 +10,17 @@ import { Button } from '@/components/ui/button';
 import { BellIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import type { Notification } from '@/lib/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-const notifications = [
-    {
-        id: 1,
-        title: 'New task assigned',
-        description: 'You have been assigned a new task: "Create new ad campaign".',
-        icon: <BellIcon className="h-5 w-5 text-blue-500" />,
-    },
-    {
-        id: 2,
-        title: 'Project Deadline',
-        description: 'Project "Website Redesign" is due tomorrow.',
-        icon: <BellIcon className="h-5 w-5 text-red-500" />,
-    },
-    {
-        id: 3,
-        title: 'New Message',
-        description: 'You have a new message from John Doe.',
-        icon: <BellIcon className="h-5 w-5 text-green-500" />,
-    },
-];
-
-export function NotificationPopover({ isCollapsed }: { isCollapsed: boolean }) {
+export function NotificationPopover({ isCollapsed, notifications }: { isCollapsed: boolean, notifications: Notification[] }) {
     
     const triggerButton = (
         <div
+          role="button"
           className={cn(
             'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300 w-full',
-            'hover:bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent data-[state=open]:font-semibold'
+            'hover:bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent'
           )}
         >
             <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center relative">
@@ -67,48 +49,51 @@ export function NotificationPopover({ isCollapsed }: { isCollapsed: boolean }) {
              <Tooltip>
                 <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
-                        <div role="button" className="w-full">
-                           {triggerButton}
-                        </div>
+                      {triggerButton}
                     </PopoverTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="right">Notifications</TooltipContent>
             </Tooltip>
         ) : (
             <PopoverTrigger asChild>
-                <div role="button" className="w-full">
-                  {triggerButton}
-                </div>
+              {triggerButton}
             </PopoverTrigger>
         )}
-      <PopoverContent className="w-80 mr-4" align="end">
-        <div className="grid gap-4">
-          <div className="space-y-2">
+      <PopoverContent className="w-80 mr-4 p-0" align="end">
+        <div className="grid">
+          <div className="space-y-1 p-4">
             <h4 className="font-medium leading-none">Notifications</h4>
             <p className="text-sm text-muted-foreground">
-              You have {notifications.length} unread messages.
+              You have {notifications.length} unread notifications.
             </p>
           </div>
-          <div className="grid gap-2">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="flex items-start gap-4 p-2 rounded-lg hover:bg-accent"
-              >
-                <div className="mt-1">
-                    {notification.icon}
+          <ScrollArea className="h-80">
+            <div className="grid gap-1 p-2">
+              {notifications.length > 0 ? (
+                notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="flex items-start gap-4 p-3 rounded-lg hover:bg-accent"
+                >
+                  <div className="mt-1">
+                      <BellIcon className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div className="grid gap-1">
+                    <p className="text-sm font-medium leading-snug">
+                      {notification.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {notification.description}
+                    </p>
+                  </div>
                 </div>
-                <div className="grid gap-1">
-                  <p className="text-sm font-medium leading-none">
-                    {notification.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {notification.description}
-                  </p>
+              ))) : (
+                <div className="text-center text-sm text-muted-foreground py-10">
+                    No new notifications.
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          </ScrollArea>
         </div>
       </PopoverContent>
     </Popover>

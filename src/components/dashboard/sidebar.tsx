@@ -21,7 +21,7 @@ import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
 import { LogOut, ChevronLeft, ShieldQuestion } from 'lucide-react';
-import type { Profile, RoleWithPermissions } from '@/lib/types';
+import type { Profile, RoleWithPermissions, Notification } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { NotificationPopover } from '@/app/notifications/notification-popover';
@@ -47,9 +47,10 @@ interface SidebarProps {
   profile: Profile | null;
   isCollapsed: boolean;
   setIsCollapsed: (isCollapsed: boolean) => void;
+  notifications: Notification[];
 }
 
-export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: SidebarProps) {
+export default function Sidebar({ profile, isCollapsed, setIsCollapsed, notifications }: SidebarProps) {
   const pathname = usePathname();
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
@@ -178,7 +179,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
           {/* Bottom nav + profile */}
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
-              <NotificationPopover isCollapsed={isCollapsed} />
+              <NotificationPopover isCollapsed={isCollapsed} notifications={notifications} />
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
