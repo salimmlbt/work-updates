@@ -1054,11 +1054,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const [taskView, setTaskView] = useState<'all' | 'mine'>('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(initialSelectedTask);
-
   const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'created_at', direction: 'descending' });
@@ -1075,13 +1071,15 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
 
+  const router = useRouter();
+
   useEffect(() => {
-    const taskId = searchParams.get('taskId');
-    if (taskId) {
-      router.replace('/tasks', { scroll: false });
+    // This effect handles clearing the URL after the initial load if a taskId was present.
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('taskId')) {
+      // Use replaceState to avoid adding to browser history
+      window.history.replaceState(null, '', window.location.pathname);
     }
-  // We only want to run this once on mount to clear the URL
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
