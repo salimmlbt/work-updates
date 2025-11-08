@@ -35,19 +35,12 @@ const notifications = [
 export function NotificationPopover({ isCollapsed }: { isCollapsed: boolean }) {
     
     const triggerButton = (
-        <Button
-          variant="ghost"
+        <div
           className={cn(
-            'w-full justify-start p-0 h-auto group',
-            'data-[state=open]:bg-sidebar-accent'
+            'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300 w-full',
+            'hover:bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent data-[state=open]:font-semibold'
           )}
         >
-          <span
-            className={cn(
-              'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300',
-               'data-[state=open]:font-semibold group-hover:bg-sidebar-accent/50'
-            )}
-          >
             <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center relative">
               <BellIcon className="h-5 w-5 text-sidebar-icon-muted" />
               {notifications.length > 0 && (
@@ -65,8 +58,7 @@ export function NotificationPopover({ isCollapsed }: { isCollapsed: boolean }) {
             >
               Notifications
             </span>
-          </span>
-        </Button>
+        </div>
     );
 
   return (
@@ -75,14 +67,18 @@ export function NotificationPopover({ isCollapsed }: { isCollapsed: boolean }) {
              <Tooltip>
                 <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
-                        {triggerButton}
+                        <div role="button" className="w-full">
+                           {triggerButton}
+                        </div>
                     </PopoverTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="right">Notifications</TooltipContent>
             </Tooltip>
         ) : (
             <PopoverTrigger asChild>
-                {triggerButton}
+                <div role="button" className="w-full">
+                  {triggerButton}
+                </div>
             </PopoverTrigger>
         )}
       <PopoverContent className="w-80 mr-4" align="end">
