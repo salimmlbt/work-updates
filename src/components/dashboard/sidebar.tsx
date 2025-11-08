@@ -1,8 +1,8 @@
-
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import {
   DashboardIcon,
   ProjectsIcon,
@@ -21,10 +21,13 @@ import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
 import { LogOut, ChevronLeft, ShieldQuestion } from 'lucide-react';
-import type { Profile, RoleWithPermissions, Notification } from '@/lib/types';
+import type { Profile, RoleWithPermissions, Notification, TaskWithDetails } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { NotificationPopover } from '@/app/notifications/notification-popover';
+import { createClient } from '@/lib/supabase/client';
+import { isAfter, parseISO, subDays, isTomorrow } from 'date-fns';
+
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon, id: 'dashboard' },
@@ -51,9 +54,115 @@ interface SidebarProps {
 
 export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: SidebarProps) {
   const pathname = usePathname();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
+
+  useEffect(() => {
+    if (!profile) return;
+
+    const supabase = createClient();
+    const userPermissions = (profile.roles as RoleWithPermissions)?.permissions || {};
+    const isEditor = userPermissions.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
+    const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
+
+    const fetchInitialNotifications = async () => {
+        const { data: assignedTasksData } = await supabase
+            .from('tasks')
+            .select('id, description, deadline, created_at')
+            .eq('assignee_id', profile.id)
+            .eq('is_deleted', false)
+            .or('status.neq.done,status.is.null');
+
+        const assignedTasks = assignedTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'deadline' | 'created_at'>[] || [];
+            
+        const deadlineNotifications: Notification[] = assignedTasks
+            .filter(task => task.deadline && isTomorrow(parseISO(task.deadline)))
+            .map(task => ({
+                id: `due-${task.id}`,
+                type: 'deadline',
+                title: 'Project Deadline',
+                description: `Task "${task.description}" is due tomorrow.`,
+            }));
+
+        const newNotifications: Notification[] = assignedTasks
+            .filter(task => task.created_at && isAfter(parseISO(task.created_at), new Date(twentyFourHoursAgo)))
+            .map(task => ({
+              id: `new-${task.id}`,
+              type: 'new',
+              title: 'New task assigned',
+              description: `You have been assigned a new task: "${task.description}".`,
+            }));
+
+        let reviewNotifications: Notification[] = [];
+        if (isEditor) {
+            const { data: reviewTasksData } = await supabase
+                .from('tasks')
+                .select('id, description, status_updated_at')
+                .eq('status', 'review')
+                .eq('is_deleted', false)
+                .gte('status_updated_at', twentyFourHoursAgo);
+            
+            const reviewTasks = reviewTasksData as Pick<TaskWithDetails, 'id' | 'description' | 'status_updated_at'>[] || [];
+
+            reviewNotifications = reviewTasks.map(task => ({
+                    id: `review-${task.id}`,
+                    type: 'review',
+                    title: 'Task ready for review',
+                    description: `Task "${task.description}" is now ready for your review.`,
+                }));
+        }
+
+        setNotifications([...deadlineNotifications, ...newNotifications, ...reviewNotifications]);
+    };
+
+    fetchInitialNotifications();
+    
+    const channel = supabase
+      .channel('realtime-notifications-sidebar')
+      .on<TaskWithDetails>(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        (payload) => {
+          const newTask = payload.new;
+          const oldTask = payload.old;
+
+          // New Task Assigned to Me
+          if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id) {
+            const newNotification: Notification = {
+              id: `new-${newTask.id}`,
+              type: 'new',
+              title: 'New task assigned',
+              description: `You have been assigned a new task: "${newTask.description}".`,
+            };
+            setNotifications(prev => [newNotification, ...prev.filter(n => n.id !== newNotification.id)]);
+          }
+
+          // Task is ready for review (for editors)
+          if (
+            isEditor &&
+            payload.eventType === 'UPDATE' &&
+            newTask.status === 'review' &&
+            oldTask.status !== 'review'
+          ) {
+             const reviewNotification: Notification = {
+                id: `review-${newTask.id}`,
+                type: 'review',
+                title: 'Task ready for review',
+                description: `Task "${newTask.description}" is now ready for your review.`,
+              };
+             setNotifications(prev => [reviewNotification, ...prev.filter(n => n.id !== reviewNotification.id)]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile]);
+
 
   const hasAccess = (itemId: string) => {
     if (isFalaqAdmin) return true;
@@ -173,7 +282,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
 
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
-              <NotificationPopover isCollapsed={isCollapsed} profile={profile} />
+              <NotificationPopover 
+                isCollapsed={isCollapsed} 
+                notifications={notifications} 
+              />
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
