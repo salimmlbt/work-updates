@@ -1,8 +1,8 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChevronDown,
   Plus,
@@ -71,7 +71,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
-import { useSearchParams } from 'next/navigation';
 import { ReassignTaskDialog } from './reassign-task-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -2013,3 +2012,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
