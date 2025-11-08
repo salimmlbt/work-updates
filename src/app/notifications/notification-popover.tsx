@@ -33,43 +33,47 @@ const notifications = [
 ];
 
 export function NotificationPopover({ isCollapsed }: { isCollapsed: boolean }) {
-
-  const triggerContent = (
-      <span className={cn(
-          'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300 hover:bg-sidebar-accent/50'
-      )}>
-        <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center relative">
-          <BellIcon className='h-5 w-5 text-sidebar-icon-muted' />
-          {notifications.length > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-              </span>
-          )}
-        </span>
-        <span
-          className={cn(
-            'text-sidebar-foreground truncate overflow-hidden whitespace-nowrap transition-[opacity,width] duration-300 ease-in-out',
-            isCollapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'
-          )}
-        >
-          Notifications
-        </span>
-      </span>
-  );
-
   return (
     <Popover>
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start p-0 h-auto">
-                        {triggerContent}
-                    </Button>
-                </PopoverTrigger>
-            </TooltipTrigger>
-            {isCollapsed && <TooltipContent side="right">Notifications</TooltipContent>}
-        </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full justify-start p-0 h-auto',
+                'data-[state=open]:bg-sidebar-accent'
+              )}
+            >
+              <span
+                className={cn(
+                  'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300',
+                   'group-data-[state=open]:font-semibold group-hover:bg-sidebar-accent/50'
+                )}
+              >
+                <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center relative">
+                  <BellIcon className="h-5 w-5 text-sidebar-icon-muted" />
+                  {notifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    'text-sidebar-foreground truncate overflow-hidden whitespace-nowrap transition-[opacity,width] duration-300 ease-in-out',
+                    isCollapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'
+                  )}
+                >
+                  Notifications
+                </span>
+              </span>
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        {isCollapsed && <TooltipContent side="right">Notifications</TooltipContent>}
+      </Tooltip>
       <PopoverContent className="w-80 mr-4" align="end">
         <div className="grid gap-4">
           <div className="space-y-2">
