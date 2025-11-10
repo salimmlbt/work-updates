@@ -3,7 +3,7 @@
 
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import type { RoleWithPermissions, PermissionLevel, Profile, Task, Attachment } from '@/lib/types'
+import type { RoleWithPermissions, PermissionLevel, Profile, Task, Attachment, Team } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 
 export async function createTeam(name: string, defaultTasks: string[]) {
@@ -31,11 +31,11 @@ export async function createTeam(name: string, defaultTasks: string[]) {
   return { data }
 }
 
-export async function updateTeam(id: string, name: string) {
+export async function updateTeam(id: string, name: string, default_tasks: string[]) {
     const supabase = await createServerClient()
     const { data, error } = await supabase
         .from('teams')
-        .update({ name })
+        .update({ name, default_tasks })
         .eq('id', id)
         .select()
         .single()

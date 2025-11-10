@@ -33,7 +33,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { updateUserRole, updateUserTeams, deleteTeam, updateUserIsArchived, deleteUserPermanently } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { RenameTeamDialog } from './rename-team-dialog'
+import { EditTeamDialog } from './edit-team-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, parse } from 'date-fns';
 
@@ -55,7 +55,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const [isRenameTeamOpen, setRenameTeamOpen] = useState(false);
+  const [isEditTeamOpen, setIsEditTeamOpen] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
   const [userToArchive, setUserToArchive] = useState<Profile | null>(null);
@@ -85,9 +85,9 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
     setTeamToEdit(null);
   };
 
-  const openRenameDialog = (team: Team) => {
+  const openEditDialog = (team: Team) => {
     setTeamToEdit(team);
-    setRenameTeamOpen(true);
+    setIsEditTeamOpen(true);
   };
 
   const openDeleteDialog = (team: Team) => {
@@ -406,9 +406,9 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
 											</Button>
 										</DropdownMenuTrigger>
 										<DropdownMenuContent>
-											<DropdownMenuItem onClick={() => openRenameDialog(team)}>
+											<DropdownMenuItem onClick={() => openEditDialog(team)}>
 												<Pencil className="mr-2 h-4 w-4" />
-												Rename team
+												Edit team
 											</DropdownMenuItem>
 											<DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => openDeleteDialog(team)}>
 												<Trash2 className="mr-2 h-4 w-4" />
@@ -516,11 +516,12 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
           />
       )}
       {teamToEdit && (
-        <RenameTeamDialog
-          isOpen={isRenameTeamOpen}
-          setIsOpen={setRenameTeamOpen}
+        <EditTeamDialog
+          isOpen={isEditTeamOpen}
+          setIsOpen={setIsEditTeamOpen}
           team={teamToEdit}
           onTeamUpdated={onTeamUpdated}
+          workTypes={workTypes}
         />
       )}
       <AlertDialog open={!!teamToDelete} onOpenChange={(open) => !open && setTeamToDelete(null)}>
