@@ -40,6 +40,7 @@ export function EditTeamDialog({ isOpen, setIsOpen, team, onTeamUpdated, workTyp
   const [selectedTasks, setSelectedTasks] = useState<string[]>(team.default_tasks || []);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -99,7 +100,7 @@ export function EditTeamDialog({ isOpen, setIsOpen, team, onTeamUpdated, workTyp
           </div>
           <div className="space-y-2">
             <Label>Default type for tasks</Label>
-            <DropdownMenu>
+            <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full justify-between h-auto min-h-10">
                   <div className="flex gap-1 flex-wrap">
