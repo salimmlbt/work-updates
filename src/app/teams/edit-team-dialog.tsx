@@ -45,9 +45,12 @@ export function EditTeamDialog({ isOpen, setIsOpen, team, onTeamUpdated, workTyp
   useEffect(() => {
     if (isOpen) {
       setTeamName(team.name);
-      setSelectedTasks(team.default_tasks || []);
+      // Filter out any default tasks that are no longer in the main workTypes list
+      const workTypeNames = workTypes.map(wt => wt.name);
+      const validTasks = (team.default_tasks || []).filter(task => workTypeNames.includes(task));
+      setSelectedTasks(validTasks);
     }
-  }, [team, isOpen]);
+  }, [team, isOpen, workTypes]);
 
   const handleClose = () => {
     setIsOpen(false);
