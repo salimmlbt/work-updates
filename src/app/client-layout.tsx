@@ -8,8 +8,9 @@ import { logout } from './login/actions';
 import { cn } from '@/lib/utils';
 import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
-import type { Profile, Notification } from '@/lib/types';
+import type { Profile } from '@/lib/types';
 import { Toaster } from "@/components/ui/toaster";
+import { PageSkeleton } from '@/components/dashboard/page-skeleton';
 
 export default function ClientLayout({
   children,
@@ -24,6 +25,7 @@ export default function ClientLayout({
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(initialIsAuthenticated);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setIsAuthenticated(initialIsAuthenticated);
@@ -31,6 +33,11 @@ export default function ClientLayout({
         logout().then(() => router.push('/login'));
     }
   }, [initialIsAuthenticated, profile, router]);
+
+  useEffect(() => {
+    // When the path changes, the new page has loaded.
+    setIsLoading(false);
+  }, [pathname]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -68,6 +75,7 @@ export default function ClientLayout({
             profile={profile} 
             isCollapsed={isSidebarCollapsed}
             setIsCollapsed={setSidebarCollapsed}
+            setIsLoading={setIsLoading}
         />
       )}
       <div className={cn(
@@ -76,7 +84,7 @@ export default function ClientLayout({
         )}>
         {showNav && <Header />}
         <main className="flex-1 overflow-y-auto">
-          {children}
+          {isLoading ? <PageSkeleton /> : children}
         </main>
       </div>
       <Toaster />

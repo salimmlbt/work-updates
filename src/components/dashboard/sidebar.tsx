@@ -51,9 +51,10 @@ interface SidebarProps {
   profile: Profile | null;
   isCollapsed: boolean;
   setIsCollapsed: (isCollapsed: boolean) => void;
+  setIsLoading: (isLoading: boolean) => void;
 }
 
-export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: SidebarProps) {
+export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoading }: SidebarProps) {
   const pathname = usePathname();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -65,7 +66,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
   }, []);
   
   useEffect(() => {
-    // Reset clicked item state after navigation completes
+    // Reset clicked item state after navigation completes (detected by `isLoading` becoming false)
     if (clickedItem) {
       setClickedItem(null);
     }
@@ -209,15 +210,25 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
   ];
 
   const NavLink = ({ item }: { item: typeof navItems[0] | typeof bottomNavItems[0] }) => {
-    const isActive = (pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')) || clickedItem === item.href;
+    const isActive = (pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard'));
+
+    const isClicked = clickedItem === item.href;
+
+    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+      // Don't show loader if clicking the already active page
+      if (pathname === item.href) return;
+      
+      setIsLoading(true);
+      setClickedItem(item.href);
+    };
 
     const linkContent = (
       <div
         className={cn(
           'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300',
           {
-            'bg-sidebar-accent font-semibold': isActive,
-            'hover:bg-sidebar-accent/50': !isActive,
+            'bg-sidebar-accent font-semibold': isActive || isClicked,
+            'hover:bg-sidebar-accent/50': !isActive && !isClicked,
           }
         )}
       >
@@ -225,7 +236,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
           <item.icon
             className={cn(
               'h-5 w-5 transition-all duration-300',
-              isActive
+              isActive || isClicked
                 ? 'text-sidebar-accent-foreground'
                 : 'text-sidebar-icon-muted'
             )}
@@ -246,7 +257,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-             <Link href={item.href} onClick={() => setClickedItem(item.href)}>
+             <Link href={item.href} onClick={handleClick}>
               {linkContent}
             </Link>
           </TooltipTrigger>
@@ -255,7 +266,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
       );
     }
 
-    return  <Link href={item.href} onClick={() => setClickedItem(item.href)}>{linkContent}</Link>;
+    return  <Link href={item.href} onClick={handleClick}>{linkContent}</Link>;
   };
   NavLink.displayName = "NavLink";
 
