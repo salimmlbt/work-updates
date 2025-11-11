@@ -66,7 +66,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
   }, []);
   
   useEffect(() => {
-    // Reset clicked item state after navigation completes (detected by `isLoading` becoming false)
+    // Reset clicked item state after navigation completes (detected by isLoading becoming false)
     if (clickedItem) {
       setClickedItem(null);
     }
@@ -210,9 +210,11 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
   ];
 
   const NavLink = ({ item }: { item: typeof navItems[0] | typeof bottomNavItems[0] }) => {
-    const isActive = (pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard'));
-
+    const isBasePathActive = (pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard'));
     const isClicked = clickedItem === item.href;
+
+    // Determine the active state. Prioritize the clicked item, then fall back to the path.
+    const isActive = isClicked || (clickedItem === null && isBasePathActive);
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
       // Don't show loader if clicking the already active page
@@ -227,8 +229,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
         className={cn(
           'flex items-center gap-4 rounded-lg px-4 py-2 transition-all duration-300',
           {
-            'bg-sidebar-accent font-semibold': isActive || isClicked,
-            'hover:bg-sidebar-accent/50': !isActive && !isClicked,
+            'bg-sidebar-accent font-semibold': isActive,
+            'hover:bg-sidebar-accent/50': !isActive,
           }
         )}
       >
@@ -236,7 +238,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
           <item.icon
             className={cn(
               'h-5 w-5 transition-all duration-300',
-              isActive || isClicked
+              isActive
                 ? 'text-sidebar-accent-foreground'
                 : 'text-sidebar-icon-muted'
             )}
