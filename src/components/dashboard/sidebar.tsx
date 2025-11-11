@@ -58,10 +58,19 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
+  const [clickedItem, setClickedItem] = useState<string | null>(null);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
+  
+  useEffect(() => {
+    // Reset clicked item state after navigation completes
+    if (clickedItem) {
+      setClickedItem(null);
+    }
+  }, [pathname]);
+
 
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
@@ -200,9 +209,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
   ];
 
   const NavLink = ({ item }: { item: typeof navItems[0] | typeof bottomNavItems[0] }) => {
-    const isActive =
-      pathname.startsWith(item.href) &&
-      (item.href !== '/dashboard' || pathname === '/dashboard');
+    const isActive = (pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')) || clickedItem === item.href;
 
     const linkContent = (
       <div
@@ -239,7 +246,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-             <Link href={item.href}>
+             <Link href={item.href} onClick={() => setClickedItem(item.href)}>
               {linkContent}
             </Link>
           </TooltipTrigger>
@@ -248,7 +255,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed }: Sideba
       );
     }
 
-    return  <Link href={item.href}>{linkContent}</Link>;
+    return  <Link href={item.href} onClick={() => setClickedItem(item.href)}>{linkContent}</Link>;
   };
   NavLink.displayName = "NavLink";
 
