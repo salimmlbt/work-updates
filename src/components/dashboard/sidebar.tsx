@@ -87,7 +87,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
 
       const { data: assignedTasksData } = await supabase
         .from('tasks')
-        .select('id, description, deadline, created_at, status, status_updated_at')
+        .select('id, description, deadline, created_at, created_by, status, status_updated_at')
         .eq('assignee_id', profile.id)
         .eq('is_deleted', false);
       
@@ -103,7 +103,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
         }));
 
       const newNotifications: Notification[] = assignedTasks
-        .filter(task => task.created_at && isAfter(parseISO(task.created_at), new Date(twentyFourHoursAgo)))
+        .filter(task => task.created_at && isAfter(parseISO(task.created_at), new Date(twentyFourHoursAgo)) && task.created_by !== profile.id)
         .map(task => ({
           id: `new-${task.id}`,
           type: 'new',
@@ -140,8 +140,9 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
             const oldTask = payload.old as TaskWithDetails;
 
             let notification: Notification | null = null;
-
-            if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id) {
+            
+            // Notify on new task assignment, but not if user assigns to themselves
+            if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id && newTask.created_by !== profile.id) {
               notification = {
                 id: `new-${newTask.id}`,
                 type: 'new',

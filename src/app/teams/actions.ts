@@ -493,11 +493,18 @@ export async function createTask(taskData: {
     post_date?: string | null;
 }) {
     const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'You must be logged in to create a task.' };
+    }
+
     const { data, error } = await supabase
         .from('tasks')
         .insert({
             ...taskData,
             is_deleted: false,
+            created_by: user.id, // Add the creator's ID
         })
         .select('*, profiles(*), projects(*), clients(*)')
         .single();
