@@ -30,11 +30,19 @@ export function NotificationPopover({
   notifications,
   setNotifications,
   audioRef,
+  approvedAudioRef,
+  correctionAudioRef,
+  recreateAudioRef,
+  newTaskAudioRef,
 }: {
   isCollapsed: boolean,
   notifications: Notification[],
-  setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>
+  setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>,
   audioRef: React.RefObject<HTMLAudioElement>;
+  approvedAudioRef: React.RefObject<HTMLAudioElement>;
+  correctionAudioRef: React.RefObject<HTMLAudioElement>;
+  recreateAudioRef: React.RefObject<HTMLAudioElement>;
+  newTaskAudioRef: React.RefObject<HTMLAudioElement>;
 }) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
@@ -51,10 +59,18 @@ export function NotificationPopover({
 
     const handlePopoverTriggerClick = async () => {
       // Unlock audio playback on user interaction
-      if (audioRef.current) {
-        audioRef.current.play().catch(() => {});
-        audioRef.current.pause();
-      }
+      const unlockAudio = (ref: React.RefObject<HTMLAudioElement>) => {
+        if (ref.current) {
+          ref.current.play().catch(() => {});
+          ref.current.pause();
+        }
+      };
+
+      unlockAudio(audioRef);
+      unlockAudio(approvedAudioRef);
+      unlockAudio(correctionAudioRef);
+      unlockAudio(recreateAudioRef);
+      unlockAudio(newTaskAudioRef);
 
       // Request notification permission if not already granted
       if (Notification.permission !== "granted") {

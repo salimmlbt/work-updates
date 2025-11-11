@@ -61,6 +61,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
   const approvedAudioRef = useRef<HTMLAudioElement>(null);
   const correctionAudioRef = useRef<HTMLAudioElement>(null);
   const recreateAudioRef = useRef<HTMLAudioElement>(null);
+  const newTaskAudioRef = useRef<HTMLAudioElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
   const [clickedItem, setClickedItem] = useState<string | null>(null);
 
@@ -90,7 +91,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
 
       const { data: assignedTasksData } = await supabase
         .from('tasks')
-        .select('id, description, deadline, created_at, created_by, status, status_updated_at')
+        .select('id, description, deadline, created_at, created_by, status, status_updated_at, status_updated_by')
         .eq('assignee_id', profile.id)
         .eq('is_deleted', false);
       
@@ -118,7 +119,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
       if (isEditor) {
         const { data: reviewTasksData } = await supabase
           .from('tasks')
-          .select('id, description, status_updated_at')
+          .select('id, description, status_updated_at, status_updated_by')
           .eq('status', 'review')
           .eq('is_deleted', false)
           .gte('status_updated_at', twentyFourHoursAgo);
@@ -210,6 +211,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
                   correctionAudioRef.current.play().catch(e => console.error("Error playing correction sound:", e));
                 } else if (notification.type === 'recreate' && recreateAudioRef.current) {
                   recreateAudioRef.current.play().catch(e => console.error("Error playing recreate sound:", e));
+                } else if (notification.type === 'new' && newTaskAudioRef.current) {
+                  newTaskAudioRef.current.play().catch(e => console.error("Error playing new task sound:", e));
                 } else if (audioRef.current) {
                   audioRef.current.play().catch(e => console.error("Error playing default sound:", e));
                 }
@@ -327,6 +330,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
             <audio id="approved-sound" src="/approved.mp3" preload="auto" ref={approvedAudioRef}></audio>
             <audio id="correction-sound" src="/correction.mp3" preload="auto" ref={correctionAudioRef}></audio>
             <audio id="recreate-sound" src="/recreate.mp3" preload="auto" ref={recreateAudioRef}></audio>
+            <audio id="new-task-sound" src="/new-task.mp3" preload="auto" ref={newTaskAudioRef}></audio>
           </>
         )}
         <Button
@@ -381,6 +385,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
                   notifications={notifications} 
                   setNotifications={setNotifications}
                   audioRef={audioRef}
+                  approvedAudioRef={approvedAudioRef}
+                  correctionAudioRef={correctionAudioRef}
+                  recreateAudioRef={recreateAudioRef}
+                  newTaskAudioRef={newTaskAudioRef}
                 />
               )}
               {filteredBottomNavItems.map((item) => (
