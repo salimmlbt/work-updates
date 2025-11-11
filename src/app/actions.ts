@@ -420,13 +420,9 @@ export async function updateTaskStatus(
         };
         const corrections = (currentTask.corrections as Correction[] | null) || [];
         updates.corrections = [...corrections, newCorrection];
-        updates.status = 'inprogress'; // Move back to active tasks
     } else if (status === 'recreate') {
         revisions.recreations = (revisions.recreations || 0) + 1;
         updates.revisions = revisions;
-        updates.status = 'todo'; // Move back to active tasks
-    } else if (status === 'approved') {
-        updates.status = 'approved'; // Final state for approval
     }
 
     const { error } = await supabase
