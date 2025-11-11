@@ -59,6 +59,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const approvedAudioRef = useRef<HTMLAudioElement>(null);
+  const correctionAudioRef = useRef<HTMLAudioElement>(null);
+  const recreateAudioRef = useRef<HTMLAudioElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
   const [clickedItem, setClickedItem] = useState<string | null>(null);
 
@@ -152,20 +154,31 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
               };
             }
 
-            // Notify assignee when task is approved
-            if (
-              payload.eventType === 'UPDATE' &&
-              newTask.assignee_id === profile.id &&
-              newTask.status === 'approved' &&
-              oldTask.status !== 'approved'
-            ) {
-              notification = {
-                id: `approved-${newTask.id}-${newTask.status_updated_at}`,
-                type: 'approved',
-                title: 'Task Approved!',
-                description: `Your task "${newTask.description}" has been approved.`,
-              };
+            if (payload.eventType === 'UPDATE' && newTask.assignee_id === profile.id) {
+                if (newTask.status === 'approved' && oldTask.status !== 'approved') {
+                    notification = {
+                        id: `approved-${newTask.id}-${newTask.status_updated_at}`,
+                        type: 'approved',
+                        title: 'Task Approved!',
+                        description: `Your task "${newTask.description}" has been approved.`,
+                    };
+                } else if (newTask.status === 'corrections' && oldTask.status !== 'corrections') {
+                    notification = {
+                        id: `correction-${newTask.id}-${newTask.status_updated_at}`,
+                        type: 'correction',
+                        title: 'Corrections Required',
+                        description: `Corrections are required for your task: "${newTask.description}".`,
+                    };
+                } else if (newTask.status === 'recreate' && oldTask.status !== 'recreate') {
+                    notification = {
+                        id: `recreate-${newTask.id}-${newTask.status_updated_at}`,
+                        type: 'recreate',
+                        title: 'Task Needs Recreation',
+                        description: `Task "${newTask.description}" needs to be recreated.`,
+                    };
+                }
             }
+
 
             if (
               isEditor &&
@@ -192,6 +205,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
 
                 if (notification.type === 'approved' && approvedAudioRef.current) {
                   approvedAudioRef.current.play().catch(e => console.error("Error playing approved sound:", e));
+                } else if (notification.type === 'correction' && correctionAudioRef.current) {
+                  correctionAudioRef.current.play().catch(e => console.error("Error playing correction sound:", e));
+                } else if (notification.type === 'recreate' && recreateAudioRef.current) {
+                  recreateAudioRef.current.play().catch(e => console.error("Error playing recreate sound:", e));
                 } else if (audioRef.current) {
                   audioRef.current.play().catch(e => console.error("Error playing default sound:", e));
                 }
@@ -307,6 +324,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
           <>
             <audio id="notification-sound" src="/notification.mp3" preload="auto" ref={audioRef}></audio>
             <audio id="approved-sound" src="/approved.mp3" preload="auto" ref={approvedAudioRef}></audio>
+            <audio id="correction-sound" src="/correction.mp3" preload="auto" ref={correctionAudioRef}></audio>
+            <audio id="recreate-sound" src="/recreate.mp3" preload="auto" ref={recreateAudioRef}></audio>
           </>
         )}
         <Button

@@ -65,7 +65,7 @@ export type TaskWithDetails = Task & {
 
 export type Notification = {
     id: string;
-    type: 'new' | 'deadline' | 'review' | 'approved';
+    type: 'new' | 'deadline' | 'review' | 'approved' | 'correction' | 'recreate';
     title: string;
     description: string;
 }
