@@ -58,29 +58,28 @@ export function NotificationPopover({
     const unreadNotifications = notifications.filter(n => !readNotifications.includes(n.id));
 
     const handlePopoverTriggerClick = async () => {
-      // Unlock audio playback on user interaction
-      const unlockAudio = (ref: React.RefObject<HTMLAudioElement>) => {
+      // This function attempts to play and pause all audio elements.
+      // This is a workaround for browsers that block autoplay until a user interaction.
+      // By doing this on a click, we "unlock" the audio elements for later programmatic use.
+      const audioRefs = [audioRef, approvedAudioRef, correctionAudioRef, recreateAudioRef, newTaskAudioRef];
+
+      audioRefs.forEach(ref => {
         if (ref.current) {
           const playPromise = ref.current.play();
           if (playPromise !== undefined) {
             playPromise.then(() => {
               ref.current?.pause();
+              ref.current.currentTime = 0;
             }).catch(error => {
-              // Autoplay was prevented. This is expected if user hasn't interacted yet.
-              // We'll try again on the next interaction.
+              // Autoplay was prevented. This is expected before the first user interaction.
+              // We don't need to log this error as it's part of the unlocking mechanism.
             });
           }
         }
-      };
-
-      unlockAudio(audioRef);
-      unlockAudio(approvedAudioRef);
-      unlockAudio(correctionAudioRef);
-      unlockAudio(recreateAudioRef);
-      unlockAudio(newTaskAudioRef);
-
-      // Request notification permission if not already granted
-      if (Notification.permission !== "granted") {
+      });
+      
+      // Also request notification permission if not already granted.
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== "granted") {
         try {
           await Notification.requestPermission();
         } catch (error) {
