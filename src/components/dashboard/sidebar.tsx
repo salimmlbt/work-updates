@@ -58,6 +58,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
   const pathname = usePathname();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const approvedAudioRef = useRef<HTMLAudioElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
   const [clickedItem, setClickedItem] = useState<string | null>(null);
 
@@ -181,15 +182,20 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
             }
             
             if (notification) {
-                setNotifications(prev => [notification!, ...prev.filter(n => n.id !== notification!.id)]);
-                if (Notification.permission === 'granted') {
-                    new Notification(notification.title, {
-                        body: notification.description,
-                        icon: '/icon.svg',
-                        silent: true
-                    });
-                    audioRef.current?.play().catch(e => console.error("Error playing sound:", e));
+              setNotifications(prev => [notification!, ...prev.filter(n => n.id !== notification!.id)]);
+              if (Notification.permission === 'granted') {
+                new Notification(notification.title, {
+                  body: notification.description,
+                  icon: '/icon.svg',
+                  silent: true
+                });
+
+                if (notification.type === 'approved' && approvedAudioRef.current) {
+                  approvedAudioRef.current.play().catch(e => console.error("Error playing approved sound:", e));
+                } else if (audioRef.current) {
+                  audioRef.current.play().catch(e => console.error("Error playing default sound:", e));
                 }
+              }
             }
           }
         )
@@ -297,7 +303,12 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
           isCollapsed ? 'w-20' : 'w-64'
         )}
       >
-        {hasMounted && <audio id="notification-sound" src="/notification.mp3" preload="auto" ref={audioRef}></audio>}
+        {hasMounted && (
+          <>
+            <audio id="notification-sound" src="/notification.mp3" preload="auto" ref={audioRef}></audio>
+            <audio id="approved-sound" src="/approved.mp3" preload="auto" ref={approvedAudioRef}></audio>
+          </>
+        )}
         <Button
           variant="ghost"
           size="icon"
