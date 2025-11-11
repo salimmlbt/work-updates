@@ -6,6 +6,7 @@ import ClientLayout from './client-layout';
 import type { Profile } from '@/lib/types';
 import { type Metadata } from 'next';
 import { PageLoader } from '@/components/page-loader';
+import { ClientCacheProvider } from './client-cache';
 
 export const metadata: Metadata = {
   title: 'Falaq - Work Updates',
@@ -50,12 +51,14 @@ export default async function RootLayout({
       </head>
       <body className={cn("min-h-screen bg-background font-body font-sans antialiased")}>
         <PageLoader />
-        <ClientLayout
-          isAuthenticated={isAuthenticated}
-          profile={profile}
-        >
-          {children}
-        </ClientLayout>
+        <ClientCacheProvider>
+          <ClientLayout
+            isAuthenticated={isAuthenticated}
+            profile={profile}
+          >
+            {children}
+          </ClientLayout>
+        </ClientCacheProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

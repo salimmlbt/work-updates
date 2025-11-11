@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -33,6 +32,7 @@ import { EditProjectDialog } from './edit-project-dialog';
 import { RenameTypeDialog } from './rename-type-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
+import { useClientCache } from '../client-cache';
 
 type ProjectWithOwnerAndClient = Project & {
     owner: Profile | null;
@@ -72,7 +72,6 @@ const ProjectSidebar = ({
         <aside className="md:col-span-1">
             <nav className="space-y-1">
                 <div
-                    key="all-projects"
                     role="button"
                     onClick={() => setActiveView('general')}
                     className={cn(
@@ -88,29 +87,34 @@ const ProjectSidebar = ({
                 {projectTypes.map(type => (
                      <div
                         key={type.id}
-                        role="button"
-                        onClick={() => setActiveView(type.name)}
                         className={cn(
                             'relative group flex items-center',
-                            buttonVariants({ variant: 'ghost' }),
-                            'w-full justify-between text-left h-auto pr-2',
-                            activeView === type.name
-                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
-                                : 'hover:bg-accent',
-                            activeView !== type.name && 'group-has-[[data-state=open]]:bg-accent'
                         )}
                     >
-                       <div className="flex items-center gap-2">
-                         <Folder className="h-4 w-4" />
-                         {type.name}
-                       </div>
-                       <div className="flex items-center gap-2">
+                       <div
+                         role="button"
+                         onClick={() => setActiveView(type.name)}
+                         className={cn(
+                           buttonVariants({ variant: 'ghost' }),
+                           'w-full justify-between text-left h-auto pr-2 flex items-center',
+                           activeView === type.name
+                             ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+                             : 'hover:bg-accent',
+                           'group-has-[[data-state=open]]:bg-accent'
+                         )}
+                       >
+                         <div className="flex items-center gap-2">
+                           <Folder className="h-4 w-4" />
+                           {type.name}
+                         </div>
                          <span className="text-muted-foreground">{type.count}</span>
-                         <div className="opacity-0 group-hover:opacity-100 transition-opacity group-has-[[data-state=open]]:opacity-100">
+                       </div>
+                       <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity group-has-[[data-state=open]]:opacity-100">
                             <DropdownMenu>
                                <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
+                                    onClick={(e) => e.stopPropagation()}
                                     className={cn(
                                       "p-1 h-auto text-gray-500 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0",
                                       "hover:bg-transparent hover:text-blue-500",
@@ -122,7 +126,7 @@ const ProjectSidebar = ({
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                </DropdownMenuTrigger>
-                               <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                               <DropdownMenuContent>
                                   <DropdownMenuItem onClick={() => onRenameType(type)}>
                                      <Pencil className="mr-2 h-4 w-4" />
                                      Rename
@@ -149,7 +153,6 @@ const ProjectSidebar = ({
                     <Plus className="mr-2 h-4 w-4" /> Create type
                 </Button>
                  <div
-                    key="deleted-projects"
                     role="button"
                     onClick={() => setActiveView('deleted')}
                     className={cn(
@@ -318,18 +321,28 @@ const ProjectTableBody = ({
 }
 
 export default function ProjectsClient({ initialProjects, currentUser, profiles, clients, initialProjectTypes }: ProjectsClientProps) {
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const {
+    cachedProjects,
+    setCachedProjects,
+    cachedProjectTypes,
+    setCachedProjectTypes,
+  } = useClientCache();
+
   const [projects, setProjects] = useState<ProjectWithOwnerAndClient[]>([]);
-  const [isAddProjectOpen, setAddProjectOpen] = useState(false);
+  const [projectTypes, setProjectTypes] = useState<ProjectType[]>(cachedProjectTypes || initialProjectTypes);
+
   const [activeView, setActiveView] = useState('general');
-  const [projectTypes, setProjectTypes] = useState(initialProjectTypes);
+  const [isAddProjectOpen, setAddProjectOpen] = useState(false);
   const [isCreateTypeOpen, setCreateTypeOpen] = useState(false);
   
   const [projectToEdit, setProjectToEdit] = useState<ProjectWithOwnerAndClient | null>(null);
   const [isEditProjectOpen, setEditProjectOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectWithOwnerAndClient | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
   
   const [activeProjectsOpen, setActiveProjectsOpen] = useState(true);
   const [closedProjectsOpen, setClosedProjectsOpen] = useState(true);
@@ -344,7 +357,19 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [isDeleteTypeAlertOpen, setDeleteTypeAlertOpen] = useState(false);
   const [projectToDeletePermanently, setProjectToDeletePermanently] = useState<ProjectWithOwnerAndClient | null>(null);
 
-  const searchParams = useSearchParams();
+  useEffect(() => {
+    const dataToUse = cachedProjects || initialProjects;
+    const projectsWithData = dataToUse.map(p => ({
+        ...p,
+        owner: profiles.find(profile => profile.id === currentUser?.id) || null,
+        client: clients.find(c => c.id === p.client_id) || null,
+        tasks_count: p.tasks_count || 0,
+    }));
+    setProjects(projectsWithData);
+    if (!cachedProjects) {
+        setCachedProjects(projectsWithData);
+    }
+  }, [initialProjects, cachedProjects, profiles, clients, currentUser, setCachedProjects]);
 
   useEffect(() => {
     const projectId = searchParams.get('projectId');
@@ -356,16 +381,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
       }
     }
   }, [searchParams, projects]);
-
-  useEffect(() => {
-    const projectsWithData = initialProjects.map(p => ({
-        ...p,
-        owner: profiles.find(profile => profile.id === currentUser?.id) || null,
-        client: clients.find(c => c.id === p.client_id) || null,
-        tasks_count: p.tasks_count || 0,
-    }));
-    setProjects(projectsWithData);
-  }, [initialProjects, profiles, clients, currentUser]);
 
   const activeRawProjects = useMemo(() => projects.filter(p => !p.is_deleted), [projects]);
   const deletedRawProjects = useMemo(() => projects.filter(p => p.is_deleted), [projects]);
@@ -404,29 +419,41 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         client: clients.find(c => c.id === newProjectData.client_id) || null,
         tasks_count: 0
     };
-    setProjects(prev => [newProjectWithOwnerAndClient, ...prev]);
+    const newProjects = [newProjectWithOwnerAndClient, ...projects];
+    setProjects(newProjects);
+    setCachedProjects(newProjects);
   };
 
   const handleProjectUpdated = (updatedProjectData: Project) => {
-    setProjects(prev => prev.map(p => {
+    const newProjects = projects.map(p => {
         if (p.id === updatedProjectData.id) {
             return {
-                ...p, // Keep existing client/owner/task_count
-                ...updatedProjectData, // Override with new data from server
+                ...p, 
+                ...updatedProjectData,
                 client: clients.find(c => c.id === updatedProjectData.client_id) || p.client,
             };
         }
         return p;
-    }));
+    });
+    setProjects(newProjects);
+    setCachedProjects(newProjects);
   };
   
   const handleTypeCreated = (newType: ProjectType) => {
-      setProjectTypes(prev => [...prev, newType]);
+      const newTypes = [...projectTypes, newType];
+      setProjectTypes(newTypes);
+      setCachedProjectTypes(newTypes);
   }
   
   const handleTypeRenamed = (updatedType: ProjectType, oldName: string) => {
-    setProjectTypes(prev => prev.map(t => t.id === updatedType.id ? updatedType : t));
-    setProjects(prev => prev.map(p => p.type === oldName ? { ...p, type: updatedType.name } : p));
+    const newTypes = projectTypes.map(t => t.id === updatedType.id ? updatedType : t);
+    setProjectTypes(newTypes);
+    setCachedProjectTypes(newTypes);
+    
+    const newProjects = projects.map(p => p.type === oldName ? { ...p, type: updatedType.name } : p);
+    setProjects(newProjects);
+    setCachedProjects(newProjects);
+
     if (activeView === oldName) {
         setActiveView(updatedType.name);
     }
@@ -451,7 +478,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
         } else {
             toast({ title: "Project moved to bin", description: `Project "${projectToDelete.name}" has been deleted.` });
-            setProjects(prev => prev.map(p => p.id === projectToDelete.id ? {...p, is_deleted: true, updated_at: new Date().toISOString() } : p));
+            const newProjects = projects.map(p => p.id === projectToDelete.id ? {...p, is_deleted: true, updated_at: new Date().toISOString() } : p);
+            setProjects(newProjects);
+            setCachedProjects(newProjects);
         }
         setDeleteAlertOpen(false);
         setProjectToDelete(null);
@@ -465,7 +494,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
               toast({ title: "Error restoring project", description: error, variant: "destructive" });
           } else {
               toast({ title: "Project restored" });
-              setProjects(prev => prev.map(p => p.id === project.id ? {...p, is_deleted: false, updated_at: new Date().toISOString()} : p));
+              const newProjects = projects.map(p => p.id === project.id ? {...p, is_deleted: false, updated_at: new Date().toISOString()} : p);
+              setProjects(newProjects);
+              setCachedProjects(newProjects);
           }
       });
   }
@@ -478,7 +509,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
               toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
           } else {
               toast({ title: "Project permanently deleted" });
-              setProjects(prev => prev.filter(p => p.id !== projectToDeletePermanently.id));
+              const newProjects = projects.filter(p => p.id !== projectToDeletePermanently.id);
+              setProjects(newProjects);
+              setCachedProjects(newProjects);
           }
           setProjectToDeletePermanently(null);
       });
@@ -487,17 +520,18 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const handleStatusChange = (projectId: string, newStatus: string) => {
     const originalProjects = [...projects];
     
-    setProjects(prevProjects =>
-        prevProjects.map(p =>
-            p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
-        )
+    const newProjects = projects.map(p =>
+        p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
     );
+    setProjects(newProjects);
+    setCachedProjects(newProjects);
 
     startTransition(async () => {
         const { error, data } = await updateProjectStatus(projectId, newStatus);
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
             setProjects(originalProjects); // Revert on error
+            setCachedProjects(originalProjects);
         }
     });
   }
@@ -510,7 +544,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         toast({ title: "Error deleting type", description: error, variant: "destructive" });
       } else {
         toast({ title: "Project type deleted" });
-        setProjectTypes(prev => prev.filter(t => t.id !== typeToDelete.id));
+        const newTypes = projectTypes.filter(t => t.id !== typeToDelete.id);
+        setProjectTypes(newTypes);
+        setCachedProjectTypes(newTypes);
         if (activeView === typeToDelete.name) {
           setActiveView('general');
         }
@@ -522,10 +558,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleToggleActiveProjects = () => {
     if (activeProjectsOpen) {
-      // Start exit animation
       setShowActiveProjects(false);
-      // Wait for animation to finish before collapsing
-      const totalAnimationTime = (activeProjects.length - 1) * 0.05 * 1000 + 200; // delay * (n-1) + duration
+      const totalAnimationTime = (activeProjects.length - 1) * 0.05 * 1000 + 200;
       setTimeout(() => {
         setActiveProjectsOpen(false);
       }, totalAnimationTime);
@@ -537,7 +571,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleToggleClosedProjects = () => {
     if (closedProjectsOpen) {
-      // Start exit animation
       setShowClosedProjects(false);
       const totalAnimationTime = (closedProjects.length - 1) * 0.05 * 1000 + 200;
       setTimeout(() => {
@@ -571,7 +604,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                     <td className="px-4 py-3">{project.status ?? "New"}</td>
                                     <td className="px-4 py-3 text-muted-foreground">{format(new Date(project.due_date || ''), 'dd MMM yyyy')}</td>
                                     <td className="px-4 py-3">
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8">
