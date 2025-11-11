@@ -14,12 +14,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { Notification } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useRouter } from 'next/navigation';
-import { FilePlus2, Eye, AlertTriangle } from 'lucide-react';
+import { FilePlus2, Eye, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const notificationIcons = {
   new: <FilePlus2 className="h-5 w-5 text-blue-500" />,
   deadline: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
   review: <Eye className="h-5 w-5 text-purple-500" />,
+  approved: <CheckCircle2 className="h-5 w-5 text-green-500" />,
 };
 
 export function NotificationPopover({

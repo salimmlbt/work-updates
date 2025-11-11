@@ -151,6 +151,21 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
               };
             }
 
+            // Notify assignee when task is approved
+            if (
+              payload.eventType === 'UPDATE' &&
+              newTask.assignee_id === profile.id &&
+              newTask.status === 'approved' &&
+              oldTask.status !== 'approved'
+            ) {
+              notification = {
+                id: `approved-${newTask.id}-${newTask.status_updated_at}`,
+                type: 'approved',
+                title: 'Task Approved!',
+                description: `Your task "${newTask.description}" has been approved.`,
+              };
+            }
+
             if (
               isEditor &&
               payload.eventType === 'UPDATE' &&
