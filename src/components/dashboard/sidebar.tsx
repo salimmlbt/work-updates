@@ -184,7 +184,8 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
               isEditor &&
               payload.eventType === 'UPDATE' &&
               newTask.status === 'review' &&
-              oldTask.status !== 'review'
+              oldTask.status !== 'review' &&
+              newTask.status_updated_by !== profile.id
             ) {
               notification = {
                 id: `review-${newTask.id}-${newTask.status_updated_at}`,
