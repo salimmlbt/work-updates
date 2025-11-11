@@ -63,20 +63,18 @@ export function NotificationPopover({
       // By doing this on a click, we "unlock" the audio elements for later programmatic use.
       const audioRefs = [audioRef, approvedAudioRef, correctionAudioRef, recreateAudioRef, newTaskAudioRef];
 
-      audioRefs.forEach(ref => {
+      for (const ref of audioRefs) {
         if (ref.current) {
-          const playPromise = ref.current.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              ref.current?.pause();
-              ref.current.currentTime = 0;
-            }).catch(error => {
-              // Autoplay was prevented. This is expected before the first user interaction.
-              // We don't need to log this error as it's part of the unlocking mechanism.
-            });
+          try {
+            await ref.current.play();
+            ref.current.pause();
+            ref.current.currentTime = 0;
+          } catch (error) {
+            // Autoplay was prevented. This is expected before the first user interaction.
+            // We don't need to log this error as it's part of the unlocking mechanism.
           }
         }
-      });
+      }
       
       // Also request notification permission if not already granted.
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== "granted") {
