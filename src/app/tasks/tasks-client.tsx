@@ -1207,8 +1207,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return sortableItems;
   }, [filteredTasks, sortConfig]);
 
-  const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'todo' || t.status === 'inprogress') && (t.posting_status !== 'Scheduled' && t.posting_status !== 'Posted')), [sortedTasks]);
-  const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'review' || t.status === 'corrections' || t.status === 'recreate' || t.status === 'under-review')), [sortedTasks]);
+  const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'todo' || t.status === 'inprogress' || t.status === 'corrections' || t.status === 'recreate') && (t.posting_status !== 'Scheduled' && t.posting_status !== 'Posted')), [sortedTasks]);
+  const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'review' || t.status === 'under-review')), [sortedTasks]);
   const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'done' || t.status === 'approved' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted')), [sortedTasks]);
 
   const deletedTasks = useMemo(() => {
@@ -2014,3 +2014,5 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
+    
