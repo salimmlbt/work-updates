@@ -142,7 +142,6 @@ const ProjectSidebar = ({
                                </DropdownMenuContent>
                             </DropdownMenu>
                          </div>
-                       </div>
                     </div>
                 ))}
                 <Button
@@ -889,3 +888,5 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
+
+    
