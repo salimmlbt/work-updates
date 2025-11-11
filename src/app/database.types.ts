@@ -451,6 +451,7 @@ export type Database = {
             | "recreate"
             | "approved"
           status_updated_at: string | null
+          status_updated_by: string | null
           tags: string[] | null
           type: string | null
         }
@@ -482,6 +483,7 @@ export type Database = {
             | "recreate"
             | "approved"
           status_updated_at?: string | null
+          status_updated_by?: string | null
           tags?: string[] | null
           type?: string | null
         }
@@ -513,6 +515,7 @@ export type Database = {
             | "recreate"
             | "approved"
           status_updated_at?: string | null
+          status_updated_by?: string | null
           tags?: string[] | null
           type?: string | null
         }
@@ -557,6 +560,13 @@ export type Database = {
             columns: ["schedule_id"]
             isOneToOne: false
             referencedRelation: "content_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_status_updated_by_fkey"
+            columns: ["status_updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

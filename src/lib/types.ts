@@ -4,7 +4,7 @@ import type { Database as DB } from './database.types';
 export type Database = DB;
 
 export type Project = DB['public']['Tables']['projects']['Row'];
-export type Task = DB['public']['Tables']['tasks']['Row'] & { status_updated_at?: string; created_by?: string; };
+export type Task = DB['public']['Tables']['tasks']['Row'] & { status_updated_at?: string | null; created_by?: string | null; status_updated_by?: string | null; };
 export type Profile = Omit<DB['public']['Tables']['profiles']['Row'], 'role_id'> & {
     roles: Role | null;
     teams: { teams: Team | null }[];

@@ -394,6 +394,11 @@ export async function updateTaskStatus(
     correction?: { note: string; authorId: string }
 ) {
     const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: "You must be logged in to update a task." };
+    }
 
     const { data: currentTask, error: fetchError } = await supabase
         .from('tasks')
@@ -406,7 +411,11 @@ export async function updateTaskStatus(
         return { error: 'Could not retrieve task to update status.' };
     }
 
-    const updates: Partial<Task> = { status, status_updated_at: new Date().toISOString() };
+    const updates: Partial<Task> = { 
+      status, 
+      status_updated_at: new Date().toISOString(),
+      status_updated_by: user.id
+    };
     
     const revisions: Revisions = (currentTask.revisions as Revisions | null) || { corrections: 0, recreations: 0 };
     if (status === 'corrections') {

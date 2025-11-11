@@ -154,7 +154,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
               };
             }
 
-            if (payload.eventType === 'UPDATE' && newTask.assignee_id === profile.id) {
+            if (payload.eventType === 'UPDATE' && newTask.assignee_id === profile.id && newTask.status_updated_by !== profile.id) {
                 if (newTask.status === 'approved' && oldTask.status !== 'approved') {
                     notification = {
                         id: `approved-${newTask.id}-${newTask.status_updated_at}`,
