@@ -419,6 +419,7 @@ export type Database = {
           client_id: string | null
           corrections: Json | null
           created_at: string
+          created_by: string | null
           deadline: string
           description: string
           id: string
@@ -440,6 +441,7 @@ export type Database = {
           client_id?: string | null
           corrections?: Json | null
           created_at?: string
+          created_by?: string | null
           deadline: string
           description: string
           id?: string
@@ -461,6 +463,7 @@ export type Database = {
           client_id?: string | null
           corrections?: Json | null
           created_at?: string
+          created_by?: string | null
           deadline?: string
           description?: string
           id?: string
@@ -489,6 +492,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -601,3 +611,5 @@ export type Database = {
     }
   }
 }
+
+    
