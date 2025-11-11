@@ -61,8 +61,15 @@ export function NotificationPopover({
       // Unlock audio playback on user interaction
       const unlockAudio = (ref: React.RefObject<HTMLAudioElement>) => {
         if (ref.current) {
-          ref.current.play().catch(() => {});
-          ref.current.pause();
+          const playPromise = ref.current.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              ref.current?.pause();
+            }).catch(error => {
+              // Autoplay was prevented. This is expected if user hasn't interacted yet.
+              // We'll try again on the next interaction.
+            });
+          }
         }
       };
 
