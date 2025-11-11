@@ -67,6 +67,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
