@@ -426,7 +426,7 @@ export async function updateTaskStatus(
         updates.revisions = revisions;
         updates.status = 'todo'; // Move back to active tasks
     } else if (status === 'approved') {
-        updates.status = 'done'; // Final state for approval
+        updates.status = 'approved'; // Final state for approval
     }
 
     const { error } = await supabase
