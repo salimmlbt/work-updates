@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Search,
@@ -14,6 +15,8 @@ import {
   Pencil,
   Trash2,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -38,6 +41,7 @@ import { ClientDetailSheet } from './client-detail-sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { format, parseISO } from 'date-fns';
 
 type ClientWithStats = Client & {
     total_projects: number;
@@ -143,7 +147,8 @@ const ClientCard = ({ client, onEdit, onDeleteConfirm, onRowClick }: { client: C
 };
 
 
-export default function ClientsPageClient({ initialClients, industries, allProjects, allTasks }: { initialClients: ClientWithStats[], industries: Industry[], allProjects: Project[], allTasks: Task[] }) {
+export default function ClientsPageClient({ initialClients, industries, allProjects, allTasks, selectedDate, prevMonth, nextMonth }: { initialClients: ClientWithStats[], industries: Industry[], allProjects: Project[], allTasks: Task[], selectedDate: string, prevMonth: string, nextMonth: string }) {
+  const router = useRouter();
   const [clients, setClients] = useState<ClientWithStats[]>(initialClients);
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [isEditClientOpen, setEditClientOpen] = useState(false);
@@ -156,6 +161,10 @@ export default function ClientsPageClient({ initialClients, industries, allProje
   const { toast } = useToast();
   const [selectedClient, setSelectedClient] = useState<ClientWithStats | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  useEffect(() => {
+    setClients(initialClients);
+  }, [initialClients]);
 
 
   const handleClientAdded = (newClient: Client) => {
@@ -237,6 +246,17 @@ export default function ClientsPageClient({ initialClients, industries, allProje
           </Button>
         </div>
         <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={() => router.push(`/clients?month=${prevMonth}`)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-lg font-semibold w-32 text-center">
+                {format(parseISO(selectedDate), 'MMMM yyyy')}
+              </span>
+              <Button variant="outline" size="icon" onClick={() => router.push(`/clients?month=${nextMonth}`)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           {isSearchOpen ? (
               <Input
                 type="text"
