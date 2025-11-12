@@ -4,7 +4,6 @@
 import * as React from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { getInitials } from '@/lib/utils'
 import type { Client, Project, Task } from '@/lib/types'
 import {
@@ -87,7 +86,7 @@ export function ClientDetailSheet({
                                             </TableCell>
                                         </TableRow>
                                         {tasksOfType.map(task => (
-                                            <TableRow key={task.id} className="hover:bg-transparent">
+                                            <TableRow key={task.id}>
                                                 <TableCell></TableCell>
                                                 <TableCell>{task.description}</TableCell>
                                                 <TableCell className="text-right text-muted-foreground">

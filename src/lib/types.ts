@@ -1,4 +1,5 @@
 
+
 import type { Database as DB } from './database.types';
 
 export type Database = DB;
