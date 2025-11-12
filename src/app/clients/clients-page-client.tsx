@@ -68,15 +68,15 @@ const ClientCard = ({ client, onEdit, onDeleteConfirm, onRowClick }: { client: C
                 </div>
             </CardHeader>
             <CardContent className="flex-grow grid grid-cols-2 gap-4">
-                <div className="relative w-28 h-28">
+                <div className="relative w-32 h-32">
                      <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
                                 data={pieData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={35}
-                                outerRadius={45}
+                                innerRadius={45}
+                                outerRadius={60}
                                 startAngle={90}
                                 endAngle={450}
                                 paddingAngle={0}
