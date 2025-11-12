@@ -13,6 +13,7 @@ import {
   FileText,
   Pencil,
   Trash2,
+  Calendar,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -20,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { getInitials, cn } from '@/lib/utils';
 import { AddClientDialog } from './add-client-dialog';
 import { EditClientDialog } from './edit-client-dialog';
-import type { Client, Industry, Project, Task } from '@/lib/types';
+import type { Client, Industry, Project, Task, ContentSchedule } from '@/lib/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +47,8 @@ type ClientWithStats = Client & {
     posting_tasks: number;
     extras: number;
     task_completion_percentage: number;
+    total_schedules: number;
+    completed_schedules: number;
 }
 
 const ClientCard = ({ client, onEdit, onDeleteConfirm, onRowClick }: { client: ClientWithStats, onEdit: (client: ClientWithStats) => void, onDeleteConfirm: (client: ClientWithStats) => void, onRowClick: (client: ClientWithStats) => void }) => {
@@ -102,6 +105,10 @@ const ClientCard = ({ client, onEdit, onDeleteConfirm, onRowClick }: { client: C
                     <div className="flex items-center gap-2">
                         <CheckSquare className="h-4 w-4 text-blue-500" />
                         <span>Tasks: {client.completed_tasks}/{client.total_tasks}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-cyan-500" />
+                        <span>Schedules: {client.completed_schedules}/{client.total_schedules}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <Share className="h-4 w-4 text-green-500" />
@@ -161,6 +168,8 @@ export default function ClientsPageClient({ initialClients, industries, allProje
       posting_tasks: 0,
       extras: 0,
       task_completion_percentage: 0,
+      total_schedules: 0,
+      completed_schedules: 0,
     };
     setClients(prevClients => [newClientWithStats, ...prevClients]);
   };
