@@ -59,7 +59,7 @@ const ClientCard = ({ client, onEdit, onDeleteConfirm, onRowClick }: { client: C
     const COLORS = ['#3b82f6', '#e5e7eb'];
 
     return (
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col">
+        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col rounded-xl">
             <CardHeader className="flex flex-row items-center gap-4">
                 <Avatar className="h-12 w-12">
                     <AvatarImage src={client.avatar} alt={client.name} />
