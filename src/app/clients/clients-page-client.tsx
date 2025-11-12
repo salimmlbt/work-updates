@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/table';
 import { AddClientDialog } from './add-client-dialog';
 import { EditClientDialog } from './edit-client-dialog';
-import type { Client, Industry } from '@/lib/types';
+import type { Client, Industry, Project, Task } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
 import { deleteClient } from '@/app/actions';
+import { ClientDetailSheet } from './client-detail-sheet';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" {...props}>
@@ -81,18 +82,23 @@ const ClientRow = ({
     client, 
     industries,
     onEdit, 
-    onDeleteConfirm 
+    onDeleteConfirm,
+    onRowClick
 }: { 
     client: Client, 
     industries: Industry[],
     onEdit: (client: Client) => void,
     onDeleteConfirm: (client: Client) => void,
+    onRowClick: (client: Client) => void
 }) => {
   const industryColor = getIndustryColor(client.industry, industries);
   const displayIndustry = client.industry.replace(/\s*\(.*\)\s*/g, '');
   
   return (
-    <TableRow className="border-b border-gray-200 hover:bg-gray-50 group">
+    <TableRow 
+        className="border-b border-gray-200 hover:bg-gray-50 group cursor-pointer"
+        onClick={() => onRowClick(client)}
+    >
         <TableCell>
             <div className="flex items-center gap-3">
                  <Avatar className="h-10 w-10">
@@ -125,7 +131,7 @@ const ClientRow = ({
         </TableCell>
         <TableCell>
             {client.whatsapp && (
-                <a href={client.whatsapp} target="_blank" rel="noopener noreferrer">
+                <a href={client.whatsapp} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                     <WhatsAppIcon className="h-6 w-6" />
                 </a>
             )}
@@ -134,18 +140,18 @@ const ClientRow = ({
           <div className="opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => onEdit(client)}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(client); }}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="text-red-600 focus:text-red-600"
-                  onClick={() => onDeleteConfirm(client)}
+                  onClick={(e) => { e.stopPropagation(); onDeleteConfirm(client); }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
@@ -159,7 +165,7 @@ const ClientRow = ({
 };
 
 
-export default function ClientsPageClient({ initialClients, industries }: { initialClients: Client[], industries: Industry[] }) {
+export default function ClientsPageClient({ initialClients, industries, allProjects, allTasks }: { initialClients: Client[], industries: Industry[], allProjects: Project[], allTasks: Task[] }) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [isEditClientOpen, setEditClientOpen] = useState(false);
@@ -170,6 +176,9 @@ export default function ClientsPageClient({ initialClients, industries }: { init
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
 
   const handleClientAdded = (newClient: Client) => {
     setClients(prevClients => [newClient, ...prevClients]);
@@ -214,6 +223,12 @@ export default function ClientsPageClient({ initialClients, industries }: { init
     });
   }
 
+  const handleRowClick = (client: Client) => {
+    setSelectedClient(client);
+    setIsSheetOpen(true);
+  }
+
+
   const filteredClients = useMemo(() => {
     return clients.filter(client =>
       client.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -221,6 +236,7 @@ export default function ClientsPageClient({ initialClients, industries }: { init
   }, [clients, searchQuery]);
 
   return (
+    <>
     <div className="bg-background p-6 rounded-lg h-full w-full">
       <header className="flex items-center justify-between pb-4 mb-4 border-b">
         <div className="flex items-center gap-4">
@@ -278,6 +294,7 @@ export default function ClientsPageClient({ initialClients, industries }: { init
                             industries={industries}
                             onEdit={handleEditClick}
                             onDeleteConfirm={handleDeleteConfirm}
+                            onRowClick={handleRowClick}
                         />
                     ))}
                 </TableBody>
@@ -321,6 +338,17 @@ export default function ClientsPageClient({ initialClients, industries }: { init
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        {selectedClient && (
+            <ClientDetailSheet
+                client={selectedClient}
+                isOpen={isSheetOpen}
+                onOpenChange={setIsSheetOpen}
+                projects={allProjects}
+                tasks={allTasks}
+            />
+        )}
     </div>
+    </>
   );
 }
