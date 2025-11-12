@@ -11,7 +11,7 @@ export default async function ClientsPage() {
     { data: clients, error: clientsError },
     { data: industries, error: industriesError }
   ] = await Promise.all([
-    supabase.from('clients').select('*, projects(id), tasks(id)').order('created_at', { ascending: false }),
+    supabase.from('clients').select('*, projects(id), tasks(id, parent_task_id)').order('created_at', { ascending: false }),
     supabase.from('industries').select('*').order('name')
   ]);
 
@@ -25,7 +25,7 @@ export default async function ClientsPage() {
   const clientsWithCounts = (clients as any[] ?? []).map(c => ({
       ...c,
       projects_count: c.projects.length,
-      tasks_count: c.tasks.length,
+      tasks_count: c.tasks.filter((t: { parent_task_id: string | null }) => !t.parent_task_id).length,
       projects: undefined,
       tasks: undefined
   }));
