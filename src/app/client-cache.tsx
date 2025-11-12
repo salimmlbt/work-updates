@@ -6,16 +6,6 @@ import type { Project, ProjectType, Task, Client, Profile, Team, Role } from '@/
 
 type AnyData = Project | ProjectType | Task | Client | Profile | Team | Role;
 
-const areArraysEqualById = <T extends { id: any }>(a: T[] | null, b: T[] | null): boolean => {
-    if (a === null && b === null) return true;
-    if (!a || !b || a.length !== b.length) return false;
-    
-    const aIds = a.map(item => item.id).sort();
-    const bIds = b.map(item => item.id).sort();
-
-    return aIds.every((id, index) => id === bIds[index]);
-};
-
 interface ClientCacheContextType {
   cache: { [key: string]: any[] | null };
   setCache: (key: string, data: any[] | null) => void;
@@ -28,7 +18,9 @@ export function ClientCacheProvider({ children }: { children: React.ReactNode })
 
   const setCache = useCallback((key: string, data: any[] | null) => {
     setCacheState((prevCache) => {
-      if (areArraysEqualById(prevCache[key] || null, data)) {
+      // Basic check to avoid unnecessary re-renders if data is identical.
+      // A more sophisticated deep check could be used if needed.
+      if (JSON.stringify(prevCache[key]) === JSON.stringify(data)) {
         return prevCache;
       }
       return { ...prevCache, [key]: data };

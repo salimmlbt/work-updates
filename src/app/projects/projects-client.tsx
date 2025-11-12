@@ -324,12 +324,10 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const {
-    cachedProjects,
-    setCachedProjects,
-    cachedProjectTypes,
-    setCachedProjectTypes,
-  } = useClientCache();
+  const { cache, setCache } = useClientCache();
+  const cachedProjects = cache['projects'] as ProjectWithOwnerAndClient[] | null;
+  const cachedProjectTypes = cache['projectTypes'] as ProjectType[] | null;
+
 
   const [projects, setProjects] = useState<ProjectWithOwnerAndClient[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>(cachedProjectTypes || initialProjectTypes);
@@ -366,9 +364,9 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     }));
     setProjects(projectsWithData);
     if (!cachedProjects) {
-        setCachedProjects(projectsWithData);
+        setCache('projects', projectsWithData);
     }
-  }, [initialProjects, cachedProjects, profiles, clients, currentUser, setCachedProjects]);
+  }, [initialProjects, cachedProjects, profiles, clients, currentUser, setCache]);
 
   useEffect(() => {
     const projectId = searchParams.get('projectId');
@@ -420,7 +418,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     };
     const newProjects = [newProjectWithOwnerAndClient, ...projects];
     setProjects(newProjects);
-    setCachedProjects(newProjects);
+    setCache('projects', newProjects);
   };
 
   const handleProjectUpdated = (updatedProjectData: Project) => {
@@ -435,23 +433,23 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         return p;
     });
     setProjects(newProjects);
-    setCachedProjects(newProjects);
+    setCache('projects', newProjects);
   };
   
   const handleTypeCreated = (newType: ProjectType) => {
       const newTypes = [...projectTypes, newType];
       setProjectTypes(newTypes);
-      setCachedProjectTypes(newTypes);
+      setCache('projectTypes', newTypes);
   }
   
   const handleTypeRenamed = (updatedType: ProjectType, oldName: string) => {
     const newTypes = projectTypes.map(t => t.id === updatedType.id ? updatedType : t);
     setProjectTypes(newTypes);
-    setCachedProjectTypes(newTypes);
+    setCache('projectTypes', newTypes);
     
     const newProjects = projects.map(p => p.type === oldName ? { ...p, type: updatedType.name } : p);
     setProjects(newProjects);
-    setCachedProjects(newProjects);
+    setCache('projects', newProjects);
 
     if (activeView === oldName) {
         setActiveView(updatedType.name);
@@ -479,7 +477,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             toast({ title: "Project moved to bin", description: `Project "${projectToDelete.name}" has been deleted.` });
             const newProjects = projects.map(p => p.id === projectToDelete.id ? {...p, is_deleted: true, updated_at: new Date().toISOString() } : p);
             setProjects(newProjects);
-            setCachedProjects(newProjects);
+            setCache('projects', newProjects);
         }
         setDeleteAlertOpen(false);
         setProjectToDelete(null);
@@ -495,7 +493,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
               toast({ title: "Project restored" });
               const newProjects = projects.map(p => p.id === project.id ? {...p, is_deleted: false, updated_at: new Date().toISOString()} : p);
               setProjects(newProjects);
-              setCachedProjects(newProjects);
+              setCache('projects', newProjects);
           }
       });
   }
@@ -510,7 +508,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
               toast({ title: "Project permanently deleted" });
               const newProjects = projects.filter(p => p.id !== projectToDeletePermanently.id);
               setProjects(newProjects);
-              setCachedProjects(newProjects);
+              setCache('projects', newProjects);
           }
           setProjectToDeletePermanently(null);
       });
@@ -523,14 +521,14 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
     );
     setProjects(newProjects);
-    setCachedProjects(newProjects);
+    setCache('projects', newProjects);
 
     startTransition(async () => {
         const { error, data } = await updateProjectStatus(projectId, newStatus);
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
             setProjects(originalProjects); // Revert on error
-            setCachedProjects(originalProjects);
+            setCache('projects', originalProjects);
         }
     });
   }
@@ -545,7 +543,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         toast({ title: "Project type deleted" });
         const newTypes = projectTypes.filter(t => t.id !== typeToDelete.id);
         setProjectTypes(newTypes);
-        setCachedProjectTypes(newTypes);
+        setCache('projectTypes', newTypes);
         if (activeView === typeToDelete.name) {
           setActiveView('general');
         }
@@ -888,5 +886,3 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     </div>
   );
 }
-
-    
