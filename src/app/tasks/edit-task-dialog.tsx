@@ -41,6 +41,8 @@ const taskSchema = z.object({
   assignee_id: z.string().optional().nullable(),
   type: z.string().optional().nullable(),
   tags: z.string().optional(),
+  post_date: z.date().optional().nullable(),
+  post_time: z.string().optional().nullable(),
 })
 
 type TaskFormData = z.infer<typeof taskSchema>
@@ -85,8 +87,11 @@ export function EditTaskDialog({
   const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
   const filteredProjects = clientId ? projects.filter(p => p.client_id === clientId) : [];
 
+  const isPostingTask = !!task.parent_task_id;
+
   useEffect(() => {
     if (task) {
+        const postDate = task.post_date ? parseISO(task.post_date) : null;
       reset({
         description: task.description,
         client_id: task.client_id || undefined,
@@ -95,6 +100,8 @@ export function EditTaskDialog({
         assignee_id: task.assignee_id,
         type: task.type,
         tags: task.tags?.join(', '),
+        post_date: postDate,
+        post_time: postDate ? format(postDate, 'HH:mm') : '',
       })
     }
   }, [task, reset])
@@ -109,6 +116,16 @@ export function EditTaskDialog({
       if (data.project_id) formData.append('project_id', data.project_id)
       if (data.client_id) formData.append('client_id', data.client_id)
       if (data.type) formData.append('type', data.type)
+
+       if (isPostingTask && data.post_date && data.post_time) {
+        const [hours, minutes] = data.post_time.split(':').map(Number);
+        const combinedDateTime = new Date(data.post_date);
+        combinedDateTime.setHours(hours, minutes);
+        formData.append('post_date', combinedDateTime.toISOString());
+      } else if (isPostingTask && data.post_date) {
+        formData.append('post_date', data.post_date.toISOString());
+      }
+
 
       const result = await updateTask(task.id, formData)
 
@@ -162,6 +179,35 @@ export function EditTaskDialog({
               />
               {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
             </div>
+            
+            {isPostingTask && (
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="post_date">Post Date</Label>
+                        <Controller
+                          name="post_date"
+                          control={control}
+                          render={({ field }) => (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                      <Calendar className="mr-2 h-4 w-4" />
+                                      {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                  </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                  <CalendarComponent mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="post_time">Post Time</Label>
+                        <Input id="post_time" type="time" {...register('post_time')} />
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -269,3 +315,5 @@ export function EditTaskDialog({
     </Dialog>
   )
 }
+
+    

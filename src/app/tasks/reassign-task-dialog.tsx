@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ const reassignSchema = z.object({
   assignee_id: z.string().min(1, 'Assignee is required.'),
   type: z.string().min(1, 'Type is required.'),
   post_date: z.date({ required_error: 'Post date is required.' }),
+  post_time: z.string({ required_error: 'Post time is required.' }).min(1, 'Post time is required.'),
   deadline: z.date({ required_error: 'Due date is required.' }),
 })
 
@@ -77,6 +79,7 @@ export function ReassignTaskDialog({
             assignee_id: '',
             type: 'Posting',
             post_date: today,
+            post_time: format(new Date(), 'HH:mm'),
             deadline: today,
         });
     }
@@ -103,12 +106,16 @@ export function ReassignTaskDialog({
 
   const onSubmit = async (data: ReassignFormData) => {
     startTransition(async () => {
+      const [hours, minutes] = data.post_time.split(':').map(Number);
+      const combinedDateTime = new Date(data.post_date);
+      combinedDateTime.setHours(hours, minutes);
+
       const result = await createTask({
         description: `Post: ${task.description}`,
         project_id: task.project_id,
         client_id: task.client_id,
         deadline: data.deadline.toISOString(),
-        post_date: format(data.post_date, 'yyyy-MM-dd'),
+        post_date: combinedDateTime.toISOString(),
         assignee_id: data.assignee_id,
         type: data.type,
         parent_task_id: task.id,
@@ -184,7 +191,7 @@ export function ReassignTaskDialog({
                       <PopoverTrigger asChild>
                           <Button variant="outline" className="w-full justify-start text-left font-normal">
                               <Calendar className="mr-2 h-4 w-4" />
-                              {formatDate(field.value)}
+                              {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                           </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
@@ -195,33 +202,42 @@ export function ReassignTaskDialog({
                 />
                 {errors.post_date && <p className="text-sm text-destructive">{errors.post_date.message}</p>}
             </div>
-
             <div className="grid gap-2">
-                <label>Due Date</label>
+                <label>Schedule Time</label>
                 <Controller
-                  name="deadline"
-                  control={control}
-                  render={({ field }) => (
-                     <Popover>
-                      <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal">
-                              <Calendar className="mr-2 h-4 w-4" />
-                              {formatDate(field.value)}
-                          </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                          <CalendarComponent
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={{ after: postDate }}
-                          />
-                      </PopoverContent>
-                    </Popover>
-                  )}
+                    name="post_time"
+                    control={control}
+                    render={({ field }) => <Input type="time" {...field} />}
                 />
-                {errors.deadline && <p className="text-sm text-destructive">{errors.deadline.message}</p>}
+                {errors.post_time && <p className="text-sm text-destructive">{errors.post_time.message}</p>}
             </div>
+          </div>
+          
+          <div className="grid gap-2">
+              <label>Due Date</label>
+              <Controller
+                name="deadline"
+                control={control}
+                render={({ field }) => (
+                   <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {formatDate(field.value)}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={{ after: postDate }}
+                        />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              />
+              {errors.deadline && <p className="text-sm text-destructive">{errors.deadline.message}</p>}
           </div>
           
           <DialogFooter>
@@ -236,3 +252,5 @@ export function ReassignTaskDialog({
     </Dialog>
   )
 }
+
+    

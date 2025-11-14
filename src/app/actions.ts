@@ -363,7 +363,7 @@ export async function addTask(formData: FormData) {
 export async function updateTask(taskId: string, formData: FormData) {
     const supabase = await createServerClient()
     
-    const taskData = {
+    const rawData: { [key: string]: any } = {
         description: formData.get('description') as string,
         deadline: new Date(formData.get('deadline') as string).toISOString(),
         assignee_id: formData.get('assigneeId') as string,
@@ -373,9 +373,14 @@ export async function updateTask(taskId: string, formData: FormData) {
         type: formData.get('type') as string,
     }
 
+    if (formData.has('post_date')) {
+        rawData['post_date'] = new Date(formData.get('post_date') as string).toISOString();
+    }
+
+
     const { data, error } = await supabase
         .from('tasks')
-        .update(taskData)
+        .update(rawData)
         .eq('id', taskId)
         .select()
         .single();
@@ -1434,3 +1439,5 @@ export async function createTaskFromSchedule(schedule: ContentSchedule): Promise
     // No need to revalidate here, as the client-side will handle the optimistic update
     return { data: newTask as Task };
 }
+
+    

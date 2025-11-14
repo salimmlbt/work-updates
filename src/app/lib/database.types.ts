@@ -113,6 +113,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           notes: string | null
+          project_id: string | null
           scheduled_date: string
           status: string
           team_id: string | null
@@ -125,6 +126,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           notes?: string | null
+          project_id?: string | null
           scheduled_date: string
           status?: string
           team_id?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           notes?: string | null
+          project_id?: string | null
           scheduled_date?: string
           status?: string
           team_id?: string | null
@@ -148,6 +151,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_schedules_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -182,7 +192,7 @@ export type Database = {
           created_at: string
           date: string
           description: string | null
-          falaq_event_type: "leave" | "event" | "meeting" | null
+          falaq_event_type: "leave" | "event" | "meeting" | "working_sunday" | null
           id: number
           is_deleted: boolean
           name: string
@@ -193,7 +203,7 @@ export type Database = {
           created_at?: string
           date: string
           description?: string | null
-          falaq_event_type?: "leave" | "event" | "meeting" | null
+          falaq_event_type?: "leave" | "event" | "meeting" | "working_sunday" | null
           id?: number
           is_deleted?: boolean
           name: string
@@ -204,7 +214,7 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string | null
-          falaq_event_type?: "leave" | "event" | "meeting" | null
+          falaq_event_type?: "leave" | "event" | "meeting" | "working_sunday" | null
           id?: number
           is_deleted?: boolean
           name?: string
@@ -419,17 +429,29 @@ export type Database = {
           client_id: string | null
           corrections: Json | null
           created_at: string
+          created_by: string | null
           deadline: string
           description: string
           id: string
           is_deleted: boolean
           parent_task_id: string | null
+          post_date: string | null
           posting_status: "Planned" | "Scheduled" | "Posted" | null
           project_id: string | null
           revisions: Json | null
           rich_description: Json | null
           schedule_id: string | null
-          status: "todo" | "inprogress" | "under-review" | "done" | "review" | "corrections" | "recreate" | "approved"
+          status:
+            | "todo"
+            | "inprogress"
+            | "under-review"
+            | "done"
+            | "review"
+            | "corrections"
+            | "recreate"
+            | "approved"
+          status_updated_at: string | null
+          status_updated_by: string | null
           tags: string[] | null
           type: string | null
         }
@@ -439,17 +461,29 @@ export type Database = {
           client_id?: string | null
           corrections?: Json | null
           created_at?: string
+          created_by?: string | null
           deadline: string
           description: string
           id?: string
           is_deleted?: boolean
           parent_task_id?: string | null
+          post_date?: string | null
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           revisions?: Json | null
           rich_description?: Json | null
           schedule_id?: string | null
-          status?: "todo" | "inprogress" | "under-review" | "done" | "review" | "corrections" | "recreate" | "approved"
+          status?:
+            | "todo"
+            | "inprogress"
+            | "under-review"
+            | "done"
+            | "review"
+            | "corrections"
+            | "recreate"
+            | "approved"
+          status_updated_at?: string | null
+          status_updated_by?: string | null
           tags?: string[] | null
           type?: string | null
         }
@@ -459,17 +493,29 @@ export type Database = {
           client_id?: string | null
           corrections?: Json | null
           created_at?: string
+          created_by?: string | null
           deadline?: string
           description?: string
           id?: string
           is_deleted?: boolean
           parent_task_id?: string | null
+          post_date?: string | null
           posting_status?: "Planned" | "Scheduled" | "Posted" | null
           project_id?: string | null
           revisions?: Json | null
           rich_description?: Json | null
           schedule_id?: string | null
-          status?: "todo" | "inprogress" | "under-review" | "done" | "review" | "corrections" | "recreate" | "approved"
+          status?:
+            | "todo"
+            | "inprogress"
+            | "under-review"
+            | "done"
+            | "review"
+            | "corrections"
+            | "recreate"
+            | "approved"
+          status_updated_at?: string | null
+          status_updated_by?: string | null
           tags?: string[] | null
           type?: string | null
         }
@@ -486,6 +532,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -507,6 +560,13 @@ export type Database = {
             columns: ["schedule_id"]
             isOneToOne: false
             referencedRelation: "content_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_status_updated_by_fkey"
+            columns: ["status_updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -598,3 +658,7 @@ export type Database = {
     }
   }
 }
+
+    
+
+    
