@@ -779,6 +779,16 @@ const TaskTableBody = ({
   
   return (
     <tbody>
+      {isAddingTask && onSaveTask && onCancelAddTask && projects && clients && profiles && (
+        <AddTaskRow 
+            onSave={onSaveTask} 
+            onCancel={onCancelAddTask} 
+            projects={projects} 
+            clients={clients} 
+            profiles={profiles}
+            status={status}
+        />
+      )}
       {tasks.map((task) => (
         <tr
           key={task.id}
@@ -806,16 +816,6 @@ const TaskTableBody = ({
           />
         </tr>
       ))}
-      {isAddingTask && onSaveTask && onCancelAddTask && projects && clients && profiles && (
-        <AddTaskRow 
-            onSave={onSaveTask} 
-            onCancel={onCancelAddTask} 
-            projects={projects} 
-            clients={clients} 
-            profiles={profiles}
-            status={status}
-        />
-      )}
     </tbody>
   )
 }
@@ -2014,5 +2014,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
+    
 
     
