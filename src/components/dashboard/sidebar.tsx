@@ -142,6 +142,11 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
           (payload) => {
             const newTask = payload.new as TaskWithDetails;
             const oldTask = payload.old as TaskWithDetails;
+            
+            // Ignore notifications for deleted tasks
+            if (newTask?.is_deleted) {
+              return;
+            }
 
             let notification: Notification | null = null;
             
