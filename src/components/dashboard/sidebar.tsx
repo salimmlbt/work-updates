@@ -143,7 +143,12 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
             const newTask = payload.new as TaskWithDetails;
             const oldTask = payload.old as TaskWithDetails;
             
-            // Ignore notifications for deleted tasks
+            // If the task was deleted or restored, do not show a notification.
+            if (payload.eventType === 'UPDATE' && oldTask && newTask.is_deleted !== oldTask.is_deleted) {
+              return;
+            }
+
+            // Ignore notifications for already deleted tasks on other updates
             if (newTask?.is_deleted) {
               return;
             }
