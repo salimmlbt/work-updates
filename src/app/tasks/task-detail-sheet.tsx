@@ -86,13 +86,14 @@ export function TaskDetailSheet({
     return task.corrections
   }, [task.corrections])
 
-  const formatDate = (date: string | null) => {
-    if (!date) return 'No due date'
+  const formatDate = (date: string | null, includeTime = false) => {
+    if (!date) return 'No date'
     const d = parseISO(date)
-    if (isToday(d)) return 'Today'
-    if (isTomorrow(d)) return 'Tomorrow'
-    if (isYesterday(d)) return 'Yesterday'
-    return format(d, 'd MMM yyyy')
+    const dateFormat = includeTime ? 'd MMM yyyy, h:mm a' : 'd MMM yyyy';
+    if (isToday(d) && !includeTime) return 'Today'
+    if (isTomorrow(d) && !includeTime) return 'Tomorrow'
+    if (isYesterday(d) && !includeTime) return 'Yesterday'
+    return format(d, dateFormat)
   }
 
   const attachments = useMemo(() => {
@@ -219,8 +220,8 @@ export function TaskDetailSheet({
             <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4 flex items-center gap-4">
               <Send className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               <div>
-                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Scheduled Post Date</h4>
-                <p className="text-blue-700 dark:text-blue-300">{formatDate(task.post_date)}</p>
+                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Scheduled Post Time</h4>
+                <p className="text-blue-700 dark:text-blue-300">{formatDate(task.post_date, true)}</p>
               </div>
             </div>
           )}
