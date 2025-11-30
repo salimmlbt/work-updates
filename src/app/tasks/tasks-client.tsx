@@ -694,7 +694,7 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
                 <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>
+            <DropdownMenuItem className="text-red-600 focus:text-red-500" onClick={() => onDelete(task)}>
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -819,131 +819,6 @@ const TaskTableBody = ({
     </tbody>
   )
 }
-
-const KanbanCard = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, allTasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
-  const cardColors: { [key: string]: string } = {
-    "todo": "bg-blue-100/50",
-    "inprogress": "bg-purple-100/50",
-    "under-review": "bg-yellow-100/50",
-    "done": "bg-gray-100",
-  };
-
-  const handleCardClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button, [role="menuitem"], a')) {
-      return;
-    }
-    onTaskClick(task);
-  }
-
-  const getRemainingTime = (deadline: string) => {
-    const now = new Date();
-    const deadDate = parseISO(deadline);
-
-    if (task.status === 'done') return `Completed on ${format(deadDate, 'dd MMM')}`;
-
-    if (isToday(deadDate)) return 'Due today';
-    if (isTomorrow(deadDate)) return 'Due tomorrow';
-    if (isPast(deadDate)) return formatDistanceToNowStrict(deadDate, { addSuffix: true });
-    
-    const days = differenceInDays(deadDate, now);
-    if (days < 7) {
-      return `${days} day${days > 1 ? 's' : ''} left`;
-    }
-    return format(deadDate, 'dd MMM');
-  }
-
-  const isCompleted = task.status === 'done' || task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
-  const isReassigned = !!task.parent_task_id;
-  const hasChildTask = useMemo(() => allTasks.some(t => t.parent_task_id === task.id), [allTasks, task.id]);
-
-
-  return (
-    <Card 
-      className={cn("mb-4 group cursor-pointer shadow-none", cardColors[task.status] ?? 'bg-gray-100', 'border-0')} 
-      onClick={handleCardClick}
-    >
-      <CardHeader className="p-4 flex flex-row items-start justify-between">
-        <CardTitle className="text-sm font-medium">{task.description}</CardTitle>
-        <div className="flex-shrink-0">
-          {task.profiles && (
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={getResponsibleAvatar(task.profiles)} />
-              <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
-            </Avatar>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        {task.tags && (
-          <div className="flex flex-wrap gap-1">
-            {task.tags.map((tag: string) => {
-              const isBlocked = tag.toLowerCase() === 'blocked';
-              const isASAP = tag.toLowerCase() === 'asap';
-              const isFeedback = tag.toLowerCase() === 'feedback';
-              return (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className={cn('font-normal',
-                  isBlocked && 'bg-gray-400 text-white',
-                  isASAP && 'bg-red-500 text-white',
-                  isFeedback && 'bg-green-200 text-green-800'
-                )}
-              >
-                {tag}
-              </Badge>
-            )})}
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="p-4 pt-0 flex justify-between items-center text-xs text-gray-600">
-        <span>{getRemainingTime(task.deadline)}</span>
-        {canEdit && (
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 -mt-2 -mr-2">
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => onEdit(task)}>Edit</DropdownMenuItem>
-                    {isReassigned
-                      ? postingStatusOptions.map(status => (
-                          <DropdownMenuItem
-                            key={status}
-                            disabled={task.posting_status === status}
-                            onClick={() => onPostingStatusChange(task.id, status)}
-                          >
-                            Move to {postingStatusLabels[status]}
-                          </DropdownMenuItem>
-                        ))
-                      : mainStatusOptions.map(status => (
-                          <DropdownMenuItem
-                            key={status}
-                            disabled={task.status === status}
-                            onClick={() => onStatusChange(task.id, status)}
-                            className={cn(task.status === status && 'bg-accent')}
-                          >
-                            Move to {statusLabels[status as keyof typeof statusLabels]}
-                          </DropdownMenuItem>
-                        ))}
-                     {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
-                      <DropdownMenuItem onClick={() => onReassign(task)} disabled={hasChildTask}>
-                        <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-      </CardFooter>
-    </Card>
-  );
-};
-
 
 const KanbanBoard = ({ tasks: allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
   const statuses: ('todo' | 'inprogress' | 'review' | 'done')[] = ['todo', 'inprogress', 'review', 'done'];
@@ -1477,7 +1352,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         <TaskTableBody
           tasks={tasksToRender}
           allTasks={tasks}
-          isAddingTask={canEditTasks && isAddingTask && activeTab === 'active'}
+          isAddingTask={canEditTasks && isAddingTask}
           onSaveTask={handleSaveTask}
           onCancelAddTask={() => setIsAddingTask(false)}
           projects={allProjects}
@@ -1597,7 +1472,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             </div>
           ))}
           
-          {activeTab === 'active' && canEditTasks && (
+          {canEditTasks && !isAddingTask && (
             <Button
                 variant="ghost"
                 className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
@@ -2014,6 +1889,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
+
+    
 
     
 
