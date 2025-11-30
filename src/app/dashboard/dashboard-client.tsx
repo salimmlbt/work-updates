@@ -78,11 +78,7 @@ export default function DashboardClient({
   const handleCardClick = (href: string, card: string) => {
     if (setIsLoading) {
       setLoadingCard(card);
-      // The full page loader will still kick in, but this provides instant feedback
-      setTimeout(() => {
-        setIsLoading(true);
-        router.push(href);
-      }, 150); // Small delay to let the loading state on the card render
+      router.push(href);
     } else {
       router.push(href);
     }
