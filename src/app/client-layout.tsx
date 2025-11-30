@@ -10,7 +10,6 @@ import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
 import type { Profile, Notification, RoleWithPermissions, TaskWithDetails } from '@/lib/types';
 import { Toaster } from "@/components/ui/toaster";
-import { PageSkeleton } from '@/components/dashboard/page-skeleton';
 import React from 'react';
 
 export default function ClientLayout({
@@ -26,7 +25,7 @@ export default function ClientLayout({
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(initialIsAuthenticated);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with true for initial load
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const approvedAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -50,6 +49,10 @@ export default function ClientLayout({
     });
 
   }, []);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!profile) return;
@@ -145,11 +148,6 @@ export default function ClientLayout({
   }, [initialIsAuthenticated, profile, router]);
 
   useEffect(() => {
-    // When the path changes, the new page has loaded.
-    setIsLoading(false);
-  }, [pathname]);
-
-  useEffect(() => {
     const supabase = createClient();
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       const newIsAuthenticated = !!session;
@@ -178,13 +176,6 @@ export default function ClientLayout({
   
   const showNav = isAuthenticated && pathname !== '/login';
 
-  const childrenWithProps = React.Children.map(children, child => {
-    if (React.isValidElement(child)) {
-        return React.cloneElement(child as React.ReactElement<any>, { setIsLoading });
-    }
-    return child;
-  });
-
   return (
     <div className="flex min-h-screen w-full bg-background">
       {showNav && (
@@ -205,7 +196,7 @@ export default function ClientLayout({
         )}>
         {showNav && <Header />}
         <main className="flex-1 overflow-y-auto">
-          {isLoading ? <PageSkeleton /> : childrenWithProps}
+          {children}
         </main>
       </div>
       <Toaster />

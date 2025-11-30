@@ -5,7 +5,6 @@ import { createServerClient } from '@/lib/supabase/server';
 import ClientLayout from './client-layout';
 import type { Profile } from '@/lib/types';
 import { type Metadata } from 'next';
-import { PageLoader } from '@/components/page-loader';
 import { ClientCacheProvider } from './client-cache';
 
 export const metadata: Metadata = {
@@ -50,7 +49,6 @@ export default async function RootLayout({
         <link rel="icon" href="/icon.svg" sizes="any" />
       </head>
       <body className={cn("min-h-screen bg-background font-body font-sans antialiased")}>
-        <PageLoader />
         <ClientCacheProvider>
           <ClientLayout
             isAuthenticated={isAuthenticated}
