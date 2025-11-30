@@ -36,11 +36,11 @@ export default function ClientLayout({
 
   useEffect(() => {
     // Initialize audio on the client
-    approvedAudioRef.current = new Audio('/sounds/approved.mp3');
-    correctionAudioRef.current = new Audio('/sounds/correction.mp3');
-    recreateAudioRef.current = new Audio('/sounds/recreate.mp3');
-    newTaskAudioRef.current = new Audio('/sounds/new_task.mp3');
-    reviewAudioRef.current = new Audio('/sounds/review.mp3');
+    approvedAudioRef.current = new Audio('/approved.mp3');
+    correctionAudioRef.current = new Audio('/correction.mp3');
+    recreateAudioRef.current = new Audio('/recreate.mp3');
+    newTaskAudioRef.current = new Audio('/new-task.mp3');
+    reviewAudioRef.current = new Audio('/review.mp3');
 
     [approvedAudioRef, correctionAudioRef, recreateAudioRef, newTaskAudioRef, reviewAudioRef].forEach(ref => {
         if (ref.current) {
