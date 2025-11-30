@@ -8,7 +8,7 @@ import { getInitials, cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye, Loader2, Briefcase, Users, X } from 'lucide-react';
 import type { Profile, Task, Project, Attendance, OfficialHoliday } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { format, parseISO, getDay } from 'date-fns';
+import { format, parseISO, getDay, isAfter, isToday } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
@@ -39,7 +39,7 @@ interface DashboardClientProps {
     absentDays: number;
     setIsLoading?: (isLoading: boolean) => void;
     monthlyAttendanceData: Attendance[] | null;
-    holidays: Pick<OfficialHoliday, 'date'>[];
+    holidays: Pick<OfficialHoliday, 'date' | 'falaq_event_type'>[];
 }
 
 
@@ -71,7 +71,6 @@ export default function DashboardClient({
   const handleCardClick = (href: string, cardKey: string) => {
     if (loadingCard) return;
     setLoadingCard(cardKey);
-    if(setIsLoading) setIsLoading(true);
     router.push(href);
   };
   
@@ -81,12 +80,13 @@ export default function DashboardClient({
 
     const doc = new jsPDF();
     const holidayDates = new Set(holidays.map(h => h.date));
+    const workingSundays = new Set(holidays.filter(h => h.falaq_event_type === 'working_sunday').map(h => h.date));
 
     doc.setFontSize(18);
     doc.text(`Monthly Attendance Report`, 14, 22);
     doc.setFontSize(12);
     doc.text(`User: ${profile.full_name}`, 14, 30);
-    doc.text(`Month: ${format(new Date(), 'MMMM yyyy')}`, 14, 36);
+    doc.text(`Month: ${format(new Date(monthlyAttendanceData[0].date), 'MMMM yyyy')}`, 14, 36);
 
     const tableColumn = ["Date", "Check In", "Lunch Out", "Lunch In", "Check Out", "Total Hours"];
     const tableRows: any[][] = [];
@@ -115,12 +115,15 @@ export default function DashboardClient({
           const dayString = format(date, 'yyyy-MM-dd');
           const isSunday = getDay(date) === 0;
           const isHoliday = holidayDates.has(dayString);
-          const isWorkingDay = !isSunday && !isHoliday;
+          const isWorkingSunday = workingSundays.has(dayString);
+
+          // A working day is a day that is not a Sunday (unless it's a working Sunday) and not a holiday.
+          const isWorkingDay = (isWorkingSunday || !isSunday) && !isHoliday;
           
-          if (isSunday && !isHoliday) {
-             doc.setFillColor(255, 230, 230); // Light Red
-          } else if(isWorkingDay && !record.check_in) {
-             doc.setFillColor(220, 38, 38); // Darker Red
+          if (isSunday && !isWorkingSunday) {
+             doc.setFillColor(254, 242, 242); // bg-red-50
+          } else if(isWorkingDay && !record.check_in && isAfter(new Date(), date)) {
+             doc.setFillColor(220, 38, 38); // bg-red-600
              doc.setTextColor(255, 255, 255);
           }
         }

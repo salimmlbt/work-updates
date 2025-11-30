@@ -46,16 +46,15 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
       .contains('members', [user.id])
       .eq('is_deleted', false),
     supabase.from('official_holidays')
-      .select('date')
+      .select('date, falaq_event_type')
       .eq('is_deleted', false)
-      .eq('falaq_event_type', 'leave')
       .gte('date', format(monthStart, 'yyyy-MM-dd'))
       .lte('date', format(today, 'yyyy-MM-dd')),
   ]);
 
   // --- Data Processing ---
   const { data: weeklyAttendanceData } = weeklyAttendanceRes;
-  const { data: monthlyAttendanceData } = monthlyAttendanceRes;
+  const { data: rawMonthlyAttendanceData } = monthlyAttendanceRes;
   const { data: tasks } = tasksRes;
   const { data: projects } = projectsRes;
   const { data: holidaysData } = holidaysRes;
@@ -73,15 +72,37 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
   // Monthly Attendance Calculation
   const daysInMonthSoFar = eachDayOfInterval({ start: monthStart, end: today });
   const holidayDates = new Set((holidaysData || []).map(h => h.date));
-  
+  const workingSundays = new Set((holidaysData || []).filter(h => h.falaq_event_type === 'working_sunday').map(h => h.date));
+
   const totalWorkingDaysInMonth = daysInMonthSoFar.filter(day => {
-    const isSunday = getDay(day) === 0;
     const dayString = format(day, 'yyyy-MM-dd');
-    return !isSunday && !holidayDates.has(dayString);
+    const isSunday = getDay(day) === 0;
+    
+    if(workingSundays.has(dayString)) return true;
+    if (isSunday || holidayDates.has(dayString)) return false;
+
+    return true;
   }).length;
   
-  const presentDays = monthlyAttendanceData?.filter(att => att.check_in).length ?? 0;
+  const presentDays = rawMonthlyAttendanceData?.filter(att => att.check_in).length ?? 0;
   const absentDays = totalWorkingDaysInMonth - presentDays;
+  
+  // Complete monthly data for PDF
+  const attendanceMap = new Map(rawMonthlyAttendanceData?.map(rec => [rec.date, rec]));
+  const allDaysForPDF = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const monthlyAttendanceData = allDaysForPDF.map(day => {
+      const dateString = format(day, 'yyyy-MM-dd');
+      return attendanceMap.get(dateString) || {
+          date: dateString,
+          check_in: null,
+          check_out: null,
+          lunch_in: null,
+          lunch_out: null,
+          total_hours: null,
+          id: dateString,
+          user_id: user.id
+      };
+  });
 
   // Task Stats
   const pendingTasks = tasks?.filter(t => t.status === 'todo' || t.status === 'inprogress').length ?? 0;
