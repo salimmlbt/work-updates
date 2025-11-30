@@ -15,10 +15,10 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
 
   // --- Data Fetching ---
   const today = new Date();
-  const todayDateString = format(today, 'yyyy-MM-dd');
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
 
   const [
     weeklyAttendanceRes,
@@ -33,10 +33,10 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
       .gte('date', format(weekStart, 'yyyy-MM-dd'))
       .lte('date', format(weekEnd, 'yyyy-MM-dd')),
     supabase.from('attendance')
-        .select('date')
+        .select('*')
         .eq('user_id', user.id)
         .gte('date', format(monthStart, 'yyyy-MM-dd'))
-        .lte('date', format(today, 'yyyy-MM-dd')),
+        .lte('date', format(monthEnd, 'yyyy-MM-dd')),
     supabase.from('tasks')
       .select('id, description, deadline, status, project_id, projects(name)')
       .eq('assignee_id', user.id)
@@ -80,7 +80,7 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
     return !isSunday && !holidayDates.has(dayString);
   }).length;
   
-  const presentDays = monthlyAttendanceData?.length ?? 0;
+  const presentDays = monthlyAttendanceData?.filter(att => att.check_in).length ?? 0;
   const absentDays = totalWorkingDaysInMonth - presentDays;
 
   // Task Stats
@@ -94,8 +94,7 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
         if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
           return false;
         }
-        const deadlineDateString = format(new Date(t.deadline), 'yyyy-MM-dd');
-        return (t.status === 'todo' || t.status === 'inprogress') && deadlineDateString >= todayDateString;
+        return (t.status === 'todo' || t.status === 'inprogress');
     })
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5) ?? [];
@@ -126,6 +125,7 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
       presentDays={presentDays}
       absentDays={absentDays > 0 ? absentDays : 0}
       setIsLoading={setIsLoading}
+      monthlyAttendanceData={monthlyAttendanceData}
     />
   );
 }

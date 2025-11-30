@@ -6,11 +6,13 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye, Loader2, Briefcase, Users, X } from 'lucide-react';
-import type { Profile, Task, Project } from '@/lib/types';
+import type { Profile, Task, Project, Attendance } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 const STATUS_COLORS: { [key: string]: string } = {
@@ -36,6 +38,7 @@ interface DashboardClientProps {
     presentDays: number;
     absentDays: number;
     setIsLoading?: (isLoading: boolean) => void;
+    monthlyAttendanceData: Attendance[] | null;
 }
 
 
@@ -50,11 +53,13 @@ export default function DashboardClient({
     totalWorkingDaysInMonth,
     presentDays,
     absentDays,
-    setIsLoading
+    setIsLoading,
+    monthlyAttendanceData,
 }: DashboardClientProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
 
   useEffect(() => {
@@ -62,8 +67,47 @@ export default function DashboardClient({
   }, []);
 
   const handleCardClick = (href: string, cardKey: string) => {
+    if (loadingCard) return;
     setLoadingCard(cardKey);
     router.push(href);
+  };
+  
+  const handleDownloadReport = () => {
+    if (!monthlyAttendanceData || !profile) return;
+    setIsDownloading(true);
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text(`Monthly Attendance Report`, 14, 22);
+    doc.setFontSize(12);
+    doc.text(`User: ${profile.full_name}`, 14, 30);
+    doc.text(`Month: ${format(new Date(), 'MMMM yyyy')}`, 14, 36);
+
+    const tableColumn = ["Date", "Check In", "Lunch Out", "Lunch In", "Check Out", "Total Hours"];
+    const tableRows: any[][] = [];
+
+    monthlyAttendanceData.forEach(record => {
+      const recordDate = parseISO(record.date);
+      const attendanceData = [
+        format(recordDate, 'dd/MM/yyyy (EEE)'),
+        record.check_in ? format(parseISO(record.check_in), 'p') : '-',
+        record.lunch_out ? format(parseISO(record.lunch_out), 'p') : '-',
+        record.lunch_in ? format(parseISO(record.lunch_in), 'p') : '-',
+        record.check_out ? format(parseISO(record.check_out), 'p') : '-',
+        record.total_hours ? record.total_hours.toFixed(2) : '0.00'
+      ];
+      tableRows.push(attendanceData);
+    });
+
+    autoTable(doc, {
+      startY: 40,
+      head: [tableColumn],
+      body: tableRows,
+    });
+    
+    doc.save(`attendance_report_${profile.full_name?.replace(' ','_')}_${format(new Date(), 'yyyy_MM')}.pdf`);
+    setIsDownloading(false);
   };
 
   const TaskCard = ({ title, value, icon, href, cardKey, colorClass, isLoading }: { title: string, value: number, icon: React.ReactNode, href: string, cardKey: string, colorClass: string, isLoading: boolean }) => (
@@ -292,9 +336,9 @@ export default function DashboardClient({
                    </div>
                 </CardContent>
                  <CardFooter>
-                    <Button variant="outline" className="w-full">
-                        <ArrowDown className="mr-2 h-4 w-4" />
-                        Download Report
+                    <Button variant="outline" className="w-full" onClick={handleDownloadReport} disabled={isDownloading}>
+                        {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowDown className="mr-2 h-4 w-4" />}
+                        {isDownloading ? 'Generating...' : 'Download Report'}
                     </Button>
                  </CardFooter>
             </Card>
