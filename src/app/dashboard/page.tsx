@@ -84,12 +84,11 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
     ?.filter(t => {
-        // Ensure deadline is a valid, non-null date string and is in the future
         if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
           return false;
         }
         const deadlineDateString = format(new Date(t.deadline), 'yyyy-MM-dd');
-        return t.status !== 'done' && t.status !== 'approved' && deadlineDateString >= todayDateString;
+        return (t.status === 'todo' || t.status === 'inprogress') && deadlineDateString >= todayDateString;
     })
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5) ?? [];
