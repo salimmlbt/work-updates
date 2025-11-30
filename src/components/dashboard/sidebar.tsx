@@ -81,14 +81,13 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
 
   useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasMounted || !profile) return;
+
+    const supabase = createClient();
+    const isEditor = userPermissions?.tasks === 'Editor' || isFalaqAdmin;
+    const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
 
     const initializeNotifications = async () => {
-      if (!profile) return;
-      const supabase = createClient();
-      const isEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
-      const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
-
       const { data: assignedTasksData } = await supabase
         .from('tasks')
         .select('id, description, deadline, created_at, created_by, status, status_updated_at, status_updated_by')
@@ -133,118 +132,112 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
       }
 
       setNotifications([...deadlineNotifications, ...newNotifications, ...reviewNotifications]);
+    };
+    
+    initializeNotifications();
 
-      const channel = supabase
-        .channel('realtime-notifications-sidebar')
-        .on<TaskWithDetails>(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'tasks' },
-          (payload) => {
-            const newTask = payload.new as TaskWithDetails;
-            const oldTask = payload.old as TaskWithDetails;
-            
-            // If the task was deleted or restored, do not show a notification.
-            if (payload.eventType === 'UPDATE' && oldTask && newTask.is_deleted !== oldTask.is_deleted) {
-              return;
-            }
+    const channel = supabase
+      .channel('realtime-notifications-sidebar')
+      .on<TaskWithDetails>(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        (payload) => {
+          const newTask = payload.new as TaskWithDetails;
+          const oldTask = payload.old as TaskWithDetails;
+          
+          if (payload.eventType === 'UPDATE' && oldTask?.is_deleted !== newTask?.is_deleted) {
+            return;
+          }
 
-            // Ignore notifications for already deleted tasks on other updates
-            if (newTask?.is_deleted) {
-              return;
-            }
+          if (newTask?.is_deleted) {
+            return;
+          }
 
-            let notification: Notification | null = null;
-            
-            // Notify on new task assignment, but not if user assigns to themselves
-            if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id && newTask.created_by !== profile.id) {
-              notification = {
-                id: `new-${newTask.id}`,
-                type: 'new',
-                title: 'New task assigned',
-                description: `You have been assigned a new task: "${newTask.description}".`,
+          let notification: Notification | null = null;
+          
+          if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id && newTask.created_by !== profile.id) {
+            notification = {
+              id: `new-${newTask.id}`,
+              type: 'new',
+              title: 'New task assigned',
+              description: `You have been assigned a new task: "${newTask.description}".`,
+            };
+          }
+
+          if (payload.eventType === 'UPDATE' && newTask.assignee_id === profile.id && newTask.status_updated_by !== profile.id) {
+              if (newTask.status === 'approved' && oldTask.status !== 'approved') {
+                  notification = {
+                      id: `approved-${newTask.id}-${newTask.status_updated_at}`,
+                      type: 'approved',
+                      title: 'Task Approved!',
+                      description: `Your task "${newTask.description}" has been approved.`,
+                  };
+              } else if (newTask.status === 'corrections' && oldTask.status !== 'corrections') {
+                  notification = {
+                      id: `correction-${newTask.id}-${newTask.status_updated_at}`,
+                      type: 'correction',
+                      title: 'Corrections Required',
+                      description: `Corrections are required for your task: "${newTask.description}".`,
+                  };
+              } else if (newTask.status === 'recreate' && oldTask.status !== 'recreate') {
+                  notification = {
+                      id: `recreate-${newTask.id}-${newTask.status_updated_at}`,
+                      type: 'recreate',
+                      title: 'Task Needs Recreation',
+                      description: `Task "${newTask.description}" needs to be recreated.`,
+                  };
+              }
+          }
+
+          if (
+            isEditor &&
+            payload.eventType === 'UPDATE' &&
+            newTask.status === 'review' &&
+            oldTask.status !== 'review' &&
+            newTask.status_updated_by !== profile.id
+          ) {
+            notification = {
+              id: `review-${newTask.id}-${newTask.status_updated_at}`,
+              type: 'review',
+              title: 'Task ready for review',
+              description: `Task "${newTask.description}" is now ready for your review.`,
+            };
+          }
+          
+          if (notification) {
+            setNotifications(prev => [notification!, ...prev.filter(n => n.id !== notification!.id)]);
+            if (Notification.permission === 'granted') {
+              new Notification(notification.title, {
+                body: notification.description,
+                icon: '/icon.svg',
+                silent: true
+              });
+
+              const audioRefs = {
+                approved: approvedAudioRef,
+                correction: correctionAudioRef,
+                recreate: recreateAudioRef,
+                new: newTaskAudioRef,
+                review: audioRef, // Default sound for review
+                deadline: audioRef,
               };
-            }
-
-            if (payload.eventType === 'UPDATE' && newTask.assignee_id === profile.id && newTask.status_updated_by !== profile.id) {
-                if (newTask.status === 'approved' && oldTask.status !== 'approved') {
-                    notification = {
-                        id: `approved-${newTask.id}-${newTask.status_updated_at}`,
-                        type: 'approved',
-                        title: 'Task Approved!',
-                        description: `Your task "${newTask.description}" has been approved.`,
-                    };
-                } else if (newTask.status === 'corrections' && oldTask.status !== 'corrections') {
-                    notification = {
-                        id: `correction-${newTask.id}-${newTask.status_updated_at}`,
-                        type: 'correction',
-                        title: 'Corrections Required',
-                        description: `Corrections are required for your task: "${newTask.description}".`,
-                    };
-                } else if (newTask.status === 'recreate' && oldTask.status !== 'recreate') {
-                    notification = {
-                        id: `recreate-${newTask.id}-${newTask.status_updated_at}`,
-                        type: 'recreate',
-                        title: 'Task Needs Recreation',
-                        description: `Task "${newTask.description}" needs to be recreated.`,
-                    };
-                }
-            }
-
-
-            if (
-              isEditor &&
-              payload.eventType === 'UPDATE' &&
-              newTask.status === 'review' &&
-              oldTask.status !== 'review' &&
-              newTask.status_updated_by !== profile.id
-            ) {
-              notification = {
-                id: `review-${newTask.id}-${newTask.status_updated_at}`,
-                type: 'review',
-                title: 'Task ready for review',
-                description: `Task "${newTask.description}" is now ready for your review.`,
-              };
-            }
-            
-            if (notification) {
-              setNotifications(prev => [notification!, ...prev.filter(n => n.id !== notification!.id)]);
-              if (Notification.permission === 'granted') {
-                new Notification(notification.title, {
-                  body: notification.description,
-                  icon: '/icon.svg',
-                  silent: true
-                });
-
-                if (notification.type === 'approved' && approvedAudioRef.current) {
-                  approvedAudioRef.current.play().catch(e => console.error("Error playing approved sound:", e));
-                } else if (notification.type === 'correction' && correctionAudioRef.current) {
-                  correctionAudioRef.current.play().catch(e => console.error("Error playing correction sound:", e));
-                } else if (notification.type === 'recreate' && recreateAudioRef.current) {
-                  recreateAudioRef.current.play().catch(e => console.error("Error playing recreate sound:", e));
-                } else if (notification.type === 'new' && newTaskAudioRef.current) {
-                  newTaskAudioRef.current.play().catch(e => console.error("Error playing new task sound:", e));
-                } else if (audioRef.current) {
-                  audioRef.current.play().catch(e => console.error("Error playing default sound:", e));
-                }
+              
+              const audioToPlayRef = audioRefs[notification.type];
+              
+              if (audioToPlayRef?.current) {
+                audioToPlayRef.current.play().catch(e => console.error(`Error playing ${notification.type} sound:`, e));
+              } else if (audioRef.current) {
+                // Fallback to default sound
+                audioRef.current.play().catch(e => console.error("Error playing default sound:", e));
               }
             }
           }
-        )
-        .subscribe();
-      
-      return channel;
-    };
+        }
+      )
+      .subscribe();
     
-    let channel: ReturnType<typeof createClient>['channel'] | undefined;
-    
-    initializeNotifications().then(ch => {
-      if (ch) channel = ch;
-    });
-
     return () => {
-      if (channel) {
-        createClient().removeChannel(channel);
-      }
+      supabase.removeChannel(channel);
     };
   }, [profile, hasMounted, isFalaqAdmin, userPermissions]);
 
@@ -464,3 +457,4 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
     </TooltipProvider>
   );
 }
+
