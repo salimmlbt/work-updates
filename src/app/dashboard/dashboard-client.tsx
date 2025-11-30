@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye } from 'lucide-react';
 import type { Profile, Task, Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -27,7 +27,7 @@ type UpcomingDeadline = Pick<Task, "id" | "description" | "deadline"> & {
 interface DashboardClientProps {
     profile: Profile | null;
     pendingTasks: number;
-    inProgressTasks: number;
+    reviewTasks: number;
     completedTasks: number;
     attendanceChartData: { name: string; hours: number }[];
     projectStatusData: { name: string; value: number }[];
@@ -54,7 +54,7 @@ const CustomLegend = (props: any) => {
 export default function DashboardClient({
     profile,
     pendingTasks,
-    inProgressTasks,
+    reviewTasks,
     completedTasks,
     attendanceChartData,
     projectStatusData,
@@ -96,13 +96,13 @@ export default function DashboardClient({
                         <div className="text-4xl font-bold">{pendingTasks}</div>
                     </CardContent>
                 </Card>
-                 <Card className="shadow-lg rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                 <Card className="shadow-lg rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                        <Zap className="h-5 w-5 opacity-80" />
+                        <CardTitle className="text-sm font-medium">Review Tasks</CardTitle>
+                        <Eye className="h-5 w-5 opacity-80" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-4xl font-bold">{inProgressTasks}</div>
+                        <div className="text-4xl font-bold">{reviewTasks}</div>
                     </CardContent>
                 </Card>
                  <Card className="shadow-lg rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white">

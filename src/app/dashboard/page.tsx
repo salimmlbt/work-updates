@@ -77,9 +77,9 @@ export default async function DashboardPage() {
 
 
   // Task Stats
-  const pendingTasks = tasks?.filter(t => t.status === 'todo').length ?? 0;
-  const inProgressTasks = tasks?.filter(t => t.status === 'inprogress').length ?? 0;
-  const completedTasks = tasks?.filter(t => t.status === 'done').length ?? 0;
+  const pendingTasks = tasks?.filter(t => t.status === 'todo' || t.status === 'inprogress').length ?? 0;
+  const reviewTasks = tasks?.filter(t => t.status === 'review' || t.status === 'under-review' || t.status === 'corrections' || t.status === 'recreate').length ?? 0;
+  const completedTasks = tasks?.filter(t => t.status === 'done' || t.status === 'approved').length ?? 0;
   
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
@@ -89,7 +89,7 @@ export default async function DashboardPage() {
           return false;
         }
         const deadlineDateString = format(new Date(t.deadline), 'yyyy-MM-dd');
-        return t.status !== 'done' && deadlineDateString >= todayDateString;
+        return t.status !== 'done' && t.status !== 'approved' && deadlineDateString >= todayDateString;
     })
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5) ?? [];
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
     <DashboardClient
       profile={profile}
       pendingTasks={pendingTasks}
-      inProgressTasks={inProgressTasks}
+      reviewTasks={reviewTasks}
       completedTasks={completedTasks}
       attendanceChartData={attendanceChartData}
       projectStatusData={projectStatusData}
