@@ -37,7 +37,6 @@ interface DashboardClientProps {
     totalWorkingDaysInMonth: number;
     presentDays: number;
     absentDays: number;
-    setIsLoading?: (isLoading: boolean) => void;
     monthlyAttendanceData: Attendance[] | null;
     holidays: Pick<OfficialHoliday, 'date' | 'falaq_event_type'>[];
 }
@@ -54,7 +53,6 @@ export default function DashboardClient({
     totalWorkingDaysInMonth,
     presentDays,
     absentDays,
-    setIsLoading,
     monthlyAttendanceData,
     holidays
 }: DashboardClientProps) {
@@ -68,8 +66,6 @@ export default function DashboardClient({
   }, []);
 
   const handleCardClick = (href: string) => {
-    // Trigger global skeleton
-    setIsLoading?.(true);
     router.push(href);
   };
   
