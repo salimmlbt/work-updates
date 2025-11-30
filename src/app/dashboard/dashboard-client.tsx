@@ -76,12 +76,8 @@ export default function DashboardClient({
   }, []);
 
   const handleCardClick = (href: string, card: string) => {
-    if (setIsLoading) {
-      setLoadingCard(card);
-      router.push(href);
-    } else {
-      router.push(href);
-    }
+    setLoadingCard(card);
+    router.push(href);
   };
 
   const TaskCard = ({ title, value, icon, href, cardKey, colorClass, isLoading }: { title: string, value: number, icon: React.ReactNode, href: string, cardKey: string, colorClass: string, isLoading: boolean }) => (
