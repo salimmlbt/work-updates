@@ -74,8 +74,8 @@ export default function DashboardClient({
     setHasMounted(true);
   }, []);
 
-  const handleCardClick = (href: string, card: string) => {
-    setLoadingCard(card);
+  const handleCardClick = (href: string, cardKey: string) => {
+    setLoadingCard(cardKey);
     router.push(href);
   };
 
@@ -158,12 +158,16 @@ export default function DashboardClient({
                             <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}h`} />
                             <Tooltip
+                                cursor={{ fill: 'hsla(var(--primary), 0.1)' }}
                                 contentStyle={{
                                     backgroundColor: 'hsl(var(--background))',
-                                    borderRadius: '0.5rem',
+                                    borderRadius: 'var(--radius)',
                                     border: '1px solid hsl(var(--border))',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                                 }}
-                                cursor={{ fill: 'hsla(var(--primary), 0.1)' }}
+                                labelStyle={{
+                                    color: 'hsl(var(--foreground))'
+                                }}
                             />
                             <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
@@ -208,9 +212,9 @@ export default function DashboardClient({
                               ))}
                           </Pie>
                           <Tooltip
-                               contentStyle={{
+                                contentStyle={{
                                     backgroundColor: 'hsl(var(--background))',
-                                    borderRadius: '0.5rem',
+                                    borderRadius: 'var(--radius)',
                                     border: '1px solid hsl(var(--border))',
                                 }}
                           />
