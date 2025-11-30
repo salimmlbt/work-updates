@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Popover,
   PopoverContent,
@@ -29,26 +29,22 @@ export function NotificationPopover({
   isCollapsed,
   notifications,
   setNotifications,
-  audioRef,
-  approvedAudioRef,
-  correctionAudioRef,
-  recreateAudioRef,
-  newTaskAudioRef,
 }: {
   isCollapsed: boolean,
   notifications: Notification[],
   setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>,
-  audioRef: React.RefObject<HTMLAudioElement>;
-  approvedAudioRef: React.RefObject<HTMLAudioElement>;
-  correctionAudioRef: React.RefObject<HTMLAudioElement>;
-  recreateAudioRef: React.RefObject<HTMLAudioElement>;
-  newTaskAudioRef: React.RefObject<HTMLAudioElement>;
 }) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [readNotifications, setReadNotifications] = useState<string[]>([]);
+    
+    // Refs for audio elements will be managed in NotificationHandler
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
+        // This is a dummy ref for the unlock mechanism, real audio is handled by NotificationHandler
+        audioRef.current = new Audio();
+
         const storedRead = localStorage.getItem('readNotifications');
         if (storedRead) {
             setReadNotifications(JSON.parse(storedRead));
@@ -58,25 +54,17 @@ export function NotificationPopover({
     const unreadNotifications = notifications.filter(n => !readNotifications.includes(n.id));
 
     const handlePopoverTriggerClick = async () => {
-      // This function attempts to play and pause all audio elements.
-      // This is a workaround for browsers that block autoplay until a user interaction.
-      // By doing this on a click, we "unlock" the audio elements for later programmatic use.
-      const audioRefs = [audioRef, approvedAudioRef, correctionAudioRef, recreateAudioRef, newTaskAudioRef];
-
-      for (const ref of audioRefs) {
-        if (ref.current) {
+      if (audioRef.current?.paused) {
           try {
-            await ref.current.play();
-            ref.current.pause();
-            ref.current.currentTime = 0;
+              // This is a workaround for browsers that block autoplay.
+              // This "unlocks" the audio context.
+              await audioRef.current.play();
+              audioRef.current.pause();
           } catch (error) {
-            // Autoplay was prevented. This is expected before the first user interaction.
-            // We don't need to log this error as it's part of the unlocking mechanism.
+              console.warn("Audio unlock failed, will retry on next user interaction.");
           }
-        }
       }
       
-      // Also request notification permission if not already granted.
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== "granted") {
         try {
           await Notification.requestPermission();
@@ -85,7 +73,6 @@ export function NotificationPopover({
         }
       }
     };
-
 
     const handleNotificationClick = (notification: Notification) => {
         const taskId = notification.id.split('-').pop();

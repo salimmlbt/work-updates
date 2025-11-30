@@ -22,12 +22,10 @@ import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/login/actions';
 import { LogOut, ChevronLeft, ShieldQuestion } from 'lucide-react';
-import type { Profile, RoleWithPermissions, Notification, TaskWithDetails } from '@/lib/types';
+import type { Profile, RoleWithPermissions, Notification } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { NotificationPopover } from '@/app/notifications/notification-popover';
-import { createClient } from '@/lib/supabase/client';
-import { isAfter, parseISO, subDays, isTomorrow } from 'date-fns';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon, id: 'dashboard' },
@@ -51,23 +49,14 @@ interface SidebarProps {
   isCollapsed: boolean;
   setIsCollapsed: (isCollapsed: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
+  notifications: Notification[];
+  setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
 }
 
-export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoading }: SidebarProps) {
+export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoading, notifications, setNotifications }: SidebarProps) {
   const pathname = usePathname();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const approvedAudioRef = useRef<HTMLAudioElement>(null);
-  const correctionAudioRef = useRef<HTMLAudioElement>(null);
-  const recreateAudioRef = useRef<HTMLAudioElement>(null);
-  const newTaskAudioRef = useRef<HTMLAudioElement>(null);
-  const [hasMounted, setHasMounted] = useState(false);
   const [clickedItem, setClickedItem] = useState<string | null>(null);
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-  
   useEffect(() => {
     if (clickedItem) {
       setClickedItem(null);
@@ -78,167 +67,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
 
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
   const userPermissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
-
-  useEffect(() => {
-    if (!hasMounted || !profile) return;
-
-    const supabase = createClient();
-    const isEditor = userPermissions?.tasks === 'Editor' || isFalaqAdmin;
-    const twentyFourHoursAgo = subDays(new Date(), 1).toISOString();
-
-    const initializeNotifications = async () => {
-      const { data: assignedTasksData } = await supabase
-        .from('tasks')
-        .select('id, description, deadline, created_at, created_by, status, status_updated_at, status_updated_by')
-        .eq('assignee_id', profile.id)
-        .eq('is_deleted', false);
-      
-      const assignedTasks = (assignedTasksData as TaskWithDetails[]) || [];
-
-      const deadlineNotifications: Notification[] = assignedTasks
-        .filter(task => task.deadline && task.status !== 'done' && isTomorrow(parseISO(task.deadline)))
-        .map(task => ({
-          id: `due-${task.id}`,
-          type: 'deadline',
-          title: 'Project Deadline',
-          description: `Task "${task.description}" is due tomorrow.`,
-        }));
-
-      const newNotifications: Notification[] = assignedTasks
-        .filter(task => task.created_at && isAfter(parseISO(task.created_at), new Date(twentyFourHoursAgo)) && task.created_by !== profile.id)
-        .map(task => ({
-          id: `new-${task.id}`,
-          type: 'new',
-          title: 'New task assigned',
-          description: `You have been assigned a new task: "${task.description}".`,
-        }));
-
-      let reviewNotifications: Notification[] = [];
-      if (isEditor) {
-        const { data: reviewTasksData } = await supabase
-          .from('tasks')
-          .select('id, description, status_updated_at, status_updated_by')
-          .eq('status', 'review')
-          .eq('is_deleted', false)
-          .gte('status_updated_at', twentyFourHoursAgo);
-
-        reviewNotifications = ((reviewTasksData as TaskWithDetails[]) || []).map(task => ({
-          id: `review-${task.id}-${task.status_updated_at}`,
-          type: 'review',
-          title: 'Task ready for review',
-          description: `Task "${task.description}" is now ready for your review.`,
-        }));
-      }
-
-      setNotifications([...deadlineNotifications, ...newNotifications, ...reviewNotifications]);
-    };
-    
-    initializeNotifications();
-
-    const channel = supabase
-      .channel('realtime-notifications-sidebar')
-      .on<TaskWithDetails>(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks' },
-        (payload) => {
-          
-          const handleNewTask = (newTask: TaskWithDetails) => {
-             let notification: Notification | null = null;
-            // Handle new task assignment
-            if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id && newTask.created_by !== profile.id) {
-              notification = {
-                id: `new-${newTask.id}`,
-                type: 'new',
-                title: 'New task assigned',
-                description: `You have been assigned a new task: "${newTask.description}".`,
-              };
-            }
-
-            // Handle status updates for the assigned user
-            if (payload.eventType === 'UPDATE') {
-              const oldTask = payload.old as TaskWithDetails;
-              if (newTask.assignee_id === profile.id && newTask.status_updated_by !== profile.id) {
-                  if (newTask.status === 'approved' && oldTask.status !== 'approved') {
-                      notification = {
-                          id: `approved-${newTask.id}-${newTask.status_updated_at}`,
-                          type: 'approved',
-                          title: 'Task Approved!',
-                          description: `Your task "${newTask.description}" has been approved.`,
-                      };
-                  } else if (newTask.status === 'corrections' && oldTask.status !== 'corrections') {
-                      notification = {
-                          id: `correction-${newTask.id}-${newTask.status_updated_at}`,
-                          type: 'correction',
-                          title: 'Corrections Required',
-                          description: `Corrections are required for your task: "${newTask.description}".`,
-                      };
-                  } else if (newTask.status === 'recreate' && oldTask.status !== 'recreate') {
-                      notification = {
-                          id: `recreate-${newTask.id}-${newTask.status_updated_at}`,
-                          type: 'recreate',
-                          title: 'Task Needs Recreation',
-                          description: `Task "${newTask.description}" needs to be recreated.`,
-                      };
-                  }
-              }
-               // Handle review notifications for editors
-              if (
-                isEditor &&
-                newTask.status === 'review' &&
-                oldTask.status !== 'review' &&
-                newTask.status_updated_by !== profile.id
-              ) {
-                notification = {
-                  id: `review-${newTask.id}-${newTask.status_updated_at}`,
-                  type: 'review',
-                  title: 'Task ready for review',
-                  description: `Task "${newTask.description}" is now ready for your review.`,
-                };
-              }
-            }
-            
-            if (notification) {
-              setNotifications(prev => [notification!, ...prev.filter(n => n.id !== notification!.id)]);
-              
-              if (Notification.permission === 'granted') {
-                new Notification(notification.title, {
-                  body: notification.description,
-                  icon: '/icon.svg',
-                  silent: true
-                });
-
-                const audioRefs = {
-                  approved: approvedAudioRef,
-                  correction: correctionAudioRef,
-                  recreate: recreateAudioRef,
-                  new: newTaskAudioRef,
-                  review: audioRef,
-                  deadline: audioRef,
-                };
-                
-                const audioToPlayRef = audioRefs[notification.type];
-                
-                if (audioToPlayRef?.current) {
-                  audioToPlayRef.current.play().catch(e => console.error(`Error playing ${notification.type} sound:`, e));
-                } else if (audioRef.current) {
-                  audioRef.current.play().catch(e => console.error("Error playing default sound:", e));
-                }
-              }
-            }
-          }
-          
-          if(payload.new){
-             handleNewTask(payload.new as TaskWithDetails);
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile, hasMounted, isFalaqAdmin, userPermissions]);
-
 
   const hasAccess = (itemId: string) => {
     if (isFalaqAdmin) return true;
@@ -323,15 +151,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
           isCollapsed ? 'w-20' : 'w-64'
         )}
       >
-        {hasMounted && (
-          <>
-            <audio id="notification-sound" src="/notification.mp3" preload="auto" ref={audioRef}></audio>
-            <audio id="approved-sound" src="/approved.mp3" preload="auto" ref={approvedAudioRef}></audio>
-            <audio id="correction-sound" src="/correction.mp3" preload="auto" ref={correctionAudioRef}></audio>
-            <audio id="recreate-sound" src="/recreate.mp3" preload="auto" ref={recreateAudioRef}></audio>
-            <audio id="new-task-sound" src="/new-task.mp3" preload="auto" ref={newTaskAudioRef}></audio>
-          </>
-        )}
         <Button
           variant="ghost"
           size="icon"
@@ -378,18 +197,11 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
 
           <div className="mt-auto p-4 space-y-4">
             <nav className="grid items-start gap-1 text-base font-medium">
-              {hasMounted && (
-                <NotificationPopover 
-                  isCollapsed={isCollapsed} 
-                  notifications={notifications} 
-                  setNotifications={setNotifications}
-                  audioRef={audioRef}
-                  approvedAudioRef={approvedAudioRef}
-                  correctionAudioRef={correctionAudioRef}
-                  recreateAudioRef={recreateAudioRef}
-                  newTaskAudioRef={newTaskAudioRef}
-                />
-              )}
+              <NotificationPopover 
+                isCollapsed={isCollapsed} 
+                notifications={notifications} 
+                setNotifications={setNotifications}
+              />
               {filteredBottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
               ))}
