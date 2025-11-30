@@ -68,16 +68,16 @@ export default async function TeamsPage() {
   const workTypes = workTypesData as WorkType[] ?? [];
 
   const permissionsList = [
-    { id: 'dashboard', label: 'Can the "{ROLE_NAME}" Access Dashboard?' },
-    { id: 'projects', label: 'Can the "{ROLE_NAME}" Access Projects?' },
-    { id: 'tasks', label: 'Can the "{ROLE_NAME}" Access Tasks?' },
-    { id: 'clients', label: 'Can the "{ROLE_NAME}" Access Clients?' },
-    { id: 'calendar', label: 'Can the "{ROLE_NAME}" Access Calendar?' },
-    { id: 'chat', label: 'Can the "{ROLE_NAME}" Access Chat?' },
-    { id: 'billing', label: 'Can the "{ROLE_NAME}" Access Billing?' },
-    { id: 'teams', label: 'Can the "{ROLE_NAME}" Access Team & Users?' },
-    { id: 'settings', label: 'Can the "{ROLE_NAME}" Access Settings?' },
-    { id: 'accessibility', label: 'Can the "{ROLE_NAME}" Access Accessibility?' },
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'projects', label: 'Projects' },
+    { id: 'tasks', label: 'Tasks' },
+    { id: 'clients', label: 'Clients' },
+    { id: 'calendar', label: 'Calendar' },
+    { id: 'chat', label: 'Chat' },
+    { id: 'billing', label: 'Billing' },
+    { id: 'teams', label: 'Team & Users' },
+    { id: 'settings', label: 'Settings' },
+    { id: 'accessibility', label: 'Accessibility' },
   ];
 
   return (
