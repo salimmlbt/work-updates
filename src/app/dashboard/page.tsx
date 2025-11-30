@@ -126,6 +126,7 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
       absentDays={absentDays > 0 ? absentDays : 0}
       setIsLoading={setIsLoading}
       monthlyAttendanceData={monthlyAttendanceData}
+      holidays={holidaysData || []}
     />
   );
 }

@@ -6,9 +6,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye, Loader2, Briefcase, Users, X } from 'lucide-react';
-import type { Profile, Task, Project, Attendance } from '@/lib/types';
+import type { Profile, Task, Project, Attendance, OfficialHoliday } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, getDay } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
@@ -39,6 +39,7 @@ interface DashboardClientProps {
     absentDays: number;
     setIsLoading?: (isLoading: boolean) => void;
     monthlyAttendanceData: Attendance[] | null;
+    holidays: Pick<OfficialHoliday, 'date'>[];
 }
 
 
@@ -55,6 +56,7 @@ export default function DashboardClient({
     absentDays,
     setIsLoading,
     monthlyAttendanceData,
+    holidays
 }: DashboardClientProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
@@ -69,6 +71,7 @@ export default function DashboardClient({
   const handleCardClick = (href: string, cardKey: string) => {
     if (loadingCard) return;
     setLoadingCard(cardKey);
+    if(setIsLoading) setIsLoading(true);
     router.push(href);
   };
   
@@ -77,6 +80,7 @@ export default function DashboardClient({
     setIsDownloading(true);
 
     const doc = new jsPDF();
+    const holidayDates = new Set(holidays.map(h => h.date));
 
     doc.setFontSize(18);
     doc.text(`Monthly Attendance Report`, 14, 22);
@@ -104,13 +108,46 @@ export default function DashboardClient({
       startY: 40,
       head: [tableColumn],
       body: tableRows,
+      didDrawCell: (data) => {
+        const record = monthlyAttendanceData[data.row.index];
+        if (record) {
+          const date = parseISO(record.date);
+          const dayString = format(date, 'yyyy-MM-dd');
+          const isSunday = getDay(date) === 0;
+          const isHoliday = holidayDates.has(dayString);
+          const isWorkingDay = !isSunday && !isHoliday;
+          
+          if (isSunday && !isHoliday) {
+             doc.setFillColor(255, 230, 230); // Light Red
+          } else if(isWorkingDay && !record.check_in) {
+             doc.setFillColor(220, 38, 38); // Darker Red
+             doc.setTextColor(255, 255, 255);
+          }
+        }
+      }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY;
+    
+    autoTable(doc, {
+        startY: finalY + 10,
+        body: [
+            ['Total Working Days', totalWorkingDaysInMonth],
+            ['Total Present Days', presentDays],
+            ['Total Absent Days', absentDays],
+        ],
+        theme: 'plain',
+        styles: { fontSize: 10 },
+        columnStyles: { 0: { fontStyle: 'bold' } },
     });
     
     doc.save(`attendance_report_${profile.full_name?.replace(' ','_')}_${format(new Date(), 'yyyy_MM')}.pdf`);
     setIsDownloading(false);
   };
 
-  const TaskCard = ({ title, value, icon, href, cardKey, colorClass, isLoading }: { title: string, value: number, icon: React.ReactNode, href: string, cardKey: string, colorClass: string, isLoading: boolean }) => (
+  const TaskCard = ({ title, value, icon, href, cardKey, colorClass }: { title: string, value: number, icon: React.ReactNode, href: string, cardKey: string, colorClass: string }) => {
+    const isLoading = loadingCard === cardKey;  
+    return (
     <div onClick={() => !isLoading && handleCardClick(href, cardKey)} className="cursor-pointer">
       <Card className={cn("shadow-lg rounded-xl text-white transition-all duration-300", colorClass, isLoading ? 'opacity-70' : 'hover:scale-105')}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -122,7 +159,7 @@ export default function DashboardClient({
         </CardContent>
       </Card>
     </div>
-  );
+  )};
 
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-muted/20 min-h-full">
@@ -151,7 +188,6 @@ export default function DashboardClient({
                     href="/tasks?tab=active"
                     cardKey="pending"
                     colorClass="bg-gradient-to-br from-blue-500 to-blue-600"
-                    isLoading={loadingCard === 'pending'}
                  />
                  <TaskCard
                     title="Review Tasks"
@@ -160,7 +196,6 @@ export default function DashboardClient({
                     href="/tasks?tab=under-review"
                     cardKey="review"
                     colorClass="bg-gradient-to-br from-yellow-500 to-yellow-600"
-                    isLoading={loadingCard === 'review'}
                  />
                 <TaskCard
                     title="Completed Tasks"
@@ -169,7 +204,6 @@ export default function DashboardClient({
                     href="/tasks?tab=completed"
                     cardKey="completed"
                     colorClass="bg-gradient-to-br from-green-500 to-green-600"
-                    isLoading={loadingCard === 'completed'}
                  />
             </div>
           
