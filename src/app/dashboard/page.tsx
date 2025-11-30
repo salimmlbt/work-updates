@@ -1,6 +1,6 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDay, isSameDay } from 'date-fns';
 import DashboardClient from './dashboard-client';
 
 export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (isLoading: boolean) => void }) {
@@ -19,13 +19,13 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
 
   const [
     weeklyAttendanceRes,
     monthlyAttendanceRes,
     tasksRes,
     projectsRes,
+    holidaysRes
   ] = await Promise.all([
     supabase.from('attendance')
       .select('date, total_hours')
@@ -36,7 +36,7 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
         .select('date')
         .eq('user_id', user.id)
         .gte('date', format(monthStart, 'yyyy-MM-dd'))
-        .lte('date', format(monthEnd, 'yyyy-MM-dd')),
+        .lte('date', format(today, 'yyyy-MM-dd')),
     supabase.from('tasks')
       .select('id, description, deadline, status, project_id, projects(name)')
       .eq('assignee_id', user.id)
@@ -44,7 +44,13 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
     supabase.from('projects')
       .select('id, name, status, members')
       .contains('members', [user.id])
+      .eq('is_deleted', false),
+    supabase.from('official_holidays')
+      .select('date')
       .eq('is_deleted', false)
+      .eq('falaq_event_type', 'leave')
+      .gte('date', format(monthStart, 'yyyy-MM-dd'))
+      .lte('date', format(today, 'yyyy-MM-dd')),
   ]);
 
   // --- Data Processing ---
@@ -52,6 +58,7 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
   const { data: monthlyAttendanceData } = monthlyAttendanceRes;
   const { data: tasks } = tasksRes;
   const { data: projects } = projectsRes;
+  const { data: holidaysData } = holidaysRes;
 
   // Weekly Attendance Chart Data
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -63,18 +70,18 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
     };
   });
   
-  // Monthly Attendance Pie Chart
-  const daysInMonth = getDaysInMonth(today);
+  // Monthly Attendance Calculation
+  const daysInMonthSoFar = eachDayOfInterval({ start: monthStart, end: today });
+  const holidayDates = new Set((holidaysData || []).map(h => h.date));
+  
+  const totalWorkingDaysInMonth = daysInMonthSoFar.filter(day => {
+    const isSunday = getDay(day) === 0;
+    const dayString = format(day, 'yyyy-MM-dd');
+    return !isSunday && !holidayDates.has(dayString);
+  }).length;
+  
   const presentDays = monthlyAttendanceData?.length ?? 0;
-  const absentDays = daysInMonth - presentDays;
-  const presentPercentage = Math.round((presentDays / daysInMonth) * 100);
-  const absentPercentage = 100 - presentPercentage;
-
-  const monthlyAttendancePieData = [
-    { name: 'Present', value: presentPercentage },
-    { name: 'Absent', value: absentPercentage },
-  ];
-
+  const absentDays = totalWorkingDaysInMonth - presentDays;
 
   // Task Stats
   const pendingTasks = tasks?.filter(t => t.status === 'todo' || t.status === 'inprogress').length ?? 0;
@@ -115,7 +122,9 @@ export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (
       attendanceChartData={attendanceChartData}
       projectStatusData={projectStatusData}
       upcomingDeadlines={upcomingDeadlines.map(t => ({...t, projects: t.projects || null }))}
-      monthlyAttendanceData={monthlyAttendancePieData}
+      totalWorkingDaysInMonth={totalWorkingDaysInMonth}
+      presentDays={presentDays}
+      absentDays={absentDays > 0 ? absentDays : 0}
       setIsLoading={setIsLoading}
     />
   );

@@ -2,10 +2,10 @@
 'use client'
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, cn } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye, Loader2, Briefcase, Users, X } from 'lucide-react';
 import type { Profile, Task, Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -20,8 +20,6 @@ const STATUS_COLORS: { [key: string]: string } = {
   'Done': '#22c55e', // green-500
 };
 
-const ATTENDANCE_COLORS = ['#3b82f6', '#e0e0e0'];
-
 type UpcomingDeadline = Pick<Task, "id" | "description" | "deadline"> & {
     projects: Pick<Project, "name"> | null;
 };
@@ -34,24 +32,11 @@ interface DashboardClientProps {
     attendanceChartData: { name: string; hours: number }[];
     projectStatusData: { name: string; value: number }[];
     upcomingDeadlines: UpcomingDeadline[];
-    monthlyAttendanceData: { name: string; value: number }[];
+    totalWorkingDaysInMonth: number;
+    presentDays: number;
+    absentDays: number;
     setIsLoading?: (isLoading: boolean) => void;
 }
-
-const CustomLegend = (props: any) => {
-  const { payload } = props;
-  return (
-    <ul className="flex flex-col space-y-2">
-      {payload.map((entry: any, index: number) => (
-        <li key={`item-${index}`} className="flex items-center">
-          <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }} />
-          <span className="text-muted-foreground mr-2">{entry.payload.name}:</span>
-          <span className="font-bold">{`${entry.payload.value}%`}</span>
-        </li>
-      ))}
-    </ul>
-  );
-};
 
 
 export default function DashboardClient({
@@ -62,7 +47,9 @@ export default function DashboardClient({
     attendanceChartData,
     projectStatusData,
     upcomingDeadlines,
-    monthlyAttendanceData,
+    totalWorkingDaysInMonth,
+    presentDays,
+    absentDays,
     setIsLoading
 }: DashboardClientProps) {
   const [hasMounted, setHasMounted] = useState(false);
@@ -281,36 +268,35 @@ export default function DashboardClient({
              <Card className="shadow-lg rounded-xl">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        % Of Attendance
+                        <Users className="h-5 w-5 text-primary" />
+                        Monthly Attendance
                     </CardTitle>
                     <CardDescription>{hasMounted ? format(new Date(), 'MMMM yyyy') : ''}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <PieChart>
-                            <Pie
-                                data={monthlyAttendanceData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                startAngle={90}
-                                endAngle={450}
-                                paddingAngle={0}
-                                dataKey="value"
-                            >
-                                {monthlyAttendanceData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]} stroke={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]}/>
-                                ))}
-                            </Pie>
-                            <Legend content={<CustomLegend />} verticalAlign="middle" align="right" layout="vertical" />
-                        </PieChart>
-                    </ResponsiveContainer>
-                     <Button variant="outline" className="w-full mt-4">
-                        <ArrowDown className="mr-2 h-4 w-4" />
-                        Download Data
-                    </Button>
+                   <div className="space-y-4">
+                       <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                            <span className="font-medium text-blue-800">Total Working Days</span>
+                            <span className="font-bold text-2xl text-blue-900">{totalWorkingDaysInMonth}</span>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4">
+                           <div className="flex flex-col items-center p-3 bg-green-50 rounded-lg">
+                                <span className="text-3xl font-bold text-green-700">{presentDays}</span>
+                                <span className="text-xs font-medium text-green-600">Present</span>
+                           </div>
+                           <div className="flex flex-col items-center p-3 bg-red-50 rounded-lg">
+                                <span className="text-3xl font-bold text-red-700">{absentDays}</span>
+                                <span className="text-xs font-medium text-red-600">Absent</span>
+                           </div>
+                       </div>
+                   </div>
                 </CardContent>
+                 <CardFooter>
+                    <Button variant="outline" className="w-full">
+                        <ArrowDown className="mr-2 h-4 w-4" />
+                        Download Report
+                    </Button>
+                 </CardFooter>
             </Card>
         </div>
       </div>
