@@ -937,8 +937,12 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const [taskToReassign, setTaskToReassign] = useState<TaskWithDetails | null>(null);
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'created_at', direction: 'descending' });
-
-  const [activeTab, setActiveTab] = useState('active');
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialTab = searchParams.get('tab');
+  const validTabs = ['active', 'under-review', 'completed'];
+  const [activeTab, setActiveTab] = useState(validTabs.includes(initialTab || '') ? initialTab : 'active');
   
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(initialHighlightedTaskId);
 
@@ -1320,60 +1324,66 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status'], isReviewer: boolean, activeTab: string) => {
     const allVisibleTasksSelected = tasksToRender.length > 0 && tasksToRender.every(t => selectedTaskIds.includes(t.id));
     return (
-      <table className="w-full text-left mt-2">
-        <thead>
-          <tr className="border-b border-gray-200 group">
-             {canEditTasks && (
-                <th className="px-4 py-2 w-12">
-                  <Checkbox
-                      checked={allVisibleTasksSelected}
-                      onCheckedChange={(checked) => {
-                      const taskIds = tasksToRender.map(t => t.id);
-                      if (checked) {
-                          setSelectedTaskIds(prev => [...new Set([...prev, ...taskIds])]);
-                      } else {
-                          setSelectedTaskIds(prev => prev.filter(id => !taskIds.includes(id)));
-                      }
-                      }}
-                  />
-                </th>
-             )}
-            <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
-            <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
-            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
-            {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
-            <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
-            <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
-            <SortableHeader sortKey={activeTab === 'active' ? 'created_at' : 'status_updated_at'} className="w-[150px]">{getDynamicDateColumnHeader()}</SortableHeader>
-            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
-            <th className="px-4 py-2" style={{ width: "50px" }}></th>
-          </tr>
-        </thead>
-        <TaskTableBody
-          tasks={tasksToRender}
-          allTasks={tasks}
-          isAddingTask={canEditTasks && isAddingTask}
-          onSaveTask={handleSaveTask}
-          onCancelAddTask={() => setIsAddingTask(false)}
-          projects={allProjects}
-          clients={clients}
-          profiles={profiles}
-          onStatusChange={handleStatusChange}
-          onPostingStatusChange={handlePostingStatusChange}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteClick}
-          canEdit={canEditTasks}
-          onTaskClick={setSelectedTask}
-          onReassign={(task) => setTaskToReassign(task)}
-          status={status}
-          isReviewer={isReviewer}
-          activeTab={activeTab}
-          currentUserProfile={currentUserProfile}
-          selectedTaskIds={selectedTaskIds}
-          onSelectTask={handleSelectTask}
-          highlightedTaskId={highlightedTaskId}
-        />
-      </table>
+      <>
+        {canEditTasks && isAddingTask && (
+            <AddTaskRow 
+                onSave={handleSaveTask} 
+                onCancel={() => setIsAddingTask(false)} 
+                projects={allProjects} 
+                clients={clients} 
+                profiles={profiles}
+                status={status}
+            />
+        )}
+        <table className="w-full text-left mt-2">
+          <thead>
+            <tr className="border-b border-gray-200 group">
+              {canEditTasks && (
+                  <th className="px-4 py-2 w-12">
+                    <Checkbox
+                        checked={allVisibleTasksSelected}
+                        onCheckedChange={(checked) => {
+                        const taskIds = tasksToRender.map(t => t.id);
+                        if (checked) {
+                            setSelectedTaskIds(prev => [...new Set([...prev, ...taskIds])]);
+                        } else {
+                            setSelectedTaskIds(prev => prev.filter(id => !taskIds.includes(id)));
+                        }
+                        }}
+                    />
+                  </th>
+              )}
+              <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
+              <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
+              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
+              {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
+              <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
+              <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
+              <SortableHeader sortKey={activeTab === 'active' ? 'created_at' : 'status_updated_at'} className="w-[150px]">{getDynamicDateColumnHeader()}</SortableHeader>
+              <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
+              <th className="px-4 py-2" style={{ width: "50px" }}></th>
+            </tr>
+          </thead>
+          <TaskTableBody
+            tasks={tasksToRender}
+            allTasks={tasks}
+            onStatusChange={handleStatusChange}
+            onPostingStatusChange={handlePostingStatusChange}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            canEdit={canEditTasks}
+            onTaskClick={setSelectedTask}
+            onReassign={(task) => setTaskToReassign(task)}
+            status={status}
+            isReviewer={isReviewer}
+            activeTab={activeTab}
+            currentUserProfile={currentUserProfile}
+            selectedTaskIds={selectedTaskIds}
+            onSelectTask={handleSelectTask}
+            highlightedTaskId={highlightedTaskId}
+          />
+        </table>
+      </>
     )
   }
 
@@ -1458,7 +1468,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                   key={tab.value}
                   variant={activeTab === tab.value ? 'secondary' : 'ghost'}
                   size="sm"
-                  onClick={() => setActiveTab(tab.value)}
+                  onClick={() => {
+                      setActiveTab(tab.value);
+                      router.push(`/tasks?tab=${tab.value}`, { scroll: false });
+                  }}
                   className={cn('rounded-full flex-1', activeTab === tab.value ? 'bg-white shadow' : '')}
                 >
                   {tab.label}
@@ -1712,7 +1725,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             </div>
           ) : (
             <>
-              {canEditTasks && !isAddingTask && view === 'table' && !showBin && (
+              {canEditTasks && view === 'table' && !showBin && (
                 <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
                   <Plus className="mr-2 h-4 w-4" />
                   Add new
