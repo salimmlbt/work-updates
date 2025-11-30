@@ -1,7 +1,8 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDay, isSameDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDay, isSameDay, isToday } from 'date-fns';
 import DashboardClient from './dashboard-client';
+import type { Profile } from '@/lib/types';
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();

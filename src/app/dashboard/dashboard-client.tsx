@@ -112,12 +112,11 @@ export default function DashboardClient({
           const isHoliday = holidayDates.has(dayString);
           const isWorkingSunday = workingSundays.has(dayString);
 
-          // A working day is a day that is not a Sunday (unless it's a working Sunday) and not a holiday.
           const isWorkingDay = (isWorkingSunday || !isSunday) && !isHoliday;
           
           if (isSunday && !isWorkingSunday) {
              doc.setFillColor(254, 242, 242); // bg-red-50
-          } else if(isWorkingDay && !record.check_in && isAfter(new Date(), date)) {
+          } else if(isWorkingDay && !record.check_in && isAfter(new Date(), date) && isToday(date) === false) {
              doc.setFillColor(220, 38, 38); // bg-red-600
              doc.setTextColor(255, 255, 255);
           }
