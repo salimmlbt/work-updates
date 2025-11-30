@@ -70,7 +70,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
   }, []);
   
   useEffect(() => {
-    // Reset clicked item state after navigation completes (detected by isLoading becoming false)
     if (clickedItem) {
       setClickedItem(null);
     }
@@ -155,6 +154,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
 
           let notification: Notification | null = null;
           
+          // Handle new task assignment
           if (payload.eventType === 'INSERT' && newTask.assignee_id === profile.id && newTask.created_by !== profile.id) {
             notification = {
               id: `new-${newTask.id}`,
@@ -164,6 +164,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
             };
           }
 
+          // Handle status updates for the assigned user
           if (payload.eventType === 'UPDATE' && newTask.assignee_id === profile.id && newTask.status_updated_by !== profile.id) {
               if (newTask.status === 'approved' && oldTask.status !== 'approved') {
                   notification = {
@@ -189,6 +190,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
               }
           }
 
+          // Handle review notifications for editors
           if (
             isEditor &&
             payload.eventType === 'UPDATE' &&
@@ -218,7 +220,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
                 correction: correctionAudioRef,
                 recreate: recreateAudioRef,
                 new: newTaskAudioRef,
-                review: audioRef, // Default sound for review
+                review: audioRef,
                 deadline: audioRef,
               };
               
@@ -227,7 +229,6 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
               if (audioToPlayRef?.current) {
                 audioToPlayRef.current.play().catch(e => console.error(`Error playing ${notification.type} sound:`, e));
               } else if (audioRef.current) {
-                // Fallback to default sound
                 audioRef.current.play().catch(e => console.error("Error playing default sound:", e));
               }
             }
@@ -259,11 +260,9 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
     const isBasePathActive = (pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard'));
     const isClicked = clickedItem === item.href;
 
-    // Determine the active state. Prioritize the clicked item, then fall back to the path.
     const isActive = isClicked || (clickedItem === null && isBasePathActive);
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-      // Don't show loader if clicking the already active page
       if (pathname === item.href) return;
       
       setIsLoading(true);
@@ -457,4 +456,3 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
     </TooltipProvider>
   );
 }
-
