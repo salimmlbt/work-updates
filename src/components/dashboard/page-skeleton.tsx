@@ -2,8 +2,16 @@
 'use client';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePathname } from 'next/navigation';
+import { DashboardSkeleton } from '@/app/dashboard/dashboard-skeleton';
 
 export function PageSkeleton() {
+    const pathname = usePathname();
+
+    if (pathname === '/dashboard') {
+        return <DashboardSkeleton />;
+    }
+
   return (
     <div className="p-4 md:p-8 lg:p-10 h-full">
       <div className="flex items-center justify-between pb-4 mb-4 border-b">

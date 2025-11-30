@@ -11,6 +11,7 @@ import Header from '@/components/dashboard/header';
 import type { Profile, Notification, RoleWithPermissions, TaskWithDetails } from '@/lib/types';
 import { Toaster } from "@/components/ui/toaster";
 import { PageSkeleton } from '@/components/dashboard/page-skeleton';
+import React from 'react';
 
 export default function ClientLayout({
   children,
@@ -177,6 +178,13 @@ export default function ClientLayout({
   
   const showNav = isAuthenticated && pathname !== '/login';
 
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+        return React.cloneElement(child as React.ReactElement<any>, { setIsLoading });
+    }
+    return child;
+  });
+
   return (
     <div className="flex min-h-screen w-full bg-background">
       {showNav && (
@@ -197,7 +205,7 @@ export default function ClientLayout({
         )}>
         {showNav && <Header />}
         <main className="flex-1 overflow-y-auto">
-          {isLoading ? <PageSkeleton /> : children}
+          {isLoading ? <PageSkeleton /> : childrenWithProps}
         </main>
       </div>
       <Toaster />

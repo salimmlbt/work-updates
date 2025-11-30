@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import DashboardClient from './dashboard-client';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ setIsLoading }: { setIsLoading?: (isLoading: boolean) => void }) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -117,6 +117,7 @@ export default async function DashboardPage() {
       projectStatusData={projectStatusData}
       upcomingDeadlines={upcomingDeadlines.map(t => ({...t, projects: t.projects || null }))}
       monthlyAttendanceData={monthlyAttendancePieData}
+      setIsLoading={setIsLoading}
     />
   );
 }

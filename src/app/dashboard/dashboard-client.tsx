@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 
 const STATUS_COLORS: { [key: string]: string } = {
   'New': '#3b82f6', // blue-500
@@ -34,6 +36,7 @@ interface DashboardClientProps {
     projectStatusData: { name: string; value: number }[];
     upcomingDeadlines: UpcomingDeadline[];
     monthlyAttendanceData: { name: string; value: number }[];
+    setIsLoading?: (isLoading: boolean) => void;
 }
 
 const CustomLegend = (props: any) => {
@@ -61,12 +64,22 @@ export default function DashboardClient({
     projectStatusData,
     upcomingDeadlines,
     monthlyAttendanceData,
+    setIsLoading
 }: DashboardClientProps) {
   const [hasMounted, setHasMounted] = useState(false);
+  const router = useRouter();
+
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  const handleCardClick = (href: string) => {
+    if (setIsLoading) {
+      setIsLoading(true);
+    }
+    router.push(href);
+  };
 
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-muted/20 min-h-full">
@@ -88,7 +101,7 @@ export default function DashboardClient({
         <div className="lg:col-span-2 space-y-6">
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 <Link href="/tasks?tab=active">
+                 <div onClick={() => handleCardClick('/tasks?tab=active')} className="cursor-pointer">
                     <Card className="shadow-lg rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:scale-105 transition-transform">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
@@ -98,8 +111,8 @@ export default function DashboardClient({
                             <div className="text-4xl font-bold">{pendingTasks}</div>
                         </CardContent>
                     </Card>
-                </Link>
-                 <Link href="/tasks?tab=under-review">
+                </div>
+                 <div onClick={() => handleCardClick('/tasks?tab=under-review')} className="cursor-pointer">
                     <Card className="shadow-lg rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white hover:scale-105 transition-transform">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Review Tasks</CardTitle>
@@ -109,8 +122,8 @@ export default function DashboardClient({
                             <div className="text-4xl font-bold">{reviewTasks}</div>
                         </CardContent>
                     </Card>
-                </Link>
-                 <Link href="/tasks?tab=completed">
+                </div>
+                 <div onClick={() => handleCardClick('/tasks?tab=completed')} className="cursor-pointer">
                     <Card className="shadow-lg rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white hover:scale-105 transition-transform">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Completed</CardTitle>
@@ -120,7 +133,7 @@ export default function DashboardClient({
                             <div className="text-4xl font-bold">{completedTasks}</div>
                         </CardContent>
                     </Card>
-                </Link>
+                </div>
             </div>
           
             {/* Attendance Chart */}
