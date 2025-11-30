@@ -4,8 +4,8 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getInitials } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye } from 'lucide-react';
+import { getInitials, cn } from '@/lib/utils';
+import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye, Loader2 } from 'lucide-react';
 import type { Profile, Task, Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -68,18 +68,39 @@ export default function DashboardClient({
 }: DashboardClientProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
+  const [loadingCard, setLoadingCard] = useState<string | null>(null);
 
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
-  const handleCardClick = (href: string) => {
+  const handleCardClick = (href: string, card: string) => {
     if (setIsLoading) {
-      setIsLoading(true);
+      setLoadingCard(card);
+      // The full page loader will still kick in, but this provides instant feedback
+      setTimeout(() => {
+        setIsLoading(true);
+        router.push(href);
+      }, 150); // Small delay to let the loading state on the card render
+    } else {
+      router.push(href);
     }
-    router.push(href);
   };
+
+  const TaskCard = ({ title, value, icon, href, cardKey, colorClass, isLoading }: { title: string, value: number, icon: React.ReactNode, href: string, cardKey: string, colorClass: string, isLoading: boolean }) => (
+    <div onClick={() => !isLoading && handleCardClick(href, cardKey)} className="cursor-pointer">
+      <Card className={cn("shadow-lg rounded-xl text-white transition-all duration-300", colorClass, isLoading ? 'opacity-70' : 'hover:scale-105')}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          {isLoading ? <Loader2 className="h-5 w-5 opacity-80 animate-spin" /> : icon}
+        </CardHeader>
+        <CardContent>
+          <div className="text-4xl font-bold">{value}</div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-muted/20 min-h-full">
@@ -101,39 +122,33 @@ export default function DashboardClient({
         <div className="lg:col-span-2 space-y-6">
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 <div onClick={() => handleCardClick('/tasks?tab=active')} className="cursor-pointer">
-                    <Card className="shadow-lg rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:scale-105 transition-transform">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-                            <AlertCircle className="h-5 w-5 opacity-80" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold">{pendingTasks}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-                 <div onClick={() => handleCardClick('/tasks?tab=under-review')} className="cursor-pointer">
-                    <Card className="shadow-lg rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white hover:scale-105 transition-transform">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Review Tasks</CardTitle>
-                            <Eye className="h-5 w-5 opacity-80" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold">{reviewTasks}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-                 <div onClick={() => handleCardClick('/tasks?tab=completed')} className="cursor-pointer">
-                    <Card className="shadow-lg rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white hover:scale-105 transition-transform">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                            <CheckCircle2 className="h-5 w-5 opacity-80" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold">{completedTasks}</div>
-                        </CardContent>
-                    </Card>
-                </div>
+                 <TaskCard
+                    title="Pending Tasks"
+                    value={pendingTasks}
+                    icon={<AlertCircle className="h-5 w-5 opacity-80" />}
+                    href="/tasks?tab=active"
+                    cardKey="pending"
+                    colorClass="bg-gradient-to-br from-blue-500 to-blue-600"
+                    isLoading={loadingCard === 'pending'}
+                 />
+                 <TaskCard
+                    title="Review Tasks"
+                    value={reviewTasks}
+                    icon={<Eye className="h-5 w-5 opacity-80" />}
+                    href="/tasks?tab=under-review"
+                    cardKey="review"
+                    colorClass="bg-gradient-to-br from-yellow-500 to-yellow-600"
+                    isLoading={loadingCard === 'review'}
+                 />
+                <TaskCard
+                    title="Completed Tasks"
+                    value={completedTasks}
+                    icon={<CheckCircle2 className="h-5 w-5 opacity-80" />}
+                    href="/tasks?tab=completed"
+                    cardKey="completed"
+                    colorClass="bg-gradient-to-br from-green-500 to-green-600"
+                    isLoading={loadingCard === 'completed'}
+                 />
             </div>
           
             {/* Attendance Chart */}
