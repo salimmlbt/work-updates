@@ -39,6 +39,7 @@ interface DashboardClientProps {
     absentDays: number;
     monthlyAttendanceData: Attendance[] | null;
     holidays: Pick<OfficialHoliday, 'date' | 'falaq_event_type'>[];
+    setIsLoading?: (isLoading: boolean) => void;
 }
 
 
@@ -54,18 +55,22 @@ export default function DashboardClient({
     presentDays,
     absentDays,
     monthlyAttendanceData,
-    holidays
+    holidays,
+    setIsLoading,
 }: DashboardClientProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [loadingCard, setLoadingCard] = useState<string | null>(null);
 
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
-  const handleCardClick = (href: string) => {
+  const handleCardClick = (href: string, cardKey: string) => {
+    if (loadingCard) return;
+    setLoadingCard(cardKey);
     router.push(href);
   };
   
@@ -147,26 +152,33 @@ const TaskCard = ({
   value,
   icon,
   href,
+  cardKey,
   colorClass,
 }: {
   title: string;
   value: number;
   icon: React.ReactNode;
   href: string;
+  cardKey: string;
   colorClass: string;
 }) => {
+  const isLoading = loadingCard === cardKey;
   return (
-    <div onClick={() => handleCardClick(href)} className="cursor-pointer">
+    <div
+      onClick={() => !loadingCard && handleCardClick(href, cardKey)}
+      className="cursor-pointer"
+    >
       <Card
         className={cn(
           "shadow-lg rounded-xl text-white transition-all duration-300",
           colorClass,
-          "hover:scale-105"
+          loadingCard && !isLoading ? 'opacity-50 cursor-not-allowed' : '',
+          isLoading ? 'opacity-90' : 'hover:scale-105'
         )}
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          {icon}
+          {isLoading ? <Loader2 className="h-5 w-5 opacity-80 animate-spin" /> : icon}
         </CardHeader>
         <CardContent>
           <div className="text-4xl font-bold">{value}</div>
@@ -175,6 +187,7 @@ const TaskCard = ({
     </div>
   );
 };
+
 
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-muted/20 min-h-full">
@@ -201,6 +214,7 @@ const TaskCard = ({
                     value={pendingTasks}
                     icon={<AlertCircle className="h-5 w-5 opacity-80" />}
                     href="/tasks?tab=active"
+                    cardKey="pending"
                     colorClass="bg-gradient-to-br from-blue-500 to-blue-600"
                  />
                  <TaskCard
@@ -208,6 +222,7 @@ const TaskCard = ({
                     value={reviewTasks}
                     icon={<Eye className="h-5 w-5 opacity-80" />}
                     href="/tasks?tab=under-review"
+                    cardKey="review"
                     colorClass="bg-gradient-to-br from-yellow-500 to-yellow-600"
                  />
                 <TaskCard
@@ -215,6 +230,7 @@ const TaskCard = ({
                     value={completedTasks}
                     icon={<CheckCircle2 className="h-5 w-5 opacity-80" />}
                     href="/tasks?tab=completed"
+                    cardKey="completed"
                     colorClass="bg-gradient-to-br from-green-500 to-green-600"
                  />
             </div>
