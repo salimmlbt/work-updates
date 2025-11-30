@@ -158,16 +158,28 @@ export default function DashboardClient({
                             <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}h`} />
                             <Tooltip
-                                cursor={{ fill: 'hsla(var(--primary), 0.1)' }}
-                                contentStyle={{
-                                    backgroundColor: 'hsl(var(--background))',
-                                    borderRadius: 'var(--radius)',
-                                    border: '1px solid hsl(var(--border))',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                }}
-                                labelStyle={{
-                                    color: 'hsl(var(--foreground))'
-                                }}
+                              cursor={false}
+                              wrapperStyle={{
+                                outline: 'none',
+                              }}
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                borderRadius: '12px',
+                                border: '1px solid hsl(var(--border))',
+                                boxShadow: '0px 4px 14px rgba(0, 0, 0, 0.12)',
+                                padding: '10px 12px',
+                              }}
+                              labelStyle={{
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                color: 'hsl(var(--foreground))',
+                                marginBottom: '4px',
+                              }}
+                              itemStyle={{
+                                fontSize: '13px',
+                                color: 'hsl(var(--muted-foreground))',
+                                marginTop: '4px',
+                              }}
                             />
                             <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
