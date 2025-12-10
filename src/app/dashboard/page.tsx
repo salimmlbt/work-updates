@@ -77,9 +77,9 @@ export default async function DashboardPage() {
 
 
   // Task Stats
-  const pendingTasks = tasks?.filter(t => t.status === 'todo').length ?? 0;
-  const inProgressTasks = tasks?.filter(t => t.status === 'inprogress').length ?? 0;
-  const completedTasks = tasks?.filter(t => t.status === 'done').length ?? 0;
+  const pendingTasks = tasks?.filter(t => t.status === 'todo' || t.status === 'inprogress' || t.status === 'corrections' || t.status === 'recreate').length ?? 0;
+  const reviewTasks = tasks?.filter(t => t.status === 'review').length ?? 0;
+  const completedTasks = tasks?.filter(t => t.status === 'done' || t.status === 'approved').length ?? 0;
   
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
     <DashboardClient
       profile={profile}
       pendingTasks={pendingTasks}
-      inProgressTasks={inProgressTasks}
+      reviewTasks={reviewTasks}
       completedTasks={completedTasks}
       attendanceChartData={attendanceChartData}
       projectStatusData={projectStatusData}
