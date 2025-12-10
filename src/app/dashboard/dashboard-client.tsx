@@ -33,7 +33,9 @@ interface DashboardClientProps {
     attendanceChartData: { name: string; hours: number }[];
     projectStatusData: { name: string; value: number }[];
     upcomingDeadlines: UpcomingDeadline[];
-    monthlyAttendanceData: { name: string; value: number }[];
+    totalWorkingDays: number;
+    totalPresentDays: number;
+    totalAbsentDays: number;
 }
 
 const CustomLegend = (props: any) => {
@@ -60,7 +62,9 @@ export default function DashboardClient({
     attendanceChartData,
     projectStatusData,
     upcomingDeadlines,
-    monthlyAttendanceData,
+    totalWorkingDays,
+    totalPresentDays,
+    totalAbsentDays,
 }: DashboardClientProps) {
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -260,35 +264,23 @@ export default function DashboardClient({
              <Card className="shadow-lg rounded-xl">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        % Of Attendance
+                        Monthly Attendance
                     </CardTitle>
                     <CardDescription>{hasMounted ? format(new Date(), 'MMMM yyyy') : ''}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <PieChart>
-                            <Pie
-                                data={monthlyAttendanceData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                startAngle={90}
-                                endAngle={450}
-                                paddingAngle={0}
-                                dataKey="value"
-                            >
-                                {monthlyAttendanceData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]} stroke={ATTENDANCE_COLORS[index % ATTENDANCE_COLORS.length]}/>
-                                ))}
-                            </Pie>
-                            <Legend content={<CustomLegend />} verticalAlign="middle" align="right" layout="vertical" />
-                        </PieChart>
-                    </ResponsiveContainer>
-                     <Button variant="outline" className="w-full mt-4">
-                        <ArrowDown className="mr-2 h-4 w-4" />
-                        Download Data
-                    </Button>
+                <CardContent className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <p className="text-2xl font-bold">{totalWorkingDays}</p>
+                        <p className="text-xs text-muted-foreground">Working Days</p>
+                    </div>
+                     <div>
+                        <p className="text-2xl font-bold text-green-600">{totalPresentDays}</p>
+                        <p className="text-xs text-muted-foreground">Present</p>
+                    </div>
+                     <div>
+                        <p className="text-2xl font-bold text-red-600">{totalAbsentDays}</p>
+                        <p className="text-xs text-muted-foreground">Absent</p>
+                    </div>
                 </CardContent>
             </Card>
         </div>

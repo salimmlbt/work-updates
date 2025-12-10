@@ -1,6 +1,6 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth, eachDayOfInterval as eachDayOfIntervalFP } from 'date-fns';
 import DashboardClient from './dashboard-client';
 
 export default async function DashboardPage() {
@@ -26,6 +26,7 @@ export default async function DashboardPage() {
     monthlyAttendanceRes,
     tasksRes,
     projectsRes,
+    holidaysRes,
   ] = await Promise.all([
     supabase.from('attendance')
       .select('date, total_hours')
@@ -44,7 +45,8 @@ export default async function DashboardPage() {
     supabase.from('projects')
       .select('id, name, status, members')
       .contains('members', [user.id])
-      .eq('is_deleted', false)
+      .eq('is_deleted', false),
+    supabase.from('official_holidays').select('date, falaq_event_type').eq('is_deleted', false)
   ]);
 
   // --- Data Processing ---
@@ -52,6 +54,7 @@ export default async function DashboardPage() {
   const { data: monthlyAttendanceData } = monthlyAttendanceRes;
   const { data: tasks } = tasksRes;
   const { data: projects } = projectsRes;
+  const { data: holidays } = holidaysRes;
 
   // Weekly Attendance Chart Data
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -63,18 +66,21 @@ export default async function DashboardPage() {
     };
   });
   
-  // Monthly Attendance Pie Chart
-  const daysInMonth = getDaysInMonth(today);
+  // Monthly Attendance Cards
+  const monthDays = eachDayOfIntervalFP({ start: monthStart, end: today });
+  const leaveDates = new Set((holidays || []).filter(h => h.falaq_event_type === 'leave').map(h => h.date));
+  const workingSundays = new Set((holidays || []).filter(h => h.falaq_event_type === 'working_sunday').map(h => h.date));
+  
+  const totalWorkingDays = monthDays.filter(day => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const isSunday = day.getDay() === 0;
+      if (leaveDates.has(dayStr)) return false;
+      if (isSunday && !workingSundays.has(dayStr)) return false;
+      return true;
+  }).length;
+
   const presentDays = monthlyAttendanceData?.length ?? 0;
-  const absentDays = daysInMonth - presentDays;
-  const presentPercentage = Math.round((presentDays / daysInMonth) * 100);
-  const absentPercentage = 100 - presentPercentage;
-
-  const monthlyAttendancePieData = [
-    { name: 'Present', value: presentPercentage },
-    { name: 'Absent', value: absentPercentage },
-  ];
-
+  const absentDays = totalWorkingDays - presentDays;
 
   // Task Stats
   const pendingTasks = tasks?.filter(t => t.status === 'todo' || t.status === 'inprogress' || t.status === 'corrections' || t.status === 'recreate').length ?? 0;
@@ -84,12 +90,11 @@ export default async function DashboardPage() {
   // Upcoming Deadlines
   const upcomingDeadlines = tasks
     ?.filter(t => {
-        // Ensure deadline is a valid, non-null date string and is in the future
         if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
           return false;
         }
         const deadlineDateString = format(new Date(t.deadline), 'yyyy-MM-dd');
-        return t.status !== 'done' && deadlineDateString >= todayDateString;
+        return (t.status === 'todo' || t.status === 'inprogress') && deadlineDateString >= todayDateString;
     })
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5) ?? [];
@@ -116,7 +121,9 @@ export default async function DashboardPage() {
       attendanceChartData={attendanceChartData}
       projectStatusData={projectStatusData}
       upcomingDeadlines={upcomingDeadlines.map(t => ({...t, projects: t.projects || null }))}
-      monthlyAttendanceData={monthlyAttendancePieData}
+      totalWorkingDays={totalWorkingDays}
+      totalPresentDays={presentDays}
+      totalAbsentDays={absentDays}
     />
   );
 }
