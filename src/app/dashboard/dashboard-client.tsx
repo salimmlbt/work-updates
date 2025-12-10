@@ -10,6 +10,7 @@ import type { Profile, Task, Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 const STATUS_COLORS: { [key: string]: string } = {
   'New': '#3b82f6', // blue-500
@@ -87,33 +88,39 @@ export default function DashboardClient({
         <div className="lg:col-span-2 space-y-6">
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="shadow-lg rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-                        <AlertCircle className="h-5 w-5 opacity-80" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold">{pendingTasks}</div>
-                    </CardContent>
-                </Card>
-                 <Card className="shadow-lg rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Review Tasks</CardTitle>
-                        <Eye className="h-5 w-5 opacity-80" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold">{reviewTasks}</div>
-                    </CardContent>
-                </Card>
-                 <Card className="shadow-lg rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                        <CheckCircle2 className="h-5 w-5 opacity-80" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold">{completedTasks}</div>
-                    </CardContent>
-                </Card>
+                <Link href="/tasks?tab=active">
+                    <Card className="shadow-lg rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:scale-105 transition-transform duration-300">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
+                            <AlertCircle className="h-5 w-5 opacity-80" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold">{pendingTasks}</div>
+                        </CardContent>
+                    </Card>
+                </Link>
+                 <Link href="/tasks?tab=under-review">
+                    <Card className="shadow-lg rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white hover:scale-105 transition-transform duration-300">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Review Tasks</CardTitle>
+                            <Eye className="h-5 w-5 opacity-80" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold">{reviewTasks}</div>
+                        </CardContent>
+                    </Card>
+                </Link>
+                 <Link href="/tasks?tab=completed">
+                    <Card className="shadow-lg rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white hover:scale-105 transition-transform duration-300">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                            <CheckCircle2 className="h-5 w-5 opacity-80" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold">{completedTasks}</div>
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
           
             {/* Attendance Chart */}

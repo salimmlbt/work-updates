@@ -1041,6 +1041,8 @@ interface ActiveFilter {
 }
 
 export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile, highlightedTaskId: initialHighlightedTaskId }: TasksClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [view, setView] = useState('table');
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -1063,7 +1065,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'created_at', direction: 'descending' });
 
-  const [activeTab, setActiveTab] = useState('active');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') ||'active');
   
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(initialHighlightedTaskId);
 
@@ -1597,7 +1599,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             </div>
           ))}
           
-          {activeTab === 'active' && canEditTasks && (
+          {activeTab === 'active' && canEditTasks && !isAddingTask && (
             <Button
                 variant="ghost"
                 className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
@@ -1837,7 +1839,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             </div>
           ) : (
             <>
-              {canEditTasks && !isAddingTask && view === 'table' && !showBin && (
+              {canEditTasks && !isAddingTask && view === 'table' && !showBin && activeTab === 'active' && (
                 <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
                   <Plus className="mr-2 h-4 w-4" />
                   Add new
