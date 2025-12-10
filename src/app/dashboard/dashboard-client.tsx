@@ -310,15 +310,6 @@ export default function DashboardClient({
                         <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
-                      }}
-                      itemStyle={{ fontSize: 12 }}
-                    />
                     <Legend
                       verticalAlign="middle"
                       align="right"
