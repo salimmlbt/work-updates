@@ -405,7 +405,7 @@ export default function DashboardClient({
               <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 flex flex-col items-center justify-center">
                 <div className="flex items-center justify-center text-xs gap-1 text-slate-500 mb-1">
                   <Briefcase className="h-4 w-4" />
-                  <span>Days</span>
+                  <span>Working Days</span>
                 </div>
                 <p className="text-2xl font-bold text-slate-900 leading-tight">
                   {totalWorkingDays}
