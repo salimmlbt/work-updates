@@ -7,6 +7,7 @@ import type { Profile } from '@/lib/types';
 import { type Metadata } from 'next';
 import { PageLoader } from '@/components/page-loader';
 import { ClientCacheProvider } from './client-cache';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'Falaq - Work Updates',
@@ -59,6 +60,7 @@ export default async function RootLayout({
             {children}
           </ClientLayout>
         </ClientCacheProvider>
+        <Analytics />
         <script
           dangerouslySetInnerHTML={{
             __html: `
