@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Folder, Zap, Calendar, ArrowDown, Eye, Briefcase, Check, X as XIcon } from 'lucide-react';
 import type { Profile, Task, Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -262,24 +262,24 @@ export default function DashboardClient({
             </Card>
 
              <Card className="shadow-lg rounded-xl">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                         Monthly Attendance
                     </CardTitle>
                     <CardDescription>{hasMounted ? format(new Date(), 'MMMM yyyy') : ''}</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                        <p className="text-2xl font-bold">{totalWorkingDays}</p>
-                        <p className="text-xs text-muted-foreground">Working Days</p>
+                <CardContent className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-lg bg-gray-100 dark:bg-gray-800 p-3">
+                        <div className="flex items-center justify-center text-sm gap-1 text-muted-foreground"><Briefcase className="h-4 w-4" /> Days</div>
+                        <p className="text-2xl font-bold mt-1">{totalWorkingDays}</p>
                     </div>
-                     <div>
-                        <p className="text-2xl font-bold text-green-600">{totalPresentDays}</p>
-                        <p className="text-xs text-muted-foreground">Present</p>
+                     <div className="rounded-lg bg-green-100 dark:bg-green-900/50 p-3">
+                         <div className="flex items-center justify-center text-sm gap-1 text-green-700 dark:text-green-300"><Check className="h-4 w-4" /> Present</div>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-200 mt-1">{totalPresentDays}</p>
                     </div>
-                     <div>
-                        <p className="text-2xl font-bold text-red-600">{totalAbsentDays}</p>
-                        <p className="text-xs text-muted-foreground">Absent</p>
+                     <div className="rounded-lg bg-red-100 dark:bg-red-900/50 p-3">
+                         <div className="flex items-center justify-center text-sm gap-1 text-red-700 dark:text-red-300"><XIcon className="h-4 w-4" /> Absent</div>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-200 mt-1">{totalAbsentDays}</p>
                     </div>
                 </CardContent>
             </Card>
