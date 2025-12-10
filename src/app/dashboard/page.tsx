@@ -57,11 +57,11 @@ export default async function DashboardPage() {
   });
   
   // Monthly Attendance Cards
-  const monthDaysSoFar = eachDayOfIntervalFP({ start: monthStart, end: today });
+  const allMonthDays = eachDayOfIntervalFP({ start: monthStart, end: monthEnd });
   const leaveDates = new Set((holidays || []).filter(h => h.falaq_event_type === 'leave').map(h => h.date));
   const workingSundays = new Set((holidays || []).filter(h => h.falaq_event_type === 'working_sunday').map(h => h.date));
   
-  const totalWorkingDays = monthDaysSoFar.filter(day => {
+  const totalWorkingDays = allMonthDays.filter(day => {
       const dayStr = format(day, 'yyyy-MM-dd');
       const isSunday = day.getDay() === 0;
       if (leaveDates.has(dayStr)) return false;
@@ -69,8 +69,17 @@ export default async function DashboardPage() {
       return true;
   }).length;
 
-  const presentDays = monthlyAttendanceData?.length ?? 0;
-  const absentDays = totalWorkingDays - presentDays;
+  const presentDaysSoFar = (monthlyAttendanceData || []).filter(a => new Date(a.date) <= today).length;
+  const workingDaysSoFar = allMonthDays.filter(day => {
+    if (day > today) return false;
+    const dayStr = format(day, 'yyyy-MM-dd');
+    const isSunday = day.getDay() === 0;
+    if (leaveDates.has(dayStr)) return false;
+    if (isSunday && !workingSundays.has(dayStr)) return false;
+    return true;
+  }).length;
+  
+  const absentDays = workingDaysSoFar - presentDaysSoFar;
 
   // Task Stats
   const pendingTasks = tasks?.filter(t => t.status === 'todo' || t.status === 'inprogress' || t.status === 'corrections' || t.status === 'recreate').length ?? 0;
@@ -127,7 +136,7 @@ export default async function DashboardPage() {
       projectStatusData={projectStatusData}
       upcomingDeadlines={deadlines.map(t => ({...t, projects: t.projects || null }))}
       totalWorkingDays={totalWorkingDays}
-      totalPresentDays={presentDays}
+      totalPresentDays={presentDaysSoFar}
       totalAbsentDays={absentDays}
     />
   );
