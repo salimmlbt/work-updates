@@ -1,6 +1,6 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth, eachDayOfInterval as eachDayOfIntervalFP, isFuture, parseISO } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth, eachDayOfInterval as eachDayOfIntervalFP, isFuture, parseISO, addDays, startOfToday } from 'date-fns';
 import DashboardClient from './dashboard-client';
 
 export default async function DashboardPage() {
@@ -15,7 +15,6 @@ export default async function DashboardPage() {
 
   // --- Data Fetching ---
   const today = new Date();
-  const todayDateString = format(today, 'yyyy-MM-dd');
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
 
@@ -78,17 +77,32 @@ export default async function DashboardPage() {
   const reviewTasks = tasks?.filter(t => t.status === 'review').length ?? 0;
   const completedTasks = tasks?.filter(t => t.status === 'done' || t.status === 'approved').length ?? 0;
   
-  // Upcoming Deadlines
-  const upcomingDeadlines = tasks
-    ?.filter(t => {
-        if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
-          return false;
-        }
-        const deadlineDate = parseISO(t.deadline);
-        return (t.status === 'todo' || t.status === 'inprogress') && isFuture(deadlineDate);
+  // Upcoming & Overdue Deadlines
+  const todayStart = startOfToday();
+  const threeDaysFromNow = addDays(todayStart, 3);
+  
+  const activeTasks = tasks?.filter(t => t.status !== 'done' && t.status !== 'approved') || [];
+
+  const overdueTasks = activeTasks
+    .filter(t => {
+      if (!t.deadline) return false;
+      const deadlineDate = parseISO(t.deadline);
+      return isBefore(deadlineDate, todayStart);
     })
+    .map(t => ({ ...t, isOverdue: true }));
+
+  const upcomingTasks = activeTasks
+    .filter(t => {
+      if (!t.deadline) return false;
+      const deadlineDate = parseISO(t.deadline);
+      return !isBefore(deadlineDate, todayStart) && isBefore(deadlineDate, threeDaysFromNow);
+    })
+    .map(t => ({ ...t, isOverdue: false }));
+
+  const deadlines = [...overdueTasks, ...upcomingTasks]
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
-    .slice(0, 5) ?? [];
+    .slice(0, 5);
+
 
   // Project Status Pie Chart
   const projectStatusCounts = projects?.reduce((acc, p) => {
@@ -111,10 +125,11 @@ export default async function DashboardPage() {
       completedTasks={completedTasks}
       attendanceChartData={attendanceChartData}
       projectStatusData={projectStatusData}
-      upcomingDeadlines={upcomingDeadlines.map(t => ({...t, projects: t.projects || null }))}
+      upcomingDeadlines={deadlines.map(t => ({...t, projects: t.projects || null }))}
       totalWorkingDays={totalWorkingDays}
       totalPresentDays={presentDays}
       totalAbsentDays={absentDays}
     />
   );
 }
+

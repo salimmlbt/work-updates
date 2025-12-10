@@ -4,7 +4,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getInitials } from '@/lib/utils';
+import { getInitials, cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Clock, Folder, Calendar, Eye, Briefcase, Check, X as XIcon } from 'lucide-react';
 import type { Profile, Task, Project } from '@/lib/types';
 import { format } from 'date-fns';
@@ -20,6 +20,7 @@ const STATUS_COLORS: { [key: string]: string } = {
 
 type UpcomingDeadline = Pick<Task, "id" | "description" | "deadline"> & {
   projects: Pick<Project, "name"> | null;
+  isOverdue?: boolean;
 };
 
 interface DashboardClientProps {
@@ -45,8 +46,8 @@ const CustomLegend = (props: any) => {
             className="w-2.5 h-2.5 rounded-full mr-2"
             style={{ backgroundColor: entry.color }}
           />
-          <span className="text-muted-foreground mr-2">{entry.payload.name}:</span>
-          <span className="font-semibold">{`${entry.payload.value}%`}</span>
+          <span className="text-muted-foreground mr-2">{entry.value}:</span>
+          <span className="font-semibold">{entry.payload.value} items</span>
         </li>
       ))}
     </ul>
@@ -332,10 +333,10 @@ export default function DashboardClient({
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 border border-amber-100">
                   <Calendar className="h-4 w-4 text-amber-600" />
                 </span>
-                Upcoming Deadlines
+                Urgent & Upcoming Deadlines
               </CardTitle>
               <CardDescription>
-                Your nearest task due dates.
+                Overdue tasks and nearest due dates.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -344,16 +345,22 @@ export default function DashboardClient({
                   upcomingDeadlines.map((task) => (
                     <div
                       key={task.id}
-                      className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 hover:bg-slate-50 transition-colors"
+                      className={cn(
+                        "flex items-start gap-4 rounded-xl border px-3 py-3 hover:bg-slate-50 transition-colors",
+                        task.isOverdue ? "bg-red-50/60 border-red-100" : "bg-slate-50/60 border-slate-100"
+                      )}
                     >
                       <div className="flex-shrink-0 mt-0.5">
-                        <div className="h-12 w-10 rounded-xl bg-white shadow-sm border border-slate-100 flex flex-col items-center justify-center text-xs font-semibold text-slate-700">
+                        <div className={cn(
+                          "h-12 w-10 rounded-xl bg-white shadow-sm border flex flex-col items-center justify-center text-xs font-semibold",
+                          task.isOverdue ? "border-red-100 text-red-700" : "border-slate-100 text-slate-700"
+                        )}>
                           {hasMounted ? (
                             <>
-                              <span className="text-[0.65rem] uppercase tracking-wide text-slate-500">
+                              <span className={cn("text-[0.65rem] uppercase tracking-wide", task.isOverdue ? "text-red-500" : "text-slate-500")}>
                                 {format(new Date(task.deadline), 'MMM')}
                               </span>
-                              <span className="text-lg leading-tight text-slate-900">
+                              <span className={cn("text-lg leading-tight", task.isOverdue ? "text-red-900" : "text-slate-900")}>
                                 {format(new Date(task.deadline), 'dd')}
                               </span>
                             </>
@@ -363,10 +370,10 @@ export default function DashboardClient({
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium leading-snug text-slate-900 line-clamp-2">
+                        <p className={cn("font-medium leading-snug line-clamp-2", task.isOverdue ? "text-red-900" : "text-slate-900")}>
                           {task.description}
                         </p>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className={cn("text-sm mt-1", task.isOverdue ? "text-red-700/80" : "text-muted-foreground")}>
                           {task.projects?.name}
                         </p>
                       </div>
