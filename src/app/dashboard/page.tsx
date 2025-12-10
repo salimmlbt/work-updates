@@ -1,6 +1,6 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth, eachDayOfInterval as eachDayOfIntervalFP } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, getDaysInMonth, eachDayOfInterval as eachDayOfIntervalFP, isFuture, parseISO } from 'date-fns';
 import DashboardClient from './dashboard-client';
 
 export default async function DashboardPage() {
@@ -16,25 +16,17 @@ export default async function DashboardPage() {
   // --- Data Fetching ---
   const today = new Date();
   const todayDateString = format(today, 'yyyy-MM-dd');
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
 
   const [
-    weeklyAttendanceRes,
     monthlyAttendanceRes,
     tasksRes,
     projectsRes,
     holidaysRes,
   ] = await Promise.all([
-    supabase.from('attendance')
-      .select('date, total_hours')
-      .eq('user_id', user.id)
-      .gte('date', format(weekStart, 'yyyy-MM-dd'))
-      .lte('date', format(weekEnd, 'yyyy-MM-dd')),
-    supabase.from('attendance')
-        .select('date')
+     supabase.from('attendance')
+        .select('date, total_hours')
         .eq('user_id', user.id)
         .gte('date', format(monthStart, 'yyyy-MM-dd'))
         .lte('date', format(monthEnd, 'yyyy-MM-dd')),
@@ -50,28 +42,27 @@ export default async function DashboardPage() {
   ]);
 
   // --- Data Processing ---
-  const { data: weeklyAttendanceData } = weeklyAttendanceRes;
   const { data: monthlyAttendanceData } = monthlyAttendanceRes;
   const { data: tasks } = tasksRes;
   const { data: projects } = projectsRes;
   const { data: holidays } = holidaysRes;
 
-  // Weekly Attendance Chart Data
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
-  const attendanceChartData = weekDays.map(day => {
-    const record = weeklyAttendanceData?.find(a => a.date === format(day, 'yyyy-MM-dd'));
+  // Monthly Attendance Chart Data
+  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const attendanceChartData = monthDays.map(day => {
+    const record = monthlyAttendanceData?.find(a => a.date === format(day, 'yyyy-MM-dd'));
     return {
-      name: format(day, 'EEE'),
+      name: format(day, 'd'),
       hours: record?.total_hours ?? 0,
     };
   });
   
   // Monthly Attendance Cards
-  const monthDays = eachDayOfIntervalFP({ start: monthStart, end: today });
+  const monthDaysSoFar = eachDayOfIntervalFP({ start: monthStart, end: today });
   const leaveDates = new Set((holidays || []).filter(h => h.falaq_event_type === 'leave').map(h => h.date));
   const workingSundays = new Set((holidays || []).filter(h => h.falaq_event_type === 'working_sunday').map(h => h.date));
   
-  const totalWorkingDays = monthDays.filter(day => {
+  const totalWorkingDays = monthDaysSoFar.filter(day => {
       const dayStr = format(day, 'yyyy-MM-dd');
       const isSunday = day.getDay() === 0;
       if (leaveDates.has(dayStr)) return false;
@@ -93,8 +84,8 @@ export default async function DashboardPage() {
         if (!t.deadline || isNaN(new Date(t.deadline).getTime())) {
           return false;
         }
-        const deadlineDateString = format(new Date(t.deadline), 'yyyy-MM-dd');
-        return (t.status === 'todo' || t.status === 'inprogress') && deadlineDateString >= todayDateString;
+        const deadlineDate = parseISO(t.deadline);
+        return (t.status === 'todo' || t.status === 'inprogress') && isFuture(deadlineDate);
     })
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5) ?? [];
