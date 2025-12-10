@@ -8,7 +8,6 @@ export const dynamic = 'force-dynamic';
 
 export default async function AttendancePage() {
   const supabase = await createServerClient();
-  // Get today's date in UTC
   const today = new Date().toISOString().split('T')[0];
 
   const { data: profiles, error: profilesError } = await supabase
@@ -23,42 +22,52 @@ export default async function AttendancePage() {
     .eq('date', today);
 
   if (profilesError || attendanceError) {
-    return <p>Error fetching data: {profilesError?.message || attendanceError?.message}</p>;
+    return (
+      <p>
+        Error fetching data:{' '}
+        {profilesError?.message || attendanceError?.message}
+      </p>
+    );
   }
-  
-  const attendanceMap = new Map(attendanceData.map(a => [a.user_id, a]));
 
-  const attendanceList = profiles.map(profile => {
+  const attendanceMap = new Map(attendanceData.map((a) => [a.user_id, a]));
+
+  const attendanceList = profiles.map((profile) => {
     const attendanceRecord = attendanceMap.get(profile.id);
-    
+
     let extraMinutes = 0;
     if (attendanceRecord) {
-        // Overtime calculation
-        if (profile.work_end_time && attendanceRecord.check_out) {
-            const checkOutTime = new Date(attendanceRecord.check_out);
-            const expectedCheckOutDateTime = parse(profile.work_end_time, 'HH:mm:ss', new Date(checkOutTime));
+      if (profile.work_end_time && attendanceRecord.check_out) {
+        const checkOutTime = new Date(attendanceRecord.check_out);
+        const expectedCheckOutDateTime = parse(
+          profile.work_end_time,
+          'HH:mm:ss',
+          new Date(checkOutTime),
+        );
 
-            if (checkOutTime > expectedCheckOutDateTime) {
-                const overtimeMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
-                extraMinutes += overtimeMinutes;
-            }
+        if (checkOutTime > expectedCheckOutDateTime) {
+          const overtimeMinutes = differenceInMinutes(
+            checkOutTime,
+            expectedCheckOutDateTime,
+          );
+          extraMinutes += overtimeMinutes;
         }
+      }
     }
-
 
     return {
       ...(attendanceRecord || {
-        id: `${profile.id}-${today}`, // synthetic id
+        id: `${profile.id}-${today}`,
         check_in: null,
         check_out: null,
         total_hours: null,
       }),
       user_id: profile.id,
       date: today,
-      profiles: profile,
+      profiles: profile as Profile,
       extra_hours: extraMinutes / 60,
     };
-  })
+  });
 
   return <AttendanceClient initialData={attendanceList as any[]} />;
 }

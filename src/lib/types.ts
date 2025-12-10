@@ -9,6 +9,7 @@ export type Task = DB['public']['Tables']['tasks']['Row'];
 export type Profile = Omit<DB['public']['Tables']['profiles']['Row'], 'role_id'> & {
     roles: Role | null;
     teams: { teams: Team | null }[];
+    designation?: string | null;
 };
 export type Role = DB['public']['Tables']['roles']['Row'];
 export type Team = DB['public']['Tables']['teams']['Row'];
