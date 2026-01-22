@@ -104,6 +104,11 @@ export function ReassignTaskDialog({
   const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || []
   const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))]
 
+  const teamMembers = useMemo(() => {
+    if (!task.projects?.team_id || !profiles) return profiles.filter(p => !p.is_archived);
+    return profiles.filter(p => !p.is_archived && p.teams && p.teams.some(t => t.teams?.id === task.projects.team_id));
+  }, [profiles, task.projects?.team_id]);
+
   const onSubmit = async (data: ReassignFormData) => {
     startTransition(async () => {
       const [hours, minutes] = data.post_time.split(':').map(Number);
@@ -155,7 +160,9 @@ export function ReassignTaskDialog({
                 <Select onValueChange={field.onChange} value={field.value || ''}>
                   <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
                   <SelectContent>
-                    {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                    {teamMembers.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}
@@ -252,5 +259,3 @@ export function ReassignTaskDialog({
     </Dialog>
   )
 }
-
-    

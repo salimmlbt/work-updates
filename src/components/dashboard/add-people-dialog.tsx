@@ -33,7 +33,7 @@ export function AddPeopleDialog({ isOpen, setIsOpen, profiles, currentUser, sele
   }, [isOpen, selectedPeople]);
 
   const availableProfiles = useMemo(() => {
-    return profiles.filter(p => p.email !== 'admin@falaq.com' && !excludeIds.includes(p.id));
+    return profiles.filter(p => !p.is_archived && p.email !== 'admin@falaq.com' && !excludeIds.includes(p.id));
   }, [profiles, excludeIds]);
 
   const filteredProfiles = useMemo(() => {

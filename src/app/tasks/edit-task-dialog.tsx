@@ -291,7 +291,7 @@ export function EditTaskDialog({
                           <Select onValueChange={field.onChange} value={field.value || ''}>
                               <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
                               <SelectContent>
-                                  {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                                  {profiles.filter(p => !p.is_archived || p.id === task.assignee_id).map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
                               </SelectContent>
                           </Select>
                         )}
@@ -315,5 +315,3 @@ export function EditTaskDialog({
     </Dialog>
   )
 }
-
-    

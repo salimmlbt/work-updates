@@ -349,7 +349,7 @@ const AddTaskRow = ({
             <SelectValue placeholder="Select assignee" />
           </SelectTrigger>
           <SelectContent>
-            {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+            {profiles.filter(p => !p.is_archived).map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
           </SelectContent>
         </Select>
       </td>
@@ -2020,3 +2020,4 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     
 
     
+
