@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -105,9 +105,9 @@ export function ReassignTaskDialog({
   const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))]
 
   const teamMembers = useMemo(() => {
-    if (!task.projects?.team_id || !profiles) return profiles.filter(p => !p.is_archived);
-    return profiles.filter(p => !p.is_archived && p.teams && p.teams.some(t => t.teams?.id === task.projects.team_id));
-  }, [profiles, task.projects?.team_id]);
+    if (!profiles) return [];
+    return profiles.filter(p => !p.is_archived);
+  }, [profiles]);
 
   const onSubmit = async (data: ReassignFormData) => {
     startTransition(async () => {
@@ -124,6 +124,7 @@ export function ReassignTaskDialog({
         assignee_id: data.assignee_id,
         type: data.type,
         parent_task_id: task.id,
+        status: 'todo',
       })
 
       if (result.error) {
