@@ -194,7 +194,7 @@ export function CornerIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 761.8 761.8" {...props}>
       <line x1="174.4" y1="587.4" x2="560.8" y2="200.9" fill="none" stroke="currentColor" strokeMiterlimit="10" strokeWidth="75"/>
-      <path d="M132.8,170.2h375.7c45.9,0,83.1,37.2,83.1,83.1v375.7" fill="none" stroke="currentColor" strokeMiterlimit="10" strokeWidth="75"/>
+      <path d="M132.8,170.2h339.7c65.8,0,119.1,53.3,119.1,119.1v339.7" fill="none" stroke="currentColor" strokeMiterlimit="10" strokeWidth="75"/>
     </svg>
   );
 }
