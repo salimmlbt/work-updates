@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -22,41 +22,82 @@ import {
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Loader2, Calendar as CalendarIcon } from 'lucide-react'
-import { format, differenceInCalendarDays } from 'date-fns'
+import { format, differenceInCalendarDays, isWithinInterval, parseISO } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { applyLeave } from './actions'
 import { cn } from '@/lib/utils'
+import type { Leave } from '@/lib/types'
 
 interface ApplyLeaveDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   onSuccess: () => void
+  existingLeaves: Leave[]
 }
 
 export function ApplyLeaveDialog({
   isOpen,
   setIsOpen,
   onSuccess,
+  existingLeaves,
 }: ApplyLeaveDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
+  const [reason, setReason] = useState('')
   const [showError, setShowError] = useState(false)
+
+  // Reset form when opened
+  useEffect(() => {
+    if (isOpen) {
+      setStartDate(undefined)
+      setEndDate(undefined)
+      setReason('')
+      setShowError(false)
+    }
+  }, [isOpen])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!startDate || !endDate || endDate < startDate) {
+    // 1. Mandatory Fields Validation
+    if (!startDate || !endDate || endDate < startDate || !reason.trim()) {
       setShowError(true)
       setTimeout(() => setShowError(false), 400)
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all mandatory fields correctly.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // 2. Overlap Validation
+    const hasOverlap = existingLeaves.some(leave => {
+      if (leave.status === 'Cancelled' || leave.status === 'Rejected') return false
+      
+      const exStart = parseISO(leave.start_date)
+      const exEnd = parseISO(leave.end_date)
+      
+      // Standard overlap check: (StartA <= EndB) and (EndA >= StartB)
+      return (startDate <= exEnd) && (endDate >= exStart)
+    })
+
+    if (hasOverlap) {
+      toast({
+        title: "Date Conflict",
+        description: "You have already applied for leave during these dates.",
+        variant: "destructive"
+      })
       return
     }
 
     const formData = new FormData(e.currentTarget)
     formData.set('start_date', startDate.toISOString().slice(0, 10))
     formData.set('end_date', endDate.toISOString().slice(0, 10))
+    formData.set('reason', reason.trim())
 
     startTransition(async () => {
       const result = await applyLeave(formData)
@@ -117,10 +158,11 @@ export function ApplyLeaveDialog({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    type="button"
                     className={cn(
                       'w-full justify-start rounded-xl text-left font-normal',
                       !startDate && 'text-slate-400',
-                      showError && 'ring-2 ring-rose-400 animate-shake'
+                      showError && !startDate && 'ring-2 ring-rose-400 animate-shake'
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -145,10 +187,11 @@ export function ApplyLeaveDialog({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    type="button"
                     className={cn(
                       'w-full justify-start rounded-xl text-left font-normal',
                       !endDate && 'text-slate-400',
-                      showError && 'ring-2 ring-rose-400 animate-shake'
+                      showError && !endDate && 'ring-2 ring-rose-400 animate-shake'
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -177,11 +220,19 @@ export function ApplyLeaveDialog({
 
           {/* Reason */}
           <div className="space-y-2">
-            <Label>Reason (optional)</Label>
+            <Label className={cn(showError && !reason.trim() && "text-rose-500")}>
+              Reason <span className="text-rose-500">*</span>
+            </Label>
             <Textarea
               name="reason"
-              placeholder="Briefly explain your leave..."
-              className="rounded-xl min-h-[90px]"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Please explain why you need leave (Mandatory)"
+              className={cn(
+                "rounded-xl min-h-[90px]",
+                showError && !reason.trim() && "ring-2 ring-rose-400 animate-shake"
+              )}
+              required
             />
           </div>
 

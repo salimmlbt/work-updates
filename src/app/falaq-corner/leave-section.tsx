@@ -128,7 +128,7 @@ export function LeaveSection() {
                       <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-blue-400/40 to-transparent" />
 
                       {items.map((leave) => (
-                        <div key={leave.id} className="relative">
+                        <div key={leave.id} className="relative group">
 
                           <span
                             className={cn(
@@ -160,18 +160,20 @@ export function LeaveSection() {
                                 )}
                               </div>
 
-                              {(leave.status === 'Pending' || leave.status === 'Approved') && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-full px-4"
-                                  onClick={() => handleCancel(leave.id)}
-                                  disabled={isPending}
-                                >
-                                  <XCircle className="h-4 w-4 mr-1" />
-                                  Cancel
-                                </Button>
-                              )}
+                              <div className="flex items-center">
+                                {(leave.status === 'Pending' || leave.status === 'Approved') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-full px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                    onClick={() => handleCancel(leave.id)}
+                                    disabled={isPending}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Cancel
+                                  </Button>
+                                )}
+                              </div>
 
                             </div>
                           </div>
@@ -205,6 +207,7 @@ export function LeaveSection() {
         isOpen={isApplyDialogOpen}
         setIsOpen={setIsApplyDialogOpen}
         onSuccess={fetchLeaves}
+        existingLeaves={leaves}
       />
     </div>
   )
