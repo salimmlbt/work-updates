@@ -1,3 +1,4 @@
+
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server';
@@ -182,12 +183,12 @@ export async function deleteLeavePermanently(leaveId: string) {
 /**
  * Updates the status of a leave request (Approve/Reject).
  * Restricted to Editors/Admins.
- * Can optionally accept new start/end dates for partial approvals.
+ * Can optionally accept specific approved dates for partial approvals.
  */
 export async function updateLeaveStatus(
   leaveId: string, 
   status: LeaveStatus, 
-  approvedDates?: { start: string; end: string }
+  approvedDates?: { start: string; end: string; days: string[] }
 ) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -209,6 +210,7 @@ export async function updateLeaveStatus(
   if (status === 'Approved' && approvedDates) {
     updates.start_date = approvedDates.start;
     updates.end_date = approvedDates.end;
+    updates.approved_days = approvedDates.days;
   }
 
   const { error } = await supabase

@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition, useMemo, useEffect } from 'react'
@@ -83,6 +84,7 @@ export function ApproveLeaveDialog({
     const approvedRange = {
       start: format(sorted[0], 'yyyy-MM-dd'),
       end: format(sorted[sorted.length - 1], 'yyyy-MM-dd'),
+      days: sorted.map(d => format(d, 'yyyy-MM-dd')),
     }
 
     startTransition(async () => {

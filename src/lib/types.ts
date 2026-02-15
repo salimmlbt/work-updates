@@ -31,6 +31,7 @@ export interface Leave {
   reason: string | null;
   status: LeaveStatus;
   created_at: string;
+  approved_days?: string[] | null;
 }
 
 export type SubmissionType = 'original' | 'correction' | 'recreate';

@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition, useEffect, useMemo } from 'react'
@@ -117,7 +118,10 @@ export function LeaveSection({ profile }: { profile: Profile }) {
               <div className="relative pl-12 space-y-6">
                 <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-blue-400/40 to-transparent" />
                 {items.map((leave) => {
-                  const duration = differenceInCalendarDays(parseISO(leave.end_date), parseISO(leave.start_date)) + 1;
+                  // If approved_days exists, use its length. Otherwise calculate from range.
+                  const duration = leave.status === 'Approved' && leave.approved_days 
+                    ? leave.approved_days.length
+                    : differenceInCalendarDays(parseISO(leave.end_date), parseISO(leave.start_date)) + 1;
                   
                   return (
                     <div key={leave.id} className="relative group">

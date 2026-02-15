@@ -50,13 +50,14 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     let history: SubmissionHistoryEntry[] = [];
     try {
         if (task.submission_history) {
-            history = Array.isArray(task.submission_history) 
-                ? task.submission_history 
-                : typeof task.submission_history === 'string'
-                    ? JSON.parse(task.submission_history)
-                    : [];
+            if (Array.isArray(task.submission_history)) {
+                history = task.submission_history;
+            } else if (typeof task.submission_history === 'string' && task.submission_history.trim() !== '') {
+                history = JSON.parse(task.submission_history);
+            }
         }
     } catch (e) {
+        console.warn("Could not parse submission history for task", task.id);
         return false;
     }
 
@@ -76,9 +77,11 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
   }).map(task => {
       let history: SubmissionHistoryEntry[] = [];
       try {
-          history = Array.isArray(task.submission_history) 
-              ? task.submission_history 
-              : JSON.parse(task.submission_history as string);
+          if (Array.isArray(task.submission_history)) {
+              history = task.submission_history;
+          } else if (typeof task.submission_history === 'string' && task.submission_history.trim() !== '') {
+              history = JSON.parse(task.submission_history);
+          }
       } catch (e) {}
 
       // Find the specific submission entry for this date to determine the label
@@ -91,7 +94,7 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
       };
   });
 
-  // CRITICAL CHANGE: Only show users who have tasks for this specific date
+  // Only show users who have tasks for this specific date
   const activeProfiles = (profiles as Profile[] || []).filter(profile => 
     reportTasks.some(task => task.assignee_id === profile.id)
   );

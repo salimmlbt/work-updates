@@ -99,11 +99,11 @@ export function TaskDetailSheet({
   const attachments = useMemo(() => {
     if (!task.attachments) return []
     try {
-      if (typeof task.attachments === 'string') {
-        return JSON.parse(task.attachments) as Attachment[]
-      }
       if (Array.isArray(task.attachments)) {
-        return task.attachments
+        return task.attachments as Attachment[]
+      }
+      if (typeof task.attachments === 'string' && task.attachments.trim() !== '') {
+        return JSON.parse(task.attachments) as Attachment[]
       }
     } catch (e) {
       console.error('Failed to parse attachments:', e)
