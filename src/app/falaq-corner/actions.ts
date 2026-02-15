@@ -41,6 +41,7 @@ export async function applyLeave(formData: FormData) {
     .not('status', 'in', '("Cancelled", "Rejected")');
 
   const hasOverlap = existing?.some(leave => {
+    // Dates overlap if (start1 <= end2) AND (end1 >= start2)
     return (startDate <= leave.end_date) && (endDate >= leave.start_date);
   });
 
@@ -133,8 +134,6 @@ export async function applyLeave(formData: FormData) {
     } catch (emailError) {
       console.error('❌ Failed to execute email send logic:', emailError);
     }
-  } else if (!resendApiKey) {
-    console.warn('⚠️ RESEND_API_KEY is missing. Email skipped.');
   }
 
   revalidatePath('/falaq-corner');

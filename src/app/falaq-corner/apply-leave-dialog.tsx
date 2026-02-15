@@ -85,7 +85,7 @@ export function ApplyLeaveDialog({
       return
     }
 
-    // 2. Overlap Validation
+    // 2. Overlap Validation (Client Side)
     const hasOverlap = existingLeaves.some(leave => {
       if (leave.status === 'Cancelled' || leave.status === 'Rejected') return false
       
@@ -171,7 +171,7 @@ export function ApplyLeaveDialog({
                     variant="outline"
                     type="button"
                     className={cn(
-                      'w-full justify-start rounded-xl text-left font-normal',
+                      'w-full justify-start rounded-xl text-left font-normal transition-all duration-300',
                       !startDate && 'text-slate-400',
                       showError && !startDate && 'ring-2 ring-rose-400 animate-shake'
                     )}
@@ -200,7 +200,7 @@ export function ApplyLeaveDialog({
                     variant="outline"
                     type="button"
                     className={cn(
-                      'w-full justify-start rounded-xl text-left font-normal',
+                      'w-full justify-start rounded-xl text-left font-normal transition-all duration-300',
                       !endDate && 'text-slate-400',
                       showError && !endDate && 'ring-2 ring-rose-400 animate-shake'
                     )}
@@ -240,7 +240,7 @@ export function ApplyLeaveDialog({
               onChange={(e) => setReason(e.target.value)}
               placeholder="Please explain why you need leave (Mandatory)"
               className={cn(
-                "rounded-xl min-h-[90px]",
+                "rounded-xl min-h-[90px] transition-all duration-300",
                 showError && !reason.trim() && "ring-2 ring-rose-400 animate-shake"
               )}
               required
