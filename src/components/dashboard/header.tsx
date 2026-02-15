@@ -59,6 +59,10 @@ export default function Header() {
 
   useEffect(() => {
     setHasMounted(true);
+    // Prime voices immediately on mount
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+    }
   }, []);
 
   // Initial fetch + listen for settings updates
@@ -250,8 +254,28 @@ export default function Header() {
   const speakGreeting = (text: string, name: string) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(`${text}, ${name}`);
-      utterance.rate = 0.9; // Slightly slower for a professional feel
-      utterance.pitch = 1;
+      
+      // Get available voices
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Target: English (India) Female Voice
+      // Common names: Heera, Veena, Zira (often used for India English in Windows/Google)
+      const femaleIndianVoice = voices.find(v => 
+        (v.lang.includes('en-IN') || v.lang.includes('en_IN')) && 
+        (v.name.toLowerCase().includes('heera') || 
+         v.name.toLowerCase().includes('veena') || 
+         v.name.toLowerCase().includes('female') ||
+         v.name.toLowerCase().includes('lady'))
+      ) || voices.find(v => v.lang.includes('en-IN') || v.lang.includes('en_IN'));
+
+      if (femaleIndianVoice) {
+        utterance.voice = femaleIndianVoice;
+      } else {
+        // Fallback: slightly higher pitch if specific female voice not found
+        utterance.pitch = 1.15;
+      }
+
+      utterance.rate = 0.85; // Natural, friendly pace
       window.speechSynthesis.speak(utterance);
     }
   };
