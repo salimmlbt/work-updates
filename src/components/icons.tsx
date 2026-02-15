@@ -75,7 +75,7 @@ export function ChatIcon(props: SVGProps<SVGSVGElement>) {
 export function AttendanceIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg id="Layer_1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" fill="currentColor" {...props}>
-      <path d="m23.707 16.325a1 1 0 0 0 -1.414 0l-5.627 5.628-2.688-2.653a1 1 0 0 0 -1.435 1.4l2.744 2.7a1.876 1.876 0 0 0 1.345.6h.033a1.873 1.873 0 0 0 1.335-.553l5.707-5.708a1 1 0 0 0 0-1.414z"/>
+      <path d="m23.707 16.325a1 1 0 0 0 -1.414 0l-5.627 5.628-2.688-2.653a1 1 0 0 0 -1.435 1.4l2.744 2.7a1.876 1.876(0,0,0,1.345.6h.033a1.873 1.873 0 0 0 1.335-.553l5.707-5.708a1 1 0 0 0 0-1.414z"/>
       <path d="m11.09 21.959a10 10 0 1 1 10.91-9.959c0 .307-.015.611-.041.911a1 1 0 0 0 .907 1.089.989.989 0 0 0 1.085-.907c.032-.363.049-.726.049-1.093a12 12 0 1 0 -13.09 11.951h.091a1 1 0 0 0 .089-2z"/>
       <path d="m11 7v4.586l-2.707 2.707a1 1 0 1 0 1.414 1.414l3-3a1 1 0 0 0 .293-.707v-5a1 1 0 0 0 -2 0z"/>
     </svg>
@@ -193,7 +193,8 @@ export function ReportIcon(props: SVGProps<SVGSVGElement>) {
 export function CornerIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 761.8 761.8" {...props}>
-      <path d="M518.2,142.5H142.5v36h375.7c11.4,0,22.2,3,31.5,8.1l-407.1,407.1,25.5,25.5,407.1-407.1c5.2,9.3,8.2,20.1,8.2,31.5v375.7h36V243.6c0-55.7-45.4-101.1-101.1-101.1Z" fill="currentColor"/>
+      <line x1="174.4" y1="587.4" x2="560.8" y2="200.9" fill="none" stroke="currentColor" strokeMiterlimit="10" strokeWidth="75"/>
+      <path d="M132.8,170.2h375.7c45.9,0,83.1,37.2,83.1,83.1v375.7" fill="none" stroke="currentColor" strokeMiterlimit="10" strokeWidth="75"/>
     </svg>
   );
 }
