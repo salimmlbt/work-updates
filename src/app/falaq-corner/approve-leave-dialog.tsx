@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,13 +11,15 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { Loader2, CheckCircle2, Calendar as CalendarIcon, User } from 'lucide-react'
-import { format, parseISO, differenceInCalendarDays } from 'date-fns'
+import { Loader2, CheckCircle2, Calendar as CalendarIcon } from 'lucide-react'
+import { format, parseISO, differenceInCalendarDays, eachDayOfInterval, isSameDay } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { updateLeaveStatus } from './actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getInitials } from '@/lib/utils'
 import type { Leave, Profile } from '@/lib/types'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface ApproveLeaveDialogProps {
   isOpen: boolean
@@ -35,9 +37,46 @@ export function ApproveLeaveDialog({
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
+  // 🗓 Calculate individual dates in the requested range
+  const allRequestedDates = useMemo(() => {
+    try {
+      return eachDayOfInterval({
+        start: parseISO(leave.start_date),
+        end: parseISO(leave.end_date),
+      })
+    } catch (e) {
+      return []
+    }
+  }, [leave.start_date, leave.end_date])
+
+  const [selectedDates, setSelectedDates] = useState<Date[]>([])
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedDates(allRequestedDates)
+    }
+  }, [isOpen, allRequestedDates])
+
+  const toggleDate = (date: Date) => {
+    setSelectedDates(prev => 
+      prev.some(d => isSameDay(d, date))
+        ? prev.filter(d => !isSameDay(d, date))
+        : [...prev, date].sort((a, b) => a.getTime() - b.getTime())
+    )
+  }
+
   const handleApprove = () => {
+    if (selectedDates.length === 0) return
+
+    // Find min and max of selected dates to define the approved contiguous range
+    const sorted = [...selectedDates].sort((a, b) => a.getTime() - b.getTime())
+    const approvedRange = {
+      start: format(sorted[0], 'yyyy-MM-dd'),
+      end: format(sorted[sorted.length - 1], 'yyyy-MM-dd'),
+    }
+
     startTransition(async () => {
-      const result = await updateLeaveStatus(leave.id, 'Approved')
+      const result = await updateLeaveStatus(leave.id, 'Approved', approvedRange)
       if (result.error) {
         toast({ title: 'Error', description: result.error, variant: 'destructive' })
       } else {
@@ -48,15 +87,10 @@ export function ApproveLeaveDialog({
     })
   }
 
-  const start = parseISO(leave.start_date)
-  const end = parseISO(leave.end_date)
-  const totalDays = differenceInCalendarDays(end, start) + 1
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md rounded-3xl border shadow-2xl overflow-hidden p-0">
         
-        {/* Top Header Accent */}
         <div className="h-2 w-full bg-emerald-500" />
 
         <div className="p-6 space-y-6">
@@ -66,7 +100,7 @@ export function ApproveLeaveDialog({
               Verify & Approve
             </DialogTitle>
             <DialogDescription>
-              Please verify the leave dates and employee details before approving.
+              Select the specific dates you want to approve for this request.
             </DialogDescription>
           </DialogHeader>
 
@@ -82,26 +116,53 @@ export function ApproveLeaveDialog({
             </div>
           </div>
 
-          {/* Date Verification Card */}
+          {/* Granular Date Selection */}
           <div className="space-y-3">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Applied Schedule</label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Starts On</p>
-                <p className="text-sm font-bold text-slate-900">{format(start, 'EEE, dd MMM yyyy')}</p>
-              </div>
-              <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Ends On</p>
-                <p className="text-sm font-bold text-slate-900">{format(end, 'EEE, dd MMM yyyy')}</p>
-              </div>
-            </div>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">
+              Select Approved Days
+            </label>
             
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-white border-2 border-emerald-100 border-dashed">
+            <ScrollArea className="max-h-[200px] rounded-2xl border border-slate-100 bg-slate-50/30 p-2">
+              <div className="space-y-1">
+                {allRequestedDates.map((date) => {
+                  const isSelected = selectedDates.some(d => isSameDay(d, date))
+                  return (
+                    <div 
+                      key={date.toISOString()}
+                      onClick={() => toggleDate(date)}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200",
+                        isSelected ? "bg-white shadow-sm ring-1 ring-emerald-100" : "hover:bg-slate-100/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox 
+                          checked={isSelected}
+                          onCheckedChange={() => toggleDate(date)}
+                          className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                        />
+                        <span className={cn(
+                          "text-sm font-medium",
+                          isSelected ? "text-slate-900" : "text-slate-400"
+                        )}>
+                          {format(date, 'EEEE, dd MMM yyyy')}
+                        </span>
+                      </div>
+                      {isSelected && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                    </div>
+                  )
+                })}
+              </div>
+            </ScrollArea>
+
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-50/50 border-2 border-emerald-100 border-dashed">
               <div className="flex items-center gap-2 text-emerald-700 font-semibold">
                 <CalendarIcon className="h-4 w-4" />
-                <span>Total Duration</span>
+                <span>Approved Duration</span>
               </div>
-              <span className="text-lg font-black text-emerald-600">{totalDays} Day{totalDays !== 1 ? 's' : ''}</span>
+              <span className="text-lg font-black text-emerald-600">
+                {selectedDates.length} Day{selectedDates.length !== 1 ? 's' : ''}
+              </span>
             </div>
           </div>
 
@@ -121,11 +182,11 @@ export function ApproveLeaveDialog({
             </Button>
             <Button
               onClick={handleApprove}
-              disabled={isPending}
+              disabled={isPending || selectedDates.length === 0}
               className="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-lg text-white font-bold"
             >
               {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-              Confirm Approval
+              Approve {selectedDates.length} {selectedDates.length === 1 ? 'Day' : 'Days'}
             </Button>
           </DialogFooter>
         </div>

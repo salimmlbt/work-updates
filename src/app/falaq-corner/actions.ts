@@ -146,8 +146,13 @@ export async function cancelLeave(leaveId: string) {
 /**
  * Updates the status of a leave request (Approve/Reject).
  * Restricted to Editors/Admins.
+ * Can optionally accept new start/end dates for partial approvals.
  */
-export async function updateLeaveStatus(leaveId: string, status: LeaveStatus) {
+export async function updateLeaveStatus(
+  leaveId: string, 
+  status: LeaveStatus, 
+  approvedDates?: { start: string; end: string }
+) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -164,9 +169,15 @@ export async function updateLeaveStatus(leaveId: string, status: LeaveStatus) {
 
   if (!isEditor) return { error: 'Insufficient permissions to manage leaves.' };
 
+  const updates: any = { status };
+  if (status === 'Approved' && approvedDates) {
+    updates.start_date = approvedDates.start;
+    updates.end_date = approvedDates.end;
+  }
+
   const { error } = await supabase
     .from('leaves')
-    .update({ status })
+    .update(updates)
     .eq('id', leaveId);
 
   if (error) return { error: error.message };
