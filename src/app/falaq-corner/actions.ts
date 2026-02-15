@@ -23,6 +23,7 @@ export async function applyLeave(formData: FormData) {
   let endDate = formData.get('end_date') as string;
   const leaveType = formData.get('leave_type') as string;
   const reason = formData.get('reason') as string;
+  const dayType = formData.get('day_type') as string || 'Full Day';
 
   // If end date is not provided, it's a one-day leave
   if (!endDate) {
@@ -60,6 +61,7 @@ export async function applyLeave(formData: FormData) {
       leave_type: leaveType,
       reason: reason.trim(),
       status: 'Pending',
+      day_type: dayType,
     })
     .select()
     .single();
@@ -99,7 +101,7 @@ export async function applyLeave(formData: FormData) {
                     </tr>
                     <tr>
                       <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Type</td>
-                      <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${leaveType}</td>
+                      <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${leaveType} ${dayType === 'Half Day' ? '(Half Day)' : ''}</td>
                     </tr>
                     <tr>
                       <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Dates</td>

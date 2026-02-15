@@ -119,9 +119,16 @@ export function LeaveSection({ profile }: { profile: Profile }) {
                 <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-blue-400/40 to-transparent" />
                 {items.map((leave) => {
                   const isApproved = leave.status === 'Approved';
-                  const duration = isApproved && leave.approved_days 
-                    ? leave.approved_days.length
-                    : differenceInCalendarDays(parseISO(leave.end_date), parseISO(leave.start_date)) + 1;
+                  const isHalfDay = leave.day_type === 'Half Day';
+                  
+                  let duration = 1;
+                  if (isApproved && leave.approved_days) {
+                    duration = leave.approved_days.length;
+                  } else if (leave.start_date && leave.end_date) {
+                    duration = differenceInCalendarDays(parseISO(leave.end_date), parseISO(leave.start_date)) + 1;
+                  }
+
+                  if (!leave.end_date && isHalfDay) duration = 0.5;
                   
                   return (
                     <div key={leave.id} className="relative group">
@@ -140,6 +147,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
                                 {activeTab === 'team-requests' ? leave.profiles?.full_name : leave.leave_type}
                               </span>
                               {getStatusBadge(leave.status)}
+                              {isHalfDay && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] h-5">Half Day</Badge>}
                             </div>
                             
                             <div className="flex items-center gap-2 mt-1">
@@ -148,12 +156,12 @@ export function LeaveSection({ profile }: { profile: Profile }) {
                                 <span className="ml-1 text-slate-900">
                                   {isApproved && leave.approved_days && leave.approved_days.length > 0
                                     ? leave.approved_days.map(d => format(parseISO(d), 'dd MMM')).join(', ')
-                                    : `${format(parseISO(leave.start_date), 'dd MMM')} – ${format(parseISO(leave.end_date), 'dd MMM yyyy')}`
+                                    : `${format(parseISO(leave.start_date), 'dd MMM')} ${leave.start_date !== leave.end_date ? `– ${format(parseISO(leave.end_date), 'dd MMM yyyy')}` : format(parseISO(leave.start_date), 'yyyy')}`
                                   }
                                 </span>
                               </p>
                               <Badge variant="outline" className="text-[10px] h-5 rounded-full px-2 border-slate-200 bg-slate-50 text-slate-600 font-bold">
-                                {duration} {duration === 1 ? 'Day' : 'Days'} {isApproved ? 'Approved' : ''}
+                                {duration} {duration === 1 || duration === 0.5 ? 'Day' : 'Days'} {isApproved ? 'Approved' : ''}
                               </Badge>
                             </div>
 

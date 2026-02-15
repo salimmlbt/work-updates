@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition, useEffect, useMemo } from 'react'
@@ -29,6 +30,7 @@ import { cn } from '@/lib/utils'
 import type { Leave } from '@/lib/types'
 
 type LeaveType = 'Casual Leave' | 'Sick Leave' | 'Emergency Leave' | 'Maternity leave';
+type DayType = 'Full Day' | 'Half Day';
 
 interface ApplyLeaveDialogProps {
   isOpen: boolean
@@ -49,6 +51,7 @@ export function ApplyLeaveDialog({
   const [leaveType, setLeaveType] = useState<LeaveType | ''>('')
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
+  const [dayType, setDayType] = useState<DayType>('Full Day')
   const [reason, setReason] = useState('')
   const [showError, setShowError] = useState(false)
 
@@ -58,10 +61,18 @@ export function ApplyLeaveDialog({
       setLeaveType('')
       setStartDate(undefined)
       setEndDate(undefined)
+      setDayType('Full Day')
       setReason('')
       setShowError(false)
     }
   }, [isOpen])
+
+  // Reset Day Type if an End Date is selected
+  useEffect(() => {
+    if (endDate) {
+      setDayType('Full Day');
+    }
+  }, [endDate]);
 
   // Logic for disabled dates based on leave type
   const disabledDates = useMemo(() => {
@@ -143,6 +154,7 @@ export function ApplyLeaveDialog({
     if (endDate) {
       formData.set('end_date', endDate.toISOString().slice(0, 10))
     }
+    formData.set('day_type', dayType)
     formData.set('reason', reason.trim())
 
     startTransition(async () => {
@@ -157,7 +169,11 @@ export function ApplyLeaveDialog({
     })
   }
 
-  const totalDays = startDate ? (endDate ? differenceInCalendarDays(endDate, startDate) + 1 : 1) : 0;
+  const totalDays = startDate 
+    ? (endDate 
+        ? differenceInCalendarDays(endDate, startDate) + 1 
+        : (dayType === 'Half Day' ? 0.5 : 1)) 
+    : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -182,6 +198,7 @@ export function ApplyLeaveDialog({
                 setLeaveType(val);
                 setStartDate(undefined);
                 setEndDate(undefined);
+                setDayType('Full Day');
               }}
             >
               <SelectTrigger className="rounded-xl">
@@ -279,10 +296,26 @@ export function ApplyLeaveDialog({
             </div>
           </div>
 
+          {/* Conditional Day Type Option */}
+          {startDate && !endDate && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <Label>Day Type</Label>
+              <Select value={dayType} onValueChange={(val: DayType) => setDayType(val)}>
+                <SelectTrigger className="rounded-xl bg-blue-50/50 border-blue-100">
+                  <SelectValue placeholder="Full or Half Day?" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="Full Day">Full Day</SelectItem>
+                  <SelectItem value="Half Day">Half Day</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Preview Chip */}
           {startDate && (
             <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium w-fit">
-              {format(startDate, 'MMM dd')} {endDate ? `→ ${format(endDate, 'MMM dd')}` : '(One Day)'} • {totalDays} day{totalDays !== 1 ? 's' : ''}
+              {format(startDate, 'MMM dd')} {endDate ? `→ ${format(endDate, 'MMM dd')}` : `(${dayType === 'Half Day' ? 'Half Day' : 'One Day'})`} • {totalDays} day{totalDays !== 1 ? 's' : ''}
             </div>
           )}
 
