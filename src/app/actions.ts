@@ -3,11 +3,22 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
+import { generateVoiceGreeting } from '@/ai/flows/generate-voice-greeting'
 import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction, Revisions, SubmissionHistoryEntry, SubmissionType } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
 import { formatInTimeZone } from 'date-fns-tz';
+
+export async function getVoiceGreeting(text: string) {
+  try {
+    const result = await generateVoiceGreeting({ text });
+    return { data: result.audioUri };
+  } catch (error) {
+    console.error('TTS generation failed:', error);
+    return { error: 'Failed to generate AI voice.' };
+  }
+}
 
 export async function checkIn(reason?: string) {
   const supabase = await createServerClient();

@@ -1,10 +1,11 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckInIcon, CheckOutIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
-import { checkIn, checkOut, lunchIn, lunchOut } from '@/app/actions';
+import { checkIn, checkOut, lunchIn, lunchOut, getVoiceGreeting } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -59,10 +60,6 @@ export default function Header() {
 
   useEffect(() => {
     setHasMounted(true);
-    // Prime voices immediately on mount
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-    }
   }, []);
 
   // Initial fetch + listen for settings updates
@@ -115,7 +112,6 @@ export default function Header() {
           try {
               setLunchTimeSetting(JSON.parse(rawValue));
           } catch (e) {
-              console.warn("Failed to parse lunch settings in header:", e);
               setLunchTimeSetting({ default: '13:00', friday: '13:00' });
           }
       } else if (rawValue && typeof rawValue === 'string' && rawValue.trim() !== '') {
@@ -154,7 +150,6 @@ export default function Header() {
     return () => supabase.removeChannel(channel);
   }, [supabase, hasMounted]);
 
-  // ✅ Real-time attendance listener
   useEffect(() => {
     if (!attendanceRecord?.id) return;
 
@@ -172,7 +167,6 @@ export default function Header() {
     };
   }, [attendanceRecord?.id]);
 
-  // ✅ Timer Logic
   useEffect(() => {
     if (!attendanceRecord?.check_in) {
       setElapsedSeconds(0);
@@ -226,7 +220,6 @@ export default function Header() {
     attendanceRecord?.check_out
   ]);
 
-  // Check lunch time visibility
   useEffect(() => {
     if (isLoading || !hasMounted) return;
 
@@ -254,35 +247,23 @@ export default function Header() {
   const playTone = (type: 'in' | 'out') => {
     if (typeof window === 'undefined') return;
     const audio = new Audio(type === 'in' ? '/checkin-tone.mp3' : '/checkout-tone.mp3');
-    audio.play().catch(e => console.warn("Tone play blocked by browser:", e));
+    audio.play().catch(e => console.warn("Tone play blocked:", e));
   };
 
-  const speakGreeting = (text: string, name: string) => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(`${text}, ${name}`);
-      
-      // Get available voices
-      const voices = window.speechSynthesis.getVoices();
-      
-      // Target: English (India) Female Voice
-      const femaleIndianVoice = voices.find(v => 
-        (v.lang.includes('en-IN') || v.lang.includes('en_IN')) && 
-        (v.name.toLowerCase().includes('heera') || 
-         v.name.toLowerCase().includes('veena') || 
-         v.name.toLowerCase().includes('female') ||
-         v.name.toLowerCase().includes('lady'))
-      ) || voices.find(v => v.lang.includes('en-IN') || v.lang.includes('en_IN'));
-
-      if (femaleIndianVoice) {
-        utterance.voice = femaleIndianVoice;
-      } else {
-        utterance.pitch = 1.15;
-      }
-
-      utterance.rate = 0.85; 
+  const playAIGreeting = useCallback(async (text: string, name: string) => {
+    const fullText = `${text}, ${name}`;
+    const { data: audioUri, error } = await getVoiceGreeting(fullText);
+    
+    if (audioUri) {
+      const audio = new Audio(audioUri);
+      audio.play().catch(e => console.warn("AI Voice play blocked:", e));
+    } else if (error) {
+      console.warn("AI Voice generation failed, using fallback speech synthesis.");
+      const utterance = new SpeechSynthesisUtterance(fullText);
+      utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     }
-  };
+  }, []);
 
   const triggerGreeting = (name: string) => {
     const greeting = getGreeting();
@@ -290,11 +271,11 @@ export default function Header() {
     setGreetingType('in');
     setShowGreeting(true);
     playTone('in');
-    speakGreeting(greeting, name);
+    playAIGreeting(greeting, name);
     
     setTimeout(() => {
       setShowGreeting(false);
-    }, 3500);
+    }, 4500);
   };
 
   const triggerCheckoutGreeting = (name: string) => {
@@ -302,14 +283,13 @@ export default function Header() {
     setGreetingType('out');
     setShowGreeting(true);
     playTone('out');
-    speakGreeting('See you next day', name);
+    playAIGreeting('See you next day', name);
     
     setTimeout(() => {
       setShowGreeting(false);
-    }, 3500);
+    }, 4500);
   };
 
-  // Action handler
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn', reason?: string) => {
     setIsAlertOpen(false);
     setIsLateReasonOpen(false);
@@ -343,14 +323,6 @@ export default function Header() {
       setIsTimerRunning(originalStatus === 'checked-in' || originalStatus === 'lunch-complete');
       toast({ title: 'Error', description: error, variant: 'destructive' });
     } else {
-      const toastMessages = {
-        checkIn: 'Successfully checked in',
-        checkOut: 'Successfully checked out',
-        lunchOut: 'Lunch started',
-        lunchIn: 'Lunch ended',
-      };
-      toast({ title: toastMessages[action] });
-      
       const firstName = userProfile?.full_name?.split(' ')[0] || '';
       if (action === 'checkIn') {
         triggerGreeting(firstName);
@@ -460,7 +432,7 @@ export default function Header() {
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: "100%" }}
-                transition={{ duration: 3 }}
+                transition={{ duration: 4.5 }}
                 className="h-1 bg-white/20 rounded-full mt-12 mx-auto max-w-[200px] overflow-hidden"
               >
                 <motion.div className="h-full bg-white w-full" />
