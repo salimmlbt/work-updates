@@ -27,6 +27,8 @@ export default async function UserAttendancePage({ params, searchParams }: { par
     );
   }
 
+  const isEditor = isFalaqAdmin || permissions.attendance === 'Editor';
+
   const { data: user, error: userError } = await supabase
     .from('profiles')
     .select('*')
@@ -86,17 +88,19 @@ export default async function UserAttendancePage({ params, searchParams }: { par
       lunch_out: record?.lunch_out || null,
       total_hours: record?.total_hours || 0,
       extra_hours: extraMinutes / 60,
+      check_in_reason: record?.check_in_reason || null,
     };
   });
 
   return (
     <AttendanceDetailClient
       user={user}
-      monthlyAttendance={monthlyAttendance}
+      monthlyAttendance={monthlyAttendance as any[]}
       selectedDate={selectedDate.toISOString()}
       prevMonth={prevMonth}
       nextMonth={nextMonth}
       allDaysCount={allDaysInMonth.length}
+      isEditor={isEditor}
     />
   );
 }

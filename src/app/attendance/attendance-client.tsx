@@ -13,12 +13,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { getInitials } from '@/lib/utils';
+import { getInitials, cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { Attendance, Profile } from '@/lib/types';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { CheckCircle2, Clock3, UserCheck, UserX, Activity } from 'lucide-react';
+import { CheckCircle2, Clock3, UserCheck, UserX, Activity, MessageSquare, Info } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type AttendanceWithProfile = Attendance & {
   profiles: Profile;
@@ -91,9 +94,10 @@ function getStatusBadge(attendance: AttendanceWithProfile) {
   );
 }
 
-export default function AttendanceClient({ initialData }: { initialData: AttendanceWithProfile[] }) {
+export default function AttendanceClient({ initialData, isEditor }: { initialData: AttendanceWithProfile[], isEditor: boolean }) {
   const router = useRouter();
   const [attendanceList, setAttendanceList] = useState(initialData);
+  const [showReasons, setShowReasons] = useState(false);
 
   useEffect(() => {
     setAttendanceList(initialData);
@@ -159,6 +163,7 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-sky-50 p-4 md:p-8 lg:p-10">
+      <TooltipProvider>
       {/* Header */}
       <header className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
@@ -169,9 +174,23 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
             Live overview of today&apos;s attendance for your team.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs md:text-sm text-slate-600 bg-white/70 border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
-          <Clock3 className="h-4 w-4 text-sky-500" />
-          <span>Today: {todayLabel}</span>
+        <div className="flex items-center gap-4">
+          {isEditor && (
+            <div className="flex items-center space-x-2 bg-white/70 border border-slate-200 rounded-full px-4 py-1.5 shadow-sm">
+              <Switch 
+                id="show-reasons" 
+                checked={showReasons} 
+                onCheckedChange={setShowReasons}
+              />
+              <Label htmlFor="show-reasons" className="text-xs font-semibold text-slate-600 cursor-pointer">
+                Show Late Reasons
+              </Label>
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs md:text-sm text-slate-600 bg-white/70 border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
+            <Clock3 className="h-4 w-4 text-sky-500" />
+            <span>Today: {todayLabel}</span>
+          </div>
         </div>
       </header>
 
@@ -301,7 +320,22 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-slate-700">
-                      <TimeDisplay time={item.check_in} />
+                      <div className="flex items-center gap-2">
+                        <TimeDisplay time={item.check_in} />
+                        {showReasons && item.check_in_reason && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center justify-center h-5 w-5 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
+                                <Info className="h-3 w-3" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-white border-slate-200 shadow-xl p-3 rounded-xl max-w-[200px]">
+                              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Late Reason</p>
+                              <p className="text-sm text-slate-700 font-medium italic">"{item.check_in_reason}"</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-slate-700">
                       <TimeDisplay time={item.check_out} />
@@ -339,6 +373,7 @@ export default function AttendanceClient({ initialData }: { initialData: Attenda
           </div>
         </CardContent>
       </Card>
+      </TooltipProvider>
     </div>
   );
 }

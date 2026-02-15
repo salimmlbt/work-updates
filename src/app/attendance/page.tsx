@@ -25,6 +25,8 @@ export default async function AttendancePage() {
     );
   }
 
+  const isEditor = isFalaqAdmin || permissions.attendance === 'Editor';
+
   const today = new Date().toISOString().split('T')[0];
 
   const { data: profiles, error: profilesError } = await supabase
@@ -78,6 +80,7 @@ export default async function AttendancePage() {
         check_in: null,
         check_out: null,
         total_hours: null,
+        check_in_reason: null,
       }),
       user_id: profile.id,
       date: today,
@@ -86,5 +89,5 @@ export default async function AttendancePage() {
     };
   });
 
-  return <AttendanceClient initialData={attendanceList as any[]} />;
+  return <AttendanceClient initialData={attendanceList as any[]} isEditor={isEditor} />;
 }
