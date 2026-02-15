@@ -7,10 +7,11 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FileText, Inbox, Send, ChevronRight } from 'lucide-react';
 import { LeaveSection } from './leave-section';
+import type { Profile } from '@/lib/types';
 
 type Section = 'leave' | 'request-center' | 'inbox';
 
-export default function FalaqCornerClient() {
+export default function FalaqCornerClient({ profile }: { profile: Profile }) {
   const [activeSection, setActiveSection] = useState<Section>('leave');
 
   const navigationItems = [
@@ -22,7 +23,7 @@ export default function FalaqCornerClient() {
   const renderContent = () => {
     switch (activeSection) {
       case 'leave':
-        return <LeaveSection />;
+        return <LeaveSection profile={profile} />;
       case 'request-center':
         return (
           <Card className="border-0 shadow-none">

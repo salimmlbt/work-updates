@@ -3,12 +3,12 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { Leave } from '@/lib/types';
+import type { Leave, LeaveStatus, RoleWithPermissions } from '@/lib/types';
 import { Resend } from 'resend';
 
 /**
  * Handles leave application with mandatory validation, overlap prevention,
- * and email notification to admin via Resend using the verified domain mail.falaq.com.
+ * and email notification to admin via Resend.
  */
 export async function applyLeave(formData: FormData) {
   const supabase = await createServerClient();
@@ -23,17 +23,14 @@ export async function applyLeave(formData: FormData) {
   const leaveType = formData.get('leave_type') as string;
   const reason = formData.get('reason') as string;
 
-  // 1. Mandatory Fields Validation
   if (!startDate || !endDate || !leaveType || !reason?.trim()) {
     return { error: 'All fields including reason are mandatory.' };
   }
 
-  // 2. Reject if End Date is before Start Date
   if (endDate < startDate) {
     return { error: 'End date cannot be before start date.' };
   }
 
-  // 3. Reject if date range overlaps with an existing active application
   const { data: existing } = await supabase
     .from('leaves')
     .select('start_date, end_date')
@@ -41,7 +38,6 @@ export async function applyLeave(formData: FormData) {
     .not('status', 'in', '("Cancelled", "Rejected")');
 
   const hasOverlap = existing?.some(leave => {
-    // Dates overlap if (start1 <= end2) AND (end1 >= start2)
     return (startDate <= leave.end_date) && (endDate >= leave.start_date);
   });
 
@@ -67,9 +63,7 @@ export async function applyLeave(formData: FormData) {
     return { error: error.message };
   }
 
-  // --- Email Notification Logic ---
   const resendApiKey = process.env.RESEND_API_KEY;
-  
   if (resendApiKey && data) {
     try {
       const { data: profile } = await supabase
@@ -81,8 +75,7 @@ export async function applyLeave(formData: FormData) {
       const userName = profile?.full_name || user.email || 'An employee';
       const resend = new Resend(resendApiKey);
 
-      // Using the verified subdomain for the sender address as configured in Resend
-      const emailResponse = await resend.emails.send({
+      await resend.emails.send({
         from: 'Falaq Corner <notifications@mail.falaq.com>',
         to: 'falaqbranding@gmail.com',
         subject: `New Leave Request: ${userName}`,
@@ -92,7 +85,6 @@ export async function applyLeave(formData: FormData) {
               <div style="background: white; padding: 24px; border-radius: 22px;">
                 <h2 style="color: #0f172a; margin-top: 0; font-size: 24px; letter-spacing: -0.025em;">New Leave Application</h2>
                 <p style="color: #64748b; margin-bottom: 24px;">A new leave request has been submitted through the Falaq Corner portal.</p>
-                
                 <div style="background-color: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #f1f5f9; margin-bottom: 24px;">
                   <table style="width: 100%; border-collapse: collapse;">
                     <tr>
@@ -113,11 +105,9 @@ export async function applyLeave(formData: FormData) {
                     </tr>
                   </table>
                 </div>
-                
                 <div style="text-align: center;">
                   <a href="https://falaq.com/falaq-corner" style="display: inline-block; padding: 12px 32px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 100px; font-weight: 600; font-size: 14px;">Review in Dashboard</a>
                 </div>
-                
                 <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 32px 0 24px 0;" />
                 <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">This is an automated notification from Falaq Work Updates.</p>
               </div>
@@ -125,14 +115,8 @@ export async function applyLeave(formData: FormData) {
           </div>
         `,
       });
-
-      if (emailResponse.error) {
-        console.error('❌ Resend API Error:', emailResponse.error);
-      } else {
-        console.log('✅ Email sent successfully:', emailResponse.data?.id);
-      }
     } catch (emailError) {
-      console.error('❌ Failed to execute email send logic:', emailError);
+      console.error('❌ Failed to send email:', emailError);
     }
   }
 
@@ -144,9 +128,7 @@ export async function cancelLeave(leaveId: string) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { error: 'You must be logged in.' };
-  }
+  if (!user) return { error: 'You must be logged in.' };
 
   const { error } = await supabase
     .from('leaves')
@@ -155,9 +137,39 @@ export async function cancelLeave(leaveId: string) {
     .eq('user_id', user.id)
     .in('status', ['Pending', 'Approved']);
 
-  if (error) {
-    return { error: error.message };
-  }
+  if (error) return { error: error.message };
+
+  revalidatePath('/falaq-corner');
+  return { success: true };
+}
+
+/**
+ * Updates the status of a leave request (Approve/Reject).
+ * Restricted to Editors/Admins.
+ */
+export async function updateLeaveStatus(leaveId: string, status: LeaveStatus) {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Not authenticated' };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*, roles(*)')
+    .eq('id', user.id)
+    .single();
+
+  const permissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
+  const isEditor = permissions.falaq_corner === 'Editor' || profile?.roles?.name === 'Falaq Admin';
+
+  if (!isEditor) return { error: 'Insufficient permissions to manage leaves.' };
+
+  const { error } = await supabase
+    .from('leaves')
+    .update({ status })
+    .eq('id', leaveId);
+
+  if (error) return { error: error.message };
 
   revalidatePath('/falaq-corner');
   return { success: true };
