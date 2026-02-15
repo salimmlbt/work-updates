@@ -3,13 +3,14 @@
 import { useState, useTransition, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, FileText, XCircle, Loader2 } from 'lucide-react'
+import { Plus, FileText, XCircle, Loader2, ChevronDown } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import type { Leave } from '@/lib/types'
 import { cancelLeave } from './actions'
 import { useToast } from '@/hooks/use-toast'
 import { ApplyLeaveDialog } from './apply-leave-dialog'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 export function LeaveSection() {
   const [leaves, setLeaves] = useState<Leave[]>([])
