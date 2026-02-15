@@ -18,6 +18,7 @@ import {
   Logo,
   SchedulerIcon,
   ReportIcon,
+  CornerIcon,
 } from '@/components/icons';
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,6 +37,7 @@ const navItems = [
   { href: '/calendar', label: 'Calendar', icon: CalendarIconSvg, id: 'calendar' },
   { href: '/scheduler', label: 'Scheduler', icon: SchedulerIcon, id: 'scheduler' },
   { href: '/report', label: 'Report', icon: ReportIcon, id: 'report' },
+  { href: '/falaq-corner', label: 'Falaq Corner', icon: CornerIcon, id: 'falaq_corner' },
   { href: '/chat', label: 'Chat', icon: ChatIcon, id: 'chat' },
   { href: '/attendance', label: 'Attendance', icon: AttendanceIcon, id: 'attendance' },
   { href: '/billing', label: 'Billing', icon: BillingIcon, id: 'billing' },
