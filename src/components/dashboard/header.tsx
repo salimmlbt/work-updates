@@ -220,7 +220,7 @@ export default function Header() {
     const checkTime = () => {
       const now = new Date();
       const isFriday = now.getDay() === 5;
-      const targetTimeStr = isFriday ? lunchTimeSetting.friday : lunchTimeSetting.default;
+      const targetTimeStr = isFriday ? (lunchTimeSetting.friday || '13:00') : (lunchTimeSetting.default || '13:00');
       
       const [hours, minutes] = targetTimeStr.split(':').map(Number);
       setShowLunchButton(now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= minutes));
