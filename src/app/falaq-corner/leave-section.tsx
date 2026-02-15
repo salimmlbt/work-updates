@@ -118,8 +118,8 @@ export function LeaveSection({ profile }: { profile: Profile }) {
               <div className="relative pl-12 space-y-6">
                 <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-blue-400/40 to-transparent" />
                 {items.map((leave) => {
-                  // If approved_days exists, use its length. Otherwise calculate from range.
-                  const duration = leave.status === 'Approved' && leave.approved_days 
+                  const isApproved = leave.status === 'Approved';
+                  const duration = isApproved && leave.approved_days 
                     ? leave.approved_days.length
                     : differenceInCalendarDays(parseISO(leave.end_date), parseISO(leave.start_date)) + 1;
                   
@@ -144,13 +144,16 @@ export function LeaveSection({ profile }: { profile: Profile }) {
                             
                             <div className="flex items-center gap-2 mt-1">
                               <p className="text-sm text-slate-500 font-medium">
-                                {leave.status === 'Approved' ? 'Approved Dates:' : 'Applied Dates:'}
+                                {isApproved ? 'Approved Dates:' : 'Applied Dates:'}
                                 <span className="ml-1 text-slate-900">
-                                  {format(parseISO(leave.start_date), 'dd MMM')} – {format(parseISO(leave.end_date), 'dd MMM yyyy')}
+                                  {isApproved && leave.approved_days && leave.approved_days.length > 0
+                                    ? leave.approved_days.map(d => format(parseISO(d), 'dd MMM')).join(', ')
+                                    : `${format(parseISO(leave.start_date), 'dd MMM')} – ${format(parseISO(leave.end_date), 'dd MMM yyyy')}`
+                                  }
                                 </span>
                               </p>
                               <Badge variant="outline" className="text-[10px] h-5 rounded-full px-2 border-slate-200 bg-slate-50 text-slate-600 font-bold">
-                                {duration} {duration === 1 ? 'Day' : 'Days'} {leave.status === 'Approved' ? 'Approved' : ''}
+                                {duration} {duration === 1 ? 'Day' : 'Days'} {isApproved ? 'Approved' : ''}
                               </Badge>
                             </div>
 

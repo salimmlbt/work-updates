@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -109,7 +110,7 @@ export default function Header() {
               console.warn("Failed to parse lunch settings in header:", e);
               setLunchTimeSetting({ default: '13:00', friday: '13:00' });
           }
-      } else if (rawValue && typeof rawValue === 'string') {
+      } else if (rawValue && typeof rawValue === 'string' && rawValue.trim() !== '') {
           setLunchTimeSetting({ default: rawValue, friday: rawValue });
       } else if (rawValue && typeof rawValue === 'object') {
           setLunchTimeSetting(rawValue);
@@ -133,7 +134,7 @@ export default function Header() {
               } catch (e) {
                   setLunchTimeSetting({ default: '13:00', friday: '13:00' });
               }
-          } else if (rawValue && typeof rawValue === 'string') {
+          } else if (rawValue && typeof rawValue === 'string' && rawValue.trim() !== '') {
               setLunchTimeSetting({ default: rawValue, friday: rawValue });
           } else if (rawValue && typeof rawValue === 'object') {
               setLunchTimeSetting(rawValue);

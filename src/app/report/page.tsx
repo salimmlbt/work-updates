@@ -49,11 +49,12 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
   const reportTasks = (tasks as any[] || []).filter(task => {
     let history: SubmissionHistoryEntry[] = [];
     try {
-        if (task.submission_history) {
-            if (Array.isArray(task.submission_history)) {
-                history = task.submission_history;
-            } else if (typeof task.submission_history === 'string' && task.submission_history.trim() !== '') {
-                history = JSON.parse(task.submission_history);
+        const rawHistory = task.submission_history;
+        if (rawHistory) {
+            if (Array.isArray(rawHistory)) {
+                history = rawHistory;
+            } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+                history = JSON.parse(rawHistory);
             }
         }
     } catch (e) {
@@ -69,7 +70,7 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     // Check if any submission in the history matches the selected day
     return history.some(entry => {
         try {
-            return entry.date.startsWith(selectedDate);
+            return entry.date && entry.date.startsWith(selectedDate);
         } catch (e) {
             return false;
         }
@@ -77,15 +78,16 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
   }).map(task => {
       let history: SubmissionHistoryEntry[] = [];
       try {
-          if (Array.isArray(task.submission_history)) {
-              history = task.submission_history;
-          } else if (typeof task.submission_history === 'string' && task.submission_history.trim() !== '') {
-              history = JSON.parse(task.submission_history);
+          const rawHistory = task.submission_history;
+          if (Array.isArray(rawHistory)) {
+              history = rawHistory;
+          } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+              history = JSON.parse(rawHistory);
           }
       } catch (e) {}
 
       // Find the specific submission entry for this date to determine the label
-      const entryForDate = history.find(entry => entry.date.startsWith(selectedDate));
+      const entryForDate = history.find(entry => entry.date && entry.date.startsWith(selectedDate));
       
       return {
           ...task,

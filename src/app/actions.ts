@@ -431,9 +431,12 @@ export async function updateTaskStatus(
         if (rawHistory) {
             if (Array.isArray(rawHistory)) {
                 history = rawHistory as SubmissionHistoryEntry[];
-            } else if (typeof rawHistory === 'string') {
+            } else if (typeof rawHistory === 'string' && rawHistory.trim().length > 0) {
                 try {
-                    history = JSON.parse(rawHistory);
+                    const parsed = JSON.parse(rawHistory);
+                    if (Array.isArray(parsed)) {
+                        history = parsed;
+                    }
                 } catch (e) {
                     history = [];
                 }
