@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -22,12 +22,14 @@ import {
 } from '@/components/ui/select'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Loader2, Calendar as CalendarIcon } from 'lucide-react'
-import { format, differenceInCalendarDays, parseISO } from 'date-fns'
+import { Loader2, Calendar as CalendarIcon, X } from 'lucide-react'
+import { format, differenceInCalendarDays, parseISO, addDays, startOfToday } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { applyLeave } from './actions'
 import { cn } from '@/lib/utils'
 import type { Leave } from '@/lib/types'
+
+type LeaveType = 'Casual Leave' | 'Sick Leave' | 'Emergency Leave' | 'Maternity leave';
 
 interface ApplyLeaveDialogProps {
   isOpen: boolean
@@ -45,6 +47,7 @@ export function ApplyLeaveDialog({
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
+  const [leaveType, setLeaveType] = useState<LeaveType | ''>('')
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
   const [reason, setReason] = useState('')
@@ -53,6 +56,7 @@ export function ApplyLeaveDialog({
   // Reset form when opened
   useEffect(() => {
     if (isOpen) {
+      setLeaveType('')
       setStartDate(undefined)
       setEndDate(undefined)
       setReason('')
@@ -60,54 +64,75 @@ export function ApplyLeaveDialog({
     }
   }, [isOpen])
 
-  /* Keyboard shortcuts */
-  useEffect(() => {
-    if (!isOpen) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false)
+  // Logic for disabled dates based on leave type
+  const disabledDates = useMemo(() => {
+    const today = startOfToday();
+    if (!leaveType) return { before: today }; // Default to preventing past dates
+
+    switch (leaveType) {
+      case 'Casual Leave':
+        // 2 days after present date
+        return { before: addDays(today, 2) };
+      case 'Maternity leave':
+        // One week after present date
+        return { before: addDays(today, 7) };
+      case 'Sick Leave':
+      case 'Emergency Leave':
+      default:
+        // Present date and future
+        return { before: today };
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [isOpen, setIsOpen])
+  }, [leaveType]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    // 1. Mandatory Fields Validation
-    if (!startDate || !endDate || endDate < startDate || !reason.trim()) {
+    // Validation: Start date and Reason are mandatory. End date is optional.
+    if (!leaveType || !startDate || !reason.trim()) {
       setShowError(true)
       setTimeout(() => setShowError(false), 400)
       toast({
         title: "Validation Error",
-        description: "Please fill in all mandatory fields correctly.",
+        description: "Please select leave type, start date, and provide a reason.",
         variant: "destructive"
       })
       return
     }
 
-    // 2. Overlap Validation (Client Side)
+    const finalEndDate = endDate || startDate;
+
+    if (endDate && endDate < startDate) {
+      toast({
+        title: "Invalid Range",
+        description: "End date cannot be before start date.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Overlap Validation (Client Side)
     const hasOverlap = existingLeaves.some(leave => {
       if (leave.status === 'Cancelled' || leave.status === 'Rejected') return false
-      
       const exStart = parseISO(leave.start_date)
       const exEnd = parseISO(leave.end_date)
-      
-      // Dates overlap if (start1 <= end2) AND (end1 >= start2)
-      return (startDate <= exEnd) && (endDate >= exStart)
+      return (startDate <= exEnd) && (finalEndDate >= exStart)
     })
 
     if (hasOverlap) {
       toast({
         title: "Date Conflict",
-        description: "You already have a leave request covering these dates.",
+        description: "You already have an active leave request covering these dates.",
         variant: "destructive"
       })
       return
     }
 
     const formData = new FormData(e.currentTarget)
+    formData.set('leave_type', leaveType)
     formData.set('start_date', startDate.toISOString().slice(0, 10))
-    formData.set('end_date', endDate.toISOString().slice(0, 10))
+    if (endDate) {
+      formData.set('end_date', endDate.toISOString().slice(0, 10))
+    }
     formData.set('reason', reason.trim())
 
     startTransition(async () => {
@@ -122,62 +147,65 @@ export function ApplyLeaveDialog({
     })
   }
 
-  const showPreview = startDate && endDate && endDate >= startDate
-  const totalDays =
-    showPreview ? differenceInCalendarDays(endDate!, startDate!) + 1 : 0
+  const totalDays = startDate ? (endDate ? differenceInCalendarDays(endDate, startDate) + 1 : 1) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md rounded-3xl bg-gradient-to-br from-white to-slate-50 border shadow-2xl">
-
         <form onSubmit={handleSubmit} className="space-y-6">
-
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">
               Apply for Leave
             </DialogTitle>
             <DialogDescription>
-              Choose your dates and submit your request
+              First select the type, then choose your dates.
             </DialogDescription>
           </DialogHeader>
 
           {/* Leave Type */}
           <div className="space-y-2">
-            <Label>Leave Type</Label>
-            <Select name="leave_type" defaultValue="Casual Leave">
+            <Label>Leave Type <span className="text-rose-500">*</span></Label>
+            <Select 
+              name="leave_type" 
+              value={leaveType} 
+              onValueChange={(val: LeaveType) => {
+                setLeaveType(val);
+                setStartDate(undefined);
+                setEndDate(undefined);
+              }}
+            >
               <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Select leave type" />
+                <SelectValue placeholder="Choose leave type" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
                 <SelectItem value="Casual Leave">Casual Leave</SelectItem>
                 <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                <SelectItem value="Planned Leave">Planned Leave</SelectItem>
-                <SelectItem value="Maternity/Paternity Leave">
-                  Maternity / Paternity Leave
-                </SelectItem>
+                <SelectItem value="Emergency Leave">Emergency Leave</SelectItem>
+                <SelectItem value="Maternity leave">Maternity leave</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Date Pickers */}
+          {/* Date Pickers - Only enabled if type is selected */}
           <div className="grid grid-cols-2 gap-4">
-
             {/* Start */}
             <div className="space-y-2">
-              <Label>From</Label>
+              <Label>From <span className="text-rose-500">*</span></Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     type="button"
+                    disabled={!leaveType}
                     className={cn(
                       'w-full justify-start rounded-xl text-left font-normal transition-all duration-300',
                       !startDate && 'text-slate-400',
-                      showError && !startDate && 'ring-2 ring-rose-400 animate-shake'
+                      showError && !startDate && 'ring-2 ring-rose-400 animate-shake',
+                      !leaveType && 'opacity-50 grayscale'
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, 'PPP') : 'Pick a date'}
+                    {startDate ? format(startDate, 'PPP') : 'Pick start date'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="p-0 rounded-xl shadow-lg">
@@ -185,47 +213,63 @@ export function ApplyLeaveDialog({
                     mode="single"
                     selected={startDate}
                     onSelect={setStartDate}
+                    disabled={disabledDates}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
             </div>
 
-            {/* End */}
+            {/* End (Optional) */}
             <div className="space-y-2">
-              <Label>To</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
+              <Label>To (Optional)</Label>
+              <div className="relative group">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      disabled={!startDate}
+                      className={cn(
+                        'w-full justify-start rounded-xl text-left font-normal transition-all duration-300',
+                        !endDate && 'text-slate-400',
+                        !startDate && 'opacity-50 grayscale'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, 'PPP') : 'Add end date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 rounded-xl shadow-lg">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      disabled={[
+                        disabledDates,
+                        { before: startDate || new Date() }
+                      ]}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {endDate && (
+                  <button 
                     type="button"
-                    className={cn(
-                      'w-full justify-start rounded-xl text-left font-normal transition-all duration-300',
-                      !endDate && 'text-slate-400',
-                      showError && !endDate && 'ring-2 ring-rose-400 animate-shake'
-                    )}
+                    onClick={() => setEndDate(undefined)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, 'PPP') : 'Pick a date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0 rounded-xl shadow-lg">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
-
           </div>
 
           {/* Preview Chip */}
-          {showPreview && (
+          {startDate && (
             <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium w-fit">
-              {format(startDate!, 'MMM dd')} → {format(endDate!, 'MMM dd')} • {totalDays} day{totalDays !== 1 ? 's' : ''}
+              {format(startDate, 'MMM dd')} {endDate ? `→ ${format(endDate, 'MMM dd')}` : '(One Day)'} • {totalDays} day{totalDays !== 1 ? 's' : ''}
             </div>
           )}
 
@@ -238,7 +282,7 @@ export function ApplyLeaveDialog({
               name="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Please explain why you need leave (Mandatory)"
+              placeholder="Why are you taking leave?"
               className={cn(
                 "rounded-xl min-h-[90px] transition-all duration-300",
                 showError && !reason.trim() && "ring-2 ring-rose-400 animate-shake"
@@ -249,7 +293,7 @@ export function ApplyLeaveDialog({
 
           <DialogFooter className="pt-2 flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
-              Cancel (Esc)
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -257,10 +301,9 @@ export function ApplyLeaveDialog({
               className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg px-8"
             >
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit (Enter)
+              Apply Now
             </Button>
           </DialogFooter>
-
         </form>
       </DialogContent>
     </Dialog>

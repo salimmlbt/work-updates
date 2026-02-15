@@ -9,6 +9,7 @@ import { Resend } from 'resend';
 /**
  * Handles leave application with mandatory validation, overlap prevention,
  * and email notification to admin via Resend.
+ * Updated: End date is now optional (defaults to start date).
  */
 export async function applyLeave(formData: FormData) {
   const supabase = await createServerClient();
@@ -19,12 +20,17 @@ export async function applyLeave(formData: FormData) {
   }
 
   const startDate = formData.get('start_date') as string;
-  const endDate = formData.get('end_date') as string;
+  let endDate = formData.get('end_date') as string;
   const leaveType = formData.get('leave_type') as string;
   const reason = formData.get('reason') as string;
 
-  if (!startDate || !endDate || !leaveType || !reason?.trim()) {
-    return { error: 'All fields including reason are mandatory.' };
+  // If end date is not provided, it's a one-day leave
+  if (!endDate) {
+    endDate = startDate;
+  }
+
+  if (!startDate || !leaveType || !reason?.trim()) {
+    return { error: 'Start date, leave type, and reason are mandatory.' };
   }
 
   if (endDate < startDate) {
@@ -97,7 +103,7 @@ export async function applyLeave(formData: FormData) {
                     </tr>
                     <tr>
                       <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Dates</td>
-                      <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${startDate} to ${endDate}</td>
+                      <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${startDate} ${startDate !== endDate ? `to ${endDate}` : '(1 Day)'}</td>
                     </tr>
                     <tr>
                       <td style="padding: 8px 0; color: #64748b; font-size: 14px; vertical-align: top;">Reason</td>
