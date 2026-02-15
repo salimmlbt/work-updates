@@ -33,9 +33,11 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     let history: SubmissionHistoryEntry[] = [];
     try {
         if (task.submission_history) {
-            history = typeof task.submission_history === 'string' 
-                ? JSON.parse(task.submission_history) 
-                : task.submission_history;
+            history = Array.isArray(task.submission_history) 
+                ? task.submission_history 
+                : typeof task.submission_history === 'string'
+                    ? JSON.parse(task.submission_history)
+                    : [];
         }
     } catch (e) {
         console.error('Failed to parse history for task', task.id, e);
@@ -46,16 +48,23 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
         return false;
     }
 
-    return history.some(entry => entry.date.startsWith(selectedDate));
+    // Check if any submission in the history matches the selected day
+    return history.some(entry => {
+        try {
+            return entry.date.startsWith(selectedDate);
+        } catch (e) {
+            return false;
+        }
+    });
   }).map(task => {
       let history: SubmissionHistoryEntry[] = [];
       try {
-          history = typeof task.submission_history === 'string' 
-              ? JSON.parse(task.submission_history) 
-              : task.submission_history;
+          history = Array.isArray(task.submission_history) 
+              ? task.submission_history 
+              : JSON.parse(task.submission_history as string);
       } catch (e) {}
 
-      // Find the specific submission type for this date
+      // Find the specific submission entry for this date to determine the label
       const entryForDate = history.find(entry => entry.date.startsWith(selectedDate));
       
       return {

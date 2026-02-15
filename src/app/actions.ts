@@ -425,16 +425,22 @@ export async function updateTaskStatus(
     // --- Submission History Logic ---
     if (status === 'review' || status === 'under-review') {
         let history: SubmissionHistoryEntry[] = [];
-        try {
-            if (currentTask.submission_history) {
-                history = typeof currentTask.submission_history === 'string' 
-                    ? JSON.parse(currentTask.submission_history) 
-                    : currentTask.submission_history;
+        const rawHistory = currentTask.submission_history;
+        
+        if (rawHistory) {
+            if (Array.isArray(rawHistory)) {
+                history = rawHistory as SubmissionHistoryEntry[];
+            } else if (typeof rawHistory === 'string') {
+                try {
+                    history = JSON.parse(rawHistory);
+                } catch (e) {
+                    history = [];
+                }
             }
-        } catch (e) {
-            console.error('Failed to parse submission history', e);
         }
 
+        // Only add a new entry if the status is actually changing to review
+        // or if it's coming from a correction/recreate state.
         let type: SubmissionType = 'original';
         if (currentTask.status === 'corrections') {
             type = 'correction';
@@ -1316,7 +1322,7 @@ export async function renameWorkType(id: number, name: string): Promise<{ data: 
 
 export async function deleteWorkType(id: number): Promise<{ error: string | null }> {
     const supabase = await createServerClient();
-    const { error } = await supabase.from('work_types').delete().eq('id', id);
+    const { error = null } = await supabase.from('work_types').delete().eq('id', id);
     if (error) return { error: error.message };
     revalidatePath('/accessibility');
     return { error: null };
@@ -1390,7 +1396,7 @@ export async function updateSchedule(scheduleId: string, formData: FormData): Pr
 
 export async function deleteSchedule(scheduleId: string): Promise<{ success: boolean; error?: string }> {
     const supabase = await createServerClient();
-    const { error } = await supabase.from('content_schedules').update({ is_deleted: true }).eq('id', scheduleId);
+    const { error = null } = await supabase.from('content_schedules').update({ is_deleted: true }).eq('id', scheduleId);
     if (error) {
         return { success: false, error: error.message };
     }
@@ -1400,7 +1406,7 @@ export async function deleteSchedule(scheduleId: string): Promise<{ success: boo
 
 export async function restoreSchedule(scheduleId: string): Promise<{ success: boolean; error?: string }> {
     const supabase = await createServerClient();
-    const { error } = await supabase.from('content_schedules').update({ is_deleted: false }).eq('id', scheduleId);
+    const { error = null } = await supabase.from('content_schedules').update({ is_deleted: false }).eq('id', scheduleId);
     if (error) {
         return { success: false, error: error.message };
     }
@@ -1431,7 +1437,6 @@ export async function createTaskFromSchedule(schedule: ContentSchedule): Promise
     }
 
     // Find the first member of the team to assign the task to.
-    // In a real-world scenario, this logic might be more complex (e.g., round-robin, load balancing, etc.)
     const { data: teamMembers, error: teamMembersError } = await supabase
         .from('profile_teams')
         .select('profile_id')
@@ -1466,6 +1471,5 @@ export async function createTaskFromSchedule(schedule: ContentSchedule): Promise
         return { error: createTaskError.message };
     }
 
-    // No need to revalidate here, as the client-side will handle the optimistic update
     return { data: newTask as Task };
 }
