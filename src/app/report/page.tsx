@@ -3,11 +3,28 @@ import { createServerClient } from '@/lib/supabase/server';
 import ReportClient from './report-client';
 import type { Profile, SubmissionHistoryEntry } from '@/lib/types';
 import { format } from 'date-fns';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ReportPage({ searchParams }: { searchParams: { date?: string } }) {
   const supabase = await createServerClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) redirect('/login');
+
+  const { data: profile } = await supabase.from('profiles').select('*, roles(*)').eq('id', authUser.id).single();
+  const permissions = (profile?.roles as any)?.permissions || {};
+  const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
+
+  if (!isFalaqAdmin && permissions.report === 'Restricted') {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4">
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
+        <p className="text-slate-500">You do not have permission to view the Daily Work Report.</p>
+      </div>
+    );
+  }
+
   const selectedDate = searchParams.date || format(new Date(), 'yyyy-MM-dd');
 
   // Fetch all active profiles

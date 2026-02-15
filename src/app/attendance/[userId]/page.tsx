@@ -2,12 +2,30 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parse, differenceInMinutes, parseISO } from 'date-fns';
 import AttendanceDetailClient from './attendance-detail-client';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function UserAttendancePage({ params, searchParams }: { params: { userId: string }, searchParams: { month?: string } }) {
   const supabase = await createServerClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) redirect('/login');
+
   const userId = params.userId;
+  const isOwnRecord = authUser.id === userId;
+
+  const { data: currentUserProfile } = await supabase.from('profiles').select('*, roles(*)').eq('id', authUser.id).single();
+  const permissions = (currentUserProfile?.roles as any)?.permissions || {};
+  const isFalaqAdmin = currentUserProfile?.roles?.name === 'Falaq Admin';
+
+  if (!isOwnRecord && !isFalaqAdmin && permissions.attendance === 'Restricted') {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4">
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
+        <p className="text-slate-500">You do not have permission to view this user's attendance records.</p>
+      </div>
+    );
+  }
 
   const { data: user, error: userError } = await supabase
     .from('profiles')

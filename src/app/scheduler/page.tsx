@@ -14,10 +14,23 @@ export type ScheduleWithDetails = ContentSchedule & {
 
 export default async function SchedulerPage() {
   const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!authUser) {
     redirect('/login');
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('*, roles(*)').eq('id', authUser.id).single();
+  const permissions = (profile?.roles as any)?.permissions || {};
+  const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
+
+  if (!isFalaqAdmin && permissions.scheduler === 'Restricted') {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4">
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
+        <p className="text-slate-500">You do not have permission to view the Content Scheduler.</p>
+      </div>
+    );
   }
 
   const [
