@@ -6,6 +6,10 @@ import { revalidatePath } from 'next/cache';
 import type { Leave } from '@/lib/types';
 import { Resend } from 'resend';
 
+/**
+ * Handles leave application with mandatory validation, overlap prevention,
+ * and email notification to admin via Resend using the mail.falaq.com domain.
+ */
 export async function applyLeave(formData: FormData) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -19,11 +23,17 @@ export async function applyLeave(formData: FormData) {
   const leaveType = formData.get('leave_type') as string;
   const reason = formData.get('reason') as string;
 
+  // 1. Mandatory Fields Validation
   if (!startDate || !endDate || !leaveType || !reason?.trim()) {
     return { error: 'All fields including reason are mandatory.' };
   }
 
-  // Double check overlap on server side
+  // 2. Reject if End Date is before Start Date
+  if (endDate < startDate) {
+    return { error: 'End date cannot be before start date.' };
+  }
+
+  // 3. Reject if date range overlaps with an existing active application
   const { data: existing } = await supabase
     .from('leaves')
     .select('start_date, end_date')
@@ -59,10 +69,6 @@ export async function applyLeave(formData: FormData) {
   // --- Email Notification Logic ---
   const resendApiKey = process.env.RESEND_API_KEY;
   
-  if (!resendApiKey) {
-    console.warn('⚠️ RESEND_API_KEY is missing from environment variables. Email not sent.');
-  }
-
   if (resendApiKey && data) {
     try {
       const { data: profile } = await supabase
@@ -74,9 +80,9 @@ export async function applyLeave(formData: FormData) {
       const userName = profile?.full_name || user.email || 'An employee';
       const resend = new Resend(resendApiKey);
 
-      // Using the verified domain for the sender address
+      // Using the verified subdomain for the sender address as configured in Resend
       const emailResponse = await resend.emails.send({
-        from: 'Falaq Corner <notifications@falaq.com>',
+        from: 'Falaq Corner <notifications@mail.falaq.com>',
         to: 'falaqbranding@gmail.com',
         subject: `New Leave Request: ${userName}`,
         html: `
@@ -108,7 +114,7 @@ export async function applyLeave(formData: FormData) {
                 </div>
                 
                 <div style="text-align: center;">
-                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://falaq.com'}/falaq-corner" style="display: inline-block; padding: 12px 32px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 100px; font-weight: 600; font-size: 14px;">Review in Dashboard</a>
+                  <a href="https://falaq.com/falaq-corner" style="display: inline-block; padding: 12px 32px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 100px; font-weight: 600; font-size: 14px;">Review in Dashboard</a>
                 </div>
                 
                 <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 32px 0 24px 0;" />
@@ -127,6 +133,8 @@ export async function applyLeave(formData: FormData) {
     } catch (emailError) {
       console.error('❌ Failed to execute email send logic:', emailError);
     }
+  } else if (!resendApiKey) {
+    console.warn('⚠️ RESEND_API_KEY is missing. Email skipped.');
   }
 
   revalidatePath('/falaq-corner');

@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
@@ -59,6 +60,16 @@ export function ApplyLeaveDialog({
     }
   }, [isOpen])
 
+  /* Keyboard shortcuts */
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [isOpen, setIsOpen])
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
@@ -81,13 +92,14 @@ export function ApplyLeaveDialog({
       const exStart = parseISO(leave.start_date)
       const exEnd = parseISO(leave.end_date)
       
+      // Dates overlap if (start1 <= end2) AND (end1 >= start2)
       return (startDate <= exEnd) && (endDate >= exStart)
     })
 
     if (hasOverlap) {
       toast({
         title: "Date Conflict",
-        description: "You have already applied for leave during these dates.",
+        description: "You already have a leave request covering these dates.",
         variant: "destructive"
       })
       return
@@ -237,7 +249,7 @@ export function ApplyLeaveDialog({
 
           <DialogFooter className="pt-2 flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
-              Cancel
+              Cancel (Esc)
             </Button>
             <Button
               type="submit"
@@ -245,7 +257,7 @@ export function ApplyLeaveDialog({
               className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg px-8"
             >
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit Request
+              Submit (Enter)
             </Button>
           </DialogFooter>
 
