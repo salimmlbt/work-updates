@@ -10,7 +10,8 @@ import { ClientCacheProvider } from './client-cache';
 
 export const metadata: Metadata = {
   title: 'Falaq - Work Updates',
-  description: 'A comprehensive platform for managing work updates, projects, and teams.',
+  description: 'The official project and team management portal for Falaq Branding.',
+  metadataBase: new URL('https://falaq.com'),
   icons: {
     icon: '/icon.svg',
     shortcut: '/icon.svg',

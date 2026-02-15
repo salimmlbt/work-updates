@@ -1,3 +1,4 @@
+
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server';
@@ -73,8 +74,9 @@ export async function applyLeave(formData: FormData) {
       const userName = profile?.full_name || user.email || 'An employee';
       const resend = new Resend(resendApiKey);
 
+      // Using the verified domain for the sender address
       const emailResponse = await resend.emails.send({
-        from: 'Falaq Corner <onboarding@resend.dev>',
+        from: 'Falaq Corner <notifications@falaq.com>',
         to: 'falaqbranding@gmail.com',
         subject: `New Leave Request: ${userName}`,
         html: `
