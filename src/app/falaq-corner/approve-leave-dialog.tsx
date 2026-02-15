@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useTransition, useMemo, useEffect } from 'react'
@@ -12,11 +11,11 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Loader2, CheckCircle2, Calendar as CalendarIcon } from 'lucide-react'
-import { format, parseISO, differenceInCalendarDays, eachDayOfInterval, isSameDay } from 'date-fns'
+import { format, parseISO, eachDayOfInterval, isSameDay } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { updateLeaveStatus } from './actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { getInitials } from '@/lib/utils'
+import { getInitials, cn } from '@/lib/utils'
 import type { Leave, Profile } from '@/lib/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
