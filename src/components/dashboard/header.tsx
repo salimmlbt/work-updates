@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -45,6 +44,7 @@ export default function Header() {
   // Greeting State
   const [showGreeting, setShowGreeting] = useState(false);
   const [greetingText, setGreetingText] = useState('');
+  const [greetingMode, setGreetingType] = useState<'in' | 'out'>('in');
 
   const { toast } = useToast();
 
@@ -251,6 +251,12 @@ export default function Header() {
     return 'Good Evening';
   };
 
+  const playTone = (type: 'in' | 'out') => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio(type === 'in' ? '/checkin-tone.mp3' : '/checkout-tone.mp3');
+    audio.play().catch(e => console.warn("Tone play blocked by browser:", e));
+  };
+
   const speakGreeting = (text: string, name: string) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(`${text}, ${name}`);
@@ -259,7 +265,6 @@ export default function Header() {
       const voices = window.speechSynthesis.getVoices();
       
       // Target: English (India) Female Voice
-      // Common names: Heera, Veena, Zira (often used for India English in Windows/Google)
       const femaleIndianVoice = voices.find(v => 
         (v.lang.includes('en-IN') || v.lang.includes('en_IN')) && 
         (v.name.toLowerCase().includes('heera') || 
@@ -271,11 +276,10 @@ export default function Header() {
       if (femaleIndianVoice) {
         utterance.voice = femaleIndianVoice;
       } else {
-        // Fallback: slightly higher pitch if specific female voice not found
         utterance.pitch = 1.15;
       }
 
-      utterance.rate = 0.85; // Natural, friendly pace
+      utterance.rate = 0.85; 
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -283,10 +287,23 @@ export default function Header() {
   const triggerGreeting = (name: string) => {
     const greeting = getGreeting();
     setGreetingText(greeting);
+    setGreetingType('in');
     setShowGreeting(true);
+    playTone('in');
     speakGreeting(greeting, name);
     
-    // Hide after 3.5 seconds
+    setTimeout(() => {
+      setShowGreeting(false);
+    }, 3500);
+  };
+
+  const triggerCheckoutGreeting = (name: string) => {
+    setGreetingText('See you Next Day');
+    setGreetingType('out');
+    setShowGreeting(true);
+    playTone('out');
+    speakGreeting('See you next day', name);
+    
     setTimeout(() => {
       setShowGreeting(false);
     }, 3500);
@@ -334,9 +351,11 @@ export default function Header() {
       };
       toast({ title: toastMessages[action] });
       
+      const firstName = userProfile?.full_name?.split(' ')[0] || '';
       if (action === 'checkIn') {
-        const firstName = userProfile?.full_name?.split(' ')[0] || '';
         triggerGreeting(firstName);
+      } else if (action === 'checkOut') {
+        triggerCheckoutGreeting(firstName);
       }
 
       if (data) {
@@ -353,7 +372,6 @@ export default function Header() {
       setAlertType('checkout');
       setIsAlertOpen(true);
     } else if (status === 'checked-out') {
-      // Late check-in detection
       if (userProfile?.work_start_time) {
           const now = new Date();
           const scheduledStart = parse(userProfile.work_start_time, 'HH:mm:ss', now);
@@ -395,7 +413,7 @@ export default function Header() {
     );
   }
 
-  if (status === 'session-complete') {
+  if (status === 'session-complete' && !showGreeting) {
     return <header className="bg-background h-20 flex items-center" />;
   }
 
@@ -403,7 +421,6 @@ export default function Header() {
 
   return (
     <>
-      {/* Full Screen Greeting Overlay */}
       <AnimatePresence>
         {showGreeting && (
           <motion.div
@@ -424,7 +441,9 @@ export default function Header() {
                 animate={{ rotate: 0 }}
                 className="inline-flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10 border border-white/20 shadow-2xl mb-8"
               >
-                {greetingText === 'Good Morning' ? (
+                {greetingMode === 'out' ? (
+                  <span className="text-5xl">👋</span>
+                ) : greetingText === 'Good Morning' ? (
                   <span className="text-5xl">☀️</span>
                 ) : greetingText === 'Good Afternoon' ? (
                   <span className="text-5xl">⛅</span>
@@ -501,7 +520,6 @@ export default function Header() {
         </AnimatePresence>
       </motion.header>
 
-      {/* Late Reason Dialog */}
       <AlertDialog open={isLateReasonOpen} onOpenChange={setIsLateReasonOpen}>
         <AlertDialogContent className="rounded-3xl border shadow-2xl">
           <AlertDialogHeader>
