@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition, useEffect } from "react";
@@ -30,7 +31,7 @@ export function SetTimesForm({ currentLunchTime }: SetTimesFormProps) {
   let initialDefault = '13:00';
   let initialFriday = '13:00';
   
-  if (currentLunchTime && currentLunchTime.trim() !== '') {
+  if (currentLunchTime && typeof currentLunchTime === 'string' && currentLunchTime.trim() !== '') {
     try {
       // Check if it's a JSON string
       if (currentLunchTime.startsWith('{')) {

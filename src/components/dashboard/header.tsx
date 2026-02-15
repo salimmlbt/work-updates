@@ -103,12 +103,15 @@ export default function Header() {
 
       const { data: settingsData } = settingsRes;
       const rawValue = settingsData?.value;
-      if (typeof rawValue === 'string') {
+      if (rawValue && typeof rawValue === 'string' && rawValue.startsWith('{')) {
           try {
               setLunchTimeSetting(JSON.parse(rawValue));
-          } catch {
-              setLunchTimeSetting({ default: rawValue, friday: rawValue });
+          } catch (e) {
+              console.warn("Failed to parse lunch settings in header:", e);
+              setLunchTimeSetting({ default: '13:00', friday: '13:00' });
           }
+      } else if (rawValue && typeof rawValue === 'string') {
+          setLunchTimeSetting({ default: rawValue, friday: rawValue });
       } else if (rawValue && typeof rawValue === 'object') {
           setLunchTimeSetting(rawValue);
       }
@@ -125,12 +128,14 @@ export default function Header() {
         { event: '*', schema: 'public', table: 'app_settings', filter: `key=eq.lunch_start_time` },
         (payload) => {
           const rawValue = payload.new.value;
-          if (typeof rawValue === 'string') {
+          if (rawValue && typeof rawValue === 'string' && rawValue.startsWith('{')) {
               try {
                   setLunchTimeSetting(JSON.parse(rawValue));
-              } catch {
-                  setLunchTimeSetting({ default: rawValue, friday: rawValue });
+              } catch (e) {
+                  setLunchTimeSetting({ default: '13:00', friday: '13:00' });
               }
+          } else if (rawValue && typeof rawValue === 'string') {
+              setLunchTimeSetting({ default: rawValue, friday: rawValue });
           } else if (rawValue && typeof rawValue === 'object') {
               setLunchTimeSetting(rawValue);
           }
@@ -369,7 +374,7 @@ export default function Header() {
               <div className="flex-1 flex justify-center">
                 <Button
                   onClick={handleMainButtonClick}
-                  className="relative overflow-hidden rounded-full px-6 py-2 font-medium transition-all duration-500 bg-white hover:bg-gray-100 w-36"
+                  className="relative overflow-hidden rounded-full px-6 py-2 font-medium transition-all duration-500 bg-white hover:bg-gray-100 w-36 shadow-lg"
                 >
                   <span
                     className="flex items-center justify-center gap-2"
@@ -388,25 +393,27 @@ export default function Header() {
 
       {/* Late Reason Dialog */}
       <AlertDialog open={isLateReasonOpen} onOpenChange={setIsLateReasonOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-3xl border shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Late Check-In Detected</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl font-bold">Late Check-In Detected</AlertDialogTitle>
             <AlertDialogDescription>
-              It looks like you're checking in after your scheduled start time ({userProfile?.work_start_time?.slice(0, 5)}). Please provide a reason.
+              It looks like you're checking in after your scheduled start time ({userProfile?.work_start_time?.slice(0, 5)}). Please provide a reason for the delay.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4 space-y-2">
-            <Label htmlFor="late-reason">Reason for delay</Label>
+            <Label htmlFor="late-reason" className="text-sm font-semibold text-slate-700">Reason for delay</Label>
             <Textarea 
                 id="late-reason" 
-                placeholder="e.g., Traffic, Personal emergency..." 
+                placeholder="e.g., Traffic, Personal emergency, Technical issues..." 
+                className="rounded-xl min-h-[100px]"
                 value={lateReason}
                 onChange={(e) => setLateReason(e.target.value)}
             />
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setIsLateReasonOpen(false); setLateReason(''); }}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="rounded-xl" onClick={() => { setIsLateReasonOpen(false); setLateReason(''); }}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
+                className="rounded-xl bg-primary shadow-lg"
                 onClick={() => handleAction('checkIn', lateReason)}
                 disabled={!lateReason.trim()}
             >
@@ -417,29 +424,29 @@ export default function Header() {
       </AlertDialog>
 
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-3xl border shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {alertType === 'checkout' ? 'Are you sure you want to check out?' : 'What would you like to do?'}
+            <AlertDialogTitle className="text-xl font-bold">
+              {alertType === 'checkout' ? 'End your work day?' : 'Ready for lunch?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {alertType === 'checkout'
-                ? 'This will end your current work session for today.'
-                : 'You can either start your lunch break or end your work day.'}
+                ? 'This will finalize your attendance for today. Make sure all your tasks are updated!'
+                : 'You can either start your lunch break or end your work day entirely.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="rounded-xl">Wait, go back</AlertDialogCancel>
             {alertType === 'lunch' && (
-              <AlertDialogAction onClick={() => handleAction('lunchOut')} className="bg-yellow-500 hover:bg-yellow-600">
-                Lunch Out
+              <AlertDialogAction onClick={() => handleAction('lunchOut')} className="bg-yellow-500 hover:bg-yellow-600 rounded-xl text-white shadow-lg">
+                Start Lunch Out
               </AlertDialogAction>
             )}
             <AlertDialogAction
               onClick={() => handleAction('checkOut')}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl shadow-lg"
             >
-              Check Out
+              Check Out Now
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
