@@ -23,6 +23,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { differenceInSeconds, parse, isAfter } from 'date-fns';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
+import { Loader2 } from 'lucide-react';
 
 const formatTime = (totalSeconds: number) => {
   const hours = Math.floor(totalSeconds / 3600);
@@ -34,6 +35,7 @@ const formatTime = (totalSeconds: number) => {
 export default function Header() {
   const [hasMounted, setHasMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isActionPending, setIsActionPending] = useState(false);
   const [status, setStatus] = useState<'checked-out' | 'checked-in' | 'on-lunch' | 'lunch-complete' | 'session-complete'>('checked-out');
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [alertType, setAlertType] = useState<'checkout' | 'lunch'>('checkout');
@@ -250,40 +252,47 @@ export default function Header() {
     audio.play().catch(e => console.warn("Tone play blocked:", e));
   };
 
-  const playAIGreeting = useCallback(async (text: string, name: string) => {
-    const fullText = `${text}, ${name}`;
-    const { data: audioUri, error } = await getVoiceGreeting(fullText);
+  const triggerGreeting = (name: string, audioUri?: string | null) => {
+    const greeting = getGreeting();
+    setGreetingText(greeting);
+    setGreetingType('in');
+    
+    // START Visual Animation + Audio together
+    setShowGreeting(true);
+    playTone('in');
     
     if (audioUri) {
       const audio = new Audio(audioUri);
       audio.play().catch(e => console.warn("AI Voice play blocked:", e));
-    } else if (error) {
-      console.warn("AI Voice generation failed, using fallback speech synthesis.");
-      const utterance = new SpeechSynthesisUtterance(fullText);
+    } else {
+      // Fallback
+      const utterance = new SpeechSynthesisUtterance(`${greeting}, ${name}`);
       utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     }
-  }, []);
-
-  const triggerGreeting = (name: string) => {
-    const greeting = getGreeting();
-    setGreetingText(greeting);
-    setGreetingType('in');
-    setShowGreeting(true);
-    playTone('in');
-    playAIGreeting(greeting, name);
     
     setTimeout(() => {
       setShowGreeting(false);
     }, 4500);
   };
 
-  const triggerCheckoutGreeting = (name: string) => {
+  const triggerCheckoutGreeting = (name: string, audioUri?: string | null) => {
     setGreetingText('See you Next Day');
     setGreetingType('out');
+    
+    // START Visual Animation + Audio together
     setShowGreeting(true);
     playTone('out');
-    playAIGreeting('See you next day', name);
+    
+    if (audioUri) {
+      const audio = new Audio(audioUri);
+      audio.play().catch(e => console.warn("AI Voice play blocked:", e));
+    } else {
+      // Fallback
+      const utterance = new SpeechSynthesisUtterance(`See you next day, ${name}`);
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
     
     setTimeout(() => {
       setShowGreeting(false);
@@ -293,13 +302,28 @@ export default function Header() {
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn', reason?: string) => {
     setIsAlertOpen(false);
     setIsLateReasonOpen(false);
+    setIsActionPending(true);
 
-    // Instant Feedback UI
     const firstName = userProfile?.full_name?.split(' ')[0] || '';
+    let audioUri = null;
+
+    // PRE-FETCH AI VOICE if needed so we can trigger audio + animation together
+    if (action === 'checkIn' || action === 'checkOut') {
+      const greeting = action === 'checkIn' ? getGreeting() : 'See you next day';
+      const text = `${greeting}, ${firstName}`;
+      try {
+        const voiceResult = await getVoiceGreeting(text);
+        audioUri = voiceResult.data;
+      } catch (e) {
+        console.warn("AI Greeting fetch failed, will use fallback.");
+      }
+    }
+
+    // Now trigger the "Premium" experience (Animation + Voice starting together)
     if (action === 'checkIn') {
-      triggerGreeting(firstName);
+      triggerGreeting(firstName, audioUri);
     } else if (action === 'checkOut') {
-      triggerCheckoutGreeting(firstName);
+      triggerCheckoutGreeting(firstName, audioUri);
     }
 
     const optimisticStateMap = {
@@ -313,7 +337,7 @@ export default function Header() {
     setIsTimerRunning(action === 'checkIn' || action === 'lunchIn');
     setStatus(optimisticStateMap[action]);
 
-    // Handle background logic
+    // Handle database background logic
     let result;
     if (action === 'checkIn') {
         result = await checkIn(reason);
@@ -334,6 +358,8 @@ export default function Header() {
     } else if (data) {
       setAttendanceRecord((prev: any) => ({ ...prev, ...data }));
     }
+    
+    setIsActionPending(false);
   };
 
   const handleMainButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -475,15 +501,20 @@ export default function Header() {
               <div className="flex-1 flex justify-center">
                 <Button
                   onClick={handleMainButtonClick}
+                  disabled={isActionPending}
                   className="relative overflow-hidden rounded-full px-6 py-2 font-medium transition-all duration-500 bg-white hover:bg-gray-100 w-36 shadow-lg"
                 >
-                  <span
-                    className="flex items-center justify-center gap-2"
-                    style={{ color: buttonContent.color }}
-                  >
-                    {buttonContent.text}
-                    {buttonContent.icon}
-                  </span>
+                  {isActionPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" style={{ color: buttonContent.color }} />
+                  ) : (
+                    <span
+                      className="flex items-center justify-center gap-2"
+                      style={{ color: buttonContent.color }}
+                    >
+                      {buttonContent.text}
+                      {buttonContent.icon}
+                    </span>
+                  )}
                 </Button>
               </div>
               <div className="flex-1" />
