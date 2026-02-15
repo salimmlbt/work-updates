@@ -1,4 +1,3 @@
-
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server';
@@ -19,8 +18,23 @@ export async function applyLeave(formData: FormData) {
   const leaveType = formData.get('leave_type') as string;
   const reason = formData.get('reason') as string;
 
-  if (!startDate || !endDate || !leaveType) {
-    return { error: 'Missing required fields.' };
+  if (!startDate || !endDate || !leaveType || !reason?.trim()) {
+    return { error: 'All fields including reason are mandatory.' };
+  }
+
+  // Double check overlap on server side
+  const { data: existing } = await supabase
+    .from('leaves')
+    .select('start_date, end_date')
+    .eq('user_id', user.id)
+    .not('status', 'in', '("Cancelled", "Rejected")');
+
+  const hasOverlap = existing?.some(leave => {
+    return (startDate <= leave.end_date) && (endDate >= leave.start_date);
+  });
+
+  if (hasOverlap) {
+    return { error: 'You already have an active leave application for these dates.' };
   }
 
   const { data, error } = await supabase
@@ -30,7 +44,7 @@ export async function applyLeave(formData: FormData) {
       start_date: startDate,
       end_date: endDate,
       leave_type: leaveType,
-      reason: reason || null,
+      reason: reason.trim(),
       status: 'Pending',
     })
     .select()
@@ -45,7 +59,6 @@ export async function applyLeave(formData: FormData) {
   const resendApiKey = process.env.RESEND_API_KEY;
   if (resendApiKey && data) {
     try {
-      // Fetch user profile for the name
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
@@ -68,21 +81,19 @@ export async function applyLeave(formData: FormData) {
               <p style="margin: 8px 0;"><strong>Employee:</strong> ${userName}</p>
               <p style="margin: 8px 0;"><strong>Leave Type:</strong> ${leaveType}</p>
               <p style="margin: 8px 0;"><strong>Dates:</strong> ${startDate} to ${endDate}</p>
-              <p style="margin: 8px 0;"><strong>Reason:</strong> ${reason || 'No reason provided.'}</p>
+              <p style="margin: 8px 0;"><strong>Reason:</strong> ${reason}</p>
             </div>
             
-            <p style="font-size: 14px; color: #94a3b8;">This is an automated notification. Please log in to the dashboard to approve or reject this request.</p>
+            <p style="font-size: 14px; color: #94a3b8;">This is an automated notification. Please log in to the dashboard to review this request.</p>
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
             <p style="font-size: 12px; color: #cbd5e1; text-align: center;">Falaq Corner Dashboard</p>
           </div>
         `,
       });
     } catch (emailError) {
-      // Log the error but don't stop the database operation
       console.error('Failed to send leave notification email:', emailError);
     }
   }
-  // ---------------------------------
 
   revalidatePath('/falaq-corner');
   return { data: data as Leave };
@@ -100,7 +111,7 @@ export async function cancelLeave(leaveId: string) {
     .from('leaves')
     .update({ status: 'Cancelled' })
     .eq('id', leaveId)
-    .eq('user_id', user.id) // Security check
+    .eq('user_id', user.id)
     .in('status', ['Pending', 'Approved']);
 
   if (error) {

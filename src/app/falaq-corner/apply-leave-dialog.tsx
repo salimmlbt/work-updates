@@ -22,7 +22,7 @@ import {
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Loader2, Calendar as CalendarIcon } from 'lucide-react'
-import { format, differenceInCalendarDays, isWithinInterval, parseISO } from 'date-fns'
+import { format, differenceInCalendarDays, parseISO } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { applyLeave } from './actions'
 import { cn } from '@/lib/utils'
@@ -81,7 +81,6 @@ export function ApplyLeaveDialog({
       const exStart = parseISO(leave.start_date)
       const exEnd = parseISO(leave.end_date)
       
-      // Standard overlap check: (StartA <= EndB) and (EndA >= StartB)
       return (startDate <= exEnd) && (endDate >= exStart)
     })
 
