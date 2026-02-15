@@ -2,7 +2,6 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, FileText, XCircle, Loader2 } from 'lucide-react';
@@ -63,69 +62,110 @@ export function LeaveSection() {
   };
 
   return (
-    <div className="relative h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Leave Management</CardTitle>
-        <CardDescription>View and track your leave history.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto">
+    <div className="relative h-full flex flex-col rounded-3xl border border-slate-200/60 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
+
+      {/* Header */}
+      <div className="p-6 bg-white/70 backdrop-blur-md border-b">
+        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+          Leave Management
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          View and track your leave history
+        </p>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-5">
+
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
         ) : leaves.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-slate-50/50 rounded-xl border-2 border-dashed">
-            <FileText className="h-12 w-12 mb-4 opacity-20" />
-            <p>No leave requests found.</p>
+          <div className="flex flex-col items-center justify-center py-16 rounded-2xl bg-slate-50 border border-dashed text-slate-400">
+            <FileText className="h-12 w-12 mb-4 opacity-30" />
+            <p className="font-medium">No leave requests yet</p>
           </div>
         ) : (
           <div className="space-y-4">
+
             {leaves.map((leave) => (
-              <div key={leave.id} className="flex items-center justify-between p-4 rounded-xl border bg-white shadow-sm hover:shadow-md transition-all">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-slate-900">{leave.leave_type}</span>
-                    {getStatusBadge(leave.status)}
+              <div
+                key={leave.id}
+                className="
+                  group bg-white/80 backdrop-blur-sm
+                  rounded-2xl p-5
+                  shadow-sm hover:shadow-lg
+                  transition-all duration-200
+                  border border-slate-200/60
+                "
+              >
+                <div className="flex items-start justify-between gap-4">
+
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-slate-900">
+                        {leave.leave_type}
+                      </span>
+                      {getStatusBadge(leave.status)}
+                    </div>
+
+                    <p className="text-sm text-slate-500">
+                      {format(parseISO(leave.start_date), 'dd MMM')} – {format(parseISO(leave.end_date), 'dd MMM yyyy')}
+                    </p>
+
+                    {leave.reason && (
+                      <p className="text-xs text-slate-400 italic max-w-md line-clamp-1">
+                        {leave.reason}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-sm text-slate-500 font-medium">
-                    {format(parseISO(leave.start_date), 'dd MMM')} - {format(parseISO(leave.end_date), 'dd MMM yyyy')}
-                  </p>
-                  {leave.reason && <p className="text-xs text-slate-400 italic line-clamp-1 max-w-md">{leave.reason}</p>}
+
+                  {(leave.status === 'Pending' || leave.status === 'Approved') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="
+                        text-rose-600 hover:bg-rose-50 hover:text-rose-700
+                        rounded-full px-4
+                      "
+                      onClick={() => handleCancel(leave.id)}
+                      disabled={isPending}
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                  )}
+
                 </div>
-                {(leave.status === 'Pending' || leave.status === 'Approved') && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                    onClick={() => handleCancel(leave.id)}
-                    disabled={isPending}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                )}
               </div>
             ))}
+
           </div>
         )}
-      </CardContent>
+      </div>
 
-      {/* Floating Action Button */}
-      <div className="absolute bottom-8 right-8">
-        <Button 
-          size="lg" 
-          className="rounded-full shadow-lg h-14 px-6 gap-2"
+      {/* Floating CTA */}
+      <div className="absolute bottom-6 right-6">
+        <Button
+          size="lg"
+          className="
+            rounded-full h-14 px-7 gap-2
+            shadow-xl
+            bg-gradient-to-r from-blue-600 to-purple-600
+            hover:from-blue-700 hover:to-purple-700
+          "
           onClick={() => setIsApplyDialogOpen(true)}
         >
           <Plus className="h-5 w-5" />
-          Apply for Leave
+          Apply Leave
         </Button>
       </div>
 
-      <ApplyLeaveDialog 
-        isOpen={isApplyDialogOpen} 
-        setIsOpen={setIsApplyDialogOpen} 
-        onSuccess={fetchLeaves} 
+      <ApplyLeaveDialog
+        isOpen={isApplyDialogOpen}
+        setIsOpen={setIsApplyDialogOpen}
+        onSuccess={fetchLeaves}
       />
     </div>
   );
