@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -103,7 +102,7 @@ export default function Header() {
 
       const { data: settingsData } = settingsRes;
       const rawValue = settingsData?.value;
-      if (rawValue && typeof rawValue === 'string' && rawValue.startsWith('{')) {
+      if (rawValue && typeof rawValue === 'string' && rawValue.trim().startsWith('{')) {
           try {
               setLunchTimeSetting(JSON.parse(rawValue));
           } catch (e) {
@@ -128,7 +127,7 @@ export default function Header() {
         { event: '*', schema: 'public', table: 'app_settings', filter: `key=eq.lunch_start_time` },
         (payload) => {
           const rawValue = payload.new.value;
-          if (rawValue && typeof rawValue === 'string' && rawValue.startsWith('{')) {
+          if (rawValue && typeof rawValue === 'string' && rawValue.trim().startsWith('{')) {
               try {
                   setLunchTimeSetting(JSON.parse(rawValue));
               } catch (e) {
