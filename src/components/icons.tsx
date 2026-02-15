@@ -192,8 +192,8 @@ export function ReportIcon(props: SVGProps<SVGSVGElement>) {
 
 export function CornerIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 857.71 857.71" {...props}>
-      <path d="M592.13,0H19.41v186.32h520.23L13.56,712.4c-18.08,18.08-18.08,47.39,0,65.47l66.28,66.28c18.08,18.08,47.39,18.08,65.47,0L671.39,318.06v520.23h186.32V265.57C857.71,118.9,738.8,0,592.13,0Z" fill="currentColor"/>
+    <svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 761.8 761.8" {...props}>
+      <path d="M518.2,142.5H142.5v36h375.7c11.4,0,22.2,3,31.5,8.1l-407.1,407.1,25.5,25.5,407.1-407.1c5.2,9.3,8.2,20.1,8.2,31.5v375.7h36V243.6c0-55.7-45.4-101.1-101.1-101.1Z" fill="currentColor"/>
     </svg>
   );
 }
