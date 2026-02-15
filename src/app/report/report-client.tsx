@@ -61,7 +61,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
 
   return (
     <Card className="
-      group relative flex flex-col
+      group relative flex flex-col h-fit
       rounded-3xl
       border border-slate-200/60
       bg-gradient-to-br from-white to-slate-50
@@ -123,8 +123,8 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
       </CardHeader>
 
       {/* BODY */}
-      <CardContent className="flex-1 p-5 pt-3">
-        <ScrollArea className="h-[420px] pr-2">
+      <CardContent className="p-5 pt-3">
+        <ScrollArea className="max-h-[500px] pr-2">
           <div className="space-y-4">
 
             {tasks.map((task) => {
@@ -271,7 +271,7 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
             </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 items-start">
             {initialProfiles.map((profile) => (
             <UserReportCard 
                 key={profile.id} 
