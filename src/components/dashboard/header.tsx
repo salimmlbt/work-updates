@@ -42,6 +42,10 @@ export default function Header() {
   const [lateReason, setLateReason] = useState('');
   const [userProfile, setUserProfile] = useState<any>(null);
 
+  // Greeting State
+  const [showGreeting, setShowGreeting] = useState(false);
+  const [greetingText, setGreetingText] = useState('');
+
   const { toast } = useToast();
 
   const [showLunchButton, setShowLunchButton] = useState(false);
@@ -236,6 +240,34 @@ export default function Header() {
     return () => clearInterval(interval);
   }, [isLoading, lunchTimeSetting, hasMounted]);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const speakGreeting = (text: string, name: string) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(`${text}, ${name}`);
+      utterance.rate = 0.9; // Slightly slower for a professional feel
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const triggerGreeting = (name: string) => {
+    const greeting = getGreeting();
+    setGreetingText(greeting);
+    setShowGreeting(true);
+    speakGreeting(greeting, name);
+    
+    // Hide after 3.5 seconds
+    setTimeout(() => {
+      setShowGreeting(false);
+    }, 3500);
+  };
+
   // Action handler
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn', reason?: string) => {
     setIsAlertOpen(false);
@@ -277,6 +309,12 @@ export default function Header() {
         lunchIn: 'Lunch ended',
       };
       toast({ title: toastMessages[action] });
+      
+      if (action === 'checkIn') {
+        const firstName = userProfile?.full_name?.split(' ')[0] || '';
+        triggerGreeting(firstName);
+      }
+
       if (data) {
         setAttendanceRecord((prev: any) => ({ ...prev, ...data }));
       }
@@ -341,6 +379,54 @@ export default function Header() {
 
   return (
     <>
+      {/* Full Screen Greeting Overlay */}
+      <AnimatePresence>
+        {showGreeting && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-2xl"
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 40, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 1.1, y: -20, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="text-center p-12"
+            >
+              <motion.div
+                initial={{ rotate: -10 }}
+                animate={{ rotate: 0 }}
+                className="inline-flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10 border border-white/20 shadow-2xl mb-8"
+              >
+                {greetingText === 'Good Morning' ? (
+                  <span className="text-5xl">☀️</span>
+                ) : greetingText === 'Good Afternoon' ? (
+                  <span className="text-5xl">⛅</span>
+                ) : (
+                  <span className="text-5xl">🌙</span>
+                )}
+              </motion.div>
+              <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter mb-4">
+                {greetingText}
+              </h1>
+              <p className="text-3xl md:text-4xl font-semibold text-white/80 tracking-tight">
+                {userProfile?.full_name}
+              </p>
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 3 }}
+                className="h-1 bg-white/20 rounded-full mt-12 mx-auto max-w-[200px] overflow-hidden"
+              >
+                <motion.div className="h-full bg-white w-full" />
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.header
         onMouseEnter={() => setIsExpanded(true)}
         onMouseLeave={() => setIsExpanded(false)}
