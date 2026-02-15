@@ -13,13 +13,16 @@ import {
   Clock,
   FileX,
   Send,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { getInitials, cn } from '@/lib/utils';
 import { format, parseISO, isToday } from 'date-fns';
 import type { Profile, TaskWithDetails, Task } from '@/lib/types';
@@ -223,6 +226,13 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
     router.push(`/report?date=${newDate}`);
   };
 
+  const handleCalendarSelect = (selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      const formatted = format(selectedDate, 'yyyy-MM-dd');
+      handleDateChange(formatted);
+    }
+  };
+
   const formattedTitleDate = format(parseISO(date), 'EEEE, dd MMMM yyyy');
 
   return (
@@ -237,19 +247,33 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
             variant="outline" 
             onClick={() => handleDateChange(format(new Date(), 'yyyy-MM-dd'))} 
             disabled={isToday(parseISO(date))}
-            className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50"
+            className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 h-10"
           >
             Today
           </Button>
-          <div className="flex items-center border border-slate-200 rounded-xl bg-white shadow-sm px-4 h-10">
-            <CalendarIcon className="h-4 w-4 text-slate-400 mr-2" />
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => handleDateChange(e.target.value)}
-              className="border-0 p-0 h-auto w-32 focus-visible:ring-0 text-sm font-medium text-slate-700 bg-transparent"
-            />
-          </div>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[240px] justify-start text-left font-medium rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 h-10",
+                  !date && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+                {date ? format(parseISO(date), "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 rounded-xl shadow-xl" align="end">
+              <Calendar
+                mode="single"
+                selected={parseISO(date)}
+                onSelect={handleCalendarSelect}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </header>
 
