@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Repeat,
   Clock,
+  FileX,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -66,7 +67,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
   const approvalRate = totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0;
 
   return (
-    <Card className="flex flex-col shadow-sm hover:shadow-md transition-shadow">
+    <Card className="flex flex-col shadow-sm hover:shadow-md transition-shadow h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-4">
           <Avatar className="h-12 w-12 border">
@@ -87,46 +88,40 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-0">
-        {totalTasks > 0 ? (
-          <ScrollArea className="h-[300px]">
-            <ul className="divide-y border-t">
-              {tasks.map((task) => (
-                <li key={`${task.id}-${task.submitted_at}`} className="p-4 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-tight mb-1 line-clamp-2">{task.description}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="truncate">{task.projects?.name || 'No project'}</span>
-                        {hasMounted && (
-                          <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0">
-                            • {format(parseISO(task.submitted_at), 'h:mm a')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <Badge className={cn("px-2 py-0 h-5 text-[10px] border-0", statusColors[task.status])}>
-                            <span className="flex items-center gap-1">
-                                {statusIcons[task.status]}
-                                {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
-                            </span>
-                        </Badge>
-                        {task.submission_type !== 'original' && (
-                            <Badge variant="outline" className="px-1.5 py-0 h-4 text-[9px] border-blue-200 text-blue-600 bg-blue-50/50 uppercase tracking-wider">
-                                {task.submission_type}
-                            </Badge>
-                        )}
+        <ScrollArea className="h-[400px]">
+          <ul className="divide-y border-t">
+            {tasks.map((task) => (
+              <li key={`${task.id}-${task.submitted_at}`} className="p-4 hover:bg-muted/30 transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-tight mb-1 line-clamp-2">{task.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">{task.projects?.name || 'No project'}</span>
+                      {hasMounted && (
+                        <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0">
+                          • {format(parseISO(task.submitted_at), 'h:mm a')}
+                        </span>
+                      )}
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </ScrollArea>
-        ) : (
-          <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground p-6 text-center border-t italic text-sm">
-            <p>No submissions for this date.</p>
-          </div>
-        )}
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <Badge className={cn("px-2 py-0 h-5 text-[10px] border-0", statusColors[task.status])}>
+                          <span className="flex items-center gap-1">
+                              {statusIcons[task.status]}
+                              {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                          </span>
+                      </Badge>
+                      {task.submission_type !== 'original' && (
+                          <Badge variant="outline" className="px-1.5 py-0 h-4 text-[9px] border-blue-200 text-blue-600 bg-blue-50/50 uppercase tracking-wider font-bold">
+                              {task.submission_type === 'correction' ? 'Correction' : 'Recreated'}
+                          </Badge>
+                      )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
@@ -166,15 +161,30 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {initialProfiles.map((profile) => (
-          <UserReportCard 
-            key={profile.id} 
-            user={profile} 
-            tasks={initialTasks.filter(t => t.assignee_id === profile.id)}
-          />
-        ))}
-      </div>
+      {initialProfiles.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 text-center bg-white rounded-2xl border border-dashed">
+            <div className="bg-slate-100 p-4 rounded-full mb-4">
+                <FileX className="h-10 w-10 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900">No submissions found</h3>
+            <p className="text-slate-500 max-w-xs mt-2">
+                There are no review tasks submitted for {format(parseISO(date), 'MMM d, yyyy')}.
+            </p>
+            <Button variant="link" onClick={() => handleDateChange(format(new Date(), 'yyyy-MM-dd'))} className="mt-4">
+                Check Today
+            </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {initialProfiles.map((profile) => (
+            <UserReportCard 
+                key={profile.id} 
+                user={profile} 
+                tasks={initialTasks.filter(t => t.assignee_id === profile.id)}
+            />
+            ))}
+        </div>
+      )}
     </div>
   );
 }

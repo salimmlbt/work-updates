@@ -1,8 +1,8 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import ReportClient from './report-client';
-import type { Profile, TaskWithDetails, SubmissionHistoryEntry } from '@/lib/types';
-import { format, parseISO } from 'date-fns';
+import type { Profile, SubmissionHistoryEntry } from '@/lib/types';
+import { format } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +40,7 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
                     : [];
         }
     } catch (e) {
-        console.error('Failed to parse history for task', task.id, e);
+        return false;
     }
 
     // Hide tasks that are currently back in "todo" or "inprogress"
@@ -74,9 +74,14 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
       };
   });
 
+  // CRITICAL CHANGE: Only show users who have tasks for this specific date
+  const activeProfiles = (profiles as Profile[] || []).filter(profile => 
+    reportTasks.some(task => task.assignee_id === profile.id)
+  );
+
   return (
     <ReportClient 
-      initialProfiles={profiles as Profile[] || []} 
+      initialProfiles={activeProfiles} 
       initialTasks={reportTasks as any[]} 
       selectedDate={selectedDate}
     />
