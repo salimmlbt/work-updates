@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 
 const ToastProvider = ToastPrimitives.Provider
 
-/* 📍 Responsive Positioning */
+/* 📍 Modern Top-Center Positioning */
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
@@ -17,9 +17,8 @@ const ToastViewport = React.forwardRef<
     ref={ref}
     className={cn(
       "fixed z-[100] flex max-h-screen w-[360px] flex-col gap-3 outline-none",
-      "top-6 right-6", // desktop
-      "sm:top-6 sm:right-6",
-      "max-sm:bottom-6 max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:top-auto", // mobile bottom center
+      "top-6 left-1/2 -translate-x-1/2", // Centered at the top
+      "max-sm:bottom-6 max-sm:top-auto", // mobile bottom center fallback
       className
     )}
     {...props}
@@ -32,10 +31,10 @@ const toastVariants = cva(
   `
   group relative flex items-start gap-3 w-full
   rounded-2xl p-4 pr-10
-  backdrop-blur-xl border shadow-xl
+  backdrop-blur-xl border shadow-2xl
   transition-all duration-300 ease-out
   data-[state=open]:animate-in
-  data-[state=open]:slide-in-from-right-5
+  data-[state=open]:slide-in-from-top-5
   data-[state=closed]:animate-out
   data-[state=closed]:fade-out-80
 `,
