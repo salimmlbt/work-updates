@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useTransition, useEffect, useMemo } from 'react'
@@ -87,13 +86,24 @@ export function ApplyLeaveDialog({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    // Validation: Start date and Reason are mandatory. End date is optional.
+    // Validation: Start date and Reason are mandatory.
     if (!leaveType || !startDate || !reason.trim()) {
       setShowError(true)
       setTimeout(() => setShowError(false), 400)
       toast({
         title: "Validation Error",
         description: "Please select leave type, start date, and provide a reason.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Special Rule: End Date is strictly mandatory for Maternity leave
+    if (leaveType === 'Maternity leave' && !endDate) {
+      setShowError(true)
+      toast({
+        title: "End date required",
+        description: "Maternity leave requires a return date (End Date).",
         variant: "destructive"
       })
       return
@@ -220,9 +230,11 @@ export function ApplyLeaveDialog({
               </Popover>
             </div>
 
-            {/* End (Optional) */}
+            {/* End */}
             <div className="space-y-2">
-              <Label>To (Optional)</Label>
+              <Label>
+                To {leaveType === 'Maternity leave' ? <span className="text-rose-500">*</span> : '(Optional)'}
+              </Label>
               <div className="relative group">
                 <Popover>
                   <PopoverTrigger asChild>
@@ -233,11 +245,12 @@ export function ApplyLeaveDialog({
                       className={cn(
                         'w-full justify-start rounded-xl text-left font-normal transition-all duration-300',
                         !endDate && 'text-slate-400',
-                        !startDate && 'opacity-50 grayscale'
+                        !startDate && 'opacity-50 grayscale',
+                        showError && leaveType === 'Maternity leave' && !endDate && 'ring-2 ring-rose-400 animate-shake'
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, 'PPP') : 'Add end date'}
+                      {endDate ? format(endDate, 'PPP') : leaveType === 'Maternity leave' ? 'Pick end date' : 'Add end date'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="p-0 rounded-xl shadow-lg">
