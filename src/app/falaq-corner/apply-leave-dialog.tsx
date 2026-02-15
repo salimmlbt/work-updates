@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,7 +11,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -20,10 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Loader2, Calendar as CalendarIcon } from 'lucide-react'
+import { format, differenceInCalendarDays } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { applyLeave } from './actions'
-import { format, differenceInCalendarDays, parseISO } from 'date-fns'
+import { cn } from '@/lib/utils'
 
 interface ApplyLeaveDialogProps {
   isOpen: boolean
@@ -39,30 +41,22 @@ export function ApplyLeaveDialog({
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] = useState<Date>()
+  const [endDate, setEndDate] = useState<Date>()
   const [showError, setShowError] = useState(false)
-
-  /* Keyboard shortcuts */
-  useEffect(() => {
-    if (!isOpen) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [isOpen, setIsOpen])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!startDate || !endDate || endDate < startDate) {
       setShowError(true)
-      setTimeout(() => setShowError(false), 500)
+      setTimeout(() => setShowError(false), 400)
       return
     }
 
     const formData = new FormData(e.currentTarget)
+    formData.set('start_date', startDate.toISOString().slice(0, 10))
+    formData.set('end_date', endDate.toISOString().slice(0, 10))
 
     startTransition(async () => {
       const result = await applyLeave(formData)
@@ -77,9 +71,8 @@ export function ApplyLeaveDialog({
   }
 
   const showPreview = startDate && endDate && endDate >= startDate
-  const totalDays = showPreview
-    ? differenceInCalendarDays(parseISO(endDate), parseISO(startDate)) + 1
-    : 0
+  const totalDays =
+    showPreview ? differenceInCalendarDays(endDate!, startDate!) + 1 : 0
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -92,18 +85,18 @@ export function ApplyLeaveDialog({
               Apply for Leave
             </DialogTitle>
             <DialogDescription>
-              Select your dates and submit request
+              Choose your dates and submit your request
             </DialogDescription>
           </DialogHeader>
 
-          {/* Leave type */}
+          {/* Leave Type */}
           <div className="space-y-2">
             <Label>Leave Type</Label>
             <Select name="leave_type" defaultValue="Casual Leave">
               <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder="Select leave type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 <SelectItem value="Casual Leave">Casual Leave</SelectItem>
                 <SelectItem value="Sick Leave">Sick Leave</SelectItem>
                 <SelectItem value="Planned Leave">Planned Leave</SelectItem>
@@ -114,37 +107,71 @@ export function ApplyLeaveDialog({
             </Select>
           </div>
 
-          {/* Dates */}
+          {/* Date Pickers */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+
+            {/* Start */}
+            <div className="space-y-2">
               <Label>From</Label>
-              <Input
-                type="date"
-                name="start_date"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                className={`rounded-xl transition-all ${showError ? 'animate-shake ring-2 ring-rose-400' : ''}`}
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start rounded-xl text-left font-normal',
+                      !startDate && 'text-slate-400',
+                      showError && 'ring-2 ring-rose-400 animate-shake'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, 'PPP') : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 rounded-xl shadow-lg">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
-            <div>
+            {/* End */}
+            <div className="space-y-2">
               <Label>To</Label>
-              <Input
-                type="date"
-                name="end_date"
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                className={`rounded-xl transition-all ${showError ? 'animate-shake ring-2 ring-rose-400' : ''}`}
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start rounded-xl text-left font-normal',
+                      !endDate && 'text-slate-400',
+                      showError && 'ring-2 ring-rose-400 animate-shake'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, 'PPP') : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 rounded-xl shadow-lg">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
+
           </div>
 
-          {/* Preview chip */}
+          {/* Preview Chip */}
           {showPreview && (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium w-fit">
-              {format(parseISO(startDate), 'MMM dd')} → {format(parseISO(endDate), 'MMM dd')} • {totalDays} day{totalDays !== 1 ? 's' : ''}
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium w-fit">
+              {format(startDate!, 'MMM dd')} → {format(endDate!, 'MMM dd')} • {totalDays} day{totalDays !== 1 ? 's' : ''}
             </div>
           )}
 
@@ -154,26 +181,24 @@ export function ApplyLeaveDialog({
             <Textarea
               name="reason"
               placeholder="Briefly explain your leave..."
-              className="rounded-xl min-h-[100px]"
+              className="rounded-xl min-h-[90px]"
             />
           </div>
 
-          <DialogFooter className="flex justify-end gap-3 pt-2">
-
+          <DialogFooter className="pt-2 flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
-              Cancel (Esc)
+              Cancel
             </Button>
-
             <Button
               type="submit"
               disabled={isPending}
               className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg px-8"
             >
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit (Enter)
+              Submit Request
             </Button>
-
           </DialogFooter>
+
         </form>
       </DialogContent>
     </Dialog>
