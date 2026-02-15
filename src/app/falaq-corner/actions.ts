@@ -8,7 +8,7 @@ import { Resend } from 'resend';
 
 /**
  * Handles leave application with mandatory validation, overlap prevention,
- * and email notification to admin via Resend using the mail.falaq.com domain.
+ * and email notification to admin via Resend using the verified domain mail.falaq.com.
  */
 export async function applyLeave(formData: FormData) {
   const supabase = await createServerClient();
