@@ -416,7 +416,7 @@ export async function updateTaskStatus(
         return { error: 'Could not retrieve task to update status.' };
     }
 
-    const updates: Partial<Task> = { 
+    const updates: any = { 
       status, 
       status_updated_at: new Date().toISOString(),
       status_updated_by: user.id
@@ -424,9 +424,18 @@ export async function updateTaskStatus(
     
     // --- Submission History Logic ---
     if (status === 'review' || status === 'under-review') {
-        const history: SubmissionHistoryEntry[] = (currentTask.submission_history as SubmissionHistoryEntry[] | null) || [];
+        let history: SubmissionHistoryEntry[] = [];
+        try {
+            if (currentTask.submission_history) {
+                history = typeof currentTask.submission_history === 'string' 
+                    ? JSON.parse(currentTask.submission_history) 
+                    : currentTask.submission_history;
+            }
+        } catch (e) {
+            console.error('Failed to parse submission history', e);
+        }
+
         let type: SubmissionType = 'original';
-        
         if (currentTask.status === 'corrections') {
             type = 'correction';
         } else if (currentTask.status === 'recreate') {
@@ -1098,8 +1107,8 @@ export async function delete_task_attachments(task_id: string) {
 
     const attachments = task.attachments as Attachment[] | null;
     if (attachments && attachments.length > 0) {
-        const paths = attachments.map(att => att.path);
-        const { error: deleteError } = await supabase.storage.from('attachments').remove(paths);
+        const BirdPaths = attachments.map(att => att.path);
+        const { error: deleteError } = await supabase.storage.from('attachments').remove(BirdPaths);
         if (deleteError) {
             console.error('Error deleting attachments from storage:', deleteError);
             return { error: 'Failed to delete attachments from storage' };
@@ -1283,7 +1292,7 @@ export async function renameIndustry(id: number, name: string): Promise<{ data: 
 
 export async function deleteIndustry(id: number): Promise<{ error: string | null }> {
     const supabase = await createServerClient();
-    const { error } = await supabase.from('industries').delete().eq('id', id);
+    const { error = null } = await supabase.from('industries').delete().eq('id', id);
     if (error) return { error: error.message };
     revalidatePath('/accessibility');
     return { error: null };
@@ -1401,7 +1410,7 @@ export async function restoreSchedule(scheduleId: string): Promise<{ success: bo
 
 export async function deleteSchedulePermanently(scheduleId: string): Promise<{ success: boolean; error?: string }> {
     const supabase = await createServerClient();
-    const { error } = await supabase.from('content_schedules').delete().eq('id', scheduleId);
+    const { error = null } = await supabase.from('content_schedules').delete().eq('id', scheduleId);
     if (error) {
         return { success: false, error: error.message };
     }

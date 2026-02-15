@@ -454,6 +454,7 @@ export type Database = {
           status_updated_by: string | null
           tags: string[] | null
           type: string | null
+          submission_history: Json | null
         }
         Insert: {
           assignee_id?: string | null
@@ -486,6 +487,7 @@ export type Database = {
           status_updated_by?: string | null
           tags?: string[] | null
           type?: string | null
+          submission_history?: Json | null
         }
         Update: {
           assignee_id?: string | null
@@ -518,6 +520,7 @@ export type Database = {
           status_updated_by?: string | null
           tags?: string[] | null
           type?: string | null
+          submission_history?: Json | null
         }
         Relationships: [
           {
@@ -658,5 +661,3 @@ export type Database = {
     }
   }
 }
-
-    
