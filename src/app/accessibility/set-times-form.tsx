@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useTransition, useEffect } from "react";
@@ -27,17 +26,27 @@ export function SetTimesForm({ currentLunchTime }: SetTimesFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   
-  // Parse initial config
+  // Parse initial config safely
   let initialDefault = '13:00';
   let initialFriday = '13:00';
   
-  try {
-    const config = JSON.parse(currentLunchTime);
-    initialDefault = config.default || '13:00';
-    initialFriday = config.friday || '13:00';
-  } catch (e) {
-    initialDefault = currentLunchTime;
-    initialFriday = currentLunchTime;
+  if (currentLunchTime && currentLunchTime.trim() !== '') {
+    try {
+      // Check if it's a JSON string
+      if (currentLunchTime.startsWith('{')) {
+        const config = JSON.parse(currentLunchTime);
+        initialDefault = config.default || '13:00';
+        initialFriday = config.friday || '13:00';
+      } else {
+        // It's a plain time string
+        initialDefault = currentLunchTime;
+        initialFriday = currentLunchTime;
+      }
+    } catch (e) {
+      console.warn("Could not parse lunch time setting, using defaults:", e);
+      initialDefault = '13:00';
+      initialFriday = '13:00';
+    }
   }
 
   const {
