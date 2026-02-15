@@ -18,8 +18,20 @@ export type AppSettings = DB['public']['Tables']['app_settings']['Row'];
 export type OfficialHoliday = DB['public']['Tables']['official_holidays']['Row'];
 export type Industry = DB['public']['Tables']['industries']['Row'];
 export type WorkType = DB['public']['Tables']['work_types']['Row'];
-export type ContentSchedule = DB['public']['Tables']['content_schedules']['Row'];
 export type Attendance = DB['public']['Tables']['attendance']['Row'];
+
+export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
+
+export interface Leave {
+  id: string;
+  user_id: string;
+  start_date: string;
+  end_date: string;
+  leave_type: string;
+  reason: string | null;
+  status: LeaveStatus;
+  created_at: string;
+}
 
 export type SubmissionType = 'original' | 'correction' | 'recreate';
 

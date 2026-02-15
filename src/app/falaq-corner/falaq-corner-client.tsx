@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FileText, Inbox, Send, ChevronRight } from 'lucide-react';
+import { LeaveSection } from './leave-section';
 
 type Section = 'leave' | 'request-center' | 'inbox';
 
@@ -21,21 +22,7 @@ export default function FalaqCornerClient() {
   const renderContent = () => {
     switch (activeSection) {
       case 'leave':
-        return (
-          <Card className="border-0 shadow-none">
-            <CardHeader>
-              <CardTitle>Leave Management</CardTitle>
-              <CardDescription>Apply for and track your leave requests.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-slate-50/50 rounded-xl border-2 border-dashed">
-                <FileText className="h-12 w-12 mb-4 opacity-20" />
-                <p>No leave history found.</p>
-                <Button variant="outline" className="mt-4 rounded-full">Apply for Leave</Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
+        return <LeaveSection />;
       case 'request-center':
         return (
           <Card className="border-0 shadow-none">
@@ -80,7 +67,7 @@ export default function FalaqCornerClient() {
   return (
     <div className="flex flex-col md:flex-row gap-8">
       <aside className="w-full md:w-64">
-        <h2 className="text-xl font-bold mb-6 px-2">Falaq Corner</h2>
+        <h2 className="text-xl font-bold mb-6 px-2 text-slate-900">Falaq Corner</h2>
         <nav className="space-y-1">
           {navigationItems.map((item) => (
             <button
@@ -102,7 +89,7 @@ export default function FalaqCornerClient() {
         </nav>
       </aside>
       
-      <main className="flex-1 min-h-[600px] bg-white rounded-3xl border shadow-sm overflow-hidden">
+      <main className="flex-1 min-h-[600px] bg-white rounded-3xl border shadow-sm overflow-hidden relative">
         {renderContent()}
       </main>
     </div>
