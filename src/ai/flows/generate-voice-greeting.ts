@@ -44,7 +44,7 @@ const generateVoiceGreetingFlow = ai.defineFlow(
           },
         },
       },
-      prompt: `Please speak the following greeting with a warm, professional, and clear Indian female accent: ${input.text}`,
+      prompt: `Speak with a warm, professional Indian female accent: ${input.text}`,
     });
 
     if (!media || !media.url) {

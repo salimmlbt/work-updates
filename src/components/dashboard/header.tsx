@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckInIcon, CheckOutIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
@@ -294,6 +294,14 @@ export default function Header() {
     setIsAlertOpen(false);
     setIsLateReasonOpen(false);
 
+    // Instant Feedback UI
+    const firstName = userProfile?.full_name?.split(' ')[0] || '';
+    if (action === 'checkIn') {
+      triggerGreeting(firstName);
+    } else if (action === 'checkOut') {
+      triggerCheckoutGreeting(firstName);
+    }
+
     const optimisticStateMap = {
       checkIn: 'checked-in',
       lunchOut: 'on-lunch',
@@ -305,6 +313,7 @@ export default function Header() {
     setIsTimerRunning(action === 'checkIn' || action === 'lunchIn');
     setStatus(optimisticStateMap[action]);
 
+    // Handle background logic
     let result;
     if (action === 'checkIn') {
         result = await checkIn(reason);
@@ -322,17 +331,8 @@ export default function Header() {
       setStatus(originalStatus);
       setIsTimerRunning(originalStatus === 'checked-in' || originalStatus === 'lunch-complete');
       toast({ title: 'Error', description: error, variant: 'destructive' });
-    } else {
-      const firstName = userProfile?.full_name?.split(' ')[0] || '';
-      if (action === 'checkIn') {
-        triggerGreeting(firstName);
-      } else if (action === 'checkOut') {
-        triggerCheckoutGreeting(firstName);
-      }
-
-      if (data) {
-        setAttendanceRecord((prev: any) => ({ ...prev, ...data }));
-      }
+    } else if (data) {
+      setAttendanceRecord((prev: any) => ({ ...prev, ...data }));
     }
   };
 
