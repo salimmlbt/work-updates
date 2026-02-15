@@ -57,6 +57,11 @@ export async function applyLeave(formData: FormData) {
 
   // --- Email Notification Logic ---
   const resendApiKey = process.env.RESEND_API_KEY;
+  
+  if (!resendApiKey) {
+    console.warn('⚠️ RESEND_API_KEY is missing from environment variables. Email not sent.');
+  }
+
   if (resendApiKey && data) {
     try {
       const { data: profile } = await supabase
@@ -68,30 +73,57 @@ export async function applyLeave(formData: FormData) {
       const userName = profile?.full_name || user.email || 'An employee';
       const resend = new Resend(resendApiKey);
 
-      await resend.emails.send({
+      const emailResponse = await resend.emails.send({
         from: 'Falaq Corner <onboarding@resend.dev>',
         to: 'falaqbranding@gmail.com',
         subject: `New Leave Request: ${userName}`,
         html: `
-          <div style="font-family: sans-serif; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; max-width: 600px; background-color: #ffffff;">
-            <h2 style="color: #0f172a; margin-bottom: 8px;">New Leave Application</h2>
-            <p style="color: #64748b; margin-top: 0;">A new leave request has been submitted through Falaq Corner.</p>
-            
-            <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; margin: 24px 0;">
-              <p style="margin: 8px 0;"><strong>Employee:</strong> ${userName}</p>
-              <p style="margin: 8px 0;"><strong>Leave Type:</strong> ${leaveType}</p>
-              <p style="margin: 8px 0;"><strong>Dates:</strong> ${startDate} to ${endDate}</p>
-              <p style="margin: 8px 0;"><strong>Reason:</strong> ${reason}</p>
+          <div style="font-family: sans-serif; padding: 32px; border: 1px solid #e2e8f0; border-radius: 24px; max-width: 600px; background-color: #ffffff; color: #0f172a;">
+            <div style="background: linear-gradient(to right, #2563eb, #9333ea); padding: 2px; border-radius: 24px;">
+              <div style="background: white; padding: 24px; border-radius: 22px;">
+                <h2 style="color: #0f172a; margin-top: 0; font-size: 24px; letter-spacing: -0.025em;">New Leave Application</h2>
+                <p style="color: #64748b; margin-bottom: 24px;">A new leave request has been submitted through the Falaq Corner portal.</p>
+                
+                <div style="background-color: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #f1f5f9; margin-bottom: 24px;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                      <td style="padding: 8px 0; color: #64748b; font-size: 14px; width: 100px;">Employee</td>
+                      <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${userName}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Type</td>
+                      <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${leaveType}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Dates</td>
+                      <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${startDate} to ${endDate}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #64748b; font-size: 14px; vertical-align: top;">Reason</td>
+                      <td style="padding: 8px 0; color: #0f172a; font-weight: 500; font-style: italic;">"${reason}"</td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <div style="text-align: center;">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://falaq.com'}/falaq-corner" style="display: inline-block; padding: 12px 32px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 100px; font-weight: 600; font-size: 14px;">Review in Dashboard</a>
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 32px 0 24px 0;" />
+                <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">This is an automated notification from Falaq Work Updates.</p>
+              </div>
             </div>
-            
-            <p style="font-size: 14px; color: #94a3b8;">This is an automated notification. Please log in to the dashboard to review this request.</p>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-            <p style="font-size: 12px; color: #cbd5e1; text-align: center;">Falaq Corner Dashboard</p>
           </div>
         `,
       });
+
+      if (emailResponse.error) {
+        console.error('❌ Resend API Error:', emailResponse.error);
+      } else {
+        console.log('✅ Email sent successfully:', emailResponse.data?.id);
+      }
     } catch (emailError) {
-      console.error('Failed to send leave notification email:', emailError);
+      console.error('❌ Failed to execute email send logic:', emailError);
     }
   }
 
