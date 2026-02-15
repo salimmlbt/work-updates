@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -77,6 +76,11 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       keyframes: {
+        'shake': {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '20%, 60%': { transform: 'translateX(-5px)' },
+          '40%, 80%': { transform: 'translateX(5px)' },
+        },
         // Slide In
         'slide-in-right': { '0%': { transform: 'translateX(100%)', opacity: '0' }, '100%': { transform: 'translateX(0)', opacity: '1' } },
         'slide-in-left':  { '0%': { transform: 'translateX(-100%)', opacity: '0' }, '100%': { transform: 'translateX(0)', opacity: '1' } },
@@ -98,6 +102,7 @@ export default {
         },
       },
       animation: {
+        'shake': 'shake 0.4s ease-in-out',
         'slide-in-right': 'slide-in-right 300ms ease-out forwards',
         'slide-in-left':  'slide-in-left 300ms ease-out forwards',
         'slide-in-top':   'slide-in-top 300ms ease-out forwards',
