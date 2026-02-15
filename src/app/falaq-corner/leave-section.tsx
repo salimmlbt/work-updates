@@ -1,13 +1,12 @@
-
 'use client'
 
 import { useState, useTransition, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, FileText, XCircle, Loader2, ChevronDown, CheckCircle2, X } from 'lucide-react'
+import { Plus, FileText, XCircle, Loader2, ChevronDown, CheckCircle2, X, RefreshCcw, Trash2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import type { Leave, Profile, RoleWithPermissions } from '@/lib/types'
-import { cancelLeave, updateLeaveStatus } from './actions'
+import { cancelLeave, updateLeaveStatus, reopenLeave, deleteLeavePermanently } from './actions'
 import { useToast } from '@/hooks/use-toast'
 import { ApplyLeaveDialog } from './apply-leave-dialog'
 import { ApproveLeaveDialog } from './approve-leave-dialog'
@@ -15,6 +14,17 @@ import { createClient } from '@/lib/supabase/client'
 import { cn, getInitials } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export function LeaveSection({ profile }: { profile: Profile }) {
   const [leaves, setLeaves] = useState<(Leave & { profiles?: Profile })[]>([])
@@ -46,13 +56,19 @@ export function LeaveSection({ profile }: { profile: Profile }) {
 
   useEffect(() => { fetchLeaves() }, [activeTab])
 
-  const handleAction = (id: string, status: Leave['status']) => {
+  const handleAction = (id: string, action: Leave['status'] | 'reopen' | 'delete') => {
     startTransition(async () => {
-      const result = status === 'Cancelled' ? await cancelLeave(id) : await updateLeaveStatus(id, status)
+      let result;
+      if (action === 'Cancelled') result = await cancelLeave(id);
+      else if (action === 'reopen') result = await reopenLeave(id);
+      else if (action === 'delete') result = await deleteLeavePermanently(id);
+      else result = await updateLeaveStatus(id, action as Leave['status']);
+
       if (result.error) {
         toast({ title: 'Error', description: result.error, variant: 'destructive' })
       } else {
-        toast({ title: 'Success', description: `Leave ${status.toLowerCase()} successfully.` })
+        const msg = action === 'reopen' ? 'reopened' : action === 'delete' ? 'deleted' : action.toLowerCase();
+        toast({ title: 'Success', description: `Leave ${msg} successfully.` })
         fetchLeaves()
       }
     })
@@ -125,23 +141,51 @@ export function LeaveSection({ profile }: { profile: Profile }) {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {leave.status === 'Pending' && (
-                            <>
-                              {activeTab === 'team-requests' ? (
-                                <>
-                                  <Button size="sm" variant="ghost" className="text-emerald-600 hover:bg-emerald-50 rounded-full" onClick={() => setLeaveToApprove(leave)}>
-                                    <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
-                                  </Button>
-                                  <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50 rounded-full" onClick={() => handleAction(leave.id, 'Rejected')}>
-                                    <X className="h-4 w-4 mr-1" /> Reject
-                                  </Button>
-                                </>
-                              ) : (
-                                <Button variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50 rounded-full px-4 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleAction(leave.id, 'Cancelled')}>
+                          {activeTab === 'team-requests' ? (
+                            leave.status === 'Pending' && (
+                              <>
+                                <Button size="sm" variant="ghost" className="text-emerald-600 hover:bg-emerald-50 rounded-full" onClick={() => setLeaveToApprove(leave)}>
+                                  <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50 rounded-full" onClick={() => handleAction(leave.id, 'Rejected')}>
+                                  <X className="h-4 w-4 mr-1" /> Reject
+                                </Button>
+                              </>
+                            )
+                          ) : (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {(leave.status === 'Pending' || leave.status === 'Approved') && (
+                                <Button variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50 rounded-full px-4" onClick={() => handleAction(leave.id, 'Cancelled')}>
                                   <XCircle className="h-4 w-4 mr-1" /> Cancel
                                 </Button>
                               )}
-                            </>
+                              {leave.status === 'Cancelled' && (
+                                <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50 rounded-full px-4" onClick={() => handleAction(leave.id, 'reopen')}>
+                                  <RefreshCcw className="h-4 w-4 mr-1" /> Reopen
+                                </Button>
+                              )}
+                              {(leave.status === 'Cancelled' || leave.status === 'Rejected') && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full h-8 w-8 p-0">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This will remove the leave request record from the database. This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleAction(leave.id, 'delete')} className="bg-rose-600 hover:bg-rose-700">Delete Permanently</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>

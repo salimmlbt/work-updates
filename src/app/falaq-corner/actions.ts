@@ -1,4 +1,3 @@
-
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server';
@@ -136,6 +135,43 @@ export async function cancelLeave(leaveId: string) {
     .eq('id', leaveId)
     .eq('user_id', user.id)
     .in('status', ['Pending', 'Approved']);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/falaq-corner');
+  return { success: true };
+}
+
+export async function reopenLeave(leaveId: string) {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'You must be logged in.' };
+
+  const { error } = await supabase
+    .from('leaves')
+    .update({ status: 'Pending' })
+    .eq('id', leaveId)
+    .eq('user_id', user.id)
+    .eq('status', 'Cancelled');
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/falaq-corner');
+  return { success: true };
+}
+
+export async function deleteLeavePermanently(leaveId: string) {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'You must be logged in.' };
+
+  const { error } = await supabase
+    .from('leaves')
+    .delete()
+    .eq('id', leaveId)
+    .eq('user_id', user.id);
 
   if (error) return { error: error.message };
 
