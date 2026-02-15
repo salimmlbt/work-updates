@@ -104,3 +104,15 @@
 .cropper-controls .slider-container {
   @apply flex items-center gap-4;
 }
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-shake {
+  animation: shake 0.35s ease-in-out;
+}
