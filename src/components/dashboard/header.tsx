@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,7 +20,9 @@ import {
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { differenceInSeconds } from 'date-fns';
+import { differenceInSeconds, parse, isAfter } from 'date-fns';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 
 const formatTime = (totalSeconds: number) => {
   const hours = Math.floor(totalSeconds / 3600);
@@ -34,10 +37,15 @@ export default function Header() {
   const [status, setStatus] = useState<'checked-out' | 'checked-in' | 'on-lunch' | 'lunch-complete' | 'session-complete'>('checked-out');
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [alertType, setAlertType] = useState<'checkout' | 'lunch'>('checkout');
+  
+  const [isLateReasonOpen, setIsLateReasonOpen] = useState(false);
+  const [lateReason, setLateReason] = useState('');
+  const [userProfile, setUserProfile] = useState<any>(null);
+
   const { toast } = useToast();
 
   const [showLunchButton, setShowLunchButton] = useState(false);
-  const [lunchTimeSetting, setLunchTimeSetting] = useState('13:00');
+  const [lunchTimeSetting, setLunchTimeSetting] = useState<any>({ default: '13:00', friday: '13:00' });
   const [isExpanded, setIsExpanded] = useState(false);
   const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -60,15 +68,20 @@ export default function Header() {
         return;
       }
 
-      const [attendanceRes, settingsRes] = await Promise.all([
+      const [attendanceRes, settingsRes, profileRes] = await Promise.all([
         supabase.from('attendance').select('*')
           .eq('user_id', user.id)
           .eq('date', new Date().toISOString().split('T')[0])
           .single(),
         supabase.from('app_settings').select('value')
           .eq('key', 'lunch_start_time')
-          .single()
+          .single(),
+        supabase.from('profiles').select('*').eq('id', user.id).single()
       ]);
+
+      if (profileRes.data) {
+        setUserProfile(profileRes.data);
+      }
 
       const { data: attendanceData } = attendanceRes;
       if (attendanceData) {
@@ -89,8 +102,17 @@ export default function Header() {
       }
 
       const { data: settingsData } = settingsRes;
-      const fetchedLunchTime = (settingsData?.value as string | undefined) || '13:00';
-      setLunchTimeSetting(fetchedLunchTime);
+      const rawValue = settingsData?.value;
+      if (typeof rawValue === 'string') {
+          try {
+              setLunchTimeSetting(JSON.parse(rawValue));
+          } catch {
+              setLunchTimeSetting({ default: rawValue, friday: rawValue });
+          }
+      } else if (rawValue && typeof rawValue === 'object') {
+          setLunchTimeSetting(rawValue);
+      }
+      
       setIsLoading(false);
     };
 
@@ -102,8 +124,16 @@ export default function Header() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'app_settings', filter: `key=eq.lunch_start_time` },
         (payload) => {
-          const newTime = (payload.new.value as string | undefined) || '13:00';
-          setLunchTimeSetting(newTime);
+          const rawValue = payload.new.value;
+          if (typeof rawValue === 'string') {
+              try {
+                  setLunchTimeSetting(JSON.parse(rawValue));
+              } catch {
+                  setLunchTimeSetting({ default: rawValue, friday: rawValue });
+              }
+          } else if (rawValue && typeof rawValue === 'object') {
+              setLunchTimeSetting(rawValue);
+          }
         }
       )
       .subscribe();
@@ -111,7 +141,7 @@ export default function Header() {
     return () => supabase.removeChannel(channel);
   }, [supabase, hasMounted]);
 
-  // ✅ Real-time attendance listener (syncs across devices/tabs)
+  // ✅ Real-time attendance listener
   useEffect(() => {
     if (!attendanceRecord?.id) return;
 
@@ -129,7 +159,7 @@ export default function Header() {
     };
   }, [attendanceRecord?.id]);
 
-  // ✅ Persistent + Correct Timer Logic
+  // ✅ Timer Logic
   useEffect(() => {
     if (!attendanceRecord?.check_in) {
       setElapsedSeconds(0);
@@ -188,8 +218,11 @@ export default function Header() {
     if (isLoading || !hasMounted) return;
 
     const checkTime = () => {
-      const [hours, minutes] = lunchTimeSetting.split(':').map(Number);
       const now = new Date();
+      const isFriday = now.getDay() === 5;
+      const targetTimeStr = isFriday ? lunchTimeSetting.friday : lunchTimeSetting.default;
+      
+      const [hours, minutes] = targetTimeStr.split(':').map(Number);
       setShowLunchButton(now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= minutes));
     };
 
@@ -199,8 +232,9 @@ export default function Header() {
   }, [isLoading, lunchTimeSetting, hasMounted]);
 
   // Action handler
-  const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn') => {
+  const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn', reason?: string) => {
     setIsAlertOpen(false);
+    setIsLateReasonOpen(false);
 
     const optimisticStateMap = {
       checkIn: 'checked-in',
@@ -209,61 +243,42 @@ export default function Header() {
       checkOut: 'session-complete',
     } as const;
 
-    const actionMap = { checkIn, checkOut, lunchOut, lunchIn };
-    const toastMessages = {
-      checkIn: 'Successfully checked in',
-      checkOut: 'Successfully checked out',
-      lunchOut: 'Lunch started',
-      lunchIn: 'Lunch ended',
-    };
-
     const originalStatus = status;
     setIsTimerRunning(action === 'checkIn' || action === 'lunchIn');
     setStatus(optimisticStateMap[action]);
 
-    const { error, data } = await actionMap[action]();
+    let result;
+    if (action === 'checkIn') {
+        result = await checkIn(reason);
+    } else if (action === 'checkOut') {
+        result = await checkOut();
+    } else if (action === 'lunchOut') {
+        result = await lunchOut();
+    } else {
+        result = await lunchIn();
+    }
+
+    const { error, data } = result;
 
     if (error) {
       setStatus(originalStatus);
       setIsTimerRunning(originalStatus === 'checked-in' || originalStatus === 'lunch-complete');
       toast({ title: 'Error', description: error, variant: 'destructive' });
     } else {
+      const toastMessages = {
+        checkIn: 'Successfully checked in',
+        checkOut: 'Successfully checked out',
+        lunchOut: 'Lunch started',
+        lunchIn: 'Lunch ended',
+      };
       toast({ title: toastMessages[action] });
       if (data) {
         setAttendanceRecord((prev: any) => ({ ...prev, ...data }));
-      } else if (action === 'checkIn') {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: newData } = await supabase.from('attendance')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('date', new Date().toISOString().split('T')[0])
-            .single();
-          setAttendanceRecord(newData);
-        }
       }
     }
   };
 
-  const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const button = event.currentTarget;
-    const rect = button.getBoundingClientRect();
-    const circle = document.createElement("span");
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
-    const radius = diameter / 2;
-
-    circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${event.clientX - rect.left - radius}px`;
-    circle.style.top = `${event.clientY - rect.top - radius}px`;
-    circle.classList.add("ripple");
-
-    const ripple = button.getElementsByClassName("ripple")[0];
-    if (ripple) ripple.remove();
-    button.appendChild(circle);
-  };
-
   const handleMainButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    createRipple(e);
     if (status === 'checked-in' && showLunchButton) {
       setAlertType('lunch');
       setIsAlertOpen(true);
@@ -271,6 +286,15 @@ export default function Header() {
       setAlertType('checkout');
       setIsAlertOpen(true);
     } else if (status === 'checked-out') {
+      // Late check-in detection
+      if (userProfile?.work_start_time) {
+          const now = new Date();
+          const scheduledStart = parse(userProfile.work_start_time, 'HH:mm:ss', now);
+          if (isAfter(now, scheduledStart)) {
+              setIsLateReasonOpen(true);
+              return;
+          }
+      }
       handleAction('checkIn');
     } else if (status === 'on-lunch') {
       handleAction('lunchIn');
@@ -361,6 +385,36 @@ export default function Header() {
           )}
         </AnimatePresence>
       </motion.header>
+
+      {/* Late Reason Dialog */}
+      <AlertDialog open={isLateReasonOpen} onOpenChange={setIsLateReasonOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Late Check-In Detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              It looks like you're checking in after your scheduled start time ({userProfile?.work_start_time?.slice(0, 5)}). Please provide a reason.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-2">
+            <Label htmlFor="late-reason">Reason for delay</Label>
+            <Textarea 
+                id="late-reason" 
+                placeholder="e.g., Traffic, Personal emergency..." 
+                value={lateReason}
+                onChange={(e) => setLateReason(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setIsLateReasonOpen(false); setLateReason(''); }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+                onClick={() => handleAction('checkIn', lateReason)}
+                disabled={!lateReason.trim()}
+            >
+              Submit & Check In
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>

@@ -9,7 +9,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
 import { formatInTimeZone } from 'date-fns-tz';
 
-export async function checkIn() {
+export async function checkIn(reason?: string) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -40,6 +40,7 @@ export async function checkIn() {
       user_id: user.id,
       date: today,
       check_in: new Date().toISOString(),
+      check_in_reason: reason || null,
     })
     .select()
     .single();
