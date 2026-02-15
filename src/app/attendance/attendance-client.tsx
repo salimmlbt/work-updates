@@ -284,6 +284,11 @@ export default function AttendanceClient({ initialData, isEditor }: { initialDat
                   <TableHead className="text-xs font-semibold text-slate-600">
                     Extra Hours
                   </TableHead>
+                  {isEditor && showReasons && (
+                    <TableHead className="text-xs font-semibold text-slate-600">
+                      Late Reason
+                    </TableHead>
+                  )}
                   <TableHead className="text-xs font-semibold text-slate-600">
                     Status
                   </TableHead>
@@ -320,22 +325,7 @@ export default function AttendanceClient({ initialData, isEditor }: { initialDat
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-slate-700">
-                      <div className="flex items-center gap-2">
-                        <TimeDisplay time={item.check_in} />
-                        {showReasons && item.check_in_reason && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center justify-center h-5 w-5 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
-                                <Info className="h-3 w-3" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-white border-slate-200 shadow-xl p-3 rounded-xl max-w-[200px]">
-                              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Late Reason</p>
-                              <p className="text-sm text-slate-700 font-medium italic">"{item.check_in_reason}"</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
+                      <TimeDisplay time={item.check_in} />
                     </TableCell>
                     <TableCell className="text-sm text-slate-700">
                       <TimeDisplay time={item.check_out} />
@@ -354,6 +344,20 @@ export default function AttendanceClient({ initialData, isEditor }: { initialDat
                         {formatExtraHours(item.extra_hours)}
                       </span>
                     </TableCell>
+                    {isEditor && showReasons && (
+                      <TableCell className="text-sm">
+                        {item.check_in_reason ? (
+                          <div className="flex items-center gap-1.5 text-amber-700 font-medium">
+                            <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                            <span className="max-w-[180px] truncate" title={item.check_in_reason}>
+                              {item.check_in_reason}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell className="text-sm">{getStatusBadge(item)}</TableCell>
                   </TableRow>
                 ))}
@@ -361,7 +365,7 @@ export default function AttendanceClient({ initialData, isEditor }: { initialDat
                 {attendanceList.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={isEditor && showReasons ? 7 : 6}
                       className="py-10 text-center text-sm text-slate-500"
                     >
                       No attendance records for today.
