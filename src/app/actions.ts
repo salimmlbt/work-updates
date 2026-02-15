@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
-import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction, Revisions } from '@/lib/types'
+import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction, Revisions, SubmissionHistoryEntry, SubmissionType } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
@@ -407,7 +407,7 @@ export async function updateTaskStatus(
 
     const { data: currentTask, error: fetchError } = await supabase
         .from('tasks')
-        .select('revisions, corrections')
+        .select('revisions, corrections, status, submission_history')
         .eq('id', taskId)
         .single();
     
@@ -422,6 +422,26 @@ export async function updateTaskStatus(
       status_updated_by: user.id
     };
     
+    // --- Submission History Logic ---
+    if (status === 'review' || status === 'under-review') {
+        const history: SubmissionHistoryEntry[] = (currentTask.submission_history as SubmissionHistoryEntry[] | null) || [];
+        let type: SubmissionType = 'original';
+        
+        if (currentTask.status === 'corrections') {
+            type = 'correction';
+        } else if (currentTask.status === 'recreate') {
+            type = 'recreate';
+        }
+        
+        const newEntry: SubmissionHistoryEntry = {
+            date: new Date().toISOString(),
+            type
+        };
+        
+        updates.submission_history = [...history, newEntry];
+    }
+    // --------------------------------
+
     const revisions: Revisions = (currentTask.revisions as Revisions | null) || { corrections: 0, recreations: 0 };
     if (status === 'corrections') {
         revisions.corrections = (revisions.corrections || 0) + 1;
@@ -450,6 +470,7 @@ export async function updateTaskStatus(
     }
 
     revalidatePath('/tasks');
+    revalidatePath('/report');
     return { success: true };
 }
 
@@ -1439,5 +1460,3 @@ export async function createTaskFromSchedule(schedule: ContentSchedule): Promise
     // No need to revalidate here, as the client-side will handle the optimistic update
     return { data: newTask as Task };
 }
-
-    

@@ -1,3 +1,4 @@
+
 import type { SVGProps } from "react";
 
 export function Logo(props: SVGProps<SVGSVGElement>) {
@@ -176,6 +177,15 @@ export function Plus(props: SVGProps<SVGSVGElement>) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
       <path d="M19,11H13V5a1,1,0,0,0-2,0v6H5a1,1,0,0,0,0,2h6v6a1,1,0,0,0,2,0V13h6a1,1,0,0,0,0-2Z"/>
+    </svg>
+  );
+}
+
+export function ReportIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M19,0H5A5.006,5.006,0,0,0,0,5V19a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V5A5.006,5.006,0,0,0,19,0Zm3,19a3,3,0,0,1-3,3H5a3,3,0,0,1-3-3V5A3,3,0,0,1,5,2H19a3,3,0,0,1,3,3Z"/>
+      <path d="M11,7H6A1,1,0,0,0,6,9h5a1,1,0,0,0,0-2Z"/><path d="M18,11H6a1,1,0,0,0,0,2H18a1,1,0,0,0,0-2Z"/><path d="M18,15H6a1,1,0,0,0,0,2H18a1,1,0,0,0,0-2Z"/>
     </svg>
   );
 }

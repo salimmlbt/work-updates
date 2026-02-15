@@ -1,5 +1,4 @@
 
-
 import type { Database as DB } from './database.types';
 
 export type Database = DB;
@@ -22,6 +21,12 @@ export type WorkType = DB['public']['Tables']['work_types']['Row'];
 export type ContentSchedule = DB['public']['Tables']['content_schedules']['Row'];
 export type Attendance = DB['public']['Tables']['attendance']['Row'];
 
+export type SubmissionType = 'original' | 'correction' | 'recreate';
+
+export type SubmissionHistoryEntry = {
+  date: string;
+  type: SubmissionType;
+};
 
 export type TaskWithAssignee = Task & {
   profiles: DB['public']['Tables']['profiles']['Row'] | null;
@@ -62,6 +67,7 @@ export type TaskWithDetails = Task & {
   attachments: Attachment[] | null;
   revisions: Revisions | null;
   corrections: Correction[] | null;
+  submission_history?: SubmissionHistoryEntry[] | null;
 }
 
 export type Notification = {
@@ -70,7 +76,3 @@ export type Notification = {
     title: string;
     description: string;
 }
-
-    
-
-    
