@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useTransition, useMemo } from 'react'
@@ -6,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { format, isToday, isTomorrow, subDays, startOfDay } from 'date-fns'
-import { Calendar, Loader2 } from 'lucide-react'
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +29,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { useToast } from '@/hooks/use-toast'
 import type { TaskWithDetails, Profile, Team } from '@/lib/types'
 import { createTask } from '@/app/teams/actions'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const reassignSchema = z.object({
   assignee_id: z.string().min(1, 'Assignee is required.'),
@@ -40,6 +40,9 @@ const reassignSchema = z.object({
 })
 
 type ReassignFormData = z.infer<typeof reassignSchema>
+
+const hours12 = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
+const minutesOptions = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
 interface ReassignTaskDialogProps {
   isOpen: boolean
@@ -58,6 +61,11 @@ export function ReassignTaskDialog({
 }: ReassignTaskDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
+  
+  const [h12, setH12] = useState('12');
+  const [m12, setM12] = useState('00');
+  const [ampm, setAmpm] = useState('AM');
+
   const {
     handleSubmit,
     control,
@@ -74,16 +82,36 @@ export function ReassignTaskDialog({
 
   useEffect(() => {
     if (isOpen) {
-        const today = startOfDay(new Date());
+        const now = new Date();
+        const today = startOfDay(now);
+        
+        // Initial 12h parts from current time
+        const currentH24 = now.getHours();
+        const currentH12 = currentH24 % 12 || 12;
+        const currentM = now.getMinutes().toString().padStart(2, '0');
+        const currentAMPM = currentH24 >= 12 ? 'PM' : 'AM';
+
+        setH12(currentH12.toString());
+        setM12(currentM);
+        setAmpm(currentAMPM);
+
         reset({
             assignee_id: '',
             type: 'Posting',
             post_date: today,
-            post_time: format(new Date(), 'HH:mm'),
+            post_time: format(now, 'HH:mm'),
             deadline: today,
         });
     }
   }, [isOpen, reset]);
+
+  // Sync parts back to the post_time string expected by the schema/submit
+  useEffect(() => {
+    const hours24 = ampm === 'PM' 
+      ? (h12 === '12' ? 12 : parseInt(h12) + 12) 
+      : (h12 === '12' ? 0 : parseInt(h12));
+    setValue('post_time', `${hours24.toString().padStart(2, '0')}:${m12}`, { shouldValidate: true });
+  }, [h12, m12, ampm, setValue]);
 
   useEffect(() => {
     if (postDate) {
@@ -153,7 +181,7 @@ export function ReassignTaskDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
           <div className="grid gap-2">
-            <label>Responsible</label>
+            <label className="text-sm font-medium">Responsible</label>
             <Controller
               name="assignee_id"
               control={control}
@@ -172,7 +200,7 @@ export function ReassignTaskDialog({
           </div>
 
           <div className="grid gap-2">
-            <label>Type</label>
+            <label className="text-sm font-medium">Type</label>
             <Controller
               name="type"
               control={control}
@@ -190,7 +218,7 @@ export function ReassignTaskDialog({
           
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-                <label>Schedule/Post Date</label>
+                <label className="text-sm font-medium">Schedule/Post Date</label>
                 <Controller
                   name="post_date"
                   control={control}
@@ -198,7 +226,7 @@ export function ReassignTaskDialog({
                     <Popover>
                       <PopoverTrigger asChild>
                           <Button variant="outline" className="w-full justify-start text-left font-normal">
-                              <Calendar className="mr-2 h-4 w-4" />
+                              <CalendarIcon className="mr-2 h-4 w-4" />
                               {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                           </Button>
                       </PopoverTrigger>
@@ -211,18 +239,42 @@ export function ReassignTaskDialog({
                 {errors.post_date && <p className="text-sm text-destructive">{errors.post_date.message}</p>}
             </div>
             <div className="grid gap-2">
-                <label>Schedule Time</label>
-                <Controller
-                    name="post_time"
-                    control={control}
-                    render={({ field }) => <Input type="time" {...field} />}
-                />
-                {errors.post_time && <p className="text-sm text-destructive">{errors.post_time.message}</p>}
+                <label className="text-sm font-medium">Schedule Time</label>
+                <div className="flex gap-1">
+                    <Select value={h12} onValueChange={setH12}>
+                        <SelectTrigger className="w-[65px] h-10 px-2">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="min-w-[65px]">
+                            {hours12.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <div className="flex items-center">:</div>
+                    <Select value={m12} onValueChange={setM12}>
+                        <SelectTrigger className="w-[65px] h-10 px-2">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="min-w-[65px]">
+                            <ScrollArea className="h-48">
+                                {minutesOptions.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                            </ScrollArea>
+                        </SelectContent>
+                    </Select>
+                    <Select value={ampm} onValueChange={setAmpm}>
+                        <SelectTrigger className="w-[65px] h-10 px-2">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="min-w-[65px]">
+                            <SelectItem value="AM">AM</SelectItem>
+                            <SelectItem value="PM">PM</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
           </div>
           
           <div className="grid gap-2">
-              <label>Due Date</label>
+              <label className="text-sm font-medium">Due Date</label>
               <Controller
                 name="deadline"
                 control={control}
@@ -230,7 +282,7 @@ export function ReassignTaskDialog({
                    <Popover>
                     <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start text-left font-normal">
-                            <Calendar className="mr-2 h-4 w-4" />
+                            <CalendarIcon className="mr-2 h-4 w-4" />
                             {formatDate(field.value)}
                         </Button>
                     </PopoverTrigger>

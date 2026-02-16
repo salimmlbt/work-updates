@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
@@ -6,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
-import { Calendar, Loader2 } from 'lucide-react'
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +31,7 @@ import { useToast } from '@/hooks/use-toast'
 import type { TaskWithDetails, Project, Client, Profile, Team } from '@/lib/types'
 import { updateTask } from '@/app/actions'
 import { cn } from '@/lib/utils'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const taskSchema = z.object({
   description: z.string().min(1, 'Description is required.'),
@@ -46,6 +46,9 @@ const taskSchema = z.object({
 })
 
 type TaskFormData = z.infer<typeof taskSchema>
+
+const hours12 = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
+const minutesOptions = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
 interface EditTaskDialogProps {
   isOpen: boolean
@@ -68,12 +71,18 @@ export function EditTaskDialog({
 }: EditTaskDialogProps) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
+  
+  const [h12, setH12] = useState('12');
+  const [m12, setM12] = useState('00');
+  const [ampm, setAmpm] = useState('AM');
+
   const {
     register,
     handleSubmit,
     control,
     reset,
     watch,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
@@ -92,6 +101,17 @@ export function EditTaskDialog({
   useEffect(() => {
     if (task) {
         const postDate = task.post_date ? parseISO(task.post_date) : null;
+        
+        if (postDate) {
+            const h24 = postDate.getHours();
+            const h12Val = h24 % 12 || 12;
+            const mVal = postDate.getMinutes().toString().padStart(2, '0');
+            const ampmVal = h24 >= 12 ? 'PM' : 'AM';
+            setH12(h12Val.toString());
+            setM12(mVal);
+            setAmpm(ampmVal);
+        }
+
       reset({
         description: task.description,
         client_id: task.client_id || undefined,
@@ -105,6 +125,15 @@ export function EditTaskDialog({
       })
     }
   }, [task, reset])
+
+  // Sync parts back to the post_time string
+  useEffect(() => {
+    if (!isPostingTask) return;
+    const hours24 = ampm === 'PM' 
+      ? (h12 === '12' ? 12 : parseInt(h12) + 12) 
+      : (h12 === '12' ? 0 : parseInt(h12));
+    setValue('post_time', `${hours24.toString().padStart(2, '0')}:${m12}`, { shouldDirty: true });
+  }, [h12, m12, ampm, setValue, isPostingTask]);
 
   const onSubmit = async (data: TaskFormData) => {
     startTransition(async () => {
@@ -154,9 +183,9 @@ export function EditTaskDialog({
 
   const formatDate = (date: Date | undefined) => {
     if (!date) return <span>Pick a date</span>;
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
-    if (isYesterday(date)) return 'Yesterday';
+    if (isToday(date)) return 'Today'
+    if (isTomorrow(date)) return 'Tomorrow'
+    if (isYesterday(date)) return 'Yesterday'
     return format(date, "dd MMM");
   }
 
@@ -191,7 +220,7 @@ export function EditTaskDialog({
                             <Popover>
                               <PopoverTrigger asChild>
                                   <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                      <Calendar className="mr-2 h-4 w-4" />
+                                      <CalendarIcon className="mr-2 h-4 w-4" />
                                       {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                                   </Button>
                               </PopoverTrigger>
@@ -204,7 +233,36 @@ export function EditTaskDialog({
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="post_time">Post Time</Label>
-                        <Input id="post_time" type="time" {...register('post_time')} />
+                        <div className="flex gap-1">
+                            <Select value={h12} onValueChange={setH12}>
+                                <SelectTrigger className="w-[65px] h-10 px-2">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="min-w-[65px]">
+                                    {hours12.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <div className="flex items-center">:</div>
+                            <Select value={m12} onValueChange={setM12}>
+                                <SelectTrigger className="w-[65px] h-10 px-2">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="min-w-[65px]">
+                                    <ScrollArea className="h-48">
+                                        {minutesOptions.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                                    </ScrollArea>
+                                </SelectContent>
+                            </Select>
+                            <Select value={ampm} onValueChange={setAmpm}>
+                                <SelectTrigger className="w-[65px] h-10 px-2">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="min-w-[65px]">
+                                    <SelectItem value="AM">AM</SelectItem>
+                                    <SelectItem value="PM">PM</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </div>
             )}
@@ -268,7 +326,7 @@ export function EditTaskDialog({
                         <Popover>
                           <PopoverTrigger asChild>
                               <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                  <Calendar className="mr-2 h-4 w-4" />
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
                                   {formatDate(field.value)}
                               </Button>
                           </PopoverTrigger>
