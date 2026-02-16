@@ -820,13 +820,6 @@ const TaskTableBody = ({
 }
 
 const KanbanCard = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, allTasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
-  const cardColors: { [key: string]: string } = {
-    "todo": "bg-blue-100/50",
-    "inprogress": "bg-purple-100/50",
-    "under-review": "bg-yellow-100/50",
-    "done": "bg-gray-100",
-  };
-
   const handleCardClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button, [role="menuitem"], a')) {
@@ -839,7 +832,7 @@ const KanbanCard = ({ task, allTasks, onStatusChange, onPostingStatusChange, onE
     const now = new Date();
     const deadDate = parseISO(deadline);
 
-    if (task.status === 'done') return `Completed on ${format(deadDate, 'dd MMM')}`;
+    if (task.status === 'done' || task.status === 'approved') return `Completed on ${format(deadDate, 'dd MMM')}`;
 
     if (isToday(deadDate)) return 'Due today';
     if (isTomorrow(deadDate)) return 'Due tomorrow';
@@ -852,93 +845,117 @@ const KanbanCard = ({ task, allTasks, onStatusChange, onPostingStatusChange, onE
     return format(deadDate, 'dd MMM');
   }
 
-  const isCompleted = task.status === 'done' || task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
-  const isReassigned = !!task.parent_task_id;
   const hasChildTask = useMemo(() => allTasks.some(t => t.parent_task_id === task.id), [allTasks, task.id]);
-
+  const isPostingType = task.type && ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"].includes(task.type);
 
   return (
-    <Card 
-      className={cn("mb-4 group cursor-pointer shadow-none", cardColors[task.status] ?? 'bg-gray-100', 'border-0')} 
+    <Card
       onClick={handleCardClick}
+      className={cn(
+        "relative group rounded-2xl border bg-white shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden mb-4",
+        "hover:-translate-y-1"
+      )}
     >
-      <CardHeader className="p-4 flex flex-row items-start justify-between">
-        <CardTitle className="text-sm font-medium">{task.description}</CardTitle>
-        <div className="flex-shrink-0">
+      <div className={cn(
+        "absolute left-0 top-0 h-full w-1",
+        task.status === "todo" && "bg-blue-500",
+        task.status === "inprogress" && "bg-purple-500",
+        (task.status === "review" || task.status === "under-review") && "bg-yellow-400",
+        (task.status === "done" || task.status === "approved") && "bg-green-500",
+        task.status === "corrections" && "bg-orange-500",
+        task.status === "recreate" && "bg-red-500"
+      )} />
+
+      <div className="p-4 pl-5 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-medium leading-snug line-clamp-2">
+            {task.description}
+          </p>
+
           {task.profiles && (
-            <Avatar className="h-6 w-6">
+            <Avatar className="h-7 w-7 shrink-0 border border-slate-100 shadow-sm">
               <AvatarImage src={getResponsibleAvatar(task.profiles)} />
-              <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
+              <AvatarFallback className="text-[10px]">
+                {getInitials(task.profiles.full_name)}
+              </AvatarFallback>
             </Avatar>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        {task.tags && (
+
+        {task.type && (
+          <Badge variant="outline" className={cn("text-[10px] font-medium border-0", typeColors[task.type] || "bg-slate-100 text-slate-800")}>
+            {task.type}
+          </Badge>
+        )}
+
+        {task.tags && task.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {task.tags.map((tag: string) => {
-              const isBlocked = tag.toLowerCase() === 'blocked';
-              const isASAP = tag.toLowerCase() === 'asap';
-              const isFeedback = tag.toLowerCase() === 'feedback';
-              return (
+            {task.tags.map(tag => (
               <Badge
                 key={tag}
                 variant="secondary"
-                className={cn('font-normal',
-                  isBlocked && 'bg-gray-400 text-white',
-                  isASAP && 'bg-red-500 text-white',
-                  isFeedback && 'bg-green-200 text-green-800'
-                )}
+                className="text-[9px] px-2 py-0.5 rounded-full font-medium"
               >
                 {tag}
               </Badge>
-            )})}
+            ))}
           </div>
         )}
-      </CardContent>
-      <CardFooter className="p-4 pt-0 flex justify-between items-center text-xs text-gray-600">
-        <span>{getRemainingTime(task.deadline)}</span>
-        {canEdit && (
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-2">
+          <div className="flex items-center gap-1.5">
+            <CalendarIcon className="h-3 w-3" />
+            <span>{getRemainingTime(task.deadline)}</span>
+          </div>
+
+          {canEdit && (
             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 -mt-2 -mr-2">
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => onEdit(task)}>Edit</DropdownMenuItem>
-                    {isReassigned
-                      ? postingStatusOptions.map(status => (
-                          <DropdownMenuItem
-                            key={status}
-                            disabled={task.posting_status === status}
-                            onClick={() => onPostingStatusChange(task.id, status)}
-                          >
-                            Move to {postingStatusLabels[status]}
-                          </DropdownMenuItem>
-                        ))
-                      : mainStatusOptions.map(status => (
-                          <DropdownMenuItem
-                            key={status}
-                            disabled={task.status === status}
-                            onClick={() => onStatusChange(task.id, status)}
-                            className={cn(task.status === status && 'bg-accent')}
-                          >
-                            Move to {statusLabels[status as keyof typeof statusLabels]}
-                          </DropdownMenuItem>
-                        ))}
-                     {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
-                      <DropdownMenuItem onClick={() => onReassign(task)} disabled={hasChildTask}>
-                        <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition focus-visible:ring-0 focus-visible:ring-offset-0"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(task)}>
+                  <Pencil className="mr-2 h-4 w-4" /> Edit
+                </DropdownMenuItem>
+                {isPostingType
+                  ? postingStatusOptions.map(status => (
+                      <DropdownMenuItem
+                        key={status}
+                        disabled={task.posting_status === status}
+                        onClick={() => onPostingStatusChange(task.id, status)}
+                      >
+                        Move to {postingStatusLabels[status]}
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>Delete</DropdownMenuItem>
-                </DropdownMenuContent>
+                    ))
+                  : mainStatusOptions.map(status => (
+                      <DropdownMenuItem
+                        key={status}
+                        disabled={task.status === status}
+                        onClick={() => onStatusChange(task.id, status)}
+                        className={cn(task.status === status && 'bg-accent')}
+                      >
+                        Move to {statusLabels[status as keyof typeof statusLabels]}
+                      </DropdownMenuItem>
+                    ))}
+                {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
+                  <DropdownMenuItem onClick={() => onReassign(task)} disabled={hasChildTask}>
+                    <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        )}
-      </CardFooter>
+          )}
+        </div>
+      </div>
     </Card>
   );
 };
@@ -948,71 +965,59 @@ const KanbanBoard = ({ tasks: allTasks, onStatusChange, onPostingStatusChange, o
   const statuses: ('todo' | 'inprogress' | 'review' | 'done')[] = ['todo', 'inprogress', 'review', 'done'];
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border-b">
-        {statuses.map((status) => {
-          const tasksInStatus = allTasks.filter((task) => {
-            const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
-            const isPostingType = task.type && postingTaskTypes.includes(task.type);
-            if (isPostingType) {
-              if (status === 'done') return task.posting_status === 'Posted' || task.posting_status === 'Scheduled';
-              if (status === 'todo') return !task.posting_status || task.posting_status === 'Planned';
-              return false;
-            }
-            return task.status === status;
-          });
-          return (
-            <div key={status} className="px-3 py-4">
-              <h2 className="text-lg font-semibold mb-4 flex items-center">
-                {statusLabels[status as keyof typeof statusLabels]}
-                <Badge
-                  variant="secondary"
-                  className="ml-2 bg-gray-200 text-gray-700"
-                >
-                  {tasksInStatus.length}
-                </Badge>
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 px-4 py-4 h-full">
+      {statuses.map((status) => {
+        const tasksInStatus = allTasks.filter((task) => {
+          const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
+          const isPostingType = task.type && postingTaskTypes.includes(task.type);
+          if (isPostingType) {
+            if (status === 'done') return task.posting_status === 'Posted' || task.posting_status === 'Scheduled';
+            if (status === 'todo') return !task.posting_status || task.posting_status === 'Planned';
+            return false;
+          }
+          return task.status === status;
+        });
+
+        return (
+          <div key={status} className="bg-muted/40 rounded-3xl p-4 flex flex-col backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-6 px-2">
+              <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground/80">
+                {statusLabels[status]}
               </h2>
+              <span className="text-[10px] font-black bg-white text-slate-900 px-2 py-0.5 rounded-full shadow-sm ring-1 ring-slate-200">
+                {tasksInStatus.length}
+              </span>
             </div>
-          );
-        })}
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 flex-1">
-        {statuses.map((status, index) => {
-          const tasksInStatus = allTasks.filter((task) => {
-            const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
-            const isPostingType = task.type && postingTaskTypes.includes(task.type);
-            if (isPostingType) {
-              if (status === 'done') return task.posting_status === 'Posted' || task.posting_status === 'Scheduled';
-              if (status === 'todo') return !task.posting_status || task.posting_status === 'Planned';
-              return false;
-            }
-            return task.status === status;
-          });
-          return (
-            <div
-              key={status}
-              className={cn("px-3 h-full overflow-y-auto", index < statuses.length - 1 && "border-r")}
-            >
-              <div className="rounded-lg h-full pt-4">
+
+            <div className="flex-1 overflow-y-auto pr-1">
+              <AnimatePresence>
                 {tasksInStatus.map((task) => (
-                  <KanbanCard
+                  <motion.div
                     key={task.id}
-                    task={task}
-                    allTasks={allTasks}
-                    onStatusChange={onStatusChange}
-                    onPostingStatusChange={onPostingStatusChange}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    canEdit={canEdit}
-                    onTaskClick={onTaskClick}
-                    onReassign={onReassign}
-                  />
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <KanbanCard
+                      task={task}
+                      allTasks={allTasks}
+                      onStatusChange={onStatusChange}
+                      onPostingStatusChange={onPostingStatusChange}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      canEdit={canEdit}
+                      onTaskClick={onTaskClick}
+                      onReassign={onReassign}
+                    />
+                  </motion.div>
                 ))}
-              </div>
+              </AnimatePresence>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
