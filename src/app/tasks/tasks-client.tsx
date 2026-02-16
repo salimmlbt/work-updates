@@ -878,6 +878,21 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }, [initialTasks]);
 
   useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (canEditTasks && !showBin) {
+          e.preventDefault();
+          setActiveTab('active');
+          setIsAddingTask(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [canEditTasks, showBin]);
+
+  useEffect(() => {
     const channel = supabase
       .channel('realtime-tasks-client')
       .on(
