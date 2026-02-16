@@ -131,7 +131,7 @@ const getResponsibleAvatar = (profile: Profile | null) => {
 
 /**
  * SearchableDropdown Component
- * Handles search, keyboard navigation (Arrow keys + Enter), and alphabetical list.
+ * Handles search, keyboard navigation, and alphabetical list.
  */
 interface SearchableDropdownProps {
   items: { id: string; name: string; avatar?: string | null }[];
@@ -150,7 +150,9 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredItems = useMemo(() => {
-    return items.filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
+    return items
+      .filter(item => item.name.toLowerCase().includes(search.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [items, search]);
 
   useEffect(() => {
@@ -158,7 +160,7 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
       setHighlightedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 0);
     }
-  }, [open, search]);
+  }, [open]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open) return;
@@ -172,10 +174,12 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredItems[highlightedIndex]) {
-        onSelect(filteredItems[highlightedIndex].id);
+        const selectedId = filteredItems[highlightedIndex].id;
+        onSelect(selectedId);
         setOpen(false);
         setSearch("");
-        onNextField?.();
+        // Crucial: use setTimeout to let the current popover close before jumping
+        setTimeout(() => onNextField?.(), 50);
       }
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -190,7 +194,7 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
         <Button
           ref={triggerRef}
           variant="ghost"
-          className="w-full justify-between font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent"
+          className="w-full justify-between font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent px-2"
         >
           <div className="flex items-center gap-2 truncate">
             {selectedItem?.avatar && (
@@ -199,7 +203,9 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
                 <AvatarFallback className="text-[8px]">{getInitials(selectedItem.name)}</AvatarFallback>
               </Avatar>
             )}
-            <span className="truncate">{selectedItem ? selectedItem.name : placeholder}</span>
+            <span className={cn("truncate", !selectedItem && "text-muted-foreground")}>
+              {selectedItem ? selectedItem.name : placeholder}
+            </span>
           </div>
           <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
         </Button>
@@ -234,7 +240,7 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
                   onSelect(item.id);
                   setOpen(false);
                   setSearch("");
-                  onNextField?.();
+                  setTimeout(() => onNextField?.(), 50);
                 }}
               >
                 <div className="flex items-center gap-2 truncate flex-1">
@@ -290,24 +296,20 @@ const AddTaskRow = ({
   const selectedAssignee = profiles.find(p => p.id === assigneeId);
   const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
   
-  // Sorted Available Task Types
   const availableTaskTypes = useMemo(() => {
     const types = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
     return types.sort((a, b) => a.localeCompare(b));
   }, [assigneeTeams]);
 
-  // Sorted and Filtered Projects
   const filteredProjects = useMemo(() => {
-    const list = clientId ? projects.filter(p => String(p.client_id) === String(clientId)) : projects;
+    const list = clientId ? projects.filter(p => String(p.client_id) === String(clientId)) : [];
     return list.sort((a, b) => a.name.localeCompare(b.name));
   }, [clientId, projects]);
 
-  // Sorted Clients
   const sortedClients = useMemo(() => {
     return [...clients].sort((a, b) => a.name.localeCompare(b.name));
   }, [clients]);
 
-  // Sorted Profiles
   const sortedProfiles = useMemo(() => {
     return profiles.filter(p => !p.is_archived).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
   }, [profiles]);
@@ -409,7 +411,7 @@ const AddTaskRow = ({
   };
 
   return (
-    <tr className="border-b bg-gray-50">
+    <tr className="border-b bg-gray-50/50">
       <td></td>
       <td className="px-4 py-3 border-r">
         <Input 
@@ -500,7 +502,7 @@ const AddTaskRow = ({
               onSelect={(date) => {
                 setDueDate(date);
                 setCalendarOpen(false);
-                setTimeout(() => saveButtonRef.current?.focus(), 0);
+                setTimeout(() => saveButtonRef.current?.focus(), 50);
               }}
               initialFocus 
             />
@@ -526,15 +528,16 @@ const AddTaskRow = ({
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
           >
-            {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <AttachIcon className="h-5 w-5" fill="currentColor"/>}
+            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AttachIcon className="h-4 w-4" fill="currentColor"/>}
           </Button>
-          <Button variant="ghost" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">Cancel</Button>
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">Cancel</Button>
           <Button 
             ref={saveButtonRef}
+            size="sm"
             onClick={handleSave} 
             disabled={isSaving || isUploading} 
             className="focus-visible:ring-0 focus-visible:ring-offset-0"
