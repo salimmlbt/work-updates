@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SetTimesForm } from './set-times-form';
 import IndustryTypes from './industry-types';
 import WorkTypes from './work-types';
-import type { Industry, WorkType } from '@/lib/types';
+import type { Industry, WorkType, WorkTypeStatusConfig } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,11 +19,13 @@ export default async function AccessibilityPage() {
     const supabase = await createServerClient();
     
     const [
-        { data: setting },
+        { data: lunchSetting },
+        { data: statusConfigSetting },
         { data: industriesData, error: industriesError },
         { data: workTypesData, error: workTypesError },
     ] = await Promise.all([
         supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
+        supabase.from('app_settings').select('value').eq('key', 'work_type_status_config').single(),
         supabase.from('industries').select('*'),
         supabase.from('work_types').select('*'),
     ]);
@@ -31,7 +33,8 @@ export default async function AccessibilityPage() {
     if (industriesError) console.error('Error fetching industries', industriesError);
     if (workTypesError) console.error('Error fetching work types', workTypesError);
 
-    const lunchStartTime = (setting?.value as string | undefined) || '13:00';
+    const lunchStartTime = (lunchSetting?.value as string | undefined) || '13:00';
+    const workTypeStatusConfig = (statusConfigSetting?.value as WorkTypeStatusConfig | undefined) || {};
 
   return (
     <div className="p-4 md:p-8 lg:p-10">
@@ -92,7 +95,7 @@ export default async function AccessibilityPage() {
               <IndustryTypes initialIndustries={industriesData as Industry[] ?? []} />
             </TabsContent>
             <TabsContent value="work-type">
-              <WorkTypes initialWorkTypes={workTypesData as WorkType[] ?? []} />
+              <WorkTypes initialWorkTypes={workTypesData as WorkType[] ?? []} initialStatusConfig={workTypeStatusConfig} />
             </TabsContent>
           </Tabs>
         </TabsContent>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -41,7 +42,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isPast, isWithinInterval } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment } from '@/lib/types';
+import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, WorkTypeStatusConfig } from '@/lib/types';
 import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus, deleteTasks, restoreTasks, deleteTasksPermanently } from '@/app/actions';
 import { createTask } from '@/app/teams/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -70,7 +71,7 @@ import { EditTaskDialog } from './edit-task-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const statusIcons = {
+const statusIcons: Record<string, React.ReactNode> = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
   'inprogress': <Rocket className="h-4 w-4 text-purple-600" />,
   'review': <Eye className="h-4 w-4 text-yellow-600" />,
@@ -79,28 +80,24 @@ const statusIcons = {
   'approved': <CheckCircle2 className="h-4 w-4 text-green-500" />,
   'done': <CheckCircle2 className="h-4 w-4 text-green-500" />,
   'under-review': <Eye className="h-4 w-4 text-yellow-600" />,
+  'planned': <AlertCircle className="h-4 w-4 text-gray-400" />,
+  'scheduled': <CalendarIcon className="h-4 w-4 text-blue-500" />,
+  'posted': <CheckCircle2 className="h-4 w-4 text-green-500" />,
 };
 
-const statusLabels: Record<Task['status'], string> = {
+const statusLabels: Record<string, string> = {
+    'planned': 'Planned',
     'todo': 'New task',
     'inprogress': 'In progress',
     'review': 'Review',
     'corrections': 'Corrections',
     'recreate': 'Recreate',
     'approved': 'Approved',
+    'scheduled': 'Scheduled',
+    'posted': 'Posted',
     'done': 'Completed',
     'under-review': 'Under Review'
 }
-
-const mainStatusOptions: Task['status'][] = ['todo', 'inprogress', 'review'];
-const reviewStatusOptions: Task['status'][] = ['review', 'corrections', 'recreate', 'approved'];
-
-const postingStatusOptions: ('Planned' | 'Scheduled' | 'Posted')[] = ['Planned', 'Scheduled', 'Posted'];
-const postingStatusLabels = {
-  'Planned': 'Planned',
-  'Scheduled': 'Scheduled',
-  'Posted': 'Posted',
-};
 
 const typeColors: { [key: string]: string } = {
   "Poster": "bg-blue-100 text-blue-800",
@@ -129,10 +126,6 @@ const getResponsibleAvatar = (profile: Profile | null) => {
   return profile?.avatar_url ?? undefined;
 }
 
-/**
- * SearchableDropdown Component
- * Handles search, keyboard navigation, and alphabetical list.
- */
 interface SearchableDropdownProps {
   items: { id: string; name: string; avatar?: string | null }[];
   value: string;
@@ -178,7 +171,6 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
         onSelect(selectedId);
         setOpen(false);
         setSearch("");
-        // Crucial: use setTimeout to let the current popover close before jumping
         setTimeout(() => onNextField?.(), 50);
       }
     } else if (e.key === 'Escape') {
@@ -314,7 +306,6 @@ const AddTaskRow = ({
     return profiles.filter(p => !p.is_archived).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
   }, [profiles]);
 
-  // REFS for sequential focus flow
   const taskInputRef = useRef<HTMLInputElement>(null);
   const clientTriggerRef = useRef<HTMLButtonElement>(null);
   const projectTriggerRef = useRef<HTMLButtonElement>(null);
@@ -512,8 +503,8 @@ const AddTaskRow = ({
        <td className="px-4 py-3 border-r"></td>
       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
         <div className="flex items-center gap-2">
-          {statusIcons[status]}
-          <span>{statusLabels[status]}</span>
+          {statusIcons[status] || <AlertCircle className="h-4 w-4 text-gray-400" />}
+          <span>{statusLabels[status] || status}</span>
         </div>
       </td>
 
@@ -569,7 +560,8 @@ const TaskRow = ({
   currentUserProfile, 
   isSelected, 
   onSelect, 
-  isHighlighted 
+  isHighlighted,
+  workTypeStatusConfig,
 }: { 
   task: TaskWithDetails; 
   allTasks: TaskWithDetails[]; 
@@ -589,6 +581,7 @@ const TaskRow = ({
   isSelected: boolean; 
   onSelect: (taskId: string, isSelected: boolean) => void; 
   isHighlighted: boolean; 
+  workTypeStatusConfig: WorkTypeStatusConfig;
 }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
@@ -644,11 +637,13 @@ const TaskRow = ({
     onOpenDetails(task);
   }
 
-  const handleStatusChange = (status: Task['status']) => {
-    if (status === 'corrections') {
-      setIsCorrectionsOpen(true);
+  const handleStatusUpdate = (val: string) => {
+    if (['Planned', 'Scheduled', 'Posted'].includes(val)) {
+        onPostingStatusChange(task.id, val as any);
+    } else if (val === 'corrections') {
+        setIsCorrectionsOpen(true);
     } else {
-      onStatusChange(task.id, status);
+        onStatusChange(task.id, val as any);
     }
   }
 
@@ -663,40 +658,38 @@ const TaskRow = ({
   }
 
   const isReassigned = !!task.parent_task_id;
-  const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
-  const isPostingType = task.type && postingTaskTypes.includes(task.type);
+  
+  const currentStatus = (task.posting_status && (task.posting_status !== 'Planned' || activeTab === 'completed')) 
+    ? task.posting_status.toLowerCase() 
+    : task.status;
 
-  const currentStatusLabel = isPostingType
-    ? postingStatusLabels[task.posting_status || 'Planned']
-    : statusLabels[task.status];
+  const currentStatusLabel = statusLabels[currentStatus] || currentStatus;
+  const currentStatusIcon = statusIcons[currentStatus] || <AlertCircle className="h-4 w-4 text-gray-400" />;
   
-  const currentStatusIcon = isPostingType
-    ? <CheckCircle2 className="h-4 w-4 text-blue-500" />
-    : statusIcons[task.status];
-  
+  const allowedStatusesForType = useMemo(() => {
+    if (!task.type) return Object.keys(statusLabels);
+    return workTypeStatusConfig[task.type] || Object.keys(statusLabels);
+  }, [task.type, workTypeStatusConfig]);
+
   const getStatusOptions = () => {
-    if (isPostingType) return postingStatusOptions;
-    
-    if (activeTab === 'under-review') {
-        const isAssignee = currentUserProfile?.id === task.assignee_id;
-        if (isReviewer && isAssignee) {
-             return [...reviewStatusOptions, 'inprogress', 'todo'];
-        }
-        return isReviewer ? reviewStatusOptions : mainStatusOptions;
-    }
-
-    if (activeTab === 'completed') {
-      return isReviewer ? ['approved', 'review'] : [];
+    let options: string[] = [];
+    if (activeTab === 'active') {
+        options = ['todo', 'inprogress', 'review', 'posted', 'scheduled', 'done'];
+    } else if (activeTab === 'under-review') {
+        options = ['review', 'corrections', 'recreate', 'approved'];
+    } else if (activeTab === 'completed') {
+        options = ['posted', 'scheduled', 'approved', 'review', 'planned', 'todo', 'done'];
     }
     
-    return mainStatusOptions;
+    // Filter by allowed statuses for this work type
+    return options.filter(opt => allowedStatusesForType.includes(opt));
   };
 
   const statusOptions = getStatusOptions();
   
   const isStatusChangeDisabled = 
     (activeTab === 'completed' && !isReviewer) ||
-    (activeTab === 'under-review' && !isReviewer && !isPostingType && currentUserProfile?.id !== task.assignee_id) ||
+    (activeTab === 'under-review' && !isReviewer && currentUserProfile?.id !== task.assignee_id) ||
     (activeTab === 'active' && currentUserProfile?.id !== task.assignee_id) ||
     statusOptions.length === 0;
 
@@ -814,26 +807,16 @@ const TaskRow = ({
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-             {isPostingType
-              ? postingStatusOptions.map(status => (
+             {statusOptions.map(opt => (
                   <DropdownMenuItem
-                    key={status}
-                    disabled={task.posting_status === status}
-                    onClick={() => onPostingStatusChange(task.id, status)}
-                  >
-                    {postingStatusLabels[status]}
-                  </DropdownMenuItem>
-                ))
-              : statusOptions.map(status => (
-                  <DropdownMenuItem
-                    key={status}
-                    disabled={task.status === status}
-                    onClick={() => handleStatusChange(status as Task['status'])}
-                    className={cn(task.status === status && 'bg-accent')}
+                    key={opt}
+                    disabled={currentStatus === opt}
+                    onClick={() => handleStatusUpdate(opt)}
+                    className={cn(currentStatus === opt && 'bg-accent')}
                   >
                     <div className="flex items-center gap-2">
-                      {statusIcons[status as keyof typeof statusIcons]}
-                      <span>{statusLabels[status as keyof typeof statusLabels]}</span>
+                      {statusIcons[opt] || <AlertCircle className="h-4 w-4 text-gray-400" />}
+                      <span>{statusLabels[opt] || opt}</span>
                     </div>
                   </DropdownMenuItem>
                 ))}
@@ -930,6 +913,7 @@ const TaskTableBody = ({
   highlightedTaskId,
   clickedTaskId,
   duplicationData,
+  workTypeStatusConfig,
 }: {
   tasks: TaskWithDetails[];
   allTasks: TaskWithDetails[];
@@ -956,6 +940,7 @@ const TaskTableBody = ({
   highlightedTaskId: string | null;
   clickedTaskId: string | null;
   duplicationData?: Partial<TaskWithDetails> | null;
+  workTypeStatusConfig: WorkTypeStatusConfig;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -997,6 +982,7 @@ const TaskTableBody = ({
             isSelected={selectedTaskIds.includes(task.id)}
             onSelect={onSelectTask}
             isHighlighted={highlightedTaskId === task.id || clickedTaskId === task.id}
+            workTypeStatusConfig={workTypeStatusConfig}
           />
         </tr>
       ))}
@@ -1011,6 +997,7 @@ interface TasksClientProps {
   profiles: Profile[];
   currentUserProfile: Profile | null;
   highlightedTaskId?: string;
+  workTypeStatusConfig: WorkTypeStatusConfig;
 }
 
 const processPayload = (payload: any, profiles: Profile[], allProjects: Project[], clients: Client[]): TaskWithDetails => {
@@ -1040,7 +1027,7 @@ interface ActiveFilter {
   value: FilterValue;
 }
 
-export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile, highlightedTaskId: initialHighlightedTaskId }: TasksClientProps) {
+export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile, highlightedTaskId: initialHighlightedTaskId, workTypeStatusConfig }: TasksClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
@@ -1092,7 +1079,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+Enter: New Task
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         if (canEditTasks && !showBin) {
           e.preventDefault();
@@ -1102,7 +1088,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         }
       }
       
-      // Ctrl+Q: Duplicate highlighted task
       if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
         if (canEditTasks && !showBin && clickedTaskId) {
           e.preventDefault();
@@ -1248,9 +1233,24 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return sortableItems;
   }, [filteredTasks, sortConfig]);
 
-  const activeTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'todo' || t.status === 'inprogress' || t.status === 'corrections' || t.status === 'recreate') && (t.posting_status !== 'Scheduled' && t.posting_status !== 'Posted')), [sortedTasks]);
-  const underReviewTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'review' || t.status === 'under-review')), [sortedTasks]);
-  const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'done' || t.status === 'approved' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted')), [sortedTasks]);
+  const activeTasks = useMemo(() => sortedTasks.filter(t => {
+    if (t.is_deleted) return false;
+    const isPlanned = t.posting_status === 'Planned';
+    const isNormalActive = ['todo', 'inprogress', 'corrections', 'recreate'].includes(t.status);
+    return isPlanned || isNormalActive;
+  }), [sortedTasks]);
+
+  const underReviewTasks = useMemo(() => sortedTasks.filter(t => {
+    if (t.is_deleted) return false;
+    return t.status === 'review' || t.status === 'under-review';
+  }), [sortedTasks]);
+
+  const completedTasks = useMemo(() => sortedTasks.filter(t => {
+    if (t.is_deleted) return false;
+    const isPostedOrScheduled = t.posting_status === 'Posted' || t.posting_status === 'Scheduled';
+    const isNormalCompleted = t.status === 'approved' || t.status === 'done';
+    return isPostedOrScheduled || isNormalCompleted;
+  }), [sortedTasks]);
 
   const deletedTasks = useMemo(() => {
     const allDeleted = tasks.filter(t => t.is_deleted);
@@ -1505,6 +1505,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           highlightedTaskId={highlightedTaskId}
           clickedTaskId={clickedTaskId}
           duplicationData={duplicationData}
+          workTypeStatusConfig={workTypeStatusConfig}
         />
       </table>
     )

@@ -1,6 +1,6 @@
 
 import { createServerClient } from '@/lib/supabase/server';
-import type { Task, Profile, Client, Project, TaskWithDetails } from '@/lib/types';
+import type { Task, Profile, Client, Project, TaskWithDetails, WorkTypeStatusConfig } from '@/lib/types';
 import TasksPageLoader from './tasks-page-loader';
 
 export const dynamic = 'force-dynamic';
@@ -21,18 +21,19 @@ export default async function TasksPage({ searchParams }: { searchParams: { [key
         clientsResponse,
         profilesResponse,
         projectsResponse,
+        statusConfigSetting,
     ] = await Promise.all([
         supabase.from('tasks').select('*, profiles(id, full_name, avatar_url), projects(id, name, client_id)').order('created_at', { ascending: false }),
         supabase.from('clients').select('*'),
         supabase.from('profiles').select('*, teams:profile_teams(teams(*))'),
         supabase.from('projects').select('*').eq('is_deleted', false),
+        supabase.from('app_settings').select('value').eq('key', 'work_type_status_config').single(),
     ]);
 
     const { data: tasksData, error: tasksError } = tasksResponse;
     const { data: clientsData, error: clientsError } = clientsResponse;
     const { data: profilesData, error: profilesError } = profilesResponse;
     const { data: allProjectsData, error: allProjectsError } = projectsResponse;
-
 
     if (tasksError || clientsError || profilesError || allProjectsError) {
         console.error('Error fetching data:', tasksError, clientsError, profilesError, allProjectsError);
@@ -47,6 +48,7 @@ export default async function TasksPage({ searchParams }: { searchParams: { [key
     });
 
     const taskId = searchParams?.taskId as string | undefined;
+    const workTypeStatusConfig = (statusConfigSetting?.data?.value as WorkTypeStatusConfig | undefined) || {};
 
     return (
         <TasksPageLoader 
@@ -56,6 +58,7 @@ export default async function TasksPage({ searchParams }: { searchParams: { [key
             profiles={profilesData as Profile[] || []}
             currentUserProfile={userProfile}
             highlightedTaskId={taskId}
+            workTypeStatusConfig={workTypeStatusConfig}
         />
     )
 }

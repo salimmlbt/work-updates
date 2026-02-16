@@ -3,7 +3,7 @@
 
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { TaskWithDetails, Project, Client, Profile } from '@/lib/types';
+import type { TaskWithDetails, Project, Client, Profile, WorkTypeStatusConfig } from '@/lib/types';
 
 const TasksClient = dynamic(() => import('./tasks-client'), {
     ssr: false,
@@ -40,6 +40,7 @@ interface TasksPageLoaderProps {
     profiles: Profile[];
     currentUserProfile: Profile | null;
     highlightedTaskId?: string;
+    workTypeStatusConfig: WorkTypeStatusConfig;
 }
 
 export default function TasksPageLoader(props: TasksPageLoaderProps) {
