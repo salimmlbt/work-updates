@@ -6,13 +6,8 @@ import {
   ChevronDown,
   Plus,
   Table,
-  LayoutGrid,
   Search,
-  Users,
-  Filter,
   MoreVertical,
-  Save,
-  X,
   Rocket,
   AlertCircle,
   CheckCircle2,
@@ -28,6 +23,7 @@ import {
   MessageSquare,
   Repeat,
   Calendar as CalendarIcon,
+  Filter,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -35,18 +31,16 @@ import { Badge } from '@/components/ui/badge';
 import { getInitials, cn } from '@/lib/utils';
 import {
   Card,
-  CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isFuture, isPast, startOfMonth, endOfMonth, isWithinInterval, getMonth, getYear } from 'date-fns';
+import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isPast, isWithinInterval } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, Correction, Revisions } from '@/lib/types';
+import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment } from '@/lib/types';
 import { createTask } from '@/app/teams/actions';
 import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus, deleteTasks, restoreTasks, deleteTasksPermanently } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -66,16 +60,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
 import { ReassignTaskDialog } from './reassign-task-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { EditTaskDialog } from './edit-task-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-
 
 const statusIcons = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
@@ -109,7 +100,6 @@ const postingStatusLabels = {
   'Posted': 'Posted',
 };
 
-
 const typeColors: { [key: string]: string } = {
   "Poster": "bg-blue-100 text-blue-800",
   "Video": "bg-orange-100 text-orange-800",
@@ -132,7 +122,6 @@ const typeColors: { [key: string]: string } = {
   "Connect": "bg-slate-100 text-slate-800",
   "Followup": "bg-stone-100 text-stone-800",
 };
-
 
 const getResponsibleAvatar = (profile: Profile | null) => {
   return profile?.avatar_url ?? undefined;
@@ -337,7 +326,6 @@ const AddTaskRow = ({
         </Select>
       </td>
 
-      {/* Assignee */}
       <td className="px-4 py-3 border-r">
         <Select onValueChange={setAssigneeId} value={assigneeId}>
           <SelectTrigger 
@@ -353,7 +341,6 @@ const AddTaskRow = ({
         </Select>
       </td>
 
-      {/* Task Type */}
       <td className="px-4 py-3 border-r">
         <Select 
           onValueChange={setTaskType} 
@@ -373,7 +360,6 @@ const AddTaskRow = ({
         </Select>
       </td>
 
-      {/* Due Date */}
       <td className="px-4 py-3 border-r">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
@@ -400,9 +386,7 @@ const AddTaskRow = ({
           </PopoverContent>
         </Popover>
       </td>
-       {/* New column placeholder */}
        <td className="px-4 py-3 border-r"></td>
-      {/* Status */}
       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
         <div className="flex items-center gap-2">
           {statusIcons[status]}
@@ -410,7 +394,6 @@ const AddTaskRow = ({
         </div>
       </td>
 
-      {/* Actions */}
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-2">
           <input
@@ -439,8 +422,7 @@ const AddTaskRow = ({
   );
 };
 
-
-const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile, isSelected, onSelect, isHighlighted }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; isSelected: boolean; onSelect: (taskId: string, isSelected: boolean) => void; isHighlighted: boolean; }) => {
+const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile, isSelected, onSelect, isHighlighted }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; isSelected: boolean; onSelect: (taskId: string, isSelected: boolean) => void; isHighlighted: boolean; }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
@@ -479,10 +461,8 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
     return format(parseISO(dateToShow), 'MMM d, h:mm a');
   }, [activeTab, task.created_at, task.status_updated_at]);
 
-
   const handleRowClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    // Prevent sheet from opening if a button, dropdown or interactive element was clicked
     if (target.closest('button, [role="menuitem"], a, [role="dialog"], label, [role="checkbox"]')) {
       return;
     }
@@ -508,7 +488,6 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
   }
 
   const isReassigned = !!task.parent_task_id;
-  
   const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
   const isPostingType = task.type && postingTaskTypes.includes(task.type);
 
@@ -541,16 +520,12 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
   const statusOptions = getStatusOptions();
   
   const isStatusChangeDisabled = 
-    // Completed tab is read-only for non-reviewers
     (activeTab === 'completed' && !isReviewer) ||
-    // Under-review tab is read-only for non-reviewers/non-assignees
     (activeTab === 'under-review' && !isReviewer && !isPostingType && currentUserProfile?.id !== task.assignee_id) ||
-    // Active tab is read-only for anyone who is not the assignee
     (activeTab === 'active' && currentUserProfile?.id !== task.assignee_id) ||
     statusOptions.length === 0;
 
   const hasChildTask = useMemo(() => allTasks.some(t => t.parent_task_id === task.id), [allTasks, task.id]);
-
 
   return (
     <>
@@ -726,7 +701,6 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
   );
 };
 
-
 const TaskTableBody = ({
   tasks,
   allTasks,
@@ -819,209 +793,6 @@ const TaskTableBody = ({
   )
 }
 
-const KanbanCard = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { task: TaskWithDetails, allTasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void; }) => {
-  const handleCardClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button, [role="menuitem"], a')) {
-      return;
-    }
-    onTaskClick(task);
-  }
-
-  const getRemainingTime = (deadline: string) => {
-    const now = new Date();
-    const deadDate = parseISO(deadline);
-
-    if (task.status === 'done' || task.status === 'approved') return `Completed on ${format(deadDate, 'dd MMM')}`;
-
-    if (isToday(deadDate)) return 'Due today';
-    if (isTomorrow(deadDate)) return 'Due tomorrow';
-    if (isPast(deadDate)) return formatDistanceToNowStrict(deadDate, { addSuffix: true });
-    
-    const days = differenceInDays(deadDate, now);
-    if (days < 7) {
-      return `${days} day${days > 1 ? 's' : ''} left`;
-    }
-    return format(deadDate, 'dd MMM');
-  }
-
-  const hasChildTask = useMemo(() => allTasks.some(t => t.parent_task_id === task.id), [allTasks, task.id]);
-  const isPostingType = task.type && ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"].includes(task.type);
-
-  return (
-    <Card
-      onClick={handleCardClick}
-      className={cn(
-        "relative group rounded-2xl border bg-white shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden mb-4",
-        "hover:-translate-y-1"
-      )}
-    >
-      <div className={cn(
-        "absolute left-0 top-0 h-full w-1",
-        task.status === "todo" && "bg-blue-500",
-        task.status === "inprogress" && "bg-purple-500",
-        (task.status === "review" || task.status === "under-review") && "bg-yellow-400",
-        (task.status === "done" || task.status === "approved") && "bg-green-500",
-        task.status === "corrections" && "bg-orange-500",
-        task.status === "recreate" && "bg-red-500"
-      )} />
-
-      <div className="p-4 pl-5 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-medium leading-snug line-clamp-2">
-            {task.description}
-          </p>
-
-          {task.profiles && (
-            <Avatar className="h-7 w-7 shrink-0 border border-slate-100 shadow-sm">
-              <AvatarImage src={getResponsibleAvatar(task.profiles)} />
-              <AvatarFallback className="text-[10px]">
-                {getInitials(task.profiles.full_name)}
-              </AvatarFallback>
-            </Avatar>
-          )}
-        </div>
-
-        {task.type && (
-          <Badge variant="outline" className={cn("text-[10px] font-medium border-0", typeColors[task.type] || "bg-slate-100 text-slate-800")}>
-            {task.type}
-          </Badge>
-        )}
-
-        {task.tags && task.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {task.tags.map(tag => (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className="text-[9px] px-2 py-0.5 rounded-full font-medium"
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-2">
-          <div className="flex items-center gap-1.5">
-            <CalendarIcon className="h-3 w-3" />
-            <span>{getRemainingTime(task.deadline)}</span>
-          </div>
-
-          {canEdit && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition focus-visible:ring-0 focus-visible:ring-offset-0"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(task)}>
-                  <Pencil className="mr-2 h-4 w-4" /> Edit
-                </DropdownMenuItem>
-                {isPostingType
-                  ? postingStatusOptions.map(status => (
-                      <DropdownMenuItem
-                        key={status}
-                        disabled={task.posting_status === status}
-                        onClick={() => onPostingStatusChange(task.id, status)}
-                      >
-                        Move to {postingStatusLabels[status]}
-                      </DropdownMenuItem>
-                    ))
-                  : mainStatusOptions.map(status => (
-                      <DropdownMenuItem
-                        key={status}
-                        disabled={task.status === status}
-                        onClick={() => onStatusChange(task.id, status)}
-                        className={cn(task.status === status && 'bg-accent')}
-                      >
-                        Move to {statusLabels[status as keyof typeof statusLabels]}
-                      </DropdownMenuItem>
-                    ))}
-                {(task.status === 'done' || task.status === 'approved') && !task.parent_task_id && (
-                  <DropdownMenuItem onClick={() => onReassign(task)} disabled={hasChildTask}>
-                    <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
-};
-
-
-const KanbanBoard = ({ tasks: allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, canEdit, onTaskClick, onReassign }: { tasks: TaskWithDetails[], onStatusChange: (taskId: string, status: Task['status']) => void, onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void, onEdit: (task: TaskWithDetails) => void, onDelete: (task: TaskWithDetails) => void, canEdit: boolean, onTaskClick: (task: TaskWithDetails) => void, onReassign: (task: TaskWithDetails) => void }) => {
-  const statuses: ('todo' | 'inprogress' | 'review' | 'done')[] = ['todo', 'inprogress', 'review', 'done'];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 px-4 py-4 h-full">
-      {statuses.map((status) => {
-        const tasksInStatus = allTasks.filter((task) => {
-          const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
-          const isPostingType = task.type && postingTaskTypes.includes(task.type);
-          if (isPostingType) {
-            if (status === 'done') return task.posting_status === 'Posted' || task.posting_status === 'Scheduled';
-            if (status === 'todo') return !task.posting_status || task.posting_status === 'Planned';
-            return false;
-          }
-          return task.status === status;
-        });
-
-        return (
-          <div key={status} className="bg-muted/40 rounded-3xl p-4 flex flex-col backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-6 px-2">
-              <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground/80">
-                {statusLabels[status]}
-              </h2>
-              <span className="text-[10px] font-black bg-white text-slate-900 px-2 py-0.5 rounded-full shadow-sm ring-1 ring-slate-200">
-                {tasksInStatus.length}
-              </span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto pr-1">
-              <AnimatePresence>
-                {tasksInStatus.map((task) => (
-                  <motion.div
-                    key={task.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <KanbanCard
-                      task={task}
-                      allTasks={allTasks}
-                      onStatusChange={onStatusChange}
-                      onPostingStatusChange={onPostingStatusChange}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      canEdit={canEdit}
-                      onTaskClick={onTaskClick}
-                      onReassign={onReassign}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 interface TasksClientProps {
   initialTasks: TaskWithDetails[];
   projects: Project[];
@@ -1061,7 +832,6 @@ interface ActiveFilter {
 export default function TasksClient({ initialTasks, projects: allProjects, clients, profiles, currentUserProfile, highlightedTaskId: initialHighlightedTaskId }: TasksClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [view, setView] = useState('table');
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const { toast } = useToast();
@@ -1084,13 +854,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: SortDirection } | null>({ key: 'created_at', direction: 'descending' });
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') ||'active');
-  
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(initialHighlightedTaskId);
-
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
   const supabase = createClient();
-
   const userPermissions = (currentUserProfile?.roles as RoleWithPermissions)?.permissions;
   const canEditTasks = userPermissions?.tasks === 'Editor';
   const isReviewer = canEditTasks;
@@ -1101,8 +868,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     if (highlightedTaskId) {
       const timer = setTimeout(() => {
         setHighlightedTaskId(null);
-      }, 5000); // Highlight for 5 seconds
-
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [highlightedTaskId]);
@@ -1143,8 +909,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
     if (canEditTasks && taskView === 'mine') {
       tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
-    }
-    else if (!canEditTasks) {
+    } else if (!canEditTasks) {
        tasksToDisplay = tasks.filter(task => task.assignee_id === currentUserProfile?.id);
     }
 
@@ -1232,7 +997,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const completedTasks = useMemo(() => sortedTasks.filter(t => !t.is_deleted && (t.status === 'done' || t.status === 'approved' || t.posting_status === 'Scheduled' || t.posting_status === 'Posted')), [sortedTasks]);
 
   const deletedTasks = useMemo(() => {
-    // Deleted tasks should not be filtered by 'my tasks' view
     const allDeleted = tasks.filter(t => t.is_deleted);
     if(searchQuery){
       return allDeleted.filter(task =>
@@ -1247,8 +1011,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   }, [activeTab, showBin, activeFilters]);
 
   const handleSaveTask = (newTask: Task) => {
-    // This function is now mostly redundant due to realtime,
-    // but can be kept for optimistic UI if desired.
     setIsAddingTask(false);
   }
 
@@ -1271,15 +1033,13 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const handleDeleteTask = () => {
     if (!taskToDelete) return;
-    
     setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: true } : t));
     setDeleteAlertOpen(false);
-
     startTransition(async () => {
         const { error } = await deleteTask(taskToDelete.id);
         if (error) {
             toast({ title: "Error deleting task", description: error.message, variant: "destructive" });
-            setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: false } : t)); // Revert
+            setTasks(prev => prev.map(t => t.id === taskToDelete.id ? { ...t, is_deleted: false } : t));
         } else {
             toast({ title: "Task moved to bin" });
         }
@@ -1290,12 +1050,11 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const handleBulkDelete = () => {
     const originalTasks = [...tasks];
     setTasks(prev => prev.map(t => selectedTaskIds.includes(t.id) ? { ...t, is_deleted: true } : t));
-    
     startTransition(async () => {
         const { error } = await deleteTasks(selectedTaskIds);
         if (error) {
             toast({ title: "Error deleting tasks", description: error.message, variant: "destructive" });
-            setTasks(originalTasks); // Revert on error
+            setTasks(originalTasks);
         } else {
             toast({ title: `${selectedTaskIds.length} tasks moved to bin` });
         }
@@ -1306,12 +1065,11 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const handleBulkRestore = () => {
     const originalTasks = [...tasks];
     setTasks(prev => prev.map(t => selectedTaskIds.includes(t.id) ? { ...t, is_deleted: false } : t));
-    
     startTransition(async () => {
         const { error } = await restoreTasks(selectedTaskIds);
         if (error) {
             toast({ title: "Error restoring tasks", description: error.message, variant: "destructive" });
-            setTasks(originalTasks); // Revert on error
+            setTasks(originalTasks);
         } else {
             toast({ title: `${selectedTaskIds.length} tasks restored` });
         }
@@ -1322,12 +1080,11 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const handleBulkDeletePermanently = () => {
     const originalTasks = [...tasks];
     setTasks(prev => prev.filter(t => !selectedTaskIds.includes(t.id)));
-    
     startTransition(async () => {
         const { error } = await deleteTasksPermanently(selectedTaskIds);
         if (error) {
             toast({ title: "Error deleting tasks", description: error.message, variant: "destructive" });
-            setTasks(originalTasks); // Revert on error
+            setTasks(originalTasks);
         } else {
             toast({ title: `${selectedTaskIds.length} tasks permanently deleted` });
         }
@@ -1337,12 +1094,11 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   
   const handleRestoreTask = (task: TaskWithDetails) => {
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: false } : t));
-      
       startTransition(async () => {
           const { error } = await restoreTask(task.id);
           if (error) {
               toast({ title: "Error restoring task", description: error.message, variant: "destructive" });
-              setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: true } : t)); // Revert
+              setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_deleted: true } : t));
           } else {
               toast({ title: "Task restored" });
           }
@@ -1351,10 +1107,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const handleDeletePermanently = () => {
     if (!taskToDeletePermanently) return;
-    
     setTasks(prev => prev.filter(t => t.id !== taskToDeletePermanently!.id));
     setTaskToDeletePermanently(null);
-
     startTransition(async () => {
         const { error } = await deleteTaskPermanently(taskToDeletePermanently!.id);
         if (error) {
@@ -1369,23 +1123,19 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     const originalTasks = tasks;
     const updatedTasks = tasks.map(t => t.id === taskId ? {...t, status, status_updated_at: new Date().toISOString()} : t);
     setTasks(updatedTasks);
-
     startTransition(async () => {
         const { error } = await updateTaskStatus(taskId, status, correction);
         if (error) {
             toast({ title: "Error updating status", description: error.message, variant: "destructive" });
-            setTasks(originalTasks); // Revert on error
+            setTasks(originalTasks);
         }
     });
   }
   
   const handlePostingStatusChange = (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => {
     const originalTasks = tasks;
-    const updatedTasks = tasks.map(t => 
-        t.id === taskId ? { ...t, posting_status: status } : t
-    );
+    const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, posting_status: status } : t);
     setTasks(updatedTasks);
-
     startTransition(async () => {
         const { error } = await updateTaskPostingStatus(taskId, status);
         if (error) {
@@ -1394,7 +1144,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         }
     });
   }
-
 
   const handleSearchClick = () => {
     setIsSearchOpen(true);
@@ -1415,27 +1164,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     setSelectedTaskIds(prev =>
       isSelected ? [...prev, taskId] : prev.filter(id => id !== taskId)
     );
-  };
-  
-  const getTasksForCurrentTab = () => {
-    switch (activeTab) {
-      case 'active': return activeTasks;
-      case 'under-review': return underReviewTasks;
-      case 'completed': return completedTasks;
-      default: return [];
-    }
-  };
-
-  const handleSelectAll = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const tasksForCurrentTab = getTasksForCurrentTab();
-    const currentTabTaskIds = tasksForCurrentTab.map(t => t.id);
-    const allSelectedOnCurrentTab = currentTabTaskIds.length > 0 && currentTabTaskIds.every(id => selectedTaskIds.includes(id));
-
-    if (allSelectedOnCurrentTab) {
-      setSelectedTaskIds(prev => prev.filter(id => !currentTabTaskIds.includes(id)));
-    } else {
-      setSelectedTaskIds(prev => [...new Set([...prev, ...currentTabTaskIds])]);
-    }
   };
   
   const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => {
@@ -1589,48 +1317,44 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         );
     }
     
-    if (view === 'table') {
-      const tabs = [
-        { value: 'active', label: 'Active', count: activeTasks.length, content: renderTaskTable(activeTasks, 'todo', isReviewer, 'active') },
-        { value: 'under-review', label: 'Under review', count: underReviewTasks.length, content: renderTaskTable(underReviewTasks, 'review', isReviewer, 'under-review') },
-        { value: 'completed', label: 'Completed', count: completedTasks.length, content: renderTaskTable(completedTasks, 'done', isReviewer, 'completed') },
-      ];
-      return (
-        <div className="w-full">
-            <div className="flex items-center rounded-full bg-muted p-1 mb-4">
-              {tabs.map(tab => (
-                <Button
-                  key={tab.value}
-                  variant={activeTab === tab.value ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setActiveTab(tab.value)}
-                  className={cn('rounded-full flex-1', activeTab === tab.value ? 'bg-white shadow' : '')}
-                >
-                  {tab.label}
-                  <Badge variant="secondary" className="ml-2">{tab.count}</Badge>
-                </Button>
-              ))}
-            </div>
-          {tabs.map(tab => (
-            <div key={tab.value} className={activeTab === tab.value ? 'block' : 'hidden'}>
-              {tab.content}
-            </div>
-          ))}
-          
-          {activeTab === 'active' && canEditTasks && !isAddingTask && (
-            <Button
-                variant="ghost"
-                className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
-                onClick={() => setIsAddingTask(true)}
-            >
-                <Plus className="mr-2 h-4 w-4" /> Add task
-            </Button>
-          )}
-        </div>
-      )
-    } else {
-      return <KanbanBoard tasks={sortedTasks} onStatusChange={handleStatusChange} onPostingStatusChange={handlePostingStatusChange} onEdit={handleEditClick} onDelete={handleDeleteClick} canEdit={canEditTasks} onTaskClick={setSelectedTask} onReassign={(task) => setTaskToReassign(task)} allTasks={tasks} />
-    }
+    const tabs = [
+      { value: 'active', label: 'Active', count: activeTasks.length, content: renderTaskTable(activeTasks, 'todo', isReviewer, 'active') },
+      { value: 'under-review', label: 'Under review', count: underReviewTasks.length, content: renderTaskTable(underReviewTasks, 'review', isReviewer, 'under-review') },
+      { value: 'completed', label: 'Completed', count: completedTasks.length, content: renderTaskTable(completedTasks, 'done', isReviewer, 'completed') },
+    ];
+    return (
+      <div className="w-full">
+          <div className="flex items-center rounded-full bg-muted p-1 mb-4">
+            {tabs.map(tab => (
+              <Button
+                key={tab.value}
+                variant={activeTab === tab.value ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab(tab.value)}
+                className={cn('rounded-full flex-1', activeTab === tab.value ? 'bg-white shadow' : '')}
+              >
+                {tab.label}
+                <Badge variant="secondary" className="ml-2">{tab.count}</Badge>
+              </Button>
+            ))}
+          </div>
+        {tabs.map(tab => (
+          <div key={tab.value} className={activeTab === tab.value ? 'block' : 'hidden'}>
+            {tab.content}
+          </div>
+        ))}
+        
+        {activeTab === 'active' && canEditTasks && !isAddingTask && (
+          <Button
+              variant="ghost"
+              className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
+              onClick={() => setIsAddingTask(true)}
+          >
+              <Plus className="mr-2 h-4 w-4" /> Add task
+          </Button>
+        )}
+      </div>
+    )
   }
   
   const FilterManager = () => {
@@ -1644,7 +1368,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         if (filterType === 'dateRange' && typeof filterValue === 'object' && filterValue !== null && 'from' in filterValue && !('to' in filterValue)) {
           finalValue = { from: (filterValue as { from: Date }).from, to: (filterValue as { from: Date }).from };
         }
-  
         setActiveFilters(prev => [...prev, { id: Date.now().toString(), type: filterType, value: finalValue }]);
         setFilterType(null);
         setFilterValue(null);
@@ -1793,7 +1516,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       </Popover>
     );
   };
-  
 
   return (
     <div className="bg-white p-6 rounded-lg h-full w-full flex flex-col">
@@ -1857,32 +1579,12 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             </div>
           ) : (
             <>
-              {canEditTasks && !isAddingTask && view === 'table' && !showBin && activeTab === 'active' && (
+              {canEditTasks && !isAddingTask && !showBin && activeTab === 'active' && (
                 <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
                   <Plus className="mr-2 h-4 w-4" />
                   Add new
                 </Button>
               )}
-              <div className="flex items-center rounded-full bg-gray-100 p-1">
-                <Button
-                  variant={view === 'table' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setView('table')}
-                  className={cn('rounded-full', view === 'table' ? 'bg-white shadow' : '')}
-                >
-                  <Table className="mr-2 h-4 w-4" />
-                  Table view
-                </Button>
-                <Button
-                  variant={view === 'kanban' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setView('kanban')}
-                  className={cn('rounded-full', view === 'kanban' ? 'bg-white shadow' : '')}
-                >
-                  <LayoutGrid className="mr-2 h-4 w-4" />
-                  Kanban board
-                </Button>
-              </div>
             </>
           )}
         </div>
@@ -1915,9 +1617,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                 <Search className="h-5 w-5" />
             </Button>
           </div>
-          
           <FilterManager />
-
           {canEditTasks ? (
             <div className="flex items-center rounded-full bg-gray-100 p-1">
               <Button
