@@ -1,3 +1,4 @@
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -54,6 +55,8 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // This will refresh session if expired - required for Server Components
+  // https://supabase.com/docs/guides/auth/server-side/nextjs
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -69,7 +72,6 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
-
 
   return response
 }
