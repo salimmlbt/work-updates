@@ -41,8 +41,8 @@ import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, pa
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment } from '@/lib/types';
-import { createTask } from '@/app/teams/actions';
 import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus, deleteTasks, restoreTasks, deleteTasksPermanently } from '@/app/actions';
+import { createTask } from '@/app/teams/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -134,6 +134,7 @@ const AddTaskRow = ({
   clients,
   profiles,
   status,
+  initialData,
 }: { 
   onSave: (task: any) => void; 
   onCancel: () => void; 
@@ -141,13 +142,14 @@ const AddTaskRow = ({
   clients: Client[],
   profiles: Profile[],
   status: Task['status'],
+  initialData?: Partial<TaskWithDetails> | null;
 }) => {
-  const [taskName, setTaskName] = useState('');
-  const [projectId, setProjectId] = useState('');
-  const [clientId, setClientId] = useState('');
-  const [dueDate, setDueDate] = useState<Date | undefined>();
-  const [assigneeId, setAssigneeId] = useState('');
-  const [taskType, setTaskType] = useState('');
+  const [taskName, setTaskName] = useState(initialData?.description || '');
+  const [projectId, setProjectId] = useState(initialData?.project_id || '');
+  const [clientId, setClientId] = useState(initialData?.client_id || '');
+  const [dueDate, setDueDate] = useState<Date | undefined>(initialData?.deadline ? parseISO(initialData.deadline) : undefined);
+  const [assigneeId, setAssigneeId] = useState(initialData?.assignee_id || '');
+  const [taskType, setTaskType] = useState(initialData?.type || '');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -422,7 +424,45 @@ const AddTaskRow = ({
   );
 };
 
-const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile, isSelected, onSelect, isHighlighted }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; isSelected: boolean; onSelect: (taskId: string, isSelected: boolean) => void; isHighlighted: boolean; }) => {
+const TaskRow = ({ 
+  task, 
+  allTasks, 
+  onStatusChange, 
+  onPostingStatusChange, 
+  onEdit, 
+  onDelete, 
+  openMenuId, 
+  setOpenMenuId, 
+  canEdit, 
+  onHighlight,
+  onOpenDetails, 
+  onReassign, 
+  isReviewer, 
+  activeTab, 
+  currentUserProfile, 
+  isSelected, 
+  onSelect, 
+  isHighlighted 
+}: { 
+  task: TaskWithDetails; 
+  allTasks: TaskWithDetails[]; 
+  onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; 
+  onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; 
+  onEdit: (task: TaskWithDetails) => void; 
+  onDelete: (task: TaskWithDetails) => void; 
+  openMenuId: string | null; 
+  setOpenMenuId: (id: string | null) => void; 
+  canEdit: boolean; 
+  onHighlight: (taskId: string) => void;
+  onOpenDetails: (task: TaskWithDetails) => void; 
+  onReassign: (task: TaskWithDetails) => void; 
+  isReviewer: boolean; 
+  activeTab: string; 
+  currentUserProfile: Profile | null; 
+  isSelected: boolean; 
+  onSelect: (taskId: string, isSelected: boolean) => void; 
+  isHighlighted: boolean; 
+}) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
@@ -466,7 +506,15 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
     if (target.closest('button, [role="menuitem"], a, [role="dialog"], label, [role="checkbox"]')) {
       return;
     }
-    onTaskClick(task);
+    onHighlight(task.id);
+  }
+
+  const handleRowDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, [role="menuitem"], a, [role="dialog"], label, [role="checkbox"]')) {
+      return;
+    }
+    onOpenDetails(task);
   }
 
   const handleStatusChange = (status: Task['status']) => {
@@ -538,7 +586,11 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           />
         </td>
       )}
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[250px] cursor-pointer", isHighlighted && "bg-blue-50")}>
+      <td 
+        onClick={handleRowClick} 
+        onDoubleClick={handleRowDoubleClick}
+        className={cn("px-4 py-3 border-r max-w-[250px] cursor-pointer", isHighlighted && "bg-blue-50")}
+      >
         <div className="flex items-center gap-2">
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
             <span className="truncate shrink">{task.description}</span>
@@ -566,14 +618,26 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           ))}
         </div>
       </td>
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}>
+      <td 
+        onClick={handleRowClick} 
+        onDoubleClick={handleRowDoubleClick}
+        className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}
+      >
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
       </td>
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}>
+      <td 
+        onClick={handleRowClick} 
+        onDoubleClick={handleRowDoubleClick}
+        className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}
+      >
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
       {canEdit && (
-        <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[180px] cursor-pointer", isHighlighted && "bg-blue-50")}>
+        <td 
+          onClick={handleRowClick} 
+          onDoubleClick={handleRowDoubleClick}
+          className={cn("px-4 py-3 border-r max-w-[180px] cursor-pointer", isHighlighted && "bg-blue-50")}
+        >
           {task.profiles ? (
             <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
               <Avatar className="h-6 w-6 shrink-0">
@@ -585,17 +649,29 @@ const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit
           ) : <div className="flex justify-center">-</div>}
         </td>
       )}
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[120px] cursor-pointer", isHighlighted && "bg-blue-50")}>
+      <td 
+        onClick={handleRowClick} 
+        onDoubleClick={handleRowDoubleClick}
+        className={cn("px-4 py-3 border-r max-w-[120px] cursor-pointer", isHighlighted && "bg-blue-50")}
+      >
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
           {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
         </div>
       </td>
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}>
+      <td 
+        onClick={handleRowClick} 
+        onDoubleClick={handleRowDoubleClick}
+        className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}
+      >
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dateText}</span>
         </div>
       </td>
-      <td onClick={handleRowClick} className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}>
+      <td 
+        onClick={handleRowClick} 
+        onDoubleClick={handleRowDoubleClick}
+        className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}
+      >
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dynamicDate}</span>
         </div>
@@ -715,7 +791,8 @@ const TaskTableBody = ({
   onEdit,
   onDelete,
   canEdit,
-  onTaskClick,
+  onHighlight,
+  onOpenDetails,
   onReassign,
   status,
   isReviewer,
@@ -724,6 +801,8 @@ const TaskTableBody = ({
   selectedTaskIds,
   onSelectTask,
   highlightedTaskId,
+  clickedTaskId,
+  duplicationData,
 }: {
   tasks: TaskWithDetails[];
   allTasks: TaskWithDetails[];
@@ -738,7 +817,8 @@ const TaskTableBody = ({
   onEdit: (task: TaskWithDetails) => void;
   onDelete: (task: TaskWithDetails) => void;
   canEdit: boolean;
-  onTaskClick: (task: TaskWithDetails) => void;
+  onHighlight: (taskId: string) => void;
+  onOpenDetails: (task: TaskWithDetails) => void;
   onReassign: (task: TaskWithDetails) => void;
   status: Task['status'],
   isReviewer: boolean,
@@ -747,6 +827,8 @@ const TaskTableBody = ({
   selectedTaskIds: string[];
   onSelectTask: (taskId: string, isSelected: boolean) => void;
   highlightedTaskId: string | null;
+  clickedTaskId: string | null;
+  duplicationData?: Partial<TaskWithDetails> | null;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -760,6 +842,7 @@ const TaskTableBody = ({
             clients={clients} 
             profiles={profiles}
             status={status}
+            initialData={duplicationData}
         />
       )}
       {tasks.map((task) => (
@@ -778,14 +861,15 @@ const TaskTableBody = ({
             openMenuId={openMenuId}
             setOpenMenuId={setOpenMenuId}
             canEdit={canEdit}
-            onTaskClick={onTaskClick}
+            onHighlight={onHighlight}
+            onOpenDetails={onOpenDetails}
             onReassign={onReassign}
             isReviewer={isReviewer}
             activeTab={activeTab}
             currentUserProfile={currentUserProfile}
             isSelected={selectedTaskIds.includes(task.id)}
             onSelect={onSelectTask}
-            isHighlighted={highlightedTaskId === task.id}
+            isHighlighted={highlightedTaskId === task.id || clickedTaskId === task.id}
           />
         </tr>
       ))}
@@ -855,6 +939,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') ||'active');
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(initialHighlightedTaskId);
+  const [clickedTaskId, setClickedTaskId] = useState<string | null>(null);
+  const [duplicationData, setDuplicationData] = useState<Partial<TaskWithDetails> | null>(null);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
   const supabase = createClient();
@@ -879,18 +965,41 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Enter: New Task
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         if (canEditTasks && !showBin) {
           e.preventDefault();
+          setDuplicationData(null);
           setActiveTab('active');
           setIsAddingTask(true);
+        }
+      }
+      
+      // Ctrl+Q: Duplicate highlighted task
+      if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
+        if (canEditTasks && !showBin && clickedTaskId) {
+          e.preventDefault();
+          const taskToDuplicate = tasks.find(t => t.id === clickedTaskId);
+          if (taskToDuplicate) {
+            setDuplicationData({
+              description: taskToDuplicate.description,
+              client_id: taskToDuplicate.client_id,
+              project_id: taskToDuplicate.project_id,
+              assignee_id: taskToDuplicate.assignee_id,
+              type: taskToDuplicate.type,
+              deadline: taskToDuplicate.deadline,
+            });
+            setActiveTab('active');
+            setIsAddingTask(true);
+            toast({ title: 'Duplicating Task', description: 'Auto-filled task details for duplication.' });
+          }
         }
       }
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [canEditTasks, showBin]);
+  }, [canEditTasks, showBin, clickedTaskId, tasks, toast]);
 
   useEffect(() => {
     const channel = supabase
@@ -901,7 +1010,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         (payload: any) => {
           if (payload.eventType === 'INSERT') {
             const newFullTask = processPayload(payload, profiles, allProjects, clients);
-            setTasks(current => [newFullTask, ...current.filter(t => t.id !== newFullTask.id)]);
+            setTasks(current => {
+              if (current.some(t => t.id === newFullTask.id)) return current;
+              return [newFullTask, ...current];
+            });
           } else if (payload.eventType === 'UPDATE') {
             const updatedFullTask = processPayload(payload, profiles, allProjects, clients);
             setTasks(current => current.map(t => t.id === updatedFullTask.id ? updatedFullTask : t));
@@ -909,6 +1021,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             const deletedTaskId = payload.old.id;
             setTasks(current => current.filter(t => t.id !== deletedTaskId));
             setSelectedTaskIds(current => current.filter(id => id !== deletedTaskId));
+            if (clickedTaskId === deletedTaskId) setClickedTaskId(null);
           }
         }
       )
@@ -917,7 +1030,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, allProjects, clients, profiles]);
+  }, [supabase, allProjects, clients, profiles, clickedTaskId]);
 
   const filteredTasks = useMemo(() => {
     let tasksToDisplay = tasks;
@@ -950,6 +1063,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
               return task.created_at && format(parseISO(task.created_at), 'yyyy-MM-dd') === format(filter.value as Date, 'yyyy-MM-dd');
             case 'dateRange': {
               const { from, to } = filter.value as { from: Date, to: Date };
+              if (!from || !to) return true;
               const taskDate = parseISO(task.created_at);
               return isWithinInterval(taskDate, { start: from, end: to });
             }
@@ -1027,6 +1141,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const handleSaveTask = (newTask: Task) => {
     setIsAddingTask(false);
+    setDuplicationData(null);
   }
 
   const handleTaskUpdated = (updatedTask: TaskWithDetails) => {
@@ -1242,7 +1357,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           allTasks={tasks}
           isAddingTask={canEditTasks && isAddingTask && activeTab === 'active'}
           onSaveTask={handleSaveTask}
-          onCancelAddTask={() => setIsAddingTask(false)}
+          onCancelAddTask={() => { setIsAddingTask(false); setDuplicationData(null); }}
           projects={allProjects}
           clients={clients}
           profiles={profiles}
@@ -1251,7 +1366,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
           canEdit={canEditTasks}
-          onTaskClick={setSelectedTask}
+          onHighlight={setClickedTaskId}
+          onOpenDetails={setSelectedTask}
           onReassign={(task) => setTaskToReassign(task)}
           status={status}
           isReviewer={isReviewer}
@@ -1260,6 +1376,8 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           selectedTaskIds={selectedTaskIds}
           onSelectTask={handleSelectTask}
           highlightedTaskId={highlightedTaskId}
+          clickedTaskId={clickedTaskId}
+          duplicationData={duplicationData}
         />
       </table>
     )
@@ -1363,7 +1481,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           <Button
               variant="ghost"
               className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
-              onClick={() => setIsAddingTask(true)}
+              onClick={() => { setIsAddingTask(true); setDuplicationData(null); }}
           >
               <Plus className="mr-2 h-4 w-4" /> Add task
           </Button>
@@ -1595,7 +1713,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           ) : (
             <>
               {canEditTasks && !isAddingTask && !showBin && activeTab === 'active' && (
-                <Button onClick={() => setIsAddingTask(true)} className="rounded-full">
+                <Button onClick={() => { setIsAddingTask(true); setDuplicationData(null); }} className="rounded-full">
                   <Plus className="mr-2 h-4 w-4" />
                   Add new
                 </Button>
