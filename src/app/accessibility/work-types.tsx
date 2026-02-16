@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
 
 const ALL_STATUS_OPTIONS = [
   { id: 'planned', label: 'Planned' },
