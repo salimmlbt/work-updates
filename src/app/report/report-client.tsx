@@ -130,9 +130,12 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
       </CardHeader>
 
       {/* BODY */}
-      <CardContent className="p-5 pt-3">
-        <ScrollArea className="max-h-[480px] pr-2">
-          <div className="space-y-4">
+      <CardContent className="p-0">
+        <ScrollArea className={cn(
+          "px-6 pb-6 pt-2",
+          tasks.length > 6 ? "h-[480px]" : "h-auto"
+        )}>
+          <div className="space-y-4 py-2">
 
             {tasks.map((task) => {
               const isPostingEvent = task.submission_type === 'scheduled' || task.submission_type === 'posted';
