@@ -62,19 +62,22 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
         return false;
     }
 
-    // Hide tasks that are currently back in "todo" or "inprogress"
-    if (task.status === 'todo' || task.status === 'inprogress') {
-        return false;
-    }
-
     // Check if any submission in the history matches the selected day
-    return history.some(entry => {
-        try {
-            return entry.date && entry.date.startsWith(selectedDate);
-        } catch (e) {
+    const entryForDate = history.find(entry => entry.date && entry.date.startsWith(selectedDate));
+    
+    if (!entryForDate) return false;
+
+    // Standard tasks: Hide if currently back in "todo" or "inprogress" 
+    // UNLESS they are posting tasks that have been scheduled/posted (identified by parent_task_id or specific history types)
+    const isPostingTask = !!task.parent_task_id || entryForDate.type === 'scheduled' || entryForDate.type === 'posted';
+    
+    if (!isPostingTask) {
+        if (task.status === 'todo' || task.status === 'inprogress') {
             return false;
         }
-    });
+    }
+
+    return true;
   }).map(task => {
       let history: SubmissionHistoryEntry[] = [];
       try {

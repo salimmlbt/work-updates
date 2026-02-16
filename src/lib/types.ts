@@ -37,7 +37,7 @@ export interface Leave {
   day_type?: string | null;
 }
 
-export type SubmissionType = 'original' | 'correction' | 'recreate';
+export type SubmissionType = 'original' | 'correction' | 'recreate' | 'scheduled' | 'posted';
 
 export type SubmissionHistoryEntry = {
   date: string;

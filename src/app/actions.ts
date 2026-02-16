@@ -507,9 +507,50 @@ export async function updateTaskStatus(
 
 export async function updateTaskPostingStatus(taskId: string, posting_status: 'Planned' | 'Scheduled' | 'Posted') {
     const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Fetch current history to append new entry
+    const { data: currentTask } = await supabase
+        .from('tasks')
+        .select('submission_history')
+        .eq('id', taskId)
+        .single();
+
+    let history: SubmissionHistoryEntry[] = [];
+    const rawHistory = currentTask?.submission_history;
+    
+    if (rawHistory) {
+        if (Array.isArray(rawHistory)) {
+            history = rawHistory as SubmissionHistoryEntry[];
+        } else if (typeof rawHistory === 'string' && rawHistory.trim().length > 0) {
+            try {
+                const parsed = JSON.parse(rawHistory);
+                if (Array.isArray(parsed)) {
+                    history = parsed;
+                }
+            } catch (e) {
+                history = [];
+            }
+        }
+    }
+
+    // Record the transition in history if it's Scheduled or Posted
+    if (posting_status === 'Scheduled' || posting_status === 'Posted') {
+        const newEntry: SubmissionHistoryEntry = {
+            date: new Date().toISOString(),
+            type: posting_status.toLowerCase() as any
+        };
+        history = [...history, newEntry];
+    }
+
     const { error } = await supabase
         .from('tasks')
-        .update({ posting_status, status_updated_at: new Date().toISOString() })
+        .update({ 
+            posting_status, 
+            status_updated_at: new Date().toISOString(),
+            status_updated_by: user?.id,
+            submission_history: history
+        })
         .eq('id', taskId);
 
     if (error) {
@@ -519,6 +560,7 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
 
     revalidatePath('/tasks');
     revalidatePath('/dashboard');
+    revalidatePath('/report');
     return { success: true };
 }
 
@@ -953,7 +995,7 @@ export async function renameProjectType(id: string, oldName: string, newName: st
 
 export async function deleteProjectType(id: string) {
     const supabase = await createServerClient();
-    const { error } = await supabase.from('project_types').delete().eq('id', id);
+    const { error = null } = await supabase.from('project_types').delete().eq('id', id);
 
     if (error) {
         console.error('Error deleting project type:', error);
@@ -1282,7 +1324,7 @@ export async function updateHoliday(id: number, formData: FormData) {
 
 export async function deleteHoliday(id: number) {
     const supabase = await createServerClient();
-    const { error } = await supabase
+    const { error = null } = await supabase
         .from('official_holidays')
         .update({ is_deleted: true })
         .eq('id', id);

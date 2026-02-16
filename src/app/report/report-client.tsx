@@ -50,13 +50,18 @@ const statusConfig: Record<Task['status'], { icon: React.ReactNode; label: strin
   'done': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Approved', color: 'text-green-600', bg: 'bg-green-100' },
 };
 
+const postingConfig: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
+  'scheduled': { icon: <CalendarIcon className="h-4 w-4" />, label: 'Scheduled', color: 'text-blue-600', bg: 'bg-blue-100' },
+  'posted': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Posted', color: 'text-green-600', bg: 'bg-green-100' },
+};
+
 const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[] }) => {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => setHasMounted(true), []);
 
   const totalTasks = tasks.length;
   const approvedTasks = tasks.filter(
-    t => t.status === 'approved' || t.status === 'done'
+    t => t.status === 'approved' || t.status === 'done' || t.submission_type === 'scheduled' || t.submission_type === 'posted'
   ).length;
 
   const approvalRate =
@@ -109,7 +114,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
                     font-semibold
                   "
                 >
-                  {approvalRate}% Approved
+                  {approvalRate}% Completed
                 </Badge>
               </div>
             </div>
@@ -131,8 +136,10 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
           <div className="space-y-4">
 
             {tasks.map((task) => {
-              const config =
-                statusConfig[task.status] || statusConfig['todo'];
+              const isPostingEvent = task.submission_type === 'scheduled' || task.submission_type === 'posted';
+              const config = isPostingEvent 
+                ? postingConfig[task.submission_type]
+                : (statusConfig[task.status] || statusConfig['todo']);
 
               return (
                 <div
@@ -157,7 +164,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
                           {task.description}
                         </h3>
 
-                        {task.submission_type !== 'original' && (
+                        {task.submission_type !== 'original' && !isPostingEvent && (
                           <Badge
                             className="
                               text-[9px]
@@ -284,7 +291,7 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
             </div>
             <h3 className="text-xl font-bold text-slate-900">No work submitted yet</h3>
             <p className="text-slate-500 max-w-sm mt-2 font-medium">
-                There are no review tasks found for {format(parseISO(date), 'MMMM d, yyyy')}.
+                There are no review tasks or posting updates found for {format(parseISO(date), 'MMMM d, yyyy')}.
             </p>
             <Button 
               variant="outline" 
