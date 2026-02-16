@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -441,7 +440,7 @@ const AddTaskRow = ({
 };
 
 
-const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile, isSelected, onSelect, isHighlighted }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; isSelected: boolean; onSelect: (taskId: string, isSelected: boolean) => void; isHighlighted: boolean; }) => {
+const TaskRow = ({ task, allTasks, onStatusChange, onPostingStatusChange, onEdit, onDelete, openMenuId, setOpenMenuId, canEdit, onTaskClick, onReassign, isReviewer, activeTab, currentUserProfile, isSelected, onSelect, isHighlighted }: { task: TaskWithDetails; allTasks: TaskWithDetails[]; onStatusChange: (taskId: string, status: Task['status'], correction?: { note: string; authorId: string }) => void; onPostingStatusChange: (taskId: string, status: 'Planned' | 'Scheduled' | 'Posted') => void; onEdit: (task: TaskWithDetails) => void; onDelete: (task: TaskWithDetails) => void; openMenuId: string | null; setOpenMenuId: (id: string | null) => void; canEdit: boolean; onTaskClick: (task: TaskWithDetails) => void; onTaskClick: (task: TaskWithDetails) => void; onReassign: (task: TaskWithDetails) => void; isReviewer: boolean; activeTab: string; currentUserProfile: Profile | null; isSelected: boolean; onSelect: (taskId: string, isSelected: boolean) => void; isHighlighted: boolean; }) => {
   const [dateText, setDateText] = useState('No date');
   const [isCorrectionsOpen, setIsCorrectionsOpen] = useState(false);
   const [correctionNote, setCorrectionNote] = useState("");
@@ -952,9 +951,16 @@ const KanbanBoard = ({ tasks: allTasks, onStatusChange, onPostingStatusChange, o
     <div className="flex flex-col h-full">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border-b">
         {statuses.map((status) => {
-          const tasksInStatus = allTasks.filter(
-            (task) => task.status === status
-          );
+          const tasksInStatus = allTasks.filter((task) => {
+            const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
+            const isPostingType = task.type && postingTaskTypes.includes(task.type);
+            if (isPostingType) {
+              if (status === 'done') return task.posting_status === 'Posted' || task.posting_status === 'Scheduled';
+              if (status === 'todo') return !task.posting_status || task.posting_status === 'Planned';
+              return false;
+            }
+            return task.status === status;
+          });
           return (
             <div key={status} className="px-3 py-4">
               <h2 className="text-lg font-semibold mb-4 flex items-center">
@@ -972,9 +978,16 @@ const KanbanBoard = ({ tasks: allTasks, onStatusChange, onPostingStatusChange, o
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 flex-1">
         {statuses.map((status, index) => {
-          const tasksInStatus = allTasks.filter(
-            (task) => task.status === status
-          );
+          const tasksInStatus = allTasks.filter((task) => {
+            const postingTaskTypes = ["Posting", "Account Creation", "Meeting", "Followup", "Connect", "Ad Post"];
+            const isPostingType = task.type && postingTaskTypes.includes(task.type);
+            if (isPostingType) {
+              if (status === 'done') return task.posting_status === 'Posted' || task.posting_status === 'Scheduled';
+              if (status === 'todo') return !task.posting_status || task.posting_status === 'Planned';
+              return false;
+            }
+            return task.status === status;
+          });
           return (
             <div
               key={status}
@@ -1556,7 +1569,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                                   <RefreshCcw className="h-4 w-4 mr-2" /> Restore
                               </Button>
                               <Button variant="destructive" size="sm" onClick={() => setTaskToDeletePermanently(task)}>
-                                  <Trash2 className="h-4 w-4 mr-2" /> Delete Permanently
+                                  <Trash2 className="mr-2 h-4 w-4 mr-2" /> Delete Permanently
                               </Button>
                           </div>
                         </td>
@@ -2016,8 +2029,3 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     </div>
   );
 }
-
-    
-
-    
-
