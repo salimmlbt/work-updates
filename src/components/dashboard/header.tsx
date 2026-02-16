@@ -411,8 +411,9 @@ export default function Header() {
     );
   }
 
+  // Hide the header entirely if the session is complete and no greeting is showing
   if (status === 'session-complete' && !showGreeting) {
-    return <header className="bg-background h-20 flex items-center" />;
+    return null;
   }
 
   const headerHeight = isExpanded ? '5rem' : '10px';
