@@ -24,6 +24,7 @@ import {
   Repeat,
   Calendar as CalendarIcon,
   Filter,
+  Check,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -67,6 +68,7 @@ import { ReassignTaskDialog } from './reassign-task-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EditTaskDialog } from './edit-task-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const statusIcons = {
   'todo': <AlertCircle className="h-4 w-4 text-gray-400" />,
@@ -127,6 +129,133 @@ const getResponsibleAvatar = (profile: Profile | null) => {
   return profile?.avatar_url ?? undefined;
 }
 
+/**
+ * SearchableDropdown Component
+ * Handles search, keyboard navigation (Arrow keys + Enter), and alphabetical list.
+ */
+interface SearchableDropdownProps {
+  items: { id: string; name: string; avatar?: string | null }[];
+  value: string;
+  onSelect: (value: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+  triggerRef?: React.RefObject<HTMLButtonElement>;
+  onNextField?: () => void;
+}
+
+const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, triggerRef, onNextField }: SearchableDropdownProps) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
+  }, [items, search]);
+
+  useEffect(() => {
+    if (open) {
+      setHighlightedIndex(0);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [open, search]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev < filteredItems.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredItems[highlightedIndex]) {
+        onSelect(filteredItems[highlightedIndex].id);
+        setOpen(false);
+        setSearch("");
+        onNextField?.();
+      }
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  const selectedItem = items.find(i => i.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild disabled={disabled}>
+        <Button
+          ref={triggerRef}
+          variant="ghost"
+          className="w-full justify-between font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent"
+        >
+          <div className="flex items-center gap-2 truncate">
+            {selectedItem?.avatar && (
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={selectedItem.avatar} />
+                <AvatarFallback className="text-[8px]">{getInitials(selectedItem.name)}</AvatarFallback>
+              </Avatar>
+            )}
+            <span className="truncate">{selectedItem ? selectedItem.name : placeholder}</span>
+          </div>
+          <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0 w-[250px]" align="start" onKeyDown={handleKeyDown}>
+        <div className="flex items-center border-b px-3">
+          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+          <Input
+            ref={inputRef}
+            placeholder={`Search ${placeholder.toLowerCase()}...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none border-0 focus-visible:ring-0"
+          />
+        </div>
+        <ScrollArea className="h-60">
+          <div className="p-1">
+            {filteredItems.length === 0 && (
+              <div className="py-6 text-center text-sm text-muted-foreground">No items found.</div>
+            )}
+            {filteredItems.map((item, index) => (
+              <div
+                key={item.id}
+                role="button"
+                className={cn(
+                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+                  highlightedIndex === index ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
+                  value === item.id && "bg-accent/30"
+                )}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                onClick={() => {
+                  onSelect(item.id);
+                  setOpen(false);
+                  setSearch("");
+                  onNextField?.();
+                }}
+              >
+                <div className="flex items-center gap-2 truncate flex-1">
+                  {item.avatar && (
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={item.avatar} />
+                      <AvatarFallback className="text-[8px]">{getInitials(item.name)}</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <span className="truncate">{item.name}</span>
+                </div>
+                {value === item.id && <Check className="ml-2 h-4 w-4 shrink-0" />}
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 const AddTaskRow = ({ 
   onSave, 
   onCancel,
@@ -160,21 +289,37 @@ const AddTaskRow = ({
 
   const selectedAssignee = profiles.find(p => p.id === assigneeId);
   const assigneeTeams = selectedAssignee?.teams?.map(t => t.teams).filter(Boolean) as Team[] || [];
-  const availableTaskTypes = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
+  
+  // Sorted Available Task Types
+  const availableTaskTypes = useMemo(() => {
+    const types = [...new Set(assigneeTeams.flatMap(t => t.default_tasks || []))];
+    return types.sort((a, b) => a.localeCompare(b));
+  }, [assigneeTeams]);
 
+  // Sorted and Filtered Projects
   const filteredProjects = useMemo(() => {
-    if (!clientId) {
-      return projects;
-    }
-    return projects.filter(p => String(p.client_id) === String(clientId));
+    const list = clientId ? projects.filter(p => String(p.client_id) === String(clientId)) : projects;
+    return list.sort((a, b) => a.name.localeCompare(b.name));
   }, [clientId, projects]);
 
-  const taskInputRef = React.useRef<HTMLInputElement>(null);
-  const clientRef = React.useRef<HTMLButtonElement>(null);
-  const projectRef = React.useRef<HTMLButtonElement>(null);
-  const dueDateRef = React.useRef<HTMLButtonElement>(null);
-  const assigneeRef = React.useRef<HTMLButtonElement>(null);
-  const typeRef = React.useRef<HTMLButtonElement>(null);
+  // Sorted Clients
+  const sortedClients = useMemo(() => {
+    return [...clients].sort((a, b) => a.name.localeCompare(b.name));
+  }, [clients]);
+
+  // Sorted Profiles
+  const sortedProfiles = useMemo(() => {
+    return profiles.filter(p => !p.is_archived).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+  }, [profiles]);
+
+  // REFS for sequential focus flow
+  const taskInputRef = useRef<HTMLInputElement>(null);
+  const clientTriggerRef = useRef<HTMLButtonElement>(null);
+  const projectTriggerRef = useRef<HTMLButtonElement>(null);
+  const assigneeTriggerRef = useRef<HTMLButtonElement>(null);
+  const typeTriggerRef = useRef<HTMLButtonElement>(null);
+  const dueDateTriggerRef = useRef<HTMLButtonElement>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     taskInputRef.current?.focus();
@@ -182,7 +327,7 @@ const AddTaskRow = ({
 
   const handleClientChange = (newClientId: string) => {
     setClientId(newClientId);
-    setProjectId(''); // Reset project when client changes
+    setProjectId(''); 
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -246,15 +391,10 @@ const AddTaskRow = ({
     return format(date, "dd MMM");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, nextRef?: React.RefObject<any>) => {
+  const handleTaskNameKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (nextRef?.current) {
-        nextRef.current.focus();
-        nextRef.current.click?.(); // Open dropdowns
-      } else {
-        handleSave();
-      }
+      clientTriggerRef.current?.click();
     }
   };
 
@@ -262,6 +402,7 @@ const AddTaskRow = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       if (!calendarOpen) {
+        saveButtonRef.current?.focus();
         handleSave();
       }
     }
@@ -276,7 +417,7 @@ const AddTaskRow = ({
           value={taskName} 
           ref={taskInputRef}
           onChange={(e) => setTaskName(e.target.value)} 
-          onKeyDown={(e) => handleKeyDown(e, clientRef)}
+          onKeyDown={handleTaskNameKeyDown}
           className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         {attachments.length > 0 && (
@@ -292,83 +433,61 @@ const AddTaskRow = ({
       </td>
 
       <td className="px-4 py-3 border-r">
-        <Select onValueChange={handleClientChange} value={clientId}>
-          <SelectTrigger 
-            className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            ref={clientRef} 
-            onKeyDown={(e) => handleKeyDown(e, projectRef)}
-          >
-            <SelectValue placeholder="Select client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <SearchableDropdown
+          items={sortedClients.map(c => ({ id: c.id, name: c.name, avatar: c.avatar }))}
+          value={clientId}
+          onSelect={handleClientChange}
+          placeholder="Select client"
+          triggerRef={clientTriggerRef}
+          onNextField={() => projectTriggerRef.current?.click()}
+        />
       </td>
 
       <td className="px-4 py-3 border-r">
-        <Select 
-          onValueChange={setProjectId} 
-          value={projectId} 
-          key={clientId} // Force re-render when client changes
-        >
-          <SelectTrigger 
-            className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            ref={projectRef} 
-            onKeyDown={(e) => handleKeyDown(e, assigneeRef)}
-          >
-            <SelectValue placeholder="Select project" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="no-project">No project</SelectItem>
-            {filteredProjects.map(p => (
-              <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableDropdown
+          items={[
+            { id: 'no-project', name: 'No project' },
+            ...filteredProjects.map(p => ({ id: p.id, name: p.name }))
+          ]}
+          value={projectId}
+          onSelect={setProjectId}
+          placeholder="Select project"
+          disabled={!clientId}
+          triggerRef={projectTriggerRef}
+          onNextField={() => assigneeTriggerRef.current?.click()}
+        />
       </td>
 
       <td className="px-4 py-3 border-r">
-        <Select onValueChange={setAssigneeId} value={assigneeId}>
-          <SelectTrigger 
-            className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            ref={assigneeRef} 
-            onKeyDown={(e) => handleKeyDown(e, typeRef)}
-          >
-            <SelectValue placeholder="Select assignee" />
-          </SelectTrigger>
-          <SelectContent>
-            {profiles.filter(p => !p.is_archived).map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <SearchableDropdown
+          items={sortedProfiles.map(p => ({ id: p.id, name: p.full_name || "", avatar: p.avatar_url }))}
+          value={assigneeId}
+          onSelect={setAssigneeId}
+          placeholder="Select assignee"
+          triggerRef={assigneeTriggerRef}
+          onNextField={() => typeTriggerRef.current?.click()}
+        />
       </td>
 
       <td className="px-4 py-3 border-r">
-        <Select 
-          onValueChange={setTaskType} 
-          value={taskType} 
+        <SearchableDropdown
+          items={availableTaskTypes.map(t => ({ id: t, name: t }))}
+          value={taskType}
+          onSelect={setTaskType}
+          placeholder="Select type"
           disabled={!assigneeId || availableTaskTypes.length === 0}
-        >
-          <SelectTrigger 
-            className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            ref={typeRef} 
-            onKeyDown={(e) => handleKeyDown(e, dueDateRef)}
-          >
-            <SelectValue placeholder="Select type" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableTaskTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-          </SelectContent>
-        </Select>
+          triggerRef={typeTriggerRef}
+          onNextField={() => dueDateTriggerRef.current?.click()}
+        />
       </td>
 
       <td className="px-4 py-3 border-r">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
             <Button 
+              ref={dueDateTriggerRef}
               variant="ghost" 
               className="w-full justify-start text-left font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent"
-              ref={dueDateRef} 
               onKeyDown={handleDueDateKeyDown}
             >
               {formatDate(dueDate)}
@@ -381,7 +500,7 @@ const AddTaskRow = ({
               onSelect={(date) => {
                 setDueDate(date);
                 setCalendarOpen(false);
-                dueDateRef.current?.focus();
+                setTimeout(() => saveButtonRef.current?.focus(), 0);
               }}
               initialFocus 
             />
@@ -414,7 +533,12 @@ const AddTaskRow = ({
             {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <AttachIcon className="h-5 w-5" fill="currentColor"/>}
           </Button>
           <Button variant="ghost" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">Cancel</Button>
-          <Button onClick={handleSave} disabled={isSaving || isUploading} className="focus-visible:ring-0 focus-visible:ring-offset-0">
+          <Button 
+            ref={saveButtonRef}
+            onClick={handleSave} 
+            disabled={isSaving || isUploading} 
+            className="focus-visible:ring-0 focus-visible:ring-offset-0"
+          >
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save
           </Button>
@@ -903,7 +1027,7 @@ const processPayload = (payload: any, profiles: Profile[], allProjects: Project[
   };
 };
 
-type SortableKeys = 'description' | 'client' | 'project' | 'assignee' | 'type' | 'deadline' | 'created_at' | 'status_updated_at';
+type SortableKeys = 'description' | 'type' | 'deadline' | 'created_at' | 'status_updated_at' | 'client' | 'project' | 'assignee';
 type SortDirection = 'ascending' | 'descending';
 type FilterType = 'client' | 'responsible' | 'type' | 'dueDate' | 'createdDate' | 'dateRange';
 type FilterValue = string | Date | { from: Date; to: Date } | null;
