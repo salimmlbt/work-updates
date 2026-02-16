@@ -131,7 +131,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
 
       {/* BODY */}
       <CardContent className="p-5 pt-3">
-        <ScrollArea className="max-h-[500px] pr-2">
+        <ScrollArea className="max-h-[480px] pr-2">
           <div className="space-y-4">
 
             {tasks.map((task) => {
