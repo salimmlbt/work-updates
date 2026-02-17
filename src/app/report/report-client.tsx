@@ -12,6 +12,7 @@ import {
   FileX,
   ChevronDown,
   Loader2,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -45,6 +46,8 @@ const statusConfig: Record<string, { icon: React.ReactNode; label: string; color
   'approved': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Approved', color: 'text-green-600', bg: 'bg-green-100' },
   'done': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Completed', color: 'text-green-600', bg: 'bg-green-100' },
   'completed': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Completed', color: 'text-green-600', bg: 'bg-green-100' },
+  'todo': { icon: <MessageSquare className="h-4 w-4" />, label: 'Correction', color: 'text-orange-600', bg: 'bg-orange-100' },
+  'inprogress': { icon: <Clock className="h-4 w-4" />, label: 'In Progress', color: 'text-blue-600', bg: 'bg-blue-100' },
 };
 
 const postingConfig: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
@@ -75,10 +78,8 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
       overflow-hidden
     ">
       
-      {/* Top Accent Line */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-80" />
 
-      {/* HEADER */}
       <CardHeader className="p-6 pb-4 bg-white/70 backdrop-blur-md">
         <div className="flex items-start justify-between">
           
@@ -117,7 +118,6 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
             </div>
           </div>
 
-          {/* Progress */}
           <div className="w-32">
             <Progress
               value={approvalRate}
@@ -127,7 +127,6 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
         </div>
       </CardHeader>
 
-      {/* BODY */}
       <CardContent className="p-0">
         <ScrollArea className={cn(
           "px-6 pb-6 pt-2",
@@ -137,9 +136,17 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
 
             {tasks.map((task) => {
               const isPostingEvent = task.submission_type === 'scheduled' || task.submission_type === 'posted';
+              
+              // Outcome-based mapping for historical records
+              let finalStatus = task.status;
+              if (task.status === 'todo' || task.status === 'inprogress') {
+                  if (task.revisions?.recreations && task.revisions.recreations > 0) finalStatus = 'recreate' as any;
+                  else if (task.revisions?.corrections && task.revisions.corrections > 0) finalStatus = 'corrections' as any;
+              }
+
               const config = isPostingEvent 
                 ? postingConfig[task.submission_type]
-                : (statusConfig[task.status] || statusConfig[task.submission_type] || statusConfig['review']);
+                : (statusConfig[finalStatus] || statusConfig[task.submission_type] || statusConfig['review']);
 
               return (
                 <div
@@ -200,7 +207,6 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
                       </div>
                     </div>
 
-                    {/* Status Pill */}
                     <div
                       className={cn(
                         "flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full",
@@ -230,15 +236,13 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
   const [allTasks, setAllTasks] = useState<SubmissionTask[]>(initialTasks);
   const supabase = createClient();
 
-  // Sync state if initial data changes (e.g. from server action navigation)
   useEffect(() => {
     setAllTasks(initialTasks);
   }, [initialTasks]);
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase
-      .channel('report-realtime-v1')
+      .channel('report-realtime-v2')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
@@ -248,7 +252,6 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
             return;
           }
 
-          // Fetch full task details with joins to apply filtering logic accurately
           const { data: updatedTask, error } = await supabase
             .from('tasks')
             .select('*, profiles(*), projects(*), clients(*)')
@@ -259,48 +262,44 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
 
           const task = updatedTask as any;
 
-          // 🛡️ Accidental Submission Check
-          const isAccidental = (task.status === 'todo' || task.status === 'inprogress') && 
-                               task.posting_status !== 'Scheduled' && 
-                               task.posting_status !== 'Posted';
-
           let history: SubmissionHistoryEntry[] = [];
           try {
               const rawHistory = task.submission_history;
-              if (rawHistory) {
-                  if (Array.isArray(rawHistory)) {
-                      history = rawHistory;
-                  } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
-                      history = JSON.parse(rawHistory);
-                  }
+              if (Array.isArray(rawHistory)) {
+                  history = rawHistory;
+              } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+                  history = JSON.parse(rawHistory);
               }
           } catch (e) {}
 
           const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(date));
-          const latestEntry = entriesForDate[entriesForDate.length - 1];
-          const hasSubmissionForToday = !!latestEntry;
+          const hasEntriesOnDate = entriesForDate.length > 0;
 
-          const shouldShow = !isAccidental && hasSubmissionForToday;
+          if (hasEntriesOnDate) {
+            const latestGlobalEntry = history[history.length - 1];
+            const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
+            const isLatestGlobal = latestGlobalEntry.date === latestEntryOnDate.date;
+            const isCurrentlyActive = (task.status === 'todo' || task.status === 'inprogress');
+            const isPosting = task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
 
-          if (shouldShow) {
-            const submissionTask: SubmissionTask = {
-              ...task,
-              submission_type: latestEntry.type || 'original',
-              submitted_at: latestEntry.date || task.status_updated_at || task.created_at
-            };
-            
-            setAllTasks(prev => {
-              // Update if exists, or append
-              const index = prev.findIndex(t => t.id === submissionTask.id);
-              if (index !== -1) {
-                const newList = [...prev];
-                newList[index] = submissionTask;
-                return newList;
-              }
-              return [submissionTask, ...prev];
-            });
+            // Filter out accidental submissions
+            const isAccidental = isCurrentlyActive && isLatestGlobal && !isPosting;
+
+            if (!isAccidental) {
+              const submissionTask: SubmissionTask = {
+                ...task,
+                submission_type: latestEntryOnDate.type || 'original',
+                submitted_at: latestEntryOnDate.date || task.status_updated_at || task.created_at
+              };
+              
+              setAllTasks(prev => {
+                const filtered = prev.filter(t => t.id !== submissionTask.id);
+                return [submissionTask, ...filtered];
+              });
+            } else {
+              setAllTasks(prev => prev.filter(t => t.id !== task.id));
+            }
           } else {
-            // Remove if it fails the filter (e.g. was moved back to active state)
             setAllTasks(prev => prev.filter(t => t.id !== task.id));
           }
         }
@@ -313,7 +312,6 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
   }, [supabase, date]);
 
   const activeProfiles = useMemo(() => {
-    // Group tasks by assignee and extract unique profiles
     const profilesMap = new Map<string, Profile>();
     allTasks.forEach(task => {
       if (task.profiles) {

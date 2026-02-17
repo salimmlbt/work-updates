@@ -49,16 +49,6 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
 
   // Filter tasks based on submission history entries matching the selected date
   const reportTasks = (tasks as any[] || []).filter(task => {
-    // 🛡️ Accidental Submission Check:
-    // If a task is currently back in "New task" or "In progress", it means the user is still working on it.
-    // We exclude it from the report cards entirely to avoid cluttering with accidental "Review" clicks.
-    // We bypass this check if the task has been explicitly Scheduled or Posted.
-    if ((task.status === 'todo' || task.status === 'inprogress') && 
-        task.posting_status !== 'Scheduled' && 
-        task.posting_status !== 'Posted') {
-        return false;
-    }
-
     let history: SubmissionHistoryEntry[] = [];
     try {
         const rawHistory = task.submission_history;
@@ -70,24 +60,28 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
             }
         }
     } catch (e) {
-        console.warn("Could not parse submission history for task", task.id);
         return false;
     }
 
     // Check if any submission in the history matches the selected day
-    const entryForDate = history.find(entry => entry.date && entry.date.startsWith(selectedDate));
+    const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));
+    if (entriesForDate.length === 0) return false;
+
+    // 🛡️ Accidental Submission Check:
+    // Logic: If a task is currently "New task" or "In progress", AND the entry for the selected date 
+    // is the LATEST submission globally for this task, we hide it (Accidental).
+    // If there's a newer submission on a later day, this one stays (Historical).
+    const latestGlobalEntry = history[history.length - 1];
+    const isLatestEntryBeingViewed = entriesForDate.includes(latestGlobalEntry);
     
-    if (!entryForDate) return false;
+    const isCurrentlyActive = task.status === 'todo' || task.status === 'inprogress';
+    const isPosting = task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
 
-    // Logic: Only show tasks that reached a submission state (Review, Completed, Scheduled, Posted)
-    const isSubmission = entryForDate.type === 'original' || 
-                         entryForDate.type === 'correction' || 
-                         entryForDate.type === 'recreate' || 
-                         entryForDate.type === 'completed' || 
-                         entryForDate.type === 'scheduled' || 
-                         entryForDate.type === 'posted';
+    if (isCurrentlyActive && isLatestEntryBeingViewed && !isPosting) {
+        return false;
+    }
 
-    return isSubmission;
+    return true;
   }).map(task => {
       let history: SubmissionHistoryEntry[] = [];
       try {
