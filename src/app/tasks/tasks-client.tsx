@@ -210,7 +210,7 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
             placeholder={`Search ${placeholder.toLowerCase()}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none border-0 focus-visible:ring-0"
+            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none shadow-none ring-0 ring-offset-0"
           />
         </div>
         <ScrollArea className="h-60">
@@ -411,7 +411,7 @@ const AddTaskRow = ({
           ref={taskInputRef}
           onChange={(e) => setTaskName(e.target.value)} 
           onKeyDown={handleTaskNameKeyDown}
-          className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none"
         />
         {attachments.length > 0 && (
           <div className="mt-2 space-y-1">
