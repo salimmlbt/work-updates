@@ -678,12 +678,16 @@ const TaskRow = ({
     if (activeTab === 'active') {
         options = ['todo', 'inprogress', 'review', 'posted', 'scheduled', 'done'];
     } else if (activeTab === 'under-review') {
-        // Special logic for Under Review tab:
-        // Editors see: Review, Approved, Correction, Recreate
-        // Assignees see: New task (todo), In Progress, Review
-        if (isReviewer) {
+        const isAssignee = currentUserProfile?.id === task.assignee_id;
+        // Rules:
+        // - Editor is Assignee: Review, Approved, Correction, Recreate, New Task, In Progress
+        // - Editor Only: Review, Approved, Correction, Recreate
+        // - Assignee Only: New task, In Progress, Review
+        if (isReviewer && isAssignee) {
+            options = ['todo', 'inprogress', 'review', 'approved', 'corrections', 'recreate'];
+        } else if (isReviewer) {
             options = ['review', 'approved', 'corrections', 'recreate'];
-        } else if (currentUserProfile?.id === task.assignee_id) {
+        } else if (isAssignee) {
             options = ['todo', 'inprogress', 'review'];
         }
     } else if (activeTab === 'completed') {
@@ -1069,7 +1073,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const supabase = createClient();
   const userPermissions = (currentUserProfile?.roles as RoleWithPermissions)?.permissions;
   const canEditTasks = userPermissions?.tasks === 'Editor';
-  const isReviewer = canEditTasks;
+  const isReviewer = canEditTasks || currentUserProfile?.roles?.name === 'Falaq Admin';
   
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
 
@@ -1577,7 +1581,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                         <td className="px-4 py-3 text-right">
                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
                               <Button variant="ghost" size="sm" onClick={() => handleRestoreTask(task)}>
-                                  <RefreshCcw className="h-4 w-4 mr-2" /> Restore
+                                  <RefreshCcw className="mr-2 h-4 w-4 mr-2" /> Restore
                               </Button>
                               <Button variant="destructive" size="sm" onClick={() => setTaskToDeletePermanently(task)}>
                                   <Trash2 className="mr-2 h-4 w-4 mr-2" /> Delete Permanently
