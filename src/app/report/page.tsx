@@ -49,6 +49,13 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
 
   // Filter tasks based on submission history entries matching the selected date
   const reportTasks = (tasks as any[] || []).filter(task => {
+    // 🛡️ Accidental Submission Check:
+    // If a task is currently back in "New task" or "In progress", it means the user is still working on it.
+    // We exclude it from the report cards entirely to avoid cluttering with accidental "Review" clicks.
+    if (task.status === 'todo' || task.status === 'inprogress') {
+        return false;
+    }
+
     let history: SubmissionHistoryEntry[] = [];
     try {
         const rawHistory = task.submission_history;
@@ -90,7 +97,6 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
       } catch (e) {}
 
       // Find the specific submission entry for this date to determine the label
-      // We look for the LATEST entry of the day to capture status updates (like Approval) on same-day submissions
       const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));
       const latestEntry = entriesForDate[entriesForDate.length - 1];
       
