@@ -283,7 +283,9 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
             const isPosting = task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
 
             // Filter out accidental submissions
-            const isAccidental = isCurrentlyActive && isLatestGlobal && !isPosting;
+            const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate';
+            const hasMultipleSubmitsToday = entriesForDate.length > 1;
+            const isAccidental = isCurrentlyActive && isLatestGlobal && !isPosting && !isLegitimateSubmitToday && !hasMultipleSubmitsToday;
 
             if (!isAccidental) {
               const submissionTask: SubmissionTask = {

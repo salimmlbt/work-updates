@@ -68,17 +68,21 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     if (entriesForDate.length === 0) return false;
 
     // 🛡️ Accidental Submission Check:
-    // Logic: If a task is currently "New task" or "In progress", AND the entry for the selected date 
-    // is the LATEST submission globally for this task, we hide it (Accidental).
-    // If there's a newer submission on a later day, this one stays (Historical).
     const latestGlobalEntry = history[history.length - 1];
-    const isLatestEntryBeingViewed = entriesForDate.includes(latestGlobalEntry);
+    const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
+    const isLatestEntryBeingViewed = latestGlobalEntry.date === latestEntryOnDate.date;
     
     const isCurrentlyActive = task.status === 'todo' || task.status === 'inprogress';
     const isPosting = task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
 
     if (isCurrentlyActive && isLatestEntryBeingViewed && !isPosting) {
-        return false;
+        // Legitimate check: Show if it was a correction resubmit or if there are multiple submits today
+        const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate';
+        const hasMultipleSubmitsToday = entriesForDate.length > 1;
+        
+        if (!isLegitimateSubmitToday && !hasMultipleSubmitsToday) {
+            return false;
+        }
     }
 
     return true;
