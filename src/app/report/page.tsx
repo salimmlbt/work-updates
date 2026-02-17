@@ -52,7 +52,10 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     // 🛡️ Accidental Submission Check:
     // If a task is currently back in "New task" or "In progress", it means the user is still working on it.
     // We exclude it from the report cards entirely to avoid cluttering with accidental "Review" clicks.
-    if (task.status === 'todo' || task.status === 'inprogress') {
+    // We bypass this check if the task has been explicitly Scheduled or Posted.
+    if ((task.status === 'todo' || task.status === 'inprogress') && 
+        task.posting_status !== 'Scheduled' && 
+        task.posting_status !== 'Posted') {
         return false;
     }
 
