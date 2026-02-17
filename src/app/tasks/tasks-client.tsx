@@ -678,7 +678,14 @@ const TaskRow = ({
     if (activeTab === 'active') {
         options = ['todo', 'inprogress', 'review', 'posted', 'scheduled', 'done'];
     } else if (activeTab === 'under-review') {
-        options = ['review', 'corrections', 'recreate', 'approved'];
+        // Special logic for Under Review tab:
+        // Editors see: Review, Approved, Correction, Recreate
+        // Assignees see: New task (todo), In Progress, Review
+        if (isReviewer) {
+            options = ['review', 'approved', 'corrections', 'recreate'];
+        } else if (currentUserProfile?.id === task.assignee_id) {
+            options = ['todo', 'inprogress', 'review'];
+        }
     } else if (activeTab === 'completed') {
         options = ['posted', 'scheduled', 'approved', 'review', 'planned', 'todo', 'done'];
     }
@@ -1505,7 +1512,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           canEdit={canEditTasks}
           onHighlight={setClickedTaskId}
           onOpenDetails={setSelectedTask}
-          onReassign={(task) => setTaskToReassign(task)}
+          onReassign={setTaskToReassign}
           status={status}
           isReviewer={isReviewer}
           activeTab={activeTab}
