@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -62,6 +61,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AttachIcon, LinkIcon } from '@/components/icons';
 import { TaskDetailSheet } from './task-detail-sheet';
@@ -975,6 +975,7 @@ const TaskTableBody = ({
             canEdit={canEdit}
             onHighlight={onHighlight}
             onOpenDetails={onOpenDetails}
+            onOpenDetails={onOpenDetails}
             onReassign={onReassign}
             isReviewer={isReviewer}
             activeTab={activeTab}
@@ -1235,6 +1236,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const activeTasks = useMemo(() => sortedTasks.filter(t => {
     if (t.is_deleted) return false;
+    
+    // Priority: Scheduled and Posted belong in Completed
+    if (t.posting_status === 'Posted' || t.posting_status === 'Scheduled') return false;
+
     const isPlanned = t.posting_status === 'Planned';
     const isNormalActive = ['todo', 'inprogress', 'corrections', 'recreate'].includes(t.status);
     return isPlanned || isNormalActive;
@@ -1242,6 +1247,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const underReviewTasks = useMemo(() => sortedTasks.filter(t => {
     if (t.is_deleted) return false;
+    
+    // Priority: Scheduled and Posted belong in Completed
+    if (t.posting_status === 'Posted' || t.posting_status === 'Scheduled') return false;
+
     return t.status === 'review' || t.status === 'under-review';
   }), [sortedTasks]);
 
