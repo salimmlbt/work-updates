@@ -6,15 +6,12 @@ import { useRouter } from 'next/navigation';
 import {
   Calendar as CalendarIcon,
   CheckCircle2,
-  AlertCircle,
   Eye,
   MessageSquare,
   Repeat,
-  Clock,
   FileX,
-  Send,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -25,8 +22,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { getInitials, cn } from '@/lib/utils';
 import { format, parseISO, isToday } from 'date-fns';
-import type { Profile, TaskWithDetails, Task } from '@/lib/types';
+import type { Profile, TaskWithDetails, Task, SubmissionHistoryEntry } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { createClient } from '@/lib/supabase/client';
 
 interface SubmissionTask extends TaskWithDetails {
     submission_type: string;
@@ -229,6 +227,101 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
 export default function ReportClient({ initialProfiles, initialTasks, selectedDate }: ReportClientProps) {
   const router = useRouter();
   const [date, setDate] = useState(selectedDate);
+  const [allTasks, setAllTasks] = useState<SubmissionTask[]>(initialTasks);
+  const supabase = createClient();
+
+  // Sync state if initial data changes (e.g. from server action navigation)
+  useEffect(() => {
+    setAllTasks(initialTasks);
+  }, [initialTasks]);
+
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('report-realtime-v1')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        async (payload) => {
+          if (payload.eventType === 'DELETE') {
+            setAllTasks(prev => prev.filter(t => t.id !== payload.old.id));
+            return;
+          }
+
+          // Fetch full task details with joins to apply filtering logic accurately
+          const { data: updatedTask, error } = await supabase
+            .from('tasks')
+            .select('*, profiles(*), projects(*), clients(*)')
+            .eq('id', payload.new.id)
+            .single();
+
+          if (error || !updatedTask) return;
+
+          const task = updatedTask as any;
+
+          // 🛡️ Accidental Submission Check
+          const isAccidental = (task.status === 'todo' || task.status === 'inprogress') && 
+                               task.posting_status !== 'Scheduled' && 
+                               task.posting_status !== 'Posted';
+
+          let history: SubmissionHistoryEntry[] = [];
+          try {
+              const rawHistory = task.submission_history;
+              if (rawHistory) {
+                  if (Array.isArray(rawHistory)) {
+                      history = rawHistory;
+                  } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+                      history = JSON.parse(rawHistory);
+                  }
+              }
+          } catch (e) {}
+
+          const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(date));
+          const latestEntry = entriesForDate[entriesForDate.length - 1];
+          const hasSubmissionForToday = !!latestEntry;
+
+          const shouldShow = !isAccidental && hasSubmissionForToday;
+
+          if (shouldShow) {
+            const submissionTask: SubmissionTask = {
+              ...task,
+              submission_type: latestEntry.type || 'original',
+              submitted_at: latestEntry.date || task.status_updated_at || task.created_at
+            };
+            
+            setAllTasks(prev => {
+              // Update if exists, or append
+              const index = prev.findIndex(t => t.id === submissionTask.id);
+              if (index !== -1) {
+                const newList = [...prev];
+                newList[index] = submissionTask;
+                return newList;
+              }
+              return [submissionTask, ...prev];
+            });
+          } else {
+            // Remove if it fails the filter (e.g. was moved back to active state)
+            setAllTasks(prev => prev.filter(t => t.id !== task.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, date]);
+
+  const activeProfiles = useMemo(() => {
+    // Group tasks by assignee and extract unique profiles
+    const profilesMap = new Map<string, Profile>();
+    allTasks.forEach(task => {
+      if (task.profiles) {
+        profilesMap.set(task.profiles.id, task.profiles);
+      }
+    });
+    return Array.from(profilesMap.values()).sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
+  }, [allTasks]);
 
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
@@ -248,7 +341,16 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
     <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#f8fafc]">
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Daily Work Report</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Daily Work Report</h1>
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100 flex items-center gap-1.5 h-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              Live
+            </Badge>
+          </div>
           <p className="text-slate-500 font-medium">{formattedTitleDate}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -286,7 +388,7 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
         </div>
       </header>
 
-      {initialProfiles.length === 0 ? (
+      {activeProfiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
             <div className="bg-slate-50 p-6 rounded-full mb-6">
                 <FileX className="h-12 w-12 text-slate-300" />
@@ -305,11 +407,11 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
         </div>
       ) : (
         <div className="columns-1 md:columns-2 xl:columns-3 gap-8">
-            {initialProfiles.map((profile) => (
+            {activeProfiles.map((profile) => (
             <div key={profile.id} className="break-inside-avoid mb-8">
               <UserReportCard 
                   user={profile} 
-                  tasks={initialTasks.filter(t => t.assignee_id === profile.id)}
+                  tasks={allTasks.filter(t => t.assignee_id === profile.id)}
               />
             </div>
             ))}
