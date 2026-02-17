@@ -210,7 +210,7 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
             placeholder={`Search ${placeholder.toLowerCase()}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none shadow-none ring-0 ring-offset-0"
+            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none shadow-none ring-0 ring-offset-0"
           />
         </div>
         <ScrollArea className="h-60">
@@ -638,8 +638,10 @@ const TaskRow = ({
   }
 
   const handleStatusUpdate = (val: string) => {
-    if (['Planned', 'Scheduled', 'Posted'].includes(val)) {
-        onPostingStatusChange(task.id, val as any);
+    const lowerVal = val.toLowerCase();
+    if (['planned', 'scheduled', 'posted'].includes(lowerVal)) {
+        const mappedValue = (lowerVal.charAt(0).toUpperCase() + lowerVal.slice(1)) as 'Planned' | 'Scheduled' | 'Posted';
+        onPostingStatusChange(task.id, mappedValue);
     } else if (val === 'corrections') {
         setIsCorrectionsOpen(true);
     } else {
@@ -974,7 +976,6 @@ const TaskTableBody = ({
             setOpenMenuId={setOpenMenuId}
             canEdit={canEdit}
             onHighlight={onHighlight}
-            onOpenDetails={onOpenDetails}
             onOpenDetails={onOpenDetails}
             onReassign={onReassign}
             isReviewer={isReviewer}
