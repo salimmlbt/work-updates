@@ -435,7 +435,7 @@ export async function updateTaskStatus(
     };
     
     // --- Submission History Logic ---
-    if (status === 'review' || status === 'under-review') {
+    if (status === 'review' || status === 'under-review' || status === 'done') {
         let history: SubmissionHistoryEntry[] = [];
         const rawHistory = currentTask.submission_history;
         
@@ -454,21 +454,33 @@ export async function updateTaskStatus(
             }
         }
 
-        // Only add a new entry if the status is actually changing to review
-        // or if it's coming from a correction/recreate state.
-        let type: SubmissionType = 'original';
-        if (currentTask.status === 'corrections') {
-            type = 'correction';
-        } else if (currentTask.status === 'recreate') {
-            type = 'recreate';
+        // Rule: Only add new entry if status is review or done,
+        // and avoid duplicates for same-session review requests if already in review state
+        // unless coming from a correction/recreate phase.
+        const isFromApproved = currentTask.status === 'approved' || currentTask.status === 'done';
+        const isToReview = status === 'review' || status === 'under-review';
+        
+        // Skip adding new entry if moving Approved -> Review per user request
+        if (!(isFromApproved && isToReview)) {
+            let type: SubmissionType = 'original';
+            if (status === 'done') {
+                type = 'completed';
+            } else if (currentTask.status === 'corrections') {
+                type = 'correction';
+            } else if (currentTask.status === 'recreate') {
+                type = 'recreate';
+            }
+            
+            // Record in Asia/Kolkata timezone to fix the "12:07 AM" bug
+            const timestamp = formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
+            
+            const newEntry: SubmissionHistoryEntry = {
+                date: timestamp,
+                type
+            };
+            
+            updates.submission_history = [...history, newEntry];
         }
-        
-        const newEntry: SubmissionHistoryEntry = {
-            date: new Date().toISOString(),
-            type
-        };
-        
-        updates.submission_history = [...history, newEntry];
     }
     // --------------------------------
 
@@ -536,8 +548,9 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
 
     // Record the transition in history if it's Scheduled or Posted
     if (posting_status === 'Scheduled' || posting_status === 'Posted') {
+        const timestamp = formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
         const newEntry: SubmissionHistoryEntry = {
-            date: new Date().toISOString(),
+            date: timestamp,
             type: posting_status.toLowerCase() as any
         };
         history = [...history, newEntry];
@@ -603,7 +616,7 @@ export async function restoreTask(taskId: string) {
 
 export async function restoreTasks(taskIds: string[]) {
   const supabase = await createServerClient()
-  const { error } = await supabase.from('tasks').update({ is_deleted: false }).in('id', taskIds)
+  const { error = null } = await supabase.from('tasks').update({ is_deleted: false }).in('id', taskIds)
   
   if (error) {
     return { error: error.message }
@@ -627,7 +640,7 @@ export async function deleteTaskPermanently(taskId: string) {
 
 export async function deleteTasksPermanently(taskIds: string[]) {
   const supabase = await createServerClient()
-  const { error } = await supabase.from('tasks').delete().in('id', taskIds)
+  const { error = null } = await supabase.from('tasks').delete().in('id', taskIds)
   
   if (error) {
     return { error: error.message }

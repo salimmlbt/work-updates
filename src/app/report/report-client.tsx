@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -38,15 +39,14 @@ interface ReportClientProps {
   selectedDate: string;
 }
 
-const statusConfig: Record<Task['status'], { icon: React.ReactNode; label: string; color: string; bg: string }> = {
-  'todo': { icon: <AlertCircle className="h-4 w-4" />, label: 'Todo', color: 'text-gray-600', bg: 'bg-gray-100' },
-  'inprogress': { icon: <Clock className="h-4 w-4" />, label: 'In Progress', color: 'text-blue-600', bg: 'bg-blue-100' },
+const statusConfig: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
   'review': { icon: <Eye className="h-4 w-4" />, label: 'Review', color: 'text-purple-600', bg: 'bg-purple-100' },
   'under-review': { icon: <Eye className="h-4 w-4" />, label: 'Review', color: 'text-purple-600', bg: 'bg-purple-100' },
   'corrections': { icon: <MessageSquare className="h-4 w-4" />, label: 'Corrections', color: 'text-orange-600', bg: 'bg-orange-100' },
   'recreate': { icon: <Repeat className="h-4 w-4" />, label: 'Recreate', color: 'text-red-600', bg: 'bg-red-100' },
   'approved': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Approved', color: 'text-green-600', bg: 'bg-green-100' },
-  'done': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Approved', color: 'text-green-600', bg: 'bg-green-100' },
+  'done': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Completed', color: 'text-green-600', bg: 'bg-green-100' },
+  'completed': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Completed', color: 'text-green-600', bg: 'bg-green-100' },
 };
 
 const postingConfig: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
@@ -141,7 +141,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
               const isPostingEvent = task.submission_type === 'scheduled' || task.submission_type === 'posted';
               const config = isPostingEvent 
                 ? postingConfig[task.submission_type]
-                : (statusConfig[task.status] || statusConfig['todo']);
+                : (statusConfig[task.status] || statusConfig[task.submission_type] || statusConfig['review']);
 
               return (
                 <div
@@ -182,7 +182,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
                           >
                             {task.submission_type === 'correction'
                               ? 'Correction'
-                              : 'Recreated'}
+                              : task.submission_type === 'recreate' ? 'Recreated' : 'Work'}
                           </Badge>
                         )}
                       </div>

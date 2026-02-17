@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import ReportClient from './report-client';
 import type { Profile, SubmissionHistoryEntry } from '@/lib/types';
 import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,8 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     );
   }
 
-  const selectedDate = searchParams.date || format(new Date(), 'yyyy-MM-dd');
+  // Use IST for the default date to fix midnight submission bias
+  const selectedDate = searchParams.date || formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
 
   // Fetch all active profiles
   const { data: profiles, error: profilesError } = await supabase
@@ -67,17 +69,15 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     
     if (!entryForDate) return false;
 
-    // Standard tasks: Hide if currently back in "todo" or "inprogress" 
-    // UNLESS they are posting tasks that have been scheduled/posted (identified by parent_task_id or specific history types)
-    const isPostingTask = !!task.parent_task_id || entryForDate.type === 'scheduled' || entryForDate.type === 'posted';
-    
-    if (!isPostingTask) {
-        if (task.status === 'todo' || task.status === 'inprogress') {
-            return false;
-        }
-    }
+    // Logic: Only show tasks that reached a submission state (Review, Completed, Scheduled, Posted)
+    const isSubmission = entryForDate.type === 'original' || 
+                         entryForDate.type === 'correction' || 
+                         entryForDate.type === 'recreate' || 
+                         entryForDate.type === 'completed' || 
+                         entryForDate.type === 'scheduled' || 
+                         entryForDate.type === 'posted';
 
-    return true;
+    return isSubmission;
   }).map(task => {
       let history: SubmissionHistoryEntry[] = [];
       try {
@@ -90,12 +90,14 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
       } catch (e) {}
 
       // Find the specific submission entry for this date to determine the label
-      const entryForDate = history.find(entry => entry.date && entry.date.startsWith(selectedDate));
+      // We look for the LATEST entry of the day to capture status updates (like Approval) on same-day submissions
+      const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));
+      const latestEntry = entriesForDate[entriesForDate.length - 1];
       
       return {
           ...task,
-          submission_type: entryForDate?.type || 'original',
-          submitted_at: entryForDate?.date || task.status_updated_at || task.created_at
+          submission_type: latestEntry?.type || 'original',
+          submitted_at: latestEntry?.date || task.status_updated_at || task.created_at
       };
   });
 
