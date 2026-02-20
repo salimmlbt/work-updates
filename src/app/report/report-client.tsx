@@ -48,8 +48,8 @@ const statusConfig: Record<string, { icon: React.ReactNode; label: string; color
   'completed': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Completed', color: 'text-green-600', bg: 'bg-green-100' },
   'scheduled': { icon: <CalendarIcon className="h-4 w-4" />, label: 'Scheduled', color: 'text-blue-600', bg: 'bg-blue-100' },
   'posted': { icon: <CheckCircle2 className="h-4 w-4" />, label: 'Posted', color: 'text-green-600', bg: 'bg-green-100' },
-  'todo': { icon: <Clock className="h-4 w-4" />, label: 'Production', color: 'text-slate-600', bg: 'bg-slate-100' },
-  'inprogress': { icon: <Clock className="h-4 w-4" />, label: 'In Progress', color: 'text-blue-600', bg: 'bg-blue-100' },
+  'todo': { icon: <Clock className="h-4 w-4" />, label: 'Active', color: 'text-slate-600', bg: 'bg-slate-100' },
+  'inprogress': { icon: <Clock className="h-4 w-4" />, label: 'Active', color: 'text-blue-600', bg: 'bg-blue-100' },
 };
 
 const UserReportCard = ({ user, submissions }: { user: Profile; submissions: Submission[] }) => {
@@ -57,11 +57,11 @@ const UserReportCard = ({ user, submissions }: { user: Profile; submissions: Sub
   useEffect(() => setHasMounted(true), []);
 
   const total = submissions.length;
-  const approved = submissions.filter(
+  const approvedCount = submissions.filter(
     s => ['approved', 'done', 'posted'].includes(s.final_status.toLowerCase())
   ).length;
 
-  const progress = total > 0 ? Math.round((approved / total) * 100) : 0;
+  const progress = total > 0 ? Math.round((approvedCount / total) * 100) : 0;
 
   return (
     <Card className="
@@ -108,7 +108,8 @@ const UserReportCard = ({ user, submissions }: { user: Profile; submissions: Sub
         <ScrollArea className={cn("px-6 pb-6 pt-2", submissions.length > 6 ? "h-[480px]" : "h-auto")}>
           <div className="space-y-4 py-2">
             {submissions.map((sub) => {
-              const config = statusConfig[sub.final_status.toLowerCase()] || statusConfig['review'];
+              const statusKey = sub.final_status.toLowerCase();
+              const config = statusConfig[statusKey] || statusConfig['review'];
               return (
                 <div key={sub.id} className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-4 transition-all hover:shadow-md">
                   <div className="flex items-start justify-between gap-4">
@@ -152,14 +153,15 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
     setSubmissions(initialSubmissions);
   }, [initialSubmissions]);
 
+  // Real-time update listener for rebuilt architecture
   useEffect(() => {
     const channel = supabase
-      .channel('report-entries-realtime-v3')
+      .channel('report-system-v4')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'report_entries' },
         async () => {
-          // Refetch data when report_entries changes to ensure joins are updated correctly
+          // Refetch to get joined data safely
           const { data, error } = await supabase
             .from('report_entries')
             .select(`
@@ -178,17 +180,20 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
           if (!error && data) {
             setSubmissions(data
               .filter((entry: any) => entry.tasks)
-              .map((entry: any) => ({
-                ...entry.tasks,
-                id: entry.id,
-                taskId: entry.task_id,
-                assignee_id: entry.user_id,
-                profiles: entry.profiles,
-                clients: entry.tasks?.projects?.clients || entry.tasks?.clients,
-                submission_type: entry.is_correction_cycle ? 'correction' : 'original',
-                final_status: entry.final_status,
-                submitted_at: entry.submitted_at
-            })));
+              .map((entry: any) => {
+                const task = entry.tasks;
+                return {
+                  ...task,
+                  id: entry.id,
+                  taskId: entry.task_id,
+                  assignee_id: entry.user_id,
+                  profiles: entry.profiles,
+                  clients: task.clients || task.projects?.clients || null,
+                  submission_type: entry.is_correction_cycle ? 'correction' : 'original',
+                  final_status: entry.final_status,
+                  submitted_at: entry.submitted_at
+                };
+              }));
           }
         }
       )
@@ -258,7 +263,7 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
                 <FileX className="h-12 w-12 text-slate-300" />
             </div>
             <h3 className="text-xl font-bold text-slate-900">No work submitted yet</h3>
-            <p className="text-slate-500 max-w-sm mt-2 font-medium">There are no valid report entries found for this date.</p>
+            <p className="text-slate-500 max-w-sm mt-2 font-medium">There are no valid work submissions recorded for this date.</p>
         </div>
       ) : (
         <div className="columns-1 md:columns-2 xl:columns-3 gap-8">
