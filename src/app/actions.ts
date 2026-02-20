@@ -17,8 +17,9 @@ import { formatInTimeZone } from 'date-fns-tz';
 async function handleReportLogging(supabase: any, taskId: string, userId: string, fromStatus: string, toStatus: string) {
     const now = new Date();
     const timestamp = formatInTimeZone(now, 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
+    const todayStr = formatInTimeZone(now, 'Asia/Kolkata', 'yyyy-MM-dd');
 
-    // 1. Record raw history for debugging and auditing
+    // 1. Record raw history for auditing
     await supabase.from('task_status_history').insert({
         task_id: taskId,
         from_status: fromStatus,
@@ -26,8 +27,8 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         changed_at: timestamp
     });
 
-    const triggerStates = ['review', 'under-review', 'posted', 'scheduled', 'done'];
-    const updateStates = ['approved', 'corrections', 'recreate', 'posted', 'scheduled', 'done', 'review', 'under-review'];
+    const triggerStates = ['review', 'posted', 'scheduled', 'done'];
+    const updateStates = ['approved', 'corrections', 'recreate', 'posted', 'scheduled', 'done', 'review'];
 
     const normalizedToStatus = toStatus.toLowerCase();
 
@@ -46,10 +47,8 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         let isCorrection = false;
 
         if (!latestEntry) {
-            // First time this task has ever reached a submission state
             createNew = true;
         } else {
-            // Rule: If task goes Review -> Correction/Recreate -> Review, create NEW entry
             // Check history since last entry to see if we reached feedback states
             const { data: historySince } = await supabase
                 .from('task_status_history')
@@ -62,13 +61,17 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 ['corrections', 'recreate'].includes(h.to_status?.toLowerCase())
             );
 
-            if (hadFeedback) {
-                // This is a legitimate resubmission after corrections
+            const lastEntryDate = formatInTimeZone(new Date(latestEntry.submitted_at), 'Asia/Kolkata', 'yyyy-MM-dd');
+
+            if (hadFeedback && normalizedToStatus === 'review') {
+                // Legitimate resubmission after corrections
                 createNew = true;
                 isCorrection = true;
+            } else if (lastEntryDate !== todayStr && triggerStates.includes(normalizedToStatus)) {
+                // If it's a new day and we hit a trigger state, create a new entry for today's work
+                createNew = true;
             } else {
-                // Accidental flip (Review -> New -> Review) or re-review within same session
-                // Just update the latest entry's status to keep it live
+                // Accidental flip or update within same session/day
                 await supabase.from('report_entries').update({ 
                     final_status: toStatus,
                 }).eq('id', latestEntry.id);
@@ -87,7 +90,6 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
     } 
     // 3. STATUS UPDATE LOGIC (For existing entries)
     else if (updateStates.includes(normalizedToStatus)) {
-        // Just update the latest entry's outcome if it exists
         const { data: latestEntry } = await supabase
             .from('report_entries')
             .select('*')
