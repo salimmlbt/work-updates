@@ -61,7 +61,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
 
   const totalTasks = tasks.length;
   const approvedTasks = tasks.filter(
-    t => t.status === 'approved' || t.status === 'done' || t.submission_type === 'scheduled' || t.submission_type === 'posted'
+    t => t.status === 'approved' || t.status === 'done' || t.submission_type === 'scheduled' || t.submission_type === 'posted' || t.submission_type === 'completed'
   ).length;
 
   const approvalRate =
@@ -186,7 +186,7 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
                           >
                             {task.submission_type === 'correction'
                               ? 'Correction'
-                              : task.submission_type === 'recreate' ? 'Recreated' : 'Work'}
+                              : task.submission_type === 'recreate' ? 'Recreated' : task.submission_type === 'completed' ? 'Done' : 'Work'}
                           </Badge>
                         )}
                       </div>
@@ -241,7 +241,7 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
 
   useEffect(() => {
     const channel = supabase
-      .channel('report-realtime-v3')
+      .channel('report-realtime-v4')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
@@ -278,16 +278,20 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
           const hasEntriesOnDate = entriesForDate.length > 0;
 
           if (hasEntriesOnDate) {
-            const latestGlobalEntry = history[history.length - 1];
-            const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
-            const isLatestGlobal = latestGlobalEntry.date === latestEntryOnDate.date;
             const isCurrentlyActive = (task.status === 'todo' || task.status === 'inprogress');
             const isPosting = task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
 
-            // Filter out accidental submissions
-            const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate';
-            const hasMultipleSubmitsToday = entriesForDate.length > 1;
-            const isAccidental = isCurrentlyActive && isLatestGlobal && !isPosting && !isLegitimateSubmitToday && !hasMultipleSubmitsToday;
+            const latestGlobalEntry = history[history.length - 1];
+            const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
+            const isLatestGlobal = latestGlobalEntry.date === latestEntryOnDate.date;
+
+            // Accurate Accidental Filter
+            let isAccidental = false;
+            if (isCurrentlyActive && !isPosting && isLatestGlobal) {
+                const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate' || latestEntryOnDate.type === 'completed';
+                const hasMultipleSubmitsToday = entriesForDate.length > 1;
+                isAccidental = !isLegitimateSubmitToday && !hasMultipleSubmitsToday;
+            }
 
             if (!isAccidental) {
               const submissionTask: SubmissionTask = {

@@ -35,12 +35,11 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     .select('*, roles(*), teams:profile_teams(teams(*))')
     .order('full_name');
 
-  // Fetch tasks that have a submission history
+  // Fetch tasks
   const { data: tasks, error: tasksError } = await supabase
     .from('tasks')
     .select('*, profiles(*), projects(*), clients(*)')
-    .eq('is_deleted', false)
-    .not('submission_history', 'is', null);
+    .eq('is_deleted', false);
 
   if (profilesError || tasksError) {
     console.error({ profilesError, tasksError });
@@ -64,20 +63,22 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     if (entriesForDate.length === 0) return false;
 
     // 🛡️ Accidental Submission Check:
-    const latestGlobalEntry = history[history.length - 1];
-    const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
-    const isLatestGlobalEntryBeingViewed = latestGlobalEntry.date === latestEntryOnDate.date;
-    
+    // Only hide if the task is currently active AND the latest entry globally is today's entry (being hidden).
     const isCurrentlyActive = task.status === 'todo' || task.status === 'inprogress';
     const isPosting = task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
 
-    if (isCurrentlyActive && isLatestGlobalEntryBeingViewed && !isPosting) {
-        // If it's the very last thing that happened, and it was a single review click today, hide it.
-        const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate';
-        const hasMultipleSubmitsToday = entriesForDate.length > 1;
-        
-        if (!isLegitimateSubmitToday && !hasMultipleSubmitsToday) {
-            return false;
+    if (isCurrentlyActive && !isPosting) {
+        const latestGlobalEntry = history[history.length - 1];
+        const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
+        const isLatestGlobalEntryBeingViewed = latestGlobalEntry.date === latestEntryOnDate.date;
+
+        if (isLatestGlobalEntryBeingViewed) {
+            const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate' || latestEntryOnDate.type === 'completed';
+            const hasMultipleSubmitsToday = entriesForDate.length > 1;
+            
+            if (!isLegitimateSubmitToday && !hasMultipleSubmitsToday) {
+                return false;
+            }
         }
     }
 
@@ -91,18 +92,17 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
           try { history = JSON.parse(rawHistory); } catch (e) {}
       }
 
-      // Find the specific submission entry for this date to determine the label
       const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));
-      const latestEntry = entriesForDate[entriesForDate.length - 1];
+      const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
       
       return {
           ...task,
-          submission_type: latestEntry?.type || 'original',
-          submitted_at: latestEntry?.date || task.status_updated_at || task.created_at
+          submission_type: latestEntryOnDate?.type || 'original',
+          submitted_at: latestEntryOnDate?.date || task.status_updated_at || task.created_at
       };
   });
 
-  // Only show users who have tasks for this specific date
+  // Include only profiles that have work on this specific date
   const activeProfiles = (profiles as Profile[] || []).filter(profile => 
     reportTasks.some(task => task.assignee_id === profile.id)
   );
