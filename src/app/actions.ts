@@ -70,7 +70,7 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 createNew = true;
                 isCorrection = true;
             } else {
-                // Otherwise, it's just an update to the current session (e.g. accidental click fix)
+                // Otherwise, it's just an update to the current session (e.g. status change to Approved/Done)
                 await supabase.from('report_entries').update({ 
                     final_status: toStatus,
                 }).eq('id', latestEntry.id);

@@ -17,9 +17,9 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('*, roles(*)').eq('id', authUser.id).single();
-  const permissions = (profile?.roles as any)?.permissions || {};
-  const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
+  const { data: currentUserProfile } = await supabase.from('profiles').select('*, roles(*)').eq('id', authUser.id).single();
+  const permissions = (currentUserProfile?.roles as any)?.permissions || {};
+  const isFalaqAdmin = currentUserProfile?.roles?.name === 'Falaq Admin';
 
   if (!isFalaqAdmin && permissions.report === 'Restricted') {
     return (
