@@ -159,6 +159,7 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
         'postgres_changes',
         { event: '*', schema: 'public', table: 'report_entries' },
         async () => {
+          // Refetch data when report_entries changes to ensure joins are updated correctly
           const { data, error } = await supabase
             .from('report_entries')
             .select(`

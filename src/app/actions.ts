@@ -12,12 +12,13 @@ import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Handles the logic for creating or updating report entries based on task status changes.
+ * Follows the event-driven rules for real work submission vs accidental flips.
  */
 async function handleReportLogging(supabase: any, taskId: string, userId: string, fromStatus: string, toStatus: string) {
     const now = new Date();
     const timestamp = formatInTimeZone(now, 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
 
-    // 1. Record History
+    // 1. Record raw history for debugging and auditing
     await supabase.from('task_status_history').insert({
         task_id: taskId,
         from_status: fromStatus,
@@ -30,6 +31,7 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
 
     const normalizedToStatus = toStatus.toLowerCase();
 
+    // 2. WORK SUBMISSION LOGIC
     if (triggerStates.includes(normalizedToStatus)) {
         // Fetch latest entry to check for accidental flips or correction cycles
         const { data: latestEntry } = await supabase
@@ -44,8 +46,10 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         let isCorrection = false;
 
         if (!latestEntry) {
+            // First time this task has ever reached a submission state
             createNew = true;
         } else {
+            // Rule: If task goes Review -> Correction/Recreate -> Review, create NEW entry
             // Check history since last entry to see if we reached feedback states
             const { data: historySince } = await supabase
                 .from('task_status_history')
@@ -55,15 +59,16 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 .order('changed_at', { ascending: true });
 
             const hadFeedback = historySince?.some((h: any) => 
-                h.to_status === 'corrections' || h.to_status === 'recreate'
+                ['corrections', 'recreate'].includes(h.to_status?.toLowerCase())
             );
 
             if (hadFeedback) {
+                // This is a legitimate resubmission after corrections
                 createNew = true;
                 isCorrection = true;
             } else {
-                // Accidental flip (Review -> New -> Review) or re-review
-                // Just update the latest entry's status
+                // Accidental flip (Review -> New -> Review) or re-review within same session
+                // Just update the latest entry's status to keep it live
                 await supabase.from('report_entries').update({ 
                     final_status: toStatus,
                 }).eq('id', latestEntry.id);
@@ -79,8 +84,10 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 is_correction_cycle: isCorrection
             });
         }
-    } else if (updateStates.includes(normalizedToStatus)) {
-        // Just update the latest entry's outcome
+    } 
+    // 3. STATUS UPDATE LOGIC (For existing entries)
+    else if (updateStates.includes(normalizedToStatus)) {
+        // Just update the latest entry's outcome if it exists
         const { data: latestEntry } = await supabase
             .from('report_entries')
             .select('*')
