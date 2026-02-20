@@ -11,8 +11,8 @@ import { google } from 'googleapis';
 import { formatInTimeZone } from 'date-fns-tz';
 
 /**
- * Rebuilt Status Event Handler
- * Captures real work submissions and updates report entries dynamically.
+ * REBUILT STATUS EVENT HANDLER
+ * Captures real work submissions and updates report entries based on events.
  */
 async function handleReportLogging(supabase: any, taskId: string, userId: string, fromStatus: string, toStatus: string) {
     const now = new Date();
@@ -22,7 +22,7 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
     const normalizedToStatus = toStatus.toLowerCase();
     const normalizedFromStatus = fromStatus?.toLowerCase() || '';
 
-    // 1. Audit transition in history
+    // 1. Audit transition in history table (Logic context)
     await supabase.from('task_status_history').insert({
         task_id: taskId,
         from_status: fromStatus,
@@ -30,12 +30,14 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         changed_at: timestamp
     });
 
-    const workSubmissionStates = ['review', 'posted', 'scheduled', 'done'];
+    // Valid work submission states (States that represent "I am done with my part")
+    const workSubmissionStates = ['review', 'posted', 'scheduled', 'done', 'approved'];
+    // Feedback states (States that require the user to start a "Correction Cycle")
     const feedbackStates = ['corrections', 'recreate'];
 
     // 2. Logic for Creating or Updating Report Entries
-    if (workSubmissionStates.includes(normalizedToStatus)) {
-        // Find latest submission to check context
+    if (['review', 'posted', 'scheduled', 'done'].includes(normalizedToStatus)) {
+        // Find latest submission entry to check if we are in a new cycle or same session
         const { data: latestEntry } = await supabase
             .from('report_entries')
             .select('*')
@@ -48,11 +50,12 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         let isCorrection = false;
 
         if (!latestEntry) {
+            // First time ever submitting work for this task
             createNew = true;
         } else {
             const lastEntryDate = formatInTimeZone(new Date(latestEntry.submitted_at), 'Asia/Kolkata', 'yyyy-MM-dd');
             
-            // Check for feedback since last submission
+            // Check if there was any negative feedback (Correction/Recreate) since the last submission
             const { data: historySince } = await supabase
                 .from('task_status_history')
                 .select('*')
@@ -64,15 +67,19 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 feedbackStates.includes(h.to_status?.toLowerCase())
             );
 
-            // New entry if: New day OR rework after feedback
+            // Create a NEW entry if:
+            // - It's a new calendar day
+            // - OR it's a resubmission after negative feedback (Correction Cycle)
             if (lastEntryDate !== todayStr) {
                 createNew = true;
                 if (hadFeedback) isCorrection = true;
-            } else if (hadFeedback && normalizedToStatus === 'review') {
+            } else if (hadFeedback) {
+                // If submitted again on the same day after correction, we still create a new entry 
+                // to show that work was done twice (or simply update if preferred, but following your rule: Review -> Feedback -> Review = New Entry)
                 createNew = true;
                 isCorrection = true;
             } else {
-                // Update the outcome of today's work
+                // Same day, no feedback in between: treat as an update or accidental click fix
                 await supabase.from('report_entries').update({ 
                     final_status: toStatus,
                 }).eq('id', latestEntry.id);
@@ -89,8 +96,8 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
             });
         }
     } 
-    // Update existing entry status for states like Approved, Correction, etc.
-    else if ([...workSubmissionStates, ...feedbackStates, 'approved'].includes(normalizedToStatus)) {
+    // 3. Logic for updating the outcome of an existing submission (Approved, Correction, etc.)
+    else if ([...feedbackStates, 'approved'].includes(normalizedToStatus)) {
         const { data: latestEntry } = await supabase
             .from('report_entries')
             .select('*')
@@ -100,7 +107,10 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
             .maybeSingle();
 
         if (latestEntry) {
-            await supabase.from('report_entries').update({ final_status: toStatus }).eq('id', latestEntry.id);
+            // Update the status of the current submission session
+            await supabase.from('report_entries').update({ 
+                final_status: toStatus 
+            }).eq('id', latestEntry.id);
         }
     }
 }

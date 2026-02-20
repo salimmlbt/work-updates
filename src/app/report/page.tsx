@@ -8,6 +8,25 @@ import { redirect } from 'next/navigation';
 /**
  * REBUILT DAILY WORK REPORT PAGE
  * Uses the report_entries table as the single source of truth for work submissions.
+ * 
+ * REQUIRED SQL SCHEMA:
+ * 
+ * CREATE TABLE IF NOT EXISTS task_status_history (
+ *     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ *     task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+ *     from_status TEXT,
+ *     to_status TEXT,
+ *     changed_at TIMESTAMPTZ DEFAULT NOW()
+ * );
+ * 
+ * CREATE TABLE IF NOT EXISTS report_entries (
+ *     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ *     task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+ *     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+ *     submitted_at TIMESTAMPTZ DEFAULT NOW(),
+ *     final_status TEXT,
+ *     is_correction_cycle BOOLEAN DEFAULT FALSE
+ * );
  */
 
 export const dynamic = 'force-dynamic';
