@@ -23,7 +23,8 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
     const normalizedFromStatus = fromStatus?.toLowerCase() || '';
 
     // 1. Audit transition in history table (Logic context)
-    await supabase.from('task_status_history').insert({
+    // Using 'task_history' to match the database relation name.
+    await supabase.from('task_history').insert({
         task_id: taskId,
         from_status: fromStatus,
         to_status: toStatus,
@@ -57,7 +58,7 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
             
             // Check if there was any negative feedback (Correction/Recreate) since the last submission
             const { data: historySince } = await supabase
-                .from('task_status_history')
+                .from('task_history')
                 .select('*')
                 .eq('task_id', taskId)
                 .gt('changed_at', latestEntry.submitted_at)
@@ -75,7 +76,7 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 if (hadFeedback) isCorrection = true;
             } else if (hadFeedback) {
                 // If submitted again on the same day after correction, we still create a new entry 
-                // to show that work was done twice (or simply update if preferred, but following your rule: Review -> Feedback -> Review = New Entry)
+                // to show that work was done twice.
                 createNew = true;
                 isCorrection = true;
             } else {
@@ -567,7 +568,7 @@ export async function updateTaskStatus(
         return { error: error.message };
     }
 
-    // --- Report Logging Logic (NEW Rebuilt System) ---
+    // --- Report Logging Logic (Event System) ---
     await handleReportLogging(supabase, taskId, user.id, fromStatus, status);
     // -------------------------------------------------
 
@@ -607,7 +608,7 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
         return { error: error.message };
     }
 
-    // --- Report Logging Logic (NEW Rebuilt System) ---
+    // --- Report Logging Logic (Event System) ---
     await handleReportLogging(supabase, taskId, user.id, fromStatus, posting_status);
     // -------------------------------------------------
 

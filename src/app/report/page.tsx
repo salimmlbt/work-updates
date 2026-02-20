@@ -11,7 +11,7 @@ import { redirect } from 'next/navigation';
  * 
  * REQUIRED SQL SCHEMA:
  * 
- * CREATE TABLE IF NOT EXISTS task_status_history (
+ * CREATE TABLE IF NOT EXISTS task_history (
  *     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  *     task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
  *     from_status TEXT,
