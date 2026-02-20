@@ -154,7 +154,7 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
 
   useEffect(() => {
     const channel = supabase
-      .channel('report-entries-realtime-v2')
+      .channel('report-entries-realtime-v3')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'report_entries' },
@@ -258,7 +258,7 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
                 <FileX className="h-12 w-12 text-slate-300" />
             </div>
             <h3 className="text-xl font-bold text-slate-900">No work submitted yet</h3>
-            <p className="text-slate-500 max-w-sm mt-2 font-medium">There are no valid report entries found for this date. Make sure the database schema is initialized.</p>
+            <p className="text-slate-500 max-w-sm mt-2 font-medium">There are no valid report entries found for this date.</p>
         </div>
       ) : (
         <div className="columns-1 md:columns-2 xl:columns-3 gap-8">

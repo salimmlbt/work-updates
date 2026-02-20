@@ -12,12 +12,15 @@ import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Handles the logic for creating or updating report entries based on task status changes.
- * Follows the event-driven rules for real work submission vs accidental flips.
+ * Rebuilt to be event-driven: only captures real work submissions.
  */
 async function handleReportLogging(supabase: any, taskId: string, userId: string, fromStatus: string, toStatus: string) {
     const now = new Date();
     const timestamp = formatInTimeZone(now, 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
     const todayStr = formatInTimeZone(now, 'Asia/Kolkata', 'yyyy-MM-dd');
+
+    const normalizedToStatus = toStatus.toLowerCase();
+    const normalizedFromStatus = fromStatus?.toLowerCase() || '';
 
     // 1. Record raw history for auditing and logic context
     await supabase.from('task_status_history').insert({
@@ -27,13 +30,12 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         changed_at: timestamp
     });
 
-    const triggerStates = ['review', 'posted', 'scheduled', 'done'];
-    const updateStates = ['approved', 'corrections', 'recreate', 'posted', 'scheduled', 'done', 'review'];
+    const triggerStates = ['review', 'posted', 'scheduled', 'done', 'approved'];
+    const feedbackStates = ['corrections', 'recreate'];
 
-    const normalizedToStatus = toStatus.toLowerCase();
-
-    // 2. WORK SUBMISSION LOGIC
-    if (triggerStates.includes(normalizedToStatus)) {
+    // 2. WORK SUBMISSION LOGIC (Review, Posted, Scheduled, Done)
+    if (['review', 'posted', 'scheduled', 'done'].includes(normalizedToStatus)) {
+        
         // Fetch latest entry to check for accidental flips or correction cycles
         const { data: latestEntry } = await supabase
             .from('report_entries')
@@ -47,9 +49,12 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         let isCorrection = false;
 
         if (!latestEntry) {
+            // First time this task is ever submitted
             createNew = true;
         } else {
-            // Logic: Check history since last entry to see if we reached feedback states
+            const lastEntryDate = formatInTimeZone(new Date(latestEntry.submitted_at), 'Asia/Kolkata', 'yyyy-MM-dd');
+            
+            // Check if we reached feedback states (Corrections/Recreate) since the last entry
             const { data: historySince } = await supabase
                 .from('task_status_history')
                 .select('*')
@@ -58,20 +63,22 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 .order('changed_at', { ascending: true });
 
             const hadFeedback = historySince?.some((h: any) => 
-                ['corrections', 'recreate'].includes(h.to_status?.toLowerCase())
+                feedbackStates.includes(h.to_status?.toLowerCase())
             );
 
-            const lastEntryDate = formatInTimeZone(new Date(latestEntry.submitted_at), 'Asia/Kolkata', 'yyyy-MM-dd');
-
-            if (hadFeedback && normalizedToStatus === 'review') {
-                // Legitimate resubmission after corrections (Rework)
+            // LOGIC: If it's a new day AND we are submitting work, create a new entry
+            if (lastEntryDate !== todayStr) {
+                createNew = true;
+                // If we had feedback since the last submission, mark this as a correction cycle
+                if (hadFeedback) isCorrection = true;
+            } 
+            // LOGIC: If it's the SAME day, but we are submitting AFTER feedback (Rework)
+            else if (hadFeedback && normalizedToStatus === 'review') {
                 createNew = true;
                 isCorrection = true;
-            } else if (lastEntryDate !== todayStr && triggerStates.includes(normalizedToStatus)) {
-                // If it's a new day and we hit a trigger state, create a new entry for today's work
-                createNew = true;
-            } else {
-                // Accidental flip or update within same session/day
+            }
+            // LOGIC: Otherwise, it's just a status update to an existing entry for today
+            else {
                 await supabase.from('report_entries').update({ 
                     final_status: toStatus,
                 }).eq('id', latestEntry.id);
@@ -88,8 +95,8 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
             });
         }
     } 
-    // 3. STATUS UPDATE LOGIC (For existing entries)
-    else if (updateStates.includes(normalizedToStatus)) {
+    // 3. STATUS UPDATE LOGIC (For existing entries - Approved, Corrections, Recreate)
+    else if ([...triggerStates, ...feedbackStates].includes(normalizedToStatus)) {
         const { data: latestEntry } = await supabase
             .from('report_entries')
             .select('*')
@@ -570,6 +577,10 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) {
+        return { error: "You must be logged in to update a task." };
+    }
+
     const { data: currentTask } = await supabase
         .from('tasks')
         .select('status, posting_status')
@@ -583,7 +594,7 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
         .update({ 
             posting_status, 
             status_updated_at: new Date().toISOString(),
-            status_updated_by: user?.id
+            status_updated_by: user.id
         })
         .eq('id', taskId);
 
@@ -593,9 +604,7 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
     }
 
     // --- Report Logging Logic ---
-    if (user) {
-        await handleReportLogging(supabase, taskId, user.id, fromStatus, posting_status);
-    }
+    await handleReportLogging(supabase, taskId, user.id, fromStatus, posting_status);
     // ----------------------------
 
     revalidatePath('/tasks');
