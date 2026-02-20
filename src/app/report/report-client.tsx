@@ -156,7 +156,7 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
   // Real-time update listener for rebuilt architecture
   useEffect(() => {
     const channel = supabase
-      .channel('report-system-v4')
+      .channel('report-system-v5')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'report_entries' },

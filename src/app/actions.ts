@@ -11,34 +11,33 @@ import { google } from 'googleapis';
 import { formatInTimeZone } from 'date-fns-tz';
 
 /**
- * REBUILT STATUS EVENT HANDLER
- * Captures real work submissions and updates report entries based on events.
+ * CORE REPORT LOGGING HANDLER
+ * Strictly event-driven. Creates report_entries on submission events (Review, Posted, Scheduled, Done).
+ * Distinguishes between work updates and new correction cycles.
  */
 async function handleReportLogging(supabase: any, taskId: string, userId: string, fromStatus: string, toStatus: string) {
     const now = new Date();
     const timestamp = formatInTimeZone(now, 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
-    const todayStr = formatInTimeZone(now, 'Asia/Kolkata', 'yyyy-MM-dd');
-
+    
     const normalizedToStatus = toStatus.toLowerCase();
     const normalizedFromStatus = fromStatus?.toLowerCase() || '';
 
-    // 1. Audit transition in history table (Logic context)
-    // Using 'task_history' to match the database relation name.
+    // 1. Audit transition in history table
     await supabase.from('task_history').insert({
         task_id: taskId,
-        from_status: fromStatus,
-        to_status: toStatus,
+        previous_status: fromStatus,
+        new_status: toStatus,
         changed_at: timestamp
     });
 
     // Valid work submission states (States that represent "I am done with my part")
-    const workSubmissionStates = ['review', 'posted', 'scheduled', 'done', 'approved'];
+    const workSubmissionStates = ['review', 'posted', 'scheduled', 'done'];
     // Feedback states (States that require the user to start a "Correction Cycle")
     const feedbackStates = ['corrections', 'recreate'];
 
     // 2. Logic for Creating or Updating Report Entries
-    if (['review', 'posted', 'scheduled', 'done'].includes(normalizedToStatus)) {
-        // Find latest submission entry to check if we are in a new cycle or same session
+    if (workSubmissionStates.includes(normalizedToStatus)) {
+        // Find latest submission entry to check if we are in a new cycle
         const { data: latestEntry } = await supabase
             .from('report_entries')
             .select('*')
@@ -54,8 +53,6 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
             // First time ever submitting work for this task
             createNew = true;
         } else {
-            const lastEntryDate = formatInTimeZone(new Date(latestEntry.submitted_at), 'Asia/Kolkata', 'yyyy-MM-dd');
-            
             // Check if there was any negative feedback (Correction/Recreate) since the last submission
             const { data: historySince } = await supabase
                 .from('task_history')
@@ -65,22 +62,15 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 .order('changed_at', { ascending: true });
 
             const hadFeedback = historySince?.some((h: any) => 
-                feedbackStates.includes(h.to_status?.toLowerCase())
+                feedbackStates.includes(h.new_status?.toLowerCase())
             );
 
-            // Create a NEW entry if:
-            // - It's a new calendar day
-            // - OR it's a resubmission after negative feedback (Correction Cycle)
-            if (lastEntryDate !== todayStr) {
-                createNew = true;
-                if (hadFeedback) isCorrection = true;
-            } else if (hadFeedback) {
-                // If submitted again on the same day after correction, we still create a new entry 
-                // to show that work was done twice.
+            // If it's a resubmission after feedback (Correction Cycle)
+            if (hadFeedback) {
                 createNew = true;
                 isCorrection = true;
             } else {
-                // Same day, no feedback in between: treat as an update or accidental click fix
+                // Otherwise, it's just an update to the current session (e.g. accidental click fix)
                 await supabase.from('report_entries').update({ 
                     final_status: toStatus,
                 }).eq('id', latestEntry.id);
