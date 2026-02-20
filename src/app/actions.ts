@@ -439,29 +439,30 @@ export async function updateTaskStatus(
         let history: SubmissionHistoryEntry[] = [];
         const rawHistory = currentTask.submission_history;
         
-        if (rawHistory) {
-            if (Array.isArray(rawHistory)) {
-                history = rawHistory as SubmissionHistoryEntry[];
-            } else if (typeof rawHistory === 'string' && rawHistory.trim().length > 0) {
-                try {
-                    const parsed = JSON.parse(rawHistory);
-                    if (Array.isArray(parsed)) {
-                        history = parsed;
-                    }
-                } catch (e) {
-                    history = [];
+        if (Array.isArray(rawHistory)) {
+            history = rawHistory as SubmissionHistoryEntry[];
+        } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+            try {
+                const parsed = JSON.parse(rawHistory);
+                if (Array.isArray(parsed)) {
+                    history = parsed;
                 }
+            } catch (e) {
+                history = [];
             }
         }
 
-        // Rule: Only add new entry if status is review or done,
-        // and avoid duplicates for same-session review requests if already in review state
-        // unless coming from a correction/recreate phase.
+        // Add history entry if moving to Review or Done
+        // logic to check for same-session continuity
         const isFromApproved = currentTask.status === 'approved' || currentTask.status === 'done';
         const isToReview = status === 'review' || status === 'under-review';
-        
-        // Skip adding new entry if moving Approved -> Review per user request
-        if (!(isFromApproved && isToReview)) {
+        const todayIST = formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+        const lastEntry = history[history.length - 1];
+        const isLastEntryToday = lastEntry?.date?.startsWith(todayIST);
+
+        // Record entry if it's not a redundant same-day duplicate of the same type,
+        // or if it's a legitimate resubmission after corrections.
+        if (!(isFromApproved && isToReview) || !isLastEntryToday) {
             let type: SubmissionType = 'original';
             if (status === 'done') {
                 type = 'completed';
@@ -471,9 +472,7 @@ export async function updateTaskStatus(
                 type = 'recreate';
             }
             
-            // Record in Asia/Kolkata timezone to fix the "12:07 AM" bug
             const timestamp = formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
-            
             const newEntry: SubmissionHistoryEntry = {
                 date: timestamp,
                 type
@@ -531,18 +530,16 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
     let history: SubmissionHistoryEntry[] = [];
     const rawHistory = currentTask?.submission_history;
     
-    if (rawHistory) {
-        if (Array.isArray(rawHistory)) {
-            history = rawHistory as SubmissionHistoryEntry[];
-        } else if (typeof rawHistory === 'string' && rawHistory.trim().length > 0) {
-            try {
-                const parsed = JSON.parse(rawHistory);
-                if (Array.isArray(parsed)) {
-                    history = parsed;
-                }
-            } catch (e) {
-                history = [];
+    if (Array.isArray(rawHistory)) {
+        history = rawHistory as SubmissionHistoryEntry[];
+    } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+        try {
+            const parsed = JSON.parse(rawHistory);
+            if (Array.isArray(parsed)) {
+                history = parsed;
             }
+        } catch (e) {
+            history = [];
         }
     }
 
@@ -881,7 +878,7 @@ export async function updateRole(id: string, name: string, permissions: Record<s
 
 export async function deleteRole(id: string) {
     const supabase = await createServerClient()
-    const { error } = await supabase.from('roles').delete().eq('id', id)
+    const { error = null } = await supabase.from('roles').delete().eq('id', id)
 
     if (error) {
         return { error: error.message }
@@ -1270,7 +1267,7 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
             return { data: [], error: 'The provided Google API Key is not valid.' };
         }
         if (errorMessage.includes('Not Found')) {
-             return { data: [], error: `Could not find holiday calendar for country code: ${countryCode}`};
+             return { data: [], error: `Could find holiday calendar for country code: ${countryCode}`};
         }
         return { data: [], error: `An unexpected error occurred while fetching holidays: ${errorMessage}` };
     }

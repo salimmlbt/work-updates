@@ -29,11 +29,10 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
   // Use IST for the default date to fix midnight submission bias
   const selectedDate = searchParams.date || formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
 
-  // Fetch all active profiles
+  // Fetch all profiles (including archived to preserve history)
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
     .select('*, roles(*), teams:profile_teams(teams(*))')
-    .eq('is_archived', false)
     .order('full_name');
 
   // Fetch tasks that have a submission history
@@ -50,18 +49,15 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
   // Filter tasks based on submission history entries matching the selected date
   const reportTasks = (tasks as any[] || []).filter(task => {
     let history: SubmissionHistoryEntry[] = [];
-    try {
-        const rawHistory = task.submission_history;
-        if (rawHistory) {
-            if (Array.isArray(rawHistory)) {
-                history = rawHistory;
-            } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
-                history = JSON.parse(rawHistory);
-            }
-        }
-    } catch (e) {
-        return false;
+    const rawHistory = task.submission_history;
+    
+    if (Array.isArray(rawHistory)) {
+        history = rawHistory;
+    } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+        try { history = JSON.parse(rawHistory); } catch (e) {}
     }
+
+    if (!history || history.length === 0) return false;
 
     // Check if any submission in the history matches the selected day
     const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));
@@ -70,13 +66,13 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     // 🛡️ Accidental Submission Check:
     const latestGlobalEntry = history[history.length - 1];
     const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
-    const isLatestEntryBeingViewed = latestGlobalEntry.date === latestEntryOnDate.date;
+    const isLatestGlobalEntryBeingViewed = latestGlobalEntry.date === latestEntryOnDate.date;
     
     const isCurrentlyActive = task.status === 'todo' || task.status === 'inprogress';
     const isPosting = task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
 
-    if (isCurrentlyActive && isLatestEntryBeingViewed && !isPosting) {
-        // Legitimate check: Show if it was a correction resubmit or if there are multiple submits today
+    if (isCurrentlyActive && isLatestGlobalEntryBeingViewed && !isPosting) {
+        // If it's the very last thing that happened, and it was a single review click today, hide it.
         const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate';
         const hasMultipleSubmitsToday = entriesForDate.length > 1;
         
@@ -88,14 +84,12 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     return true;
   }).map(task => {
       let history: SubmissionHistoryEntry[] = [];
-      try {
-          const rawHistory = task.submission_history;
-          if (Array.isArray(rawHistory)) {
-              history = rawHistory;
-          } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
-              history = JSON.parse(rawHistory);
-          }
-      } catch (e) {}
+      const rawHistory = task.submission_history;
+      if (Array.isArray(rawHistory)) {
+          history = rawHistory;
+      } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+          try { history = JSON.parse(rawHistory); } catch (e) {}
+      }
 
       // Find the specific submission entry for this date to determine the label
       const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));

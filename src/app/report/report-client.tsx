@@ -137,7 +137,6 @@ const UserReportCard = ({ user, tasks }: { user: Profile; tasks: SubmissionTask[
             {tasks.map((task) => {
               const isPostingEvent = task.submission_type === 'scheduled' || task.submission_type === 'posted';
               
-              // Outcome-based mapping for historical records
               let finalStatus = task.status;
               if (task.status === 'todo' || task.status === 'inprogress') {
                   if (task.revisions?.recreations && task.revisions.recreations > 0) finalStatus = 'recreate' as any;
@@ -242,7 +241,7 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
 
   useEffect(() => {
     const channel = supabase
-      .channel('report-realtime-v2')
+      .channel('report-realtime-v3')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
@@ -261,16 +260,19 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
           if (error || !updatedTask) return;
 
           const task = updatedTask as any;
-
           let history: SubmissionHistoryEntry[] = [];
-          try {
-              const rawHistory = task.submission_history;
-              if (Array.isArray(rawHistory)) {
-                  history = rawHistory;
-              } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
-                  history = JSON.parse(rawHistory);
-              }
-          } catch (e) {}
+          const rawHistory = task.submission_history;
+          
+          if (Array.isArray(rawHistory)) {
+              history = rawHistory;
+          } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
+              try { history = JSON.parse(rawHistory); } catch (e) {}
+          }
+
+          if (!history || history.length === 0) {
+            setAllTasks(prev => prev.filter(t => t.id !== task.id));
+            return;
+          }
 
           const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(date));
           const hasEntriesOnDate = entriesForDate.length > 0;
