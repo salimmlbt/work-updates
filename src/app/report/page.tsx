@@ -1,9 +1,30 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import ReportClient from './report-client';
-import type { Profile, ReportEntry } from '@/lib/types';
+import type { Profile } from '@/lib/types';
 import { formatInTimeZone } from 'date-fns-tz';
 import { redirect } from 'next/navigation';
+
+/**
+ * SCHEMA REQUIREMENT:
+ * 
+ * CREATE TABLE IF NOT EXISTS task_status_history (
+ *     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ *     task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+ *     from_status TEXT,
+ *     to_status TEXT,
+ *     changed_at TIMESTAMPTZ DEFAULT NOW()
+ * );
+ * 
+ * CREATE TABLE IF NOT EXISTS report_entries (
+ *     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ *     task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+ *     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+ *     submitted_at TIMESTAMPTZ DEFAULT NOW(),
+ *     final_status TEXT,
+ *     is_correction_cycle BOOLEAN DEFAULT FALSE
+ * );
+ */
 
 export const dynamic = 'force-dynamic';
 
@@ -25,15 +46,17 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     );
   }
 
-  // Use IST for the default date to fix midnight submission bias
   const selectedDate = searchParams.date || formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
 
-  // Fetch report entries for the selected date
   const { data: reportEntries, error: reportError } = await supabase
     .from('report_entries')
     .select(`
         *,
-        tasks (*, projects (*, clients (*))),
+        tasks (
+          *, 
+          projects (*), 
+          clients (*)
+        ),
         profiles (*)
     `)
     .gte('submitted_at', `${selectedDate}T00:00:00+05:30`)
@@ -41,13 +64,14 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     .order('submitted_at', { ascending: false });
 
   if (reportError) {
-    console.error('Error fetching report entries:', reportError);
+    console.error('Error fetching report entries:', JSON.stringify(reportError, null, 2));
   }
 
-  // Format data for the client component
-  const submissions = (reportEntries || []).map((entry: any) => ({
+  const submissions = (reportEntries || [])
+    .filter((entry: any) => entry.tasks)
+    .map((entry: any) => ({
       ...entry.tasks,
-      id: entry.id, // Use report entry ID for unique key
+      id: entry.id, 
       taskId: entry.task_id,
       assignee_id: entry.user_id,
       profiles: entry.profiles,
@@ -57,7 +81,6 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
       submitted_at: entry.submitted_at
   }));
 
-  // Include only profiles that have report entries on this date
   const activeProfiles = Array.from(new Set(submissions.map(s => s.assignee_id)))
     .map(id => submissions.find(s => s.assignee_id === id)?.profiles)
     .filter(Boolean) as Profile[];

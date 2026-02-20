@@ -152,28 +152,32 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
     setSubmissions(initialSubmissions);
   }, [initialSubmissions]);
 
-  // Real-time synchronization for report entries
   useEffect(() => {
     const channel = supabase
-      .channel('report-entries-realtime')
+      .channel('report-entries-realtime-v2')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'report_entries' },
-        async (payload) => {
-          // Re-fetch all entries for the date to ensure consistency with joins
-          const { data } = await supabase
+        async () => {
+          const { data, error } = await supabase
             .from('report_entries')
             .select(`
                 *,
-                tasks (*, projects (*, clients (*))),
+                tasks (
+                  *, 
+                  projects (*), 
+                  clients (*)
+                ),
                 profiles (*)
             `)
             .gte('submitted_at', `${date}T00:00:00+05:30`)
             .lte('submitted_at', `${date}T23:59:59+05:30`)
             .order('submitted_at', { ascending: false });
 
-          if (data) {
-            setSubmissions(data.map((entry: any) => ({
+          if (!error && data) {
+            setSubmissions(data
+              .filter((entry: any) => entry.tasks)
+              .map((entry: any) => ({
                 ...entry.tasks,
                 id: entry.id,
                 taskId: entry.task_id,
@@ -253,7 +257,7 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
                 <FileX className="h-12 w-12 text-slate-300" />
             </div>
             <h3 className="text-xl font-bold text-slate-900">No work submitted yet</h3>
-            <p className="text-slate-500 max-w-sm mt-2 font-medium">There are no valid report entries found for this date.</p>
+            <p className="text-slate-500 max-w-sm mt-2 font-medium">There are no valid report entries found for this date. Make sure the database schema is initialized.</p>
         </div>
       ) : (
         <div className="columns-1 md:columns-2 xl:columns-3 gap-8">

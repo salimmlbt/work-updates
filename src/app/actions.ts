@@ -66,7 +66,6 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 // Just update the latest entry's status
                 await supabase.from('report_entries').update({ 
                     final_status: toStatus,
-                    // If it was already a correction cycle, keep it
                 }).eq('id', latestEntry.id);
             }
         }
@@ -647,7 +646,7 @@ export async function restoreTasks(taskIds: string[]) {
 
 export async function deleteTaskPermanently(taskId: string) {
   const supabase = await createServerClient()
-  const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+  const { error = null } = await supabase.from('tasks').delete().eq('id', taskId)
   
   if (error) {
     return { error: error.message }
