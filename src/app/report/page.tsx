@@ -1,8 +1,7 @@
 
 import { createServerClient } from '@/lib/supabase/server';
 import ReportClient from './report-client';
-import type { Profile, SubmissionHistoryEntry } from '@/lib/types';
-import { format } from 'date-fns';
+import type { Profile, ReportEntry } from '@/lib/types';
 import { formatInTimeZone } from 'date-fns-tz';
 import { redirect } from 'next/navigation';
 
@@ -29,96 +28,44 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
   // Use IST for the default date to fix midnight submission bias
   const selectedDate = searchParams.date || formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
 
-  // Fetch all profiles (including archived to preserve history)
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('*, roles(*), teams:profile_teams(teams(*))')
-    .order('full_name');
+  // Fetch report entries for the selected date
+  const { data: reportEntries, error: reportError } = await supabase
+    .from('report_entries')
+    .select(`
+        *,
+        tasks (*, projects (*, clients (*))),
+        profiles (*)
+    `)
+    .gte('submitted_at', `${selectedDate}T00:00:00+05:30`)
+    .lte('submitted_at', `${selectedDate}T23:59:59+05:30`)
+    .order('submitted_at', { ascending: false });
 
-  // Fetch all tasks - filter logic handled in memory for maximum robustness
-  const { data: tasks, error: tasksError } = await supabase
-    .from('tasks')
-    .select('*, profiles(*), projects(*), clients(*)')
-    .eq('is_deleted', false);
-
-  if (profilesError || tasksError) {
-    console.error({ profilesError, tasksError });
+  if (reportError) {
+    console.error('Error fetching report entries:', reportError);
   }
 
-  // Filter tasks based on submission history entries matching the selected date
-  const reportTasks = (tasks as any[] || []).filter(task => {
-    let history: SubmissionHistoryEntry[] = [];
-    const rawHistory = task.submission_history;
-    
-    if (Array.isArray(rawHistory)) {
-        history = rawHistory;
-    } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
-        try { history = JSON.parse(rawHistory); } catch (e) {}
-    }
-
-    if (!history || !Array.isArray(history) || history.length === 0) return false;
-
-    // Check if any submission in the history matches the selected day
-    const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));
-    if (entriesForDate.length === 0) return false;
-
-    // 🛡️ Accidental Submission Check:
-    // Only hide if the task is currently active AND the latest entry globally is today's entry (being hidden).
-    const isCurrentlyActive = task.status === 'todo' || task.status === 'inprogress';
-    const isPosting = task.posting_status === 'Scheduled' || task.posting_status === 'Posted';
-
-    if (isCurrentlyActive && !isPosting) {
-        const latestGlobalEntry = history[history.length - 1];
-        const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
-        const isLatestGlobalEntryBeingViewed = latestGlobalEntry.date === latestEntryOnDate.date;
-
-        if (isLatestGlobalEntryBeingViewed) {
-            const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate' || latestEntryOnDate.type === 'completed';
-            const hasMultipleSubmitsToday = entriesForDate.length > 1;
-            
-            if (!isLegitimateSubmitToday && !hasMultipleSubmitsToday) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-  }).map(task => {
-      let history: SubmissionHistoryEntry[] = [];
-      const rawHistory = task.submission_history;
-      if (Array.isArray(rawHistory)) {
-          history = rawHistory;
-      } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
-          try { history = JSON.parse(rawHistory); } catch (e) {}
-      }
-
-      const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));
-      const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
-      
-      return {
-          ...task,
-          submission_type: latestEntryOnDate?.type || 'original',
-          submitted_at: latestEntryOnDate?.date || task.status_updated_at || task.created_at
-      };
-  });
-
-  // Ensure every task has a user profile associated even if it's not in the joined data
-  const profilesMap = new Map((profiles as Profile[] || []).map(p => [p.id, p]));
-  
-  const reportTasksWithProfiles = reportTasks.map(task => ({
-      ...task,
-      profiles: task.profiles || profilesMap.get(task.assignee_id) || null
+  // Format data for the client component
+  const submissions = (reportEntries || []).map((entry: any) => ({
+      ...entry.tasks,
+      id: entry.id, // Use report entry ID for unique key
+      taskId: entry.task_id,
+      assignee_id: entry.user_id,
+      profiles: entry.profiles,
+      clients: entry.tasks?.projects?.clients || entry.tasks?.clients,
+      submission_type: entry.is_correction_cycle ? 'correction' : 'original',
+      final_status: entry.final_status,
+      submitted_at: entry.submitted_at
   }));
 
-  // Include only profiles that have work on this specific date
-  const activeProfiles = (profiles as Profile[] || []).filter(profile => 
-    reportTasksWithProfiles.some(task => task.assignee_id === profile.id)
-  );
+  // Include only profiles that have report entries on this date
+  const activeProfiles = Array.from(new Set(submissions.map(s => s.assignee_id)))
+    .map(id => submissions.find(s => s.assignee_id === id)?.profiles)
+    .filter(Boolean) as Profile[];
 
   return (
     <ReportClient 
       initialProfiles={activeProfiles} 
-      initialTasks={reportTasksWithProfiles as any[]} 
+      initialSubmissions={submissions as any[]} 
       selectedDate={selectedDate}
     />
   );

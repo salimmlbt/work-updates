@@ -10,6 +10,92 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
 import { formatInTimeZone } from 'date-fns-tz';
 
+/**
+ * Handles the logic for creating or updating report entries based on task status changes.
+ */
+async function handleReportLogging(supabase: any, taskId: string, userId: string, fromStatus: string, toStatus: string) {
+    const now = new Date();
+    const timestamp = formatInTimeZone(now, 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
+
+    // 1. Record History
+    await supabase.from('task_status_history').insert({
+        task_id: taskId,
+        from_status: fromStatus,
+        to_status: toStatus,
+        changed_at: timestamp
+    });
+
+    const triggerStates = ['review', 'under-review', 'posted', 'scheduled', 'done'];
+    const updateStates = ['approved', 'corrections', 'recreate', 'posted', 'scheduled', 'done', 'review', 'under-review'];
+
+    const normalizedToStatus = toStatus.toLowerCase();
+
+    if (triggerStates.includes(normalizedToStatus)) {
+        // Fetch latest entry to check for accidental flips or correction cycles
+        const { data: latestEntry } = await supabase
+            .from('report_entries')
+            .select('*')
+            .eq('task_id', taskId)
+            .order('submitted_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        let createNew = false;
+        let isCorrection = false;
+
+        if (!latestEntry) {
+            createNew = true;
+        } else {
+            // Check history since last entry to see if we reached feedback states
+            const { data: historySince } = await supabase
+                .from('task_status_history')
+                .select('*')
+                .eq('task_id', taskId)
+                .gt('changed_at', latestEntry.submitted_at)
+                .order('changed_at', { ascending: true });
+
+            const hadFeedback = historySince?.some((h: any) => 
+                h.to_status === 'corrections' || h.to_status === 'recreate'
+            );
+
+            if (hadFeedback) {
+                createNew = true;
+                isCorrection = true;
+            } else {
+                // Accidental flip (Review -> New -> Review) or re-review
+                // Just update the latest entry's status
+                await supabase.from('report_entries').update({ 
+                    final_status: toStatus,
+                    // If it was already a correction cycle, keep it
+                }).eq('id', latestEntry.id);
+            }
+        }
+
+        if (createNew) {
+            await supabase.from('report_entries').insert({
+                task_id: taskId,
+                user_id: userId,
+                submitted_at: timestamp,
+                final_status: toStatus,
+                is_correction_cycle: isCorrection
+            });
+        }
+    } else if (updateStates.includes(normalizedToStatus)) {
+        // Just update the latest entry's outcome
+        const { data: latestEntry } = await supabase
+            .from('report_entries')
+            .select('*')
+            .eq('task_id', taskId)
+            .order('submitted_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (latestEntry) {
+            await supabase.from('report_entries').update({ final_status: toStatus }).eq('id', latestEntry.id);
+        }
+    }
+}
+
 export async function getVoiceGreeting(text: string) {
   try {
     const result = await generateVoiceGreeting({ text });
@@ -28,7 +114,7 @@ export async function checkIn(reason?: string) {
     return { error: 'You must be logged in to check in.' };
   }
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
 
   const { data: existing, error: fetchError } = await supabase
     .from('attendance')
@@ -72,7 +158,7 @@ export async function checkOut() {
     return { error: 'You must be logged in to check out.' };
   }
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
 
   const { data: attendance, error: fetchError } = await supabase
     .from('attendance')
@@ -119,7 +205,7 @@ export async function lunchOut() {
     return { error: 'You must be logged in.' };
   }
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
 
   const { data, error } = await supabase
     .from('attendance')
@@ -147,7 +233,7 @@ export async function lunchIn() {
     return { error: 'You must be logged in.' };
   }
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
 
   const { data, error } = await supabase
     .from('attendance')
@@ -419,7 +505,7 @@ export async function updateTaskStatus(
 
     const { data: currentTask, error: fetchError } = await supabase
         .from('tasks')
-        .select('revisions, corrections, status, submission_history')
+        .select('revisions, corrections, status')
         .eq('id', taskId)
         .single();
     
@@ -428,62 +514,13 @@ export async function updateTaskStatus(
         return { error: 'Could not retrieve task to update status.' };
     }
 
+    const fromStatus = currentTask.status;
     const updates: any = { 
       status, 
       status_updated_at: new Date().toISOString(),
       status_updated_by: user.id
     };
     
-    // --- Submission History Logic ---
-    const isSubmissionStatus = ['review', 'under-review', 'done', 'approved'].includes(status);
-    
-    if (isSubmissionStatus) {
-        let history: SubmissionHistoryEntry[] = [];
-        const rawHistory = currentTask.submission_history;
-        
-        if (Array.isArray(rawHistory)) {
-            history = rawHistory as SubmissionHistoryEntry[];
-        } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
-            try {
-                const parsed = JSON.parse(rawHistory);
-                if (Array.isArray(parsed)) {
-                    history = parsed;
-                }
-            } catch (e) {
-                history = [];
-            }
-        }
-
-        const todayIST = formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
-        const lastEntry = history[history.length - 1];
-        const isLastEntryToday = lastEntry?.date?.startsWith(todayIST);
-
-        // Determine submission type
-        let type: SubmissionType = 'original';
-        if (status === 'done' || status === 'approved') {
-            type = 'completed';
-        } else if (currentTask.status === 'corrections') {
-            type = 'correction';
-        } else if (currentTask.status === 'recreate') {
-            type = 'recreate';
-        }
-
-        // Add history entry if it's a new day or a legitimate status change from feedback back to review
-        const isFromFeedback = currentTask.status === 'corrections' || currentTask.status === 'recreate';
-        const isFromApproved = currentTask.status === 'approved' || currentTask.status === 'done';
-        const isToReview = status === 'review' || status === 'under-review';
-
-        if (!isLastEntryToday || isFromFeedback || (isFromApproved && isToReview)) {
-            const timestamp = formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
-            const newEntry: SubmissionHistoryEntry = {
-                date: timestamp,
-                type
-            };
-            updates.submission_history = [...history, newEntry];
-        }
-    }
-    // --------------------------------
-
     const revisions: Revisions = (currentTask.revisions as Revisions | null) || { corrections: 0, recreations: 0 };
     if (status === 'corrections') {
         revisions.corrections = (revisions.corrections || 0) + 1;
@@ -511,6 +548,10 @@ export async function updateTaskStatus(
         return { error: error.message };
     }
 
+    // --- Report Logging Logic ---
+    await handleReportLogging(supabase, taskId, user.id, fromStatus, status);
+    // ----------------------------
+
     revalidatePath('/tasks');
     revalidatePath('/report');
     return { success: true };
@@ -521,46 +562,20 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Fetch current history to append new entry
     const { data: currentTask } = await supabase
         .from('tasks')
-        .select('submission_history')
+        .select('status, posting_status')
         .eq('id', taskId)
         .single();
 
-    let history: SubmissionHistoryEntry[] = [];
-    const rawHistory = currentTask?.submission_history;
-    
-    if (Array.isArray(rawHistory)) {
-        history = rawHistory as SubmissionHistoryEntry[];
-    } else if (typeof rawHistory === 'string' && rawHistory.trim().startsWith('[')) {
-        try {
-            const parsed = JSON.parse(rawHistory);
-            if (Array.isArray(parsed)) {
-                history = parsed;
-            }
-        } catch (e) {
-            history = [];
-        }
-    }
-
-    // Record the transition in history if it's Scheduled or Posted
-    if (posting_status === 'Scheduled' || posting_status === 'Posted') {
-        const timestamp = formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
-        const newEntry: SubmissionHistoryEntry = {
-            date: timestamp,
-            type: posting_status.toLowerCase() as any
-        };
-        history = [...history, newEntry];
-    }
+    const fromStatus = currentTask?.posting_status || currentTask?.status || 'todo';
 
     const { error } = await supabase
         .from('tasks')
         .update({ 
             posting_status, 
             status_updated_at: new Date().toISOString(),
-            status_updated_by: user?.id,
-            submission_history: history
+            status_updated_by: user?.id
         })
         .eq('id', taskId);
 
@@ -568,6 +583,12 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
         console.error('Error updating task posting status:', error);
         return { error: error.message };
     }
+
+    // --- Report Logging Logic ---
+    if (user) {
+        await handleReportLogging(supabase, taskId, user.id, fromStatus, posting_status);
+    }
+    // ----------------------------
 
     revalidatePath('/tasks');
     revalidatePath('/dashboard');
@@ -1525,7 +1546,7 @@ export async function createTaskFromSchedule(schedule: ContentSchedule): Promise
         schedule_id: schedule.id,
         assignee_id: assigneeId,
         status: 'todo' as const,
-        project_id: schedule.project_id,
+        project_id: (schedule as any).project_id,
     };
 
     const { data: newTask, error: createTaskError } = await supabase

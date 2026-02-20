@@ -86,6 +86,23 @@ export type TaskWithDetails = Task & {
   submission_history?: SubmissionHistoryEntry[] | null;
 }
 
+export type ReportEntry = {
+  id: string;
+  task_id: string;
+  user_id: string;
+  submitted_at: string;
+  final_status: string;
+  is_correction_cycle: boolean;
+};
+
+export type TaskStatusHistory = {
+  id: string;
+  task_id: string;
+  from_status: string;
+  to_status: string;
+  changed_at: string;
+};
+
 export type Notification = {
     id: string;
     type: 'new' | 'deadline' | 'review' | 'approved' | 'correction' | 'recreate';
