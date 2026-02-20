@@ -19,7 +19,7 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
     const timestamp = formatInTimeZone(now, 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
     const todayStr = formatInTimeZone(now, 'Asia/Kolkata', 'yyyy-MM-dd');
 
-    // 1. Record raw history for auditing
+    // 1. Record raw history for auditing and logic context
     await supabase.from('task_status_history').insert({
         task_id: taskId,
         from_status: fromStatus,
@@ -49,7 +49,7 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         if (!latestEntry) {
             createNew = true;
         } else {
-            // Check history since last entry to see if we reached feedback states
+            // Logic: Check history since last entry to see if we reached feedback states
             const { data: historySince } = await supabase
                 .from('task_status_history')
                 .select('*')
@@ -64,7 +64,7 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
             const lastEntryDate = formatInTimeZone(new Date(latestEntry.submitted_at), 'Asia/Kolkata', 'yyyy-MM-dd');
 
             if (hadFeedback && normalizedToStatus === 'review') {
-                // Legitimate resubmission after corrections
+                // Legitimate resubmission after corrections (Rework)
                 createNew = true;
                 isCorrection = true;
             } else if (lastEntryDate !== todayStr && triggerStates.includes(normalizedToStatus)) {

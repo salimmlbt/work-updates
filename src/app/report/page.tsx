@@ -6,7 +6,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { redirect } from 'next/navigation';
 
 /**
- * SCHEMA REQUIREMENT:
+ * DAILY WORK REPORT SCHEMA (REBUILT):
  * 
  * CREATE TABLE IF NOT EXISTS task_status_history (
  *     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -71,7 +71,7 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     .filter((entry: any) => entry.tasks)
     .map((entry: any) => ({
       ...entry.tasks,
-      id: entry.id, 
+      id: entry.id, // Entry ID for UI keys
       taskId: entry.task_id,
       assignee_id: entry.user_id,
       profiles: entry.profiles,
