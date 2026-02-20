@@ -35,7 +35,7 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
     .select('*, roles(*), teams:profile_teams(teams(*))')
     .order('full_name');
 
-  // Fetch tasks
+  // Fetch all tasks - filter logic handled in memory for maximum robustness
   const { data: tasks, error: tasksError } = await supabase
     .from('tasks')
     .select('*, profiles(*), projects(*), clients(*)')
@@ -56,7 +56,7 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
         try { history = JSON.parse(rawHistory); } catch (e) {}
     }
 
-    if (!history || history.length === 0) return false;
+    if (!history || !Array.isArray(history) || history.length === 0) return false;
 
     // Check if any submission in the history matches the selected day
     const entriesForDate = history.filter(entry => entry.date && entry.date.startsWith(selectedDate));
@@ -102,15 +102,23 @@ export default async function ReportPage({ searchParams }: { searchParams: { dat
       };
   });
 
+  // Ensure every task has a user profile associated even if it's not in the joined data
+  const profilesMap = new Map((profiles as Profile[] || []).map(p => [p.id, p]));
+  
+  const reportTasksWithProfiles = reportTasks.map(task => ({
+      ...task,
+      profiles: task.profiles || profilesMap.get(task.assignee_id) || null
+  }));
+
   // Include only profiles that have work on this specific date
   const activeProfiles = (profiles as Profile[] || []).filter(profile => 
-    reportTasks.some(task => task.assignee_id === profile.id)
+    reportTasksWithProfiles.some(task => task.assignee_id === profile.id)
   );
 
   return (
     <ReportClient 
       initialProfiles={activeProfiles} 
-      initialTasks={reportTasks as any[]} 
+      initialTasks={reportTasksWithProfiles as any[]} 
       selectedDate={selectedDate}
     />
   );

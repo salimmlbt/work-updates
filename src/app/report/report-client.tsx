@@ -241,7 +241,7 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
 
   useEffect(() => {
     const channel = supabase
-      .channel('report-realtime-v4')
+      .channel('report-realtime-v5')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
@@ -269,7 +269,7 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
               try { history = JSON.parse(rawHistory); } catch (e) {}
           }
 
-          if (!history || history.length === 0) {
+          if (!history || !Array.isArray(history) || history.length === 0) {
             setAllTasks(prev => prev.filter(t => t.id !== task.id));
             return;
           }
@@ -285,7 +285,6 @@ export default function ReportClient({ initialProfiles, initialTasks, selectedDa
             const latestEntryOnDate = entriesForDate[entriesForDate.length - 1];
             const isLatestGlobal = latestGlobalEntry.date === latestEntryOnDate.date;
 
-            // Accurate Accidental Filter
             let isAccidental = false;
             if (isCurrentlyActive && !isPosting && isLatestGlobal) {
                 const isLegitimateSubmitToday = latestEntryOnDate.type === 'correction' || latestEntryOnDate.type === 'recreate' || latestEntryOnDate.type === 'completed';

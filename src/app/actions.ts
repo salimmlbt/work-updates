@@ -435,7 +435,9 @@ export async function updateTaskStatus(
     };
     
     // --- Submission History Logic ---
-    if (status === 'review' || status === 'under-review' || status === 'done') {
+    const isSubmissionStatus = ['review', 'under-review', 'done', 'approved'].includes(status);
+    
+    if (isSubmissionStatus) {
         let history: SubmissionHistoryEntry[] = [];
         const rawHistory = currentTask.submission_history;
         
@@ -452,32 +454,31 @@ export async function updateTaskStatus(
             }
         }
 
-        // Add history entry if moving to Review or Done
-        // logic to check for same-session continuity
-        const isFromApproved = currentTask.status === 'approved' || currentTask.status === 'done';
-        const isToReview = status === 'review' || status === 'under-review';
         const todayIST = formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
         const lastEntry = history[history.length - 1];
         const isLastEntryToday = lastEntry?.date?.startsWith(todayIST);
 
-        // Record entry if it's not a redundant same-day duplicate of the same type,
-        // or if it's a legitimate resubmission after corrections.
-        if (!(isFromApproved && isToReview) || !isLastEntryToday) {
-            let type: SubmissionType = 'original';
-            if (status === 'done') {
-                type = 'completed';
-            } else if (currentTask.status === 'corrections') {
-                type = 'correction';
-            } else if (currentTask.status === 'recreate') {
-                type = 'recreate';
-            }
-            
+        // Determine submission type
+        let type: SubmissionType = 'original';
+        if (status === 'done' || status === 'approved') {
+            type = 'completed';
+        } else if (currentTask.status === 'corrections') {
+            type = 'correction';
+        } else if (currentTask.status === 'recreate') {
+            type = 'recreate';
+        }
+
+        // Add history entry if it's a new day or a legitimate status change from feedback back to review
+        const isFromFeedback = currentTask.status === 'corrections' || currentTask.status === 'recreate';
+        const isFromApproved = currentTask.status === 'approved' || currentTask.status === 'done';
+        const isToReview = status === 'review' || status === 'under-review';
+
+        if (!isLastEntryToday || isFromFeedback || (isFromApproved && isToReview)) {
             const timestamp = formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ssXXX");
             const newEntry: SubmissionHistoryEntry = {
                 date: timestamp,
                 type
             };
-            
             updates.submission_history = [...history, newEntry];
         }
     }
@@ -950,7 +951,7 @@ export async function updateUserRole(userId: string, roleId: string) {
 
 export async function updateUserTeam(userId: string, teamId: string) {
   const supabase = await createServerClient()
-  const { error } = await supabase
+  const { error = null } = await supabase
     .from('profiles')
     .update({ team_id: teamId })
     .eq('id', userId)
