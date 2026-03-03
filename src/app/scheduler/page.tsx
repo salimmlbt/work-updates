@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import SchedulerClient from './scheduler-client';
 import type { Client, ContentSchedule, Task, Team, Profile, Project } from '@/lib/types';
 import { redirect } from 'next/navigation';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export type ScheduleWithDetails = ContentSchedule & {
   projects: Project | null;
 };
 
-export default async function SchedulerPage() {
+export default async function SchedulerPage({ searchParams }: { searchParams: { client?: string, month?: string } }) {
   const supabase = await createServerClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
 
@@ -33,6 +34,12 @@ export default async function SchedulerPage() {
     );
   }
 
+  // Calculate Month Range
+  const selectedMonth = (await searchParams).month || format(new Date(), 'yyyy-MM');
+  const monthDate = new Date(`${selectedMonth}-01T00:00:00Z`);
+  const monthStart = format(startOfMonth(monthDate), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(monthDate), 'yyyy-MM-dd');
+
   const [
     clientsRes,
     schedulesRes,
@@ -42,8 +49,16 @@ export default async function SchedulerPage() {
     projectsRes,
   ] = await Promise.all([
     supabase.from('clients').select('*').order('name'),
-    supabase.from('content_schedules').select('*, teams(*), projects(*)'),
-    supabase.from('tasks').select('*, profiles(*), projects(*), clients(*)').eq('is_deleted', false).not('schedule_id', 'is', null),
+    supabase.from('content_schedules')
+      .select('*, teams(*), projects(*)')
+      .gte('scheduled_date', monthStart)
+      .lte('scheduled_date', monthEnd),
+    supabase.from('tasks')
+      .select('*, profiles(*), projects(*), clients(*)')
+      .eq('is_deleted', false)
+      .not('schedule_id', 'is', null)
+      .gte('deadline', monthStart)
+      .lte('deadline', monthEnd),
     supabase.from('teams').select('*'),
     supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))'),
     supabase.from('projects').select('*'),
@@ -58,7 +73,6 @@ export default async function SchedulerPage() {
 
   if (clientsError || schedulesError || tasksError || teamsError || profilesError || projectsError) {
     console.error({ clientsError, schedulesError, tasksError, teamsError, profilesError, projectsError });
-    // Handle error display appropriately
   }
 
   const tasksByScheduleId = new Map(tasks?.map(task => [task.schedule_id, task]));
@@ -75,6 +89,7 @@ export default async function SchedulerPage() {
       teams={teams as Team[] ?? []}
       profiles={profiles as Profile[] ?? []}
       projects={projects as Project[] ?? []}
+      selectedMonth={selectedMonth}
     />
   );
 }

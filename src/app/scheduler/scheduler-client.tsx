@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown, Search, Rocket, AlertCircle, CheckCircle2, Eye, MessageSquare, Repeat } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown, Search, Rocket, AlertCircle, CheckCircle2, Eye, MessageSquare, Repeat, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getInitials, cn } from '@/lib/utils';
-import { format, parseISO, isToday, isTomorrow, isYesterday } from 'date-fns';
+import { format, parseISO, isToday, isTomorrow, isYesterday, addMonths, subMonths } from 'date-fns';
 import type { Client, Team, Profile, Task, TaskWithDetails, Project } from '@/lib/types';
 import type { ScheduleWithDetails } from './page';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -339,7 +339,7 @@ const AssignTaskRow = ({
   );
 };
 
-export default function SchedulerClient({ clients, initialSchedules, teams, profiles, projects }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[], projects: Project[] }) {
+export default function SchedulerClient({ clients, initialSchedules, teams, profiles, projects, selectedMonth }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[], projects: Project[], selectedMonth: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -365,9 +365,9 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     // Set initial client ID on the client to avoid hydration mismatch
     if (clients.length > 0 && !selectedClientId) {
       setSelectedClientId(clients[0].id);
-      router.replace(`/scheduler?client=${clients[0].id}`);
+      router.replace(`/scheduler?client=${clients[0].id}&month=${selectedMonth}`);
     }
-  }, [clients, selectedClientId, router]);
+  }, [clients, selectedClientId, router, selectedMonth]);
 
   useEffect(() => {
     setSchedules(initialSchedules);
@@ -431,16 +431,24 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   const activeSchedules = useMemo(() => {
     if (!selectedClientId) return [];
     return schedules
-      .filter(s => s.client_id === selectedClientId && !s.is_deleted)
+      .filter(s => 
+        s.client_id === selectedClientId && 
+        !s.is_deleted && 
+        s.scheduled_date.startsWith(selectedMonth)
+      )
       .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
-  }, [selectedClientId, schedules]);
+  }, [selectedClientId, schedules, selectedMonth]);
 
   const deletedSchedules = useMemo(() => {
     if (!selectedClientId) return [];
     return schedules
-      .filter(s => s.client_id === selectedClientId && s.is_deleted)
+      .filter(s => 
+        s.client_id === selectedClientId && 
+        s.is_deleted && 
+        s.scheduled_date.startsWith(selectedMonth)
+      )
       .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
-  }, [selectedClientId, schedules]);
+  }, [selectedClientId, schedules, selectedMonth]);
 
   const filteredClients = useMemo(() => {
     if (!clientSearchQuery) return clients;
@@ -451,7 +459,12 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     setSelectedClientId(clientId);
     setClientSearchQuery("");
     setClientSearchOpen(false);
-    router.push(`/scheduler?client=${clientId}`);
+    router.push(`/scheduler?client=${clientId}&month=${selectedMonth}`);
+  };
+
+  const handleMonthChange = (newDate: Date) => {
+    const monthStr = format(newDate, 'yyyy-MM');
+    router.push(`/scheduler?client=${selectedClientId}&month=${monthStr}`);
   };
   
   const handleClientSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -546,31 +559,44 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
         <header className="flex items-center justify-between pb-4 mb-4 border-b">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold">Content Scheduler</h1>
+            
+            <div className="flex items-center gap-2 bg-slate-100 rounded-full p-1 border">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleMonthChange(subMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-semibold w-28 text-center px-2">
+                    {format(new Date(`${selectedMonth}-01T00:00:00Z`), 'MMMM yyyy')}
+                </span>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleMonthChange(addMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+
             <Popover open={isClientSearchOpen} onOpenChange={setClientSearchOpen}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" className="w-[320px] h-12 rounded-full border-0 shadow-none bg-green-100 text-green-800 hover:bg-green-200 group focus:ring-green-300 justify-start">
+                <Button variant="ghost" className="w-[280px] h-10 rounded-full border shadow-sm bg-white text-slate-900 hover:bg-slate-50 group justify-start">
                    {selectedClient ? (
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
+                        <Avatar className="h-6 w-6">
                           <AvatarImage src={selectedClient.avatar} />
                           <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
                         </Avatar>
-                        <span className="font-semibold">{selectedClient.name}</span>
+                        <span className="font-semibold text-sm">{selectedClient.name}</span>
                       </div>
                     ) : (
-                      <span>Select a client</span>
+                      <span className="text-sm">Select a client</span>
                     )}
-                    <ChevronDown className="h-5 w-5 opacity-0 group-hover:opacity-60 transition-opacity ml-auto" />
+                    <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-opacity ml-auto" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[320px] p-0">
+              <PopoverContent className="w-[320px] p-0" align="start">
                 <div className="p-2 border-b">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       ref={clientSearchInputRef}
                       placeholder="Search clients..."
-                      className="pl-9"
+                      className="pl-9 h-9"
                       value={clientSearchQuery}
                       onChange={(e) => setClientSearchQuery(e.target.value)}
                       onKeyDown={handleClientSearchKeyDown}
@@ -582,14 +608,14 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                     <div
                       key={client.id}
                       role="button"
-                      className="flex items-center gap-2 p-2 hover:bg-accent cursor-pointer"
+                      className="flex items-center gap-2 p-3 hover:bg-slate-50 cursor-pointer border-b last:border-0"
                       onClick={() => handleClientSelect(client.id)}
                     >
                       <Avatar className="h-6 w-6">
                           <AvatarImage src={client.avatar} />
                           <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
                       </Avatar>
-                      {client.name}
+                      <span className="text-sm font-medium">{client.name}</span>
                     </div>
                   ))}
                 </ScrollArea>
@@ -614,16 +640,16 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
         <main className="flex-1 overflow-y-auto">
           {selectedClientId ? (
-            <div className="border-t border-b">
+            <div className="border rounded-xl overflow-hidden shadow-sm">
               <Table>
-                <TableHeader>
-                  <TableRow className="border-b-0 hover:bg-transparent">
-                    <TableHead className="border-r">Schedule Date</TableHead>
-                    <TableHead className="border-r">Schedule Detail</TableHead>
-                    <TableHead className="border-r">Project</TableHead>
-                    <TableHead className="border-r">Schedule Team</TableHead>
-                    <TableHead className="border-r">Schedule Type</TableHead>
-                    <TableHead>Status</TableHead>
+                <TableHeader className="bg-slate-50">
+                  <TableRow className="border-b hover:bg-transparent">
+                    <TableHead className="border-r w-[15%]">Schedule Date</TableHead>
+                    <TableHead className="border-r w-[25%]">Schedule Detail</TableHead>
+                    <TableHead className="border-r w-[15%]">Project</TableHead>
+                    <TableHead className="border-r w-[15%]">Schedule Team</TableHead>
+                    <TableHead className="border-r w-[15%]">Schedule Type</TableHead>
+                    <TableHead className="w-[10%]">Status</TableHead>
                     <TableHead className="w-[5%] text-right"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -652,8 +678,8 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       ))}
                       {deletedSchedules.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            The bin is empty for {selectedClient?.name}.
+                          <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
+                            The bin is empty for {selectedClient?.name} in {format(new Date(`${selectedMonth}-01T00:00:00Z`), 'MMMM')}.
                           </TableCell>
                         </TableRow>
                       )}
@@ -694,12 +720,13 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                 {schedule.task ? (
                                   <div className="flex items-center gap-2">
                                     {icon}
-                                    <span>{label}</span>
+                                    <span className="text-sm">{label}</span>
                                   </div>
                                 ) : (
                                   <Button
                                     variant="outline"
                                     size="sm"
+                                    className="h-8 text-xs font-semibold px-3 rounded-full"
                                     onClick={() => handleAssignTask(schedule.id)}
                                   >
                                     Assign as task
@@ -714,7 +741,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                         <MoreVertical className="h-4 w-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
+                                    <DropdownMenuContent align="end">
                                       {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
                                         <DropdownMenuItem onClick={() => setScheduleToReassign(schedule)}>
                                           <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
@@ -744,8 +771,8 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       })}
                       {(activeSchedules.length === 0 && !isAddingSchedule) && (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            No schedules for {selectedClient?.name}. Click "Add Schedule" to get started.
+                          <TableCell colSpan={7} className="h-32 text-center text-muted-foreground italic">
+                            No schedules for {selectedClient?.name} in {format(new Date(`${selectedMonth}-01T00:00:00Z`), 'MMMM')}.
                           </TableCell>
                         </TableRow>
                       )}
@@ -755,7 +782,8 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
               </Table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground bg-slate-50/50 border-2 border-dashed rounded-2xl py-20">
+              <CalendarIcon className="h-12 w-12 opacity-20 mb-4" />
               <p className="text-lg font-medium">Please select a client to view their schedule.</p>
             </div>
           )}
@@ -824,5 +852,3 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
     </>
   );
 }
-
-    
