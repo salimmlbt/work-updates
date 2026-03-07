@@ -30,7 +30,7 @@ export default async function DashboardPage() {
         .gte('date', format(monthStart, 'yyyy-MM-dd'))
         .lte('date', format(monthEnd, 'yyyy-MM-dd')),
     supabase.from('tasks')
-      .select('id, description, deadline, status, project_id, assignee_id, is_deleted, created_at, projects(name)')
+      .select('id, description, deadline, status, posting_status, project_id, assignee_id, is_deleted, created_at, projects(name)')
       .eq('assignee_id', user.id)
       .eq('is_deleted', false),
     supabase.from('projects')

@@ -152,13 +152,32 @@ export default function DashboardClient({
 
   // Derived Stats Calculations
   const stats = useMemo(() => {
-    const pending = tasks.filter(t => ['todo', 'inprogress', 'corrections', 'recreate'].includes(t.status)).length;
-    const review = tasks.filter(t => t.status === 'review' || t.status === 'under-review').length;
-    const completed = tasks.filter(t => t.status === 'done' || t.status === 'approved').length;
+    // Helper to determine if a task is "Completed" based on user requirements
+    const isTaskCompleted = (t: any) => {
+        return ['Posted', 'Scheduled'].includes(t.posting_status) || ['done', 'approved'].includes(t.status);
+    };
+
+    // Helper to determine if a task is "Review"
+    const isTaskReview = (t: any) => {
+        if (isTaskCompleted(t)) return false;
+        return ['review', 'under-review'].includes(t.status);
+    };
+
+    // Helper to determine if a task is "Pending"
+    const isTaskPending = (t: any) => {
+        if (isTaskCompleted(t) || isTaskReview(t)) return false;
+        return t.posting_status === 'Planned' || ['todo', 'inprogress', 'corrections', 'recreate'].includes(t.status);
+    };
+
+    const pending = tasks.filter(isTaskPending).length;
+    const review = tasks.filter(isTaskReview).length;
+    const completed = tasks.filter(isTaskCompleted).length;
 
     const todayStart = startOfToday();
     const threeDaysFromNow = addDays(todayStart, 3);
-    const activeTasksList = tasks.filter(t => !['done', 'approved'].includes(t.status));
+    
+    // Deadlines are for tasks that aren't completed yet
+    const activeTasksList = tasks.filter(t => !isTaskCompleted(t));
 
     const overdue = activeTasksList
       .filter(t => t.deadline && isBefore(parseISO(t.deadline), todayStart))
