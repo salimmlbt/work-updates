@@ -347,7 +347,6 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   const [schedules, setSchedules] = useState(initialSchedules);
   const [isAddingSchedule, setIsAddingSchedule] = useState(false);
   const { toast } = useToast();
-  const [scheduleToReassign, setScheduleToReassign] = useState<ScheduleWithDetails | null>(null);
   const [assigningScheduleId, setAssigningScheduleId] = useState<string | null>(null);
   const [showBin, setShowBin] = useState(false);
 
@@ -356,6 +355,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   const [scheduleToEdit, setScheduleToEdit] = useState<ScheduleWithDetails | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [scheduleToDeletePermanently, setScheduleToDeletePermanently] = useState<ScheduleWithDetails | null>(null);
+  const [scheduleToReassign, setScheduleToReassign] = useState<ScheduleWithDetails | null>(null);
   
   const [isClientSearchOpen, setClientSearchOpen] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
@@ -449,6 +449,22 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
       )
       .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
   }, [selectedClientId, schedules, selectedMonth]);
+
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const startYear = 2023;
+    const endYear = 2030;
+    for (let year = startYear; year <= endYear; year++) {
+      for (let month = 0; month < 12; month++) {
+        const date = new Date(year, month, 1);
+        options.push({
+          value: format(date, 'yyyy-MM'),
+          label: format(date, 'MMMM yyyy'),
+        });
+      }
+    }
+    return options;
+  }, []);
 
   const filteredClients = useMemo(() => {
     if (!clientSearchQuery) return clients;
@@ -564,9 +580,20 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleMonthChange(subMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-sm font-semibold w-28 text-center px-2">
-                    {format(new Date(`${selectedMonth}-01T00:00:00Z`), 'MMMM yyyy')}
-                </span>
+                <Select value={selectedMonth} onValueChange={(val) => handleMonthChange(new Date(`${val}-01T00:00:00Z`))}>
+                    <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0 focus:ring-offset-0 px-2 w-auto min-w-[140px] text-sm font-semibold shadow-none hover:bg-slate-200 rounded-full">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <ScrollArea className="h-80">
+                            {monthOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </SelectItem>
+                            ))}
+                        </ScrollArea>
+                    </SelectContent>
+                </Select>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleMonthChange(addMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
                     <ChevronRight className="h-4 w-4" />
                 </Button>
