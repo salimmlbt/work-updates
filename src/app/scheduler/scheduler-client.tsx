@@ -339,6 +339,13 @@ const AssignTaskRow = ({
   );
 };
 
+const monthsList = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+const yearsList = Array.from({ length: 8 }, (_, i) => 2023 + i);
+
 export default function SchedulerClient({ clients, initialSchedules, teams, profiles, projects, selectedMonth }: { clients: Client[], initialSchedules: ScheduleWithDetails[], teams: Team[], profiles: Profile[], projects: Project[], selectedMonth: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -450,21 +457,10 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
       .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
   }, [selectedClientId, schedules, selectedMonth]);
 
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const startYear = 2023;
-    const endYear = 2030;
-    for (let year = startYear; year <= endYear; year++) {
-      for (let month = 0; month < 12; month++) {
-        const date = new Date(year, month, 1);
-        options.push({
-          value: format(date, 'yyyy-MM'),
-          label: format(date, 'MMMM yyyy'),
-        });
-      }
-    }
-    return options;
-  }, []);
+  const [currentYearPart, currentMonthPart] = useMemo(() => {
+    const parts = selectedMonth.split('-');
+    return [parts[0], parts[1]];
+  }, [selectedMonth]);
 
   const filteredClients = useMemo(() => {
     if (!clientSearchQuery) return clients;
@@ -480,6 +476,11 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
   const handleMonthChange = (newDate: Date) => {
     const monthStr = format(newDate, 'yyyy-MM');
+    router.push(`/scheduler?client=${selectedClientId}&month=${monthStr}`);
+  };
+
+  const handlePartChange = (m: string, y: string) => {
+    const monthStr = `${y}-${m}`;
     router.push(`/scheduler?client=${selectedClientId}&month=${monthStr}`);
   };
   
@@ -580,20 +581,35 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleMonthChange(subMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Select value={selectedMonth} onValueChange={(val) => handleMonthChange(new Date(`${val}-01T00:00:00Z`))}>
-                    <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0 focus:ring-offset-0 px-2 w-auto min-w-[140px] text-sm font-semibold shadow-none hover:bg-slate-200 rounded-full">
+                
+                {/* Month Selector */}
+                <Select value={currentMonthPart} onValueChange={(m) => handlePartChange(m, currentYearPart)}>
+                    <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0 focus:ring-offset-0 px-2 w-auto min-w-[100px] text-sm font-semibold shadow-none hover:bg-slate-200 rounded-full">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <ScrollArea className="h-80">
-                            {monthOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </ScrollArea>
+                        {monthsList.map((m, i) => (
+                            <SelectItem key={m} value={String(i + 1).padStart(2, '0')}>
+                                {m}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
+
+                {/* Year Selector */}
+                <Select value={currentYearPart} onValueChange={(y) => handlePartChange(currentMonthPart, y)}>
+                    <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0 focus:ring-offset-0 px-2 w-auto min-w-[80px] text-sm font-semibold shadow-none hover:bg-slate-200 rounded-full">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {yearsList.map((y) => (
+                            <SelectItem key={y} value={String(y)}>
+                                {y}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleMonthChange(addMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
                     <ChevronRight className="h-4 w-4" />
                 </Button>
