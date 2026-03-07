@@ -97,12 +97,18 @@ const AddScheduleRow = ({
   const [projectId, setProjectId] = useState<string | null>(null);
   const [contentType, setContentType] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
+  const [isCalendarOpen, setIsCalendarOpen] = useState(true); // Open calendar first as requested
   
   const titleInputRef = useRef<HTMLInputElement>(null);
 
+  // Focus title input when calendar closes
   useEffect(() => {
-    titleInputRef.current?.focus();
-  }, []);
+    if (!isCalendarOpen) {
+      setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 50);
+    }
+  }, [isCalendarOpen]);
 
   const availableWorkTypes = useMemo(() => {
     if (!teamId) return [];
@@ -163,7 +169,7 @@ const AddScheduleRow = ({
   return (
      <TableRow className="bg-muted/50 hover:bg-muted/50">
         <TableCell className="border-r">
-             <Popover>
+             <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -171,7 +177,15 @@ const AddScheduleRow = ({
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                    <CalendarComponent mode="single" selected={scheduledDate} onSelect={setScheduledDate} initialFocus />
+                    <CalendarComponent 
+                      mode="single" 
+                      selected={scheduledDate} 
+                      onSelect={(date) => {
+                        setScheduledDate(date);
+                        setIsCalendarOpen(false);
+                      }} 
+                      initialFocus 
+                    />
                 </PopoverContent>
             </Popover>
         </TableCell>
@@ -367,6 +381,20 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
   const [isClientSearchOpen, setClientSearchOpen] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const clientSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut Ctrl+Enter to add new schedule
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (selectedClientId && !showBin && !isAddingSchedule) {
+          e.preventDefault();
+          setIsAddingSchedule(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedClientId, showBin, isAddingSchedule]);
 
   useEffect(() => {
     // Set initial client ID on the client to avoid hydration mismatch
