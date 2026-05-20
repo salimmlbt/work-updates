@@ -17,6 +17,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Filter,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -60,22 +61,25 @@ const ClientCard = ({ client, onEdit, onDeleteConfirm, onRowClick }: { client: C
         { name: 'Completed', value: client.task_completion_percentage },
         { name: 'Remaining', value: 100 - client.task_completion_percentage },
     ];
-    const COLORS = ['#3b82f6', '#e5e7eb'];
+    const COLORS = ['#3b82f6', 'rgba(255, 255, 255, 0.05)'];
 
     return (
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col rounded-xl">
+        <Card className="relative overflow-hidden border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-2xl hover:shadow-[0_0_30px_rgba(56,189,248,0.1)] transition-all duration-300 flex flex-col rounded-2xl group">
+             {/* Top Glow Bar */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            
             <CardHeader className="flex flex-row items-center gap-4">
-                <Avatar className="h-12 w-12">
+                <Avatar className="h-12 w-12 border border-white/10">
                     <AvatarImage src={client.avatar} alt={client.name} />
-                    <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
+                    <AvatarFallback className="bg-zinc-800 text-zinc-400">{getInitials(client.name)}</AvatarFallback>
                 </Avatar>
                 <div>
-                    <CardTitle className="text-lg">{client.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{client.industry}</p>
+                    <CardTitle className="text-lg text-white font-bold tracking-tight">{client.name}</CardTitle>
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">{client.industry}</p>
                 </div>
             </CardHeader>
             <CardContent className="flex-grow grid grid-cols-2 gap-4">
-                <div className="relative w-32 h-32">
+                <div className="relative w-32 h-32 mx-auto">
                      <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
@@ -97,50 +101,50 @@ const ClientCard = ({ client, onEdit, onDeleteConfirm, onRowClick }: { client: C
                         </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold text-primary">{client.task_completion_percentage}%</span>
-                        <span className="text-xs text-muted-foreground">Completed</span>
+                        <span className="text-2xl font-black text-sky-400 tracking-tighter">{client.task_completion_percentage}%</span>
+                        <span className="text-[10px] uppercase font-bold text-zinc-500">Done</span>
                     </div>
                 </div>
-                <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                        <Folder className="h-4 w-4 text-purple-500" />
-                        <span>Projects: {client.completed_projects}/{client.total_projects}</span>
+                <div className="space-y-2 text-xs font-medium">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <Folder className="h-4 w-4 text-purple-400" />
+                        <span>Projects: <span className="text-white">{client.completed_projects}/{client.total_projects}</span></span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <CheckSquare className="h-4 w-4 text-blue-500" />
-                        <span>Tasks: {client.completed_tasks}/{client.total_tasks}</span>
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <CheckSquare className="h-4 w-4 text-blue-400" />
+                        <span>Tasks: <span className="text-white">{client.completed_tasks}/{client.total_tasks}</span></span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-cyan-500" />
-                        <span>Schedules: {client.completed_schedules}/{client.total_schedules}</span>
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <Calendar className="h-4 w-4 text-cyan-400" />
+                        <span>Schedules: <span className="text-white">{client.completed_schedules}/{client.total_schedules}</span></span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Share className="h-4 w-4 text-green-500" />
-                        <span>Posting: {client.posting_tasks}</span>
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <Share className="h-4 w-4 text-emerald-400" />
+                        <span>Posting: <span className="text-white">{client.posting_tasks}</span></span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-orange-500" />
-                        <span>Extras: {client.extras}</span>
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <FileText className="h-4 w-4 text-orange-400" />
+                        <span>Extras: <span className="text-white">{client.extras}</span></span>
                     </div>
                 </div>
             </CardContent>
-            <CardFooter className="flex justify-between items-center">
+            <CardFooter className="flex justify-between items-center bg-white/[0.02] border-t border-white/5 py-3">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-sky-400 hover:bg-white/5" onClick={(e) => e.stopPropagation()}>
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
+                  <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(client); }}>
                       <Pencil className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={(e) => { e.stopPropagation(); onDeleteConfirm(client); }}>
+                    <DropdownMenuItem className="text-red-400 focus:text-red-400 focus:bg-red-950/30" onClick={(e) => { e.stopPropagation(); onDeleteConfirm(client); }}>
                       <Trash2 className="mr-2 h-4 w-4" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button variant="link" onClick={() => onRowClick(client)}>View Details &rarr;</Button>
+                <Button variant="link" className="text-sky-400 hover:text-sky-300 text-xs font-bold uppercase tracking-wider" onClick={() => onRowClick(client)}>View Details &rarr;</Button>
             </CardFooter>
         </Card>
     );
@@ -235,49 +239,48 @@ export default function ClientsPageClient({ initialClients, industries, allProje
   }, [clients, searchQuery]);
 
   return (
-    <>
-    <div className="bg-background p-6 rounded-lg h-full w-full">
-      <header className="flex items-center justify-between pb-4 mb-4 border-b">
+    <div className="bg-[#0f0f0f] p-4 md:p-8 lg:p-10 h-full w-full flex flex-col text-zinc-100">
+      <header className="flex items-center justify-between pb-6 mb-6 border-b border-white/10">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold">Clients</h1>
-          <Button onClick={() => setAddClientOpen(true)}>
+          <h1 className="text-3xl font-bold tracking-tight text-white">Clients</h1>
+          <Button onClick={() => setAddClientOpen(true)} className="rounded-full bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.3)]">
             <Plus className="mr-2 h-4 w-4" />
             Add new client
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => router.push(`/clients?month=${prevMonth}`)}>
+        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-white/5 rounded-full p-1 border border-white/10">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-zinc-400 hover:text-white" onClick={() => router.push(`/clients?month=${prevMonth}`)}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-lg font-semibold w-32 text-center">
+              <span className="text-sm font-black w-32 text-center text-zinc-200">
                 {format(parseISO(selectedDate), 'MMMM yyyy')}
               </span>
-              <Button variant="outline" size="icon" onClick={() => router.push(`/clients?month=${nextMonth}`)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-zinc-400 hover:text-white" onClick={() => router.push(`/clients?month=${nextMonth}`)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-          {isSearchOpen ? (
-              <Input
-                type="text"
-                placeholder="Search clients..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onBlur={() => {if(!searchQuery) setIsSearchOpen(false)}}
-                className="h-9"
-                autoFocus
-              />
-            ) : (
-              <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)}>
-                <Search className="h-5 w-5" />
-              </Button>
-            )}
-          <Button variant="outline"><Briefcase className="mr-2 h-4 w-4" />Filter by industry</Button>
+            
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <Input
+                  type="text"
+                  placeholder="Search clients..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-10 bg-white/5 border-white/10 text-white focus-visible:ring-sky-500/50 rounded-full pl-10 w-64"
+                />
+            </div>
+            
+            <Button variant="outline" className="rounded-full bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border-sky-500/20">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter by industry
+            </Button>
         </div>
       </header>
 
-      <main>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <main className="flex-1 overflow-auto custom-scrollbar">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filteredClients.map(client => (
                 <ClientCard 
                     key={client.id} 
@@ -287,8 +290,15 @@ export default function ClientsPageClient({ initialClients, industries, allProje
                     onRowClick={handleRowClick}
                 />
             ))}
+            
+            {filteredClients.length === 0 && (
+                <div className="col-span-full py-32 text-center">
+                    <p className="text-zinc-600 italic text-sm">No clients found matching your search.</p>
+                </div>
+            )}
         </div>
       </main>
+
       <AddClientDialog 
         isOpen={isAddClientOpen}
         setIsOpen={setAddClientOpen}
@@ -305,16 +315,16 @@ export default function ClientsPageClient({ initialClients, industries, allProje
         />
       )}
        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                 <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogDescription className="text-zinc-400">
                     This action cannot be undone. This will permanently delete the client
                     "{clientToDelete?.name}" and all associated data.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setClientToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700" onClick={() => setClientToDelete(null)}>Cancel</AlertDialogCancel>
                 <AlertDialogAction 
                     onClick={handleDelete}
                     className={cn(buttonVariants({ variant: "destructive" }))}
@@ -335,7 +345,22 @@ export default function ClientsPageClient({ initialClients, industries, allProje
                 tasks={allTasks}
             />
         )}
+        
+        <style jsx global>{`
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+        `}</style>
     </div>
-    </>
   );
 }

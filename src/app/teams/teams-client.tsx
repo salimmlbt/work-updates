@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MoreVertical, Pencil, Trash2, Archive, UserCog, ChevronDown, Check } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Archive, UserCog, ChevronDown, Check, Users, Search, Filter } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
 import type { Profile, Role, Team, WorkType } from '@/lib/types';
 import {
@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { EditTeamDialog } from './edit-team-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, parse } from 'date-fns';
+import { Input } from '@/components/ui/input';
 
 interface TeamsClientProps {
 	initialUsers: Profile[];
@@ -63,6 +64,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
   const [activeUsersOpen, setActiveUsersOpen] = useState(true);
   const [archivedUsersOpen, setArchivedUsersOpen] = useState(true);
   const [userToDeletePermanently, setUserToDeletePermanently] = useState<Profile | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -226,8 +228,13 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
     ? otherUsers
     : otherUsers.filter(user => user.teams.some(t => t.name === selectedTeam));
 
-  const activeUsers = teamFilteredUsers.filter(u => !u.is_archived);
-  const archivedUsers = teamFilteredUsers.filter(u => u.is_archived);
+  const searchedUsers = teamFilteredUsers.filter(u => 
+    u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const activeUsers = searchedUsers.filter(u => !u.is_archived);
+  const archivedUsers = searchedUsers.filter(u => u.is_archived);
 
 	const teamUserCounts = useMemo(() => teams.reduce((acc, team) => {
 		acc[team.id] = usersWithData.filter(u => u.teams.some(t => t.id === team.id)).length;
@@ -238,31 +245,31 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
     const userTeamIds = user.teams.map(t => t.id);
 
     return (
-        <div className="grid grid-cols-6 items-center py-3 px-4 group">
-            <div className="col-span-1 flex items-center gap-3">
-                <Avatar className="h-8 w-8">
+        <div className="grid grid-cols-6 items-center py-4 px-6 group border-b border-white/5 hover:bg-white/[0.04] transition-all duration-300">
+            <div className="col-span-1 flex items-center gap-4">
+                <Avatar className="h-10 w-10 border border-white/10 group-hover:scale-105 transition-transform">
                     <AvatarImage src={user.avatar_url ?? undefined} />
-                    <AvatarFallback>{getInitials(user.full_name || user.email)}</AvatarFallback>
+                    <AvatarFallback className="bg-zinc-800 text-zinc-400 font-bold">{getInitials(user.full_name || user.email)}</AvatarFallback>
                 </Avatar>
-                <span className="font-medium">{currentUser?.id === user.id ? 'Me' : (user.full_name || 'No name')}</span>
+                <span className="font-bold text-white tracking-tight">{currentUser?.id === user.id ? 'Me' : (user.full_name || 'No name')}</span>
             </div>
-            <div className="col-span-1 text-muted-foreground">{user.email}</div>
+            <div className="col-span-1 text-sm font-medium text-zinc-500">{user.email}</div>
             <div className="col-span-1">
                 {user.isAdmin ? (
-                    <div className="text-sm px-3 py-2">All teams</div>
+                    <Badge variant="secondary" className="bg-sky-500/10 text-sky-400 border-sky-500/20 font-black uppercase tracking-widest text-[9px]">All Access</Badge>
                 ) : (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-start text-left font-normal h-auto min-h-10" disabled={isPending || user.is_archived}>
+                        <Button variant="ghost" className="w-full justify-start text-left font-normal h-auto min-h-10 hover:bg-white/5" disabled={isPending || user.is_archived}>
                           <div className="flex flex-wrap gap-1">
                             {user.teams.length > 0 
-                              ? user.teams.map(t => <Badge key={t.id} variant="secondary">{t.name}</Badge>)
-                              : <span className="text-muted-foreground">No team</span>
+                              ? user.teams.map(t => <Badge key={t.id} variant="secondary" className="bg-zinc-800 text-zinc-300 border-zinc-700 text-[10px]">{t.name}</Badge>)
+                              : <span className="text-zinc-600 text-xs italic">No team assigned</span>
                             }
                           </div>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl">
                         <ScrollArea className="h-60">
                           {teams.map(team => (
                             <DropdownMenuCheckboxItem
@@ -286,40 +293,41 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
             <div className="col-span-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start text-left font-normal" disabled={isPending || user.is_archived || user.isAdmin}>
-                      {user.role ? user.role.name : <span className="text-muted-foreground">No role</span>}
+                    <Button variant="ghost" className="w-full justify-start text-left font-bold text-zinc-300 hover:bg-white/5" disabled={isPending || user.is_archived || user.isAdmin}>
+                      {user.role ? user.role.name : <span className="text-zinc-600 italic">No role</span>}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
+                  <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl">
                      {initialRoles.filter(r => r.name !== 'Falaq Admin').map(role => (
-                        <DropdownMenuItem key={role.id} onSelect={() => handleRoleChange(user.id, role.id)} className={cn(user.role?.id === role.id && 'bg-accent')}>
+                        <DropdownMenuItem key={role.id} onSelect={() => handleRoleChange(user.id, role.id)} className={cn(user.role?.id === role.id && 'bg-sky-500/20 text-sky-400')}>
                            {role.name}
                         </DropdownMenuItem>
                       ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-            <div className="col-span-1 text-muted-foreground">
+            <div className="col-span-1 text-xs font-bold text-zinc-500 uppercase tracking-tighter">
               {user.work_start_time && user.work_end_time 
                 ? `${formatTime(user.work_start_time)} - ${formatTime(user.work_end_time)}`
-                : '-'}
+                : '—'}
             </div>
-            <div className="col-span-1 flex justify-between items-center">
+            <div className="col-span-1 flex justify-between items-center pr-4">
                 <Badge variant="outline" className={cn(
-                    !user.is_archived ? 'border-green-500 text-green-700 bg-green-50' : 'border-gray-500 text-gray-700 bg-gray-50'
+                    'font-black uppercase tracking-widest text-[9px] px-3 h-6',
+                    !user.is_archived ? 'border-emerald-500/20 text-emerald-400 bg-emerald-500/10' : 'border-zinc-800 text-zinc-500 bg-zinc-900/50'
                 )}>
-                    <span className={cn('h-2 w-2 rounded-full mr-2', !user.is_archived ? 'bg-green-500' : 'bg-gray-500')}></span>
+                    <span className={cn('h-1.5 w-1.5 rounded-full mr-2 shadow-[0_0_8px_currentColor]', !user.is_archived ? 'bg-emerald-500' : 'bg-zinc-500')}></span>
                     {user.is_archived ? 'Archived' : 'Active'}
                 </Badge>
                 {currentUser?.id !== user.id && !user.isAdmin && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
                                   <MoreVertical className="h-4 w-4" />
                               </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent>
+                          <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl">
                               {!user.is_archived ? (
                                 <>
                                   <DropdownMenuItem onClick={() => handleEditUserClick(user as Profile)}>
@@ -327,7 +335,7 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
                                       Edit User
                                   </DropdownMenuItem>
                                    {!user.isAdmin && (
-                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
+                                    <DropdownMenuItem className="text-red-400 focus:text-red-400 focus:bg-red-950/30" onClick={() => { setUserToArchive(user as Profile); setArchiveAlertOpen(true); }}>
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Archive
                                     </DropdownMenuItem>
@@ -339,10 +347,10 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
                                       <Archive className="mr-2 h-4 w-4" />
                                       Restore User
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => setUserToDeletePermanently(user as Profile)}>
+                                  <DropdownMenuSeparator className="bg-white/5" />
+                                  <DropdownMenuItem className="text-red-400 focus:text-red-400 focus:bg-red-950/30" onClick={() => setUserToDeletePermanently(user as Profile)}>
                                       <Trash2 className="mr-2 h-4 w-4" />
-                                      Permanently delete user
+                                      Permanently delete
                                   </DropdownMenuItem>
                                 </>
                               )}
@@ -357,24 +365,26 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
 
 
 	return (
-		<>
-			<div className="flex flex-col md:flex-row gap-8">
+		<div className="bg-[#0f0f0f] text-zinc-100">
+			<div className="flex flex-col md:flex-row gap-10">
 				<aside className="w-full md:w-64">
-					<h2 className="text-lg font-bold mb-4">Teams</h2>
-					<div className="space-y-1">
+					<h2 className="text-2xl font-black mb-8 px-2 text-white tracking-tighter uppercase">Teams</h2>
+					<div className="space-y-2">
 						<div
 							role="button"
 							onClick={() => setSelectedTeam('All teams')}
 							className={cn(
-								buttonVariants({ variant: 'ghost' }),
-								'w-full justify-between pr-8',
+								'w-full flex items-center justify-between px-4 h-12 rounded-2xl transition-all duration-500 border',
 								selectedTeam === 'All teams'
-									? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-									: 'hover:bg-accent'
+									? 'bg-gradient-to-r from-sky-500/20 to-blue-500/10 border-sky-500/20 text-white font-bold shadow-[0_0_25px_rgba(56,189,248,0.15)]'
+									: 'border-transparent text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
 							)}
 						>
-							<span>All teams</span>
-							<span className="text-muted-foreground">{usersWithData.length} users</span>
+							<div className="flex items-center gap-3">
+                                <Users className={cn("h-5 w-5", selectedTeam === 'All teams' ? "text-sky-400" : "text-zinc-600")} />
+                                <span className="text-sm tracking-tight">All Studio Members</span>
+                            </div>
+							<span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">{usersWithData.length}</span>
 						</div>
 						{teams.map(team => (
 							<div key={team.id} className="relative group flex items-center">
@@ -382,35 +392,35 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
 									role="button"
 									onClick={() => setSelectedTeam(team.name)}
 									className={cn(
-										buttonVariants({ variant: 'ghost' }),
-										'w-full justify-start text-left h-auto pr-8 group',
+										'w-full flex items-center justify-between px-4 h-12 rounded-2xl transition-all duration-500 border',
 										selectedTeam === team.name
-											? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-											: 'group-hover:bg-accent group-has-[[data-state=open]]:bg-accent'
+											? 'bg-gradient-to-r from-sky-500/20 to-blue-500/10 border-sky-500/20 text-white font-bold shadow-[0_0_25px_rgba(56,189,248,0.15)]'
+											: 'border-transparent text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
 									)}
 								>
-									<div className="flex justify-between w-full items-center">
-										<span>{team.name}</span>
-										<span className="text-muted-foreground">{teamUserCounts[team.id] || 0} users</span>
+									<div className="flex items-center gap-3">
+										<div className="w-2 h-2 rounded-full bg-zinc-700 group-hover:bg-sky-500 transition-colors" />
+										<span className="text-sm tracking-tight">{team.name}</span>
 									</div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">{teamUserCounts[team.id] || 0}</span>
 								</div>
-								<div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+								<div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
 									<DropdownMenu>
 										<DropdownMenuTrigger asChild>
 											<Button
 												variant="ghost"
 												size="icon"
-												className="h-7 w-7 !p-0 !bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 data-[state=open]:bg-gray-100 dark:data-[state=open]:bg-gray-800 focus:!bg-transparent focus:!ring-0 focus:!ring-offset-0 !shadow-none text-gray-500 hover:text-blue-500 data-[state=open]:text-blue-500 transition-colors"
+												className="h-8 w-8 text-zinc-500 hover:text-sky-400"
 											>
 												<MoreVertical className="h-4 w-4" />
 											</Button>
 										</DropdownMenuTrigger>
-										<DropdownMenuContent>
+										<DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl">
 											<DropdownMenuItem onClick={() => openEditDialog(team)}>
 												<Pencil className="mr-2 h-4 w-4" />
 												Edit team
 											</DropdownMenuItem>
-											<DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => openDeleteDialog(team)}>
+											<DropdownMenuItem className="text-red-400 focus:text-red-400 focus:bg-red-950/30" onClick={() => openDeleteDialog(team)}>
 												<Trash2 className="mr-2 h-4 w-4" />
 												Delete team
 											</DropdownMenuItem>
@@ -420,75 +430,85 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
 							</div>
 						))}
 						<Button
-              variant="ghost"
-              className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
-              onClick={() => setCreateTeamOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Create team
-            </Button>
+                            variant="ghost"
+                            className="mt-4 text-zinc-600 inline-flex p-2 h-auto hover:bg-transparent hover:text-sky-400 transition-colors font-bold uppercase text-[10px] tracking-[0.2em]"
+                            onClick={() => setCreateTeamOpen(true)}
+                        >
+                            <Plus className="mr-2 h-4 w-4" /> Create new team
+                        </Button>
 					</div>
 				</aside>
 
-				<main className="flex-1">
-                    <div className="mb-8">
-                        <button onClick={() => setActiveUsersOpen(!activeUsersOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
-                            <ChevronDown className={cn("w-5 h-5 transition-transform", !activeUsersOpen && "-rotate-90")} />
-                            Active users
-                            <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeUsers.length + (adminUser && !adminUser.is_archived ? 1 : 0)}</span>
+				<main className="flex-1 space-y-10">
+                    {/* Header Action Bar */}
+                    <div className="flex items-center justify-between gap-4 mb-6">
+                         <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                            <Input
+                                placeholder="Search studio members..."
+                                className="h-11 bg-white/5 border-white/10 text-white focus-visible:ring-sky-500/50 rounded-2xl pl-12"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <Button 
+                            onClick={() => setAddUserOpen(true)} 
+                            className="rounded-full h-11 px-8 bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.3)] font-bold"
+                        >
+                            <Plus className="mr-2 h-4 w-4" /> Invite User
+                        </Button>
+                    </div>
+
+                    <div className="border border-white/10 rounded-[2.5rem] overflow-hidden bg-white/[0.02] backdrop-blur-xl shadow-2xl shadow-black/50">
+                        <button onClick={() => setActiveUsersOpen(!activeUsersOpen)} className="w-full flex items-center justify-between p-6 bg-white/[0.03] border-b border-white/5 hover:bg-white/[0.05] transition-colors group">
+                            <div className="flex items-center gap-3">
+                                <ChevronDown className={cn("w-5 h-5 text-zinc-500 transition-transform duration-500", !activeUsersOpen && "-rotate-90")} />
+                                <span className="text-xl font-black text-white tracking-tighter uppercase">Active Team Members</span>
+                                <Badge variant="secondary" className="bg-white/10 text-zinc-400 border-0 ml-2">{activeUsers.length + (adminUser && !adminUser.is_archived ? 1 : 0)}</Badge>
+                            </div>
                         </button>
 
                         {activeUsersOpen && (
-                        <div className="overflow-x-auto">
-                            <div className="min-w-full inline-block align-middle">
-                                <div className="border-t">
-                                    <div className="grid grid-cols-6 py-3 px-4 text-left text-sm font-semibold text-muted-foreground">
-                                        <div className="col-span-1">Users</div>
-                                        <div className="col-span-1">Email</div>
-                                        <div className="col-span-1">Team</div>
-                                        <div className="col-span-1">Role</div>
-                                        <div className="col-span-1">Working Hours</div>
-                                        <div className="col-span-1">Status</div>
+                            <div className="overflow-x-auto">
+                                <div className="min-w-full inline-block align-middle">
+                                    <div className="grid grid-cols-6 py-4 px-6 text-left text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-white/10 bg-white/5">
+                                        <div className="col-span-1">Member</div>
+                                        <div className="col-span-1">Email Address</div>
+                                        <div className="col-span-1">Assigned Teams</div>
+                                        <div className="col-span-1">Access Role</div>
+                                        <div className="col-span-1">Shift Hours</div>
+                                        <div className="col-span-1">Live Status</div>
                                     </div>
-                                    <div className="divide-y">
+                                    <div className="divide-y divide-white/5">
                                         {adminUser && !adminUser.is_archived && <UserRow user={adminUser} />}
                                         {activeUsers.map((user) => <UserRow key={user.id} user={user} />)}
+                                        
+                                        {activeUsers.length === 0 && (!adminUser || adminUser.is_archived) && (
+                                            <div className="py-20 text-center">
+                                                <p className="text-zinc-600 italic text-sm">No active members found.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                            <Button
-                                variant="ghost"
-                                className="mt-4 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
-                                onClick={() => setAddUserOpen(true)}
-                                >
-                                <Plus className="mr-2 h-4 w-4" /> Add User
-                            </Button>
-                        </div>
                         )}
                     </div>
                     
                     {archivedUsers.length > 0 && (
-                     <div className="mb-4">
-                        <button onClick={() => setArchivedUsersOpen(!archivedUsersOpen)} className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
-                            <ChevronDown className={cn("w-5 h-5 transition-transform", !archivedUsersOpen && "-rotate-90")} />
-                            Archived users
-                            <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{archivedUsers.length + (adminUser && adminUser.is_archived ? 1: 0)}</span>
+                     <div className="border border-white/10 rounded-[2.5rem] overflow-hidden bg-white/[0.01] backdrop-blur-xl opacity-60 grayscale-[0.5] hover:opacity-100 hover:grayscale-0 transition-all duration-500">
+                        <button onClick={() => setArchivedUsersOpen(!archivedUsersOpen)} className="w-full flex items-center justify-between p-6 bg-white/[0.03] border-b border-white/5 hover:bg-white/[0.05] transition-colors">
+                            <div className="flex items-center gap-3">
+                                <ChevronDown className={cn("w-5 h-5 text-zinc-500 transition-transform duration-500", !archivedUsersOpen && "-rotate-90")} />
+                                <span className="text-xl font-black text-zinc-400 tracking-tighter uppercase">Archived Statement</span>
+                                <Badge variant="secondary" className="bg-white/10 text-zinc-500 border-0 ml-2">{archivedUsers.length + (adminUser && adminUser.is_archived ? 1: 0)}</Badge>
+                            </div>
                         </button>
                         {archivedUsersOpen && (
                           <div className="overflow-x-auto">
                             <div className="min-w-full inline-block align-middle">
-                                <div className="border-t">
-                                    <div className="grid grid-cols-6 py-3 px-4 text-left text-sm font-semibold text-muted-foreground">
-                                        <div className="col-span-1">Users</div>
-                                        <div className="col-span-1">Email</div>
-                                        <div className="col-span-1">Team</div>
-                                        <div className="col-span-1">Role</div>
-                                        <div className="col-span-1">Working Hours</div>
-                                        <div className="col-span-1">Status</div>
-                                    </div>
-                                    <div className="divide-y">
-                                        {adminUser && adminUser.is_archived && <UserRow user={adminUser} />}
-                                        {archivedUsers.map((user) => <UserRow key={user.id} user={user} />)}
-                                    </div>
+                                <div className="divide-y divide-white/5">
+                                    {adminUser && adminUser.is_archived && <UserRow user={adminUser} />}
+                                    {archivedUsers.map((user) => <UserRow key={user.id} user={user} />)}
                                 </div>
                             </div>
                         </div>
@@ -525,65 +545,65 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
         />
       )}
       <AlertDialog open={!!teamToDelete} onOpenChange={(open) => !open && setTeamToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl rounded-3xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the team "{teamToDelete?.name}". Users in this team will be unassigned.
+            <AlertDialogTitle className="text-2xl font-black tracking-tight">Delete team statement?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400 font-medium">
+              This will permanently delete the team "{teamToDelete?.name}". All users currently in this team will be unassigned automatically.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-3">
+            <AlertDialogCancel className="rounded-xl bg-zinc-800 border-zinc-700 text-zinc-300">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteTeam}
-              className={buttonVariants({ variant: 'destructive' })}
+              className={cn(buttonVariants({ variant: 'destructive' }), "rounded-xl")}
               disabled={isPending}
             >
-              {isPending ? 'Deleting...' : 'Delete'}
+              {isPending ? 'Processing...' : 'Confirm Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       <AlertDialog open={isArchiveAlertOpen} onOpenChange={setArchiveAlertOpen}>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl rounded-3xl">
                 <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure you want to archive this user?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Archived users will no longer be able to access the application. This can be undone later.
+                <AlertDialogTitle className="text-2xl font-black tracking-tight text-rose-400">Archive studio member?</AlertDialogTitle>
+                <AlertDialogDescription className="text-zinc-400 font-medium">
+                    Archived users will lose all access to the FALAQ workspace immediately. Their historical data will be preserved and you can restore them later if needed.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setUserToArchive(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogFooter className="gap-3">
+                <AlertDialogCancel className="rounded-xl bg-zinc-800 border-zinc-700 text-zinc-300" onClick={() => setUserToArchive(null)}>Wait, Cancel</AlertDialogCancel>
                 <AlertDialogAction 
                     onClick={() => handleUpdateUserArchived(userToArchive!, true)}
-                    className={cn(buttonVariants({ variant: "destructive" }))}
+                    className={cn(buttonVariants({ variant: "destructive" }), "rounded-xl")}
                     disabled={isPending}
                 >
-                   {isPending ? 'Archiving...' : 'Archive'}
+                   {isPending ? 'Archiving...' : 'Confirm Archive'}
                 </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
         <AlertDialog open={!!userToDeletePermanently} onOpenChange={(open) => !open && setUserToDeletePermanently(null)}>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl rounded-3xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the user "{userToDeletePermanently?.full_name}" from the system.
+                    <AlertDialogTitle className="text-2xl font-black tracking-tight text-rose-500">Purge member data?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-zinc-400 font-medium">
+                        CRITICAL: This will permanently delete the user "{userToDeletePermanently?.full_name}" and all their associated records from the studio infrastructure. This cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogFooter className="gap-3">
+                    <AlertDialogCancel className="rounded-xl bg-zinc-800 border-zinc-700 text-zinc-300">Cancel</AlertDialogCancel>
                     <AlertDialogAction 
                         onClick={handleDeletePermanently}
-                        className={cn(buttonVariants({ variant: "destructive" }))}
+                        className={cn(buttonVariants({ variant: "destructive" }), "rounded-xl")}
                         disabled={isPending}
                     >
-                       {isPending ? 'Permanently Delete' : 'Permanently Delete'}
+                       {isPending ? 'Purging...' : 'Permanently Delete'}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-		</>
+		</div>
 	);
 }

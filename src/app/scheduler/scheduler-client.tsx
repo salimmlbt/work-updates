@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown, Search, Rocket, AlertCircle, CheckCircle2, Eye, MessageSquare, Repeat, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2, MoreVertical, Share2, Trash2, Pencil, RefreshCcw, ChevronDown, Search, Rocket, AlertCircle, CheckCircle2, Eye, MessageSquare, Repeat, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -167,16 +167,16 @@ const AddScheduleRow = ({
   };
 
   return (
-     <TableRow className="bg-muted/50 hover:bg-muted/50">
-        <TableCell className="border-r">
+     <TableRow className="bg-white/[0.04] hover:bg-white/[0.06] border-b border-white/5">
+        <TableCell className="border-r border-white/5">
              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Button variant="ghost" className="w-full justify-start font-normal text-zinc-200 hover:bg-white/5">
+                    <CalendarIcon className="mr-2 h-4 w-4 text-sky-400" />
                     {scheduledDate ? format(scheduledDate, 'MMM d, yyyy') : 'Pick a date'}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-800">
                     <CalendarComponent 
                       mode="single" 
                       selected={scheduledDate} 
@@ -189,15 +189,15 @@ const AddScheduleRow = ({
                 </PopoverContent>
             </Popover>
         </TableCell>
-        <TableCell className="border-r">
-            <Input ref={titleInputRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Content Title" />
+        <TableCell className="border-r border-white/5">
+            <Input ref={titleInputRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Content Title" className="bg-transparent border-0 focus-visible:ring-0 text-white placeholder:text-zinc-600" />
         </TableCell>
-         <TableCell className="border-r">
+         <TableCell className="border-r border-white/5">
              <Select onValueChange={setProjectId} value={projectId || 'no-project'}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-transparent border-0 hover:bg-white/5 text-zinc-200">
                     <SelectValue placeholder="Select project" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                     <SelectItem value="no-project">No project</SelectItem>
                     {clientProjects.map(project => (
                         <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
@@ -205,24 +205,24 @@ const AddScheduleRow = ({
                 </SelectContent>
             </Select>
         </TableCell>
-        <TableCell className="border-r">
+        <TableCell className="border-r border-white/5">
              <Select onValueChange={setTeamId}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-transparent border-0 hover:bg-white/5 text-zinc-200">
                     <SelectValue placeholder="Select team" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                     {teams.map(team => (
                         <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
         </TableCell>
-        <TableCell className="border-r">
+        <TableCell className="border-r border-white/5">
             <Select onValueChange={setContentType} value={contentType} disabled={!teamId}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-transparent border-0 hover:bg-white/5 text-zinc-200 disabled:opacity-30">
                     <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                     {availableWorkTypes.map(type => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}
@@ -230,15 +230,15 @@ const AddScheduleRow = ({
             </Select>
         </TableCell>
         <TableCell>
-           <div className="flex items-center gap-2 text-muted-foreground italic">
+           <div className="flex items-center gap-2 text-zinc-500 italic text-xs">
                 {postingStatusIcons['Planned']}
                 <span>Planned</span>
             </div>
         </TableCell>
         <TableCell className="text-right">
            <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onCancel} disabled={isPending}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isPending}>
+            <Button variant="ghost" size="sm" onClick={onCancel} disabled={isPending} className="text-zinc-400 hover:text-white">Cancel</Button>
+            <Button size="sm" onClick={handleSave} disabled={isPending} className="bg-sky-600 hover:bg-sky-500 text-white">
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>
@@ -309,41 +309,44 @@ const AssignTaskRow = ({
   };
 
   return (
-    <tr className="bg-muted/30">
-      <TableCell colSpan={3} className="py-2 pl-12 border-r">
-        <p className="font-medium text-xs text-muted-foreground">Assigning Task...</p>
+    <tr className="bg-sky-500/5">
+      <TableCell colSpan={3} className="py-2 pl-12 border-r border-white/5">
+        <p className="font-bold text-[10px] uppercase tracking-widest text-sky-400">Assigning Task...</p>
       </TableCell>
-      <TableCell className="py-2 border-r">
+      <TableCell className="py-2 border-r border-white/5">
         <Select onValueChange={setAssigneeId} value={assigneeId}>
-          <SelectTrigger className="h-8">
+          <SelectTrigger className="h-8 bg-transparent border-white/10 text-white">
             <SelectValue placeholder="Select Assignee" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
             {teamMembers.map(p => (
               <SelectItem key={p.id} value={p.id}>
-                {p.full_name}
+                <div className="flex items-center gap-2">
+                    <Avatar className="h-4 w-4"><AvatarImage src={p.avatar_url ?? undefined} /><AvatarFallback className="text-[6px]">{getInitials(p.full_name)}</AvatarFallback></Avatar>
+                    {p.full_name}
+                </div>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </TableCell>
-      <TableCell className="py-2 border-r">
+      <TableCell className="py-2 border-r border-white/5">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="h-8 w-full justify-start text-left font-normal">
-              <CalendarIcon className="mr-2 h-4 w-4" />
+            <Button variant="outline" className="h-8 w-full justify-start text-left font-normal bg-transparent border-white/10 text-zinc-300">
+              <CalendarIcon className="mr-2 h-4 w-4 text-sky-400" />
               {formatDate(dueDate)}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-800">
             <CalendarComponent mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
           </PopoverContent>
         </Popover>
       </TableCell>
       <TableCell colSpan={2} className="py-2 text-right">
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+        <div className="flex justify-end gap-2 pr-4">
+          <Button variant="ghost" size="sm" onClick={onCancel} className="text-zinc-500 hover:text-white">Cancel</Button>
+          <Button size="sm" onClick={handleSave} disabled={isSaving} className="bg-sky-600 hover:bg-sky-500 text-white">
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Task
           </Button>
@@ -599,23 +602,22 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
 
   return (
-    <>
-      <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
-        <header className="flex items-center justify-between pb-4 mb-4 border-b">
+    <div className="bg-[#0f0f0f] p-4 md:p-8 lg:p-10 h-full w-full flex flex-col text-zinc-100">
+        <header className="flex items-center justify-between pb-6 mb-2 border-b border-white/10">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold">Content Scheduler</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Scheduler</h1>
             
-            <div className="flex items-center gap-2 bg-slate-100 rounded-full p-1 border">
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleMonthChange(subMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
+            <div className="flex items-center gap-2 bg-white/5 rounded-full p-1 border border-white/10">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-zinc-400 hover:text-white" onClick={() => handleMonthChange(subMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
                 
                 {/* Month Selector */}
                 <Select value={currentMonthPart} onValueChange={(m) => handlePartChange(m, currentYearPart)}>
-                    <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0 focus:ring-offset-0 px-2 w-auto min-w-[100px] text-sm font-semibold shadow-none hover:bg-slate-200 rounded-full">
+                    <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0 focus:ring-offset-0 px-2 w-auto min-w-[100px] text-sm font-black shadow-none hover:bg-white/5 rounded-full text-zinc-200">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                         {monthsList.map((m, i) => (
                             <SelectItem key={m} value={String(i + 1).padStart(2, '0')}>
                                 {m}
@@ -626,10 +628,10 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
 
                 {/* Year Selector */}
                 <Select value={currentYearPart} onValueChange={(y) => handlePartChange(currentMonthPart, y)}>
-                    <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0 focus:ring-offset-0 px-2 w-auto min-w-[80px] text-sm font-semibold shadow-none hover:bg-slate-200 rounded-full">
+                    <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0 focus:ring-offset-0 px-2 w-auto min-w-[80px] text-sm font-black shadow-none hover:bg-white/5 rounded-full text-zinc-200">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                         {yearsList.map((y) => (
                             <SelectItem key={y} value={String(y)}>
                                 {y}
@@ -638,36 +640,36 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                     </SelectContent>
                 </Select>
 
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleMonthChange(addMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-zinc-400 hover:text-white" onClick={() => handleMonthChange(addMonths(new Date(`${selectedMonth}-01T00:00:00Z`), 1))}>
                     <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
 
             <Popover open={isClientSearchOpen} onOpenChange={setClientSearchOpen}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" className="w-[280px] h-10 rounded-full border shadow-sm bg-white text-slate-900 hover:bg-slate-50 group justify-start">
+                <Button variant="ghost" className="w-[280px] h-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 group justify-start px-4">
                    {selectedClient ? (
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-6 w-6">
+                        <Avatar className="h-6 w-6 border border-white/10">
                           <AvatarImage src={selectedClient.avatar} />
-                          <AvatarFallback>{getInitials(selectedClient.name)}</AvatarFallback>
+                          <AvatarFallback className="bg-zinc-800 text-zinc-400">{getInitials(selectedClient.name)}</AvatarFallback>
                         </Avatar>
-                        <span className="font-semibold text-sm">{selectedClient.name}</span>
+                        <span className="font-bold text-sm tracking-tight">{selectedClient.name}</span>
                       </div>
                     ) : (
-                      <span className="text-sm">Select a client</span>
+                      <span className="text-sm text-zinc-500 font-medium">Select a client</span>
                     )}
                     <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-opacity ml-auto" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[320px] p-0" align="start">
-                <div className="p-2 border-b">
+              <PopoverContent className="w-[320px] p-0 bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl" align="start">
+                <div className="p-2 border-b border-white/5">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                     <Input
                       ref={clientSearchInputRef}
                       placeholder="Search clients..."
-                      className="pl-9 h-9"
+                      className="pl-9 h-9 bg-black/20 border-white/10 text-white rounded-lg focus-visible:ring-sky-500/50"
                       value={clientSearchQuery}
                       onChange={(e) => setClientSearchQuery(e.target.value)}
                       onKeyDown={handleClientSearchKeyDown}
@@ -679,14 +681,14 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                     <div
                       key={client.id}
                       role="button"
-                      className="flex items-center gap-2 p-3 hover:bg-slate-50 cursor-pointer border-b last:border-0"
+                      className="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors"
                       onClick={() => handleClientSelect(client.id)}
                     >
-                      <Avatar className="h-6 w-6">
+                      <Avatar className="h-7 w-7 border border-white/10">
                           <AvatarImage src={client.avatar} />
-                          <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
+                          <AvatarFallback className="bg-zinc-800 text-zinc-400">{getInitials(client.name)}</AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">{client.name}</span>
+                      <span className="text-sm font-semibold tracking-tight">{client.name}</span>
                     </div>
                   ))}
                 </ScrollArea>
@@ -695,13 +697,13 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
           </div>
           <div className="flex items-center gap-2">
             {showBin ? (
-              <Button onClick={() => setShowBin(false)} variant="outline" className="rounded-full">Back to Schedules</Button>
+              <Button onClick={() => setShowBin(false)} variant="outline" className="rounded-full bg-white/5 border-white/10 hover:bg-white/10 text-white">Back to Schedules</Button>
             ) : (
               <>
-                <Button onClick={() => setIsAddingSchedule(true)} disabled={!selectedClientId} className="rounded-full">
+                <Button onClick={() => setIsAddingSchedule(true)} disabled={!selectedClientId} className="rounded-full bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.3)]">
                   <Plus className="mr-2 h-4 w-4" /> Add Schedule
                 </Button>
-                <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200 rounded-full" onClick={() => setShowBin(true)}>
+                <Button variant="destructive" className={cn("rounded-full h-10 px-4 transition-all", showBin ? "bg-zinc-800 text-white border-zinc-700" : "bg-red-950/30 text-red-400 hover:bg-red-900/40 border-red-900/30")} onClick={() => setShowBin(true)}>
                   <Trash2 className="mr-2 h-4 w-4" /> Bin
                 </Button>
               </>
@@ -709,18 +711,18 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto custom-scrollbar pt-4">
           {selectedClientId ? (
-            <div className="border rounded-xl overflow-hidden shadow-sm">
+            <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02] backdrop-blur-xl shadow-2xl shadow-black/50">
               <Table>
-                <TableHeader className="bg-slate-50">
-                  <TableRow className="border-b hover:bg-transparent">
-                    <TableHead className="border-r w-[15%]">Schedule Date</TableHead>
-                    <TableHead className="border-r w-[25%]">Schedule Detail</TableHead>
-                    <TableHead className="border-r w-[15%]">Project</TableHead>
-                    <TableHead className="border-r w-[15%]">Schedule Team</TableHead>
-                    <TableHead className="border-r w-[15%]">Schedule Type</TableHead>
-                    <TableHead className="w-[10%]">Status</TableHead>
+                <TableHeader className="bg-white/5">
+                  <TableRow className="border-b border-white/10 hover:bg-transparent">
+                    <TableHead className="border-r border-white/10 w-[15%] text-xs font-semibold uppercase tracking-wider text-zinc-500">Schedule Date</TableHead>
+                    <TableHead className="border-r border-white/10 w-[25%] text-xs font-semibold uppercase tracking-wider text-zinc-500">Schedule Detail</TableHead>
+                    <TableHead className="border-r border-white/10 w-[15%] text-xs font-semibold uppercase tracking-wider text-zinc-500">Project</TableHead>
+                    <TableHead className="border-r border-white/10 w-[15%] text-xs font-semibold uppercase tracking-wider text-zinc-500">Team</TableHead>
+                    <TableHead className="border-r border-white/10 w-[15%] text-xs font-semibold uppercase tracking-wider text-zinc-500">Type</TableHead>
+                    <TableHead className="w-[10%] text-xs font-semibold uppercase tracking-wider text-zinc-500">Status</TableHead>
                     <TableHead className="w-[5%] text-right"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -728,19 +730,19 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                   {showBin ? (
                     <>
                       {deletedSchedules.map(schedule => (
-                        <TableRow key={schedule.id} className="group">
-                           <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                            <TableCell className="font-medium border-r">{schedule.title}</TableCell>
-                            <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
-                            <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
-                            <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
-                            <TableCell>Deleted</TableCell>
+                        <TableRow key={schedule.id} className="group border-b border-white/5 hover:bg-white/[0.04]">
+                           <TableCell className="border-r border-white/5 text-zinc-300">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                            <TableCell className="font-medium border-r border-white/5 text-zinc-100">{schedule.title}</TableCell>
+                            <TableCell className="border-r border-white/5 text-zinc-400">{schedule.projects?.name || 'N/A'}</TableCell>
+                            <TableCell className="border-r border-white/5 text-zinc-400">{schedule.teams?.name || 'N/A'}</TableCell>
+                            <TableCell className="border-r border-white/5 text-zinc-400">{schedule.content_type || 'N/A'}</TableCell>
+                            <TableCell><Badge variant="outline" className="bg-red-950/20 text-red-400 border-red-900/30">Deleted</Badge></TableCell>
                           <TableCell className="text-right">
                             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleRestore(schedule.id)}>
+                              <Button variant="ghost" size="sm" onClick={() => handleRestore(schedule.id)} className="text-sky-400 hover:bg-sky-500/10">
                                 <RefreshCcw className="mr-2 h-4 w-4" /> Restore
                               </Button>
-                              <Button variant="destructive" size="sm" onClick={() => setScheduleToDeletePermanently(schedule)}>
+                              <Button variant="ghost" size="sm" onClick={() => setScheduleToDeletePermanently(schedule)} className="text-red-400 hover:bg-red-500/10">
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
                               </Button>
                             </div>
@@ -749,7 +751,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       ))}
                       {deletedSchedules.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
+                          <TableCell colSpan={7} className="h-32 text-center text-zinc-600 italic text-sm">
                             The bin is empty for {selectedClient?.name} in {format(new Date(`${selectedMonth}-01T00:00:00Z`), 'MMMM')}.
                           </TableCell>
                         </TableRow>
@@ -781,23 +783,23 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                         }
                         return (
                           <React.Fragment key={schedule.id}>
-                            <TableRow className="group">
-                              <TableCell className="border-r">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
-                              <TableCell className="font-medium border-r">{schedule.title}</TableCell>
-                              <TableCell className="border-r">{schedule.projects?.name || 'N/A'}</TableCell>
-                              <TableCell className="border-r">{schedule.teams?.name || 'N/A'}</TableCell>
-                              <TableCell className="border-r">{schedule.content_type || 'N/A'}</TableCell>
+                            <TableRow className="group border-b border-white/5 hover:bg-white/[0.04]">
+                              <TableCell className="border-r border-white/5 text-zinc-300">{format(parseISO(schedule.scheduled_date), 'MMM d, yyyy')}</TableCell>
+                              <TableCell className="font-medium border-r border-white/5 text-zinc-100">{schedule.title}</TableCell>
+                              <TableCell className="border-r border-white/5 text-zinc-400">{schedule.projects?.name || 'N/A'}</TableCell>
+                              <TableCell className="border-r border-white/5 text-zinc-400">{schedule.teams?.name || 'N/A'}</TableCell>
+                              <TableCell className="border-r border-white/5 text-zinc-400">{schedule.content_type || 'N/A'}</TableCell>
                               <TableCell>
                                 {schedule.task ? (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 text-zinc-200">
                                     {icon}
-                                    <span className="text-sm">{label}</span>
+                                    <span className="text-sm font-medium">{label}</span>
                                   </div>
                                 ) : (
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 text-xs font-semibold px-3 rounded-full"
+                                    className="h-8 text-[10px] uppercase font-black px-3 rounded-full border-sky-500/20 text-sky-400 hover:bg-sky-500/10"
                                     onClick={() => handleAssignTask(schedule.id)}
                                   >
                                     Assign as task
@@ -808,11 +810,11 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-sky-400">
                                         <MoreVertical className="h-4 w-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-100">
                                       {(schedule.task?.status === 'done' || schedule.task?.status === 'approved') && !schedule.task.parent_task_id && (
                                         <DropdownMenuItem onClick={() => setScheduleToReassign(schedule)}>
                                           <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
@@ -821,7 +823,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                                       <DropdownMenuItem onClick={() => { setScheduleToEdit(schedule); setIsEditOpen(true); }}>
                                         <Pencil className="mr-2 h-4 w-4" /> Edit
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem className="text-red-600 focus:text-red-500" onClick={() => handleDeleteClick(schedule)}>
+                                      <DropdownMenuItem className="text-red-400 focus:text-red-500" onClick={() => handleDeleteClick(schedule)}>
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -842,7 +844,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                       })}
                       {(activeSchedules.length === 0 && !isAddingSchedule) && (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-32 text-center text-muted-foreground italic">
+                          <TableCell colSpan={7} className="h-32 text-center text-zinc-600 italic text-sm">
                             No schedules for {selectedClient?.name} in {format(new Date(`${selectedMonth}-01T00:00:00Z`), 'MMMM')}.
                           </TableCell>
                         </TableRow>
@@ -853,73 +855,89 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
               </Table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground bg-slate-50/50 border-2 border-dashed rounded-2xl py-20">
-              <CalendarIcon className="h-12 w-12 opacity-20 mb-4" />
-              <p className="text-lg font-medium">Please select a client to view their schedule.</p>
+            <div className="flex flex-col items-center justify-center h-full text-center text-zinc-600 bg-white/[0.01] border-2 border-dashed border-white/5 rounded-[2rem] py-24">
+              <CalendarIcon className="h-16 w-16 opacity-10 mb-6" />
+              <h3 className="text-xl font-bold text-zinc-500">Ready to Schedule?</h3>
+              <p className="max-w-xs mt-2 font-medium">Please select a client from the top menu to view or manage their content schedule.</p>
             </div>
           )}
         </main>
-      </div>
-      {scheduleToReassign && scheduleToReassign.task && (
-          <ReassignTaskDialog
-              isOpen={!!scheduleToReassign}
-              setIsOpen={() => setScheduleToReassign(null)}
-              task={scheduleToReassign.task as TaskWithDetails}
-              profiles={profiles}
-              onTaskCreated={handleTaskCreated}
-          />
-      )}
-      {scheduleToEdit && (
-        <EditScheduleDialog
-          isOpen={isEditOpen}
-          setIsOpen={setIsEditOpen}
-          schedule={scheduleToEdit}
-          onScheduleUpdated={handleScheduleUpdated}
-          teams={teams}
-          projects={projects}
-        />
-      )}
-       <AlertDialog open={!!scheduleToDelete} onOpenChange={(open) => !open && setScheduleToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will move the schedule for "{scheduleToDelete?.title}" to the bin. You can restore it later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className={buttonVariants({ variant: 'destructive' })}
-              disabled={isPending}
-            >
-              {isPending ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
-      <AlertDialog open={!!scheduleToDeletePermanently} onOpenChange={(open) => !open && setScheduleToDeletePermanently(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action cannot be undone and will permanently delete the schedule "{scheduleToDeletePermanently?.title}".
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeletePermanently}
-              className={buttonVariants({ variant: 'destructive' })}
-              disabled={isPending}
-            >
-              {isPending ? 'Deleting...' : 'Delete Permanently'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+        <ReassignTaskDialog
+            isOpen={!!scheduleToReassign}
+            setIsOpen={() => setScheduleToReassign(null)}
+            task={scheduleToReassign?.task as TaskWithDetails}
+            profiles={profiles}
+            onTaskCreated={handleTaskCreated}
+        />
+        {scheduleToEdit && (
+            <EditScheduleDialog
+            isOpen={isEditOpen}
+            setIsOpen={setIsEditOpen}
+            schedule={scheduleToEdit}
+            onScheduleUpdated={handleScheduleUpdated}
+            teams={teams}
+            projects={projects}
+            />
+        )}
+        
+        <AlertDialog open={!!scheduleToDelete} onOpenChange={(open) => !open && setScheduleToDelete(null)}>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+            <AlertDialogHeader>
+                <AlertDialogTitle>Move to bin?</AlertDialogTitle>
+                <AlertDialogDescription className="text-zinc-400">
+                The schedule for "{scheduleToDelete?.title}" will be moved to the bin. You can restore it later.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                onClick={handleDelete}
+                className={cn(buttonVariants({ variant: 'destructive' }))}
+                disabled={isPending}
+                >
+                {isPending ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!scheduleToDeletePermanently} onOpenChange={(open) => !open && setScheduleToDeletePermanently(null)}>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+            <AlertDialogHeader>
+                <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
+                <AlertDialogDescription className="text-zinc-400">
+                    This action is irreversible. All data for the schedule "{scheduleToDeletePermanently?.title}" will be removed.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                onClick={handleDeletePermanently}
+                className={cn(buttonVariants({ variant: 'destructive' }))}
+                disabled={isPending}
+                >
+                {isPending ? 'Deleting...' : 'Permanently Delete'}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        
+        <style jsx global>{`
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+        `}</style>
+      </div>
   );
 }

@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useEffect, useTransition, useRef, useState } from 'react'
-import { Loader2, Pencil, User } from 'lucide-react'
+import { Loader2, Pencil, User, Check, Smartphone, Link as LinkIcon, Calendar } from 'lucide-react'
 import 'react-international-phone/style.css';
 import {
   Card,
@@ -151,15 +151,15 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
 
   return (
     <>
-    <Card className="border-0">
+    <Card className="border border-white/10 bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] shadow-2xl overflow-hidden">
       <form onSubmit={handleSubmit(onSubmit)}>
-        <CardHeader>
-          <CardTitle>My Profile</CardTitle>
-          <CardDescription>Update your personal information.</CardDescription>
+        <CardHeader className="p-10 pb-4 bg-white/[0.02]">
+          <CardTitle className="text-3xl font-black text-white tracking-tighter">My Account</CardTitle>
+          <CardDescription className="text-zinc-500 font-medium">Update your professional studio profile and credentials.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
-          <div className="flex items-center gap-4">
-             <div className="relative">
+        <CardContent className="p-10 space-y-12">
+          <div className="flex items-center gap-6">
+             <div className="relative group">
                 <input
                     type="file"
                     accept="image/*"
@@ -168,73 +168,75 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
                     onChange={handleAvatarChange}
                 />
                 <Avatar
-                    className="h-24 w-24 cursor-pointer"
+                    className="h-28 w-28 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105"
                     onClick={() => fileInputRef.current?.click()}
                 >
                     <AvatarImage src={avatarPreview ?? undefined} />
-                    <AvatarFallback>
-                    <User className="h-12 w-12 text-muted-foreground" />
+                    <AvatarFallback className="bg-zinc-800 text-zinc-400 font-bold text-xl">
+                        {getInitials(profile?.full_name)}
                     </AvatarFallback>
                 </Avatar>
                 <button
                     type="button"
-                    className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                    className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => fileInputRef.current?.click()}
                 >
                     <Pencil className="h-4 w-4" />
                 </button>
             </div>
             <div>
-              <p className="font-bold text-lg">{profile?.full_name}</p>
-              <p className="text-sm text-muted-foreground">{profile?.email}</p>
+              <p className="font-black text-2xl text-white tracking-tight">{profile?.full_name}</p>
+              <p className="text-sm text-zinc-500 font-bold uppercase tracking-tight">{profile?.email}</p>
             </div>
           </div>
 
           <div className="space-y-8">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-8">
-              <div className="space-y-2">
-                <Label htmlFor="full-name">Full name</Label>
-                <Input id="full-name" {...register('full_name')} />
-                {errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}
+            <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="full-name" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Official Name</Label>
+                <Input id="full-name" {...register('full_name')} className="h-12 bg-white/5 border-white/10 text-white focus-visible:ring-sky-500/50 rounded-xl" />
+                {errors.full_name && <p className="text-xs font-bold text-rose-500">{errors.full_name.message}</p>}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-              <div className="space-y-2">
-                <Label htmlFor="linkedin_username">LinkedIn</Label>
-                <div className="flex items-center">
-                  <span className="inline-flex h-10 items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
-                    linkedin.com/in/
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="linkedin_username" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">LinkedIn Profile</Label>
+                <div className="flex items-center group">
+                  <span className="inline-flex h-12 items-center rounded-l-xl border border-r-0 border-white/10 bg-white/5 px-4 text-xs font-bold text-zinc-500 transition-colors group-focus-within:text-sky-400">
+                    <LinkIcon className="h-3 w-3 mr-2" />
+                    /in/
                   </span>
                   <Input
                     id="linkedin_username"
                     type="text"
                     placeholder="username"
-                    className="rounded-l-none"
+                    className="h-12 rounded-l-none bg-white/[0.02] border-white/10 text-white focus-visible:ring-sky-500/50 rounded-r-xl"
                     {...register('linkedin_username')}
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="instagram_username">Instagram</Label>
-                <div className="flex items-center">
-                  <span className="inline-flex h-10 items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
-                    instagram.com/
+              <div className="space-y-3">
+                <Label htmlFor="instagram_username" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Instagram Account</Label>
+                <div className="flex items-center group">
+                  <span className="inline-flex h-12 items-center rounded-l-xl border border-r-0 border-white/10 bg-white/5 px-4 text-xs font-bold text-zinc-500 transition-colors group-focus-within:text-pink-400">
+                    <LinkIcon className="h-3 w-3 mr-2" />
+                    @
                   </span>
                   <Input
                     id="instagram_username"
                     type="text"
                     placeholder="username"
-                    className="rounded-l-none"
+                    className="h-12 rounded-l-none bg-white/[0.02] border-white/10 text-white focus-visible:ring-sky-500/50 rounded-r-xl"
                     {...register('instagram_username')}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-              <div className="space-y-2">
-                <Label htmlFor="contact">Contact</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="contact" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Contact Number</Label>
                 <Controller
                   name="contact"
                   control={control}
@@ -242,27 +244,27 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
                     <PhoneInput
                       {...field}
                       defaultCountry="in"
-                      inputClassName="!h-10 !w-full !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background file:!border-0 file:!bg-transparent file:!text-sm file:!font-medium placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                      inputClassName="!h-12 !w-full !rounded-xl !border-white/10 !bg-white/[0.02] !text-white !font-bold !pl-4 focus-within:!ring-2 focus-within:!ring-sky-500/50"
                       countrySelectorStyleProps={{
-                        buttonClassName: "!h-10 !rounded-l-md !border-input !bg-muted"
+                        buttonClassName: "!h-12 !rounded-l-xl !border-white/10 !bg-white/5 !px-3"
                       }}
                     />
                   )}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Birthday</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input id="day" placeholder="Day" {...register('birthday_day')} />
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Birthday</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input id="day" placeholder="Day" {...register('birthday_day')} className="h-12 bg-white/5 border-white/10 text-white rounded-xl font-bold" />
                   <Controller
                     name="birthday_month"
                     control={control}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger id="month">
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <SelectTrigger id="month" className="h-12 bg-white/5 border-white/10 text-white rounded-xl font-bold">
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white shadow-2xl">
                           {months.map((month) => (
                             <SelectItem key={month} value={month}>{month}</SelectItem>
                           ))}
@@ -275,11 +277,13 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
             </div>
           </div>
 
-          <Separator />
-          <Button type="submit" disabled={isPending || !isDirty}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
-          </Button>
+          <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+              <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Last updated: Today</p>
+              <Button type="submit" disabled={isPending || !isDirty} className="rounded-full h-12 px-8 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-sky-900/40">
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                Save Statement
+              </Button>
+          </div>
         </CardContent>
       </form>
     </Card>
@@ -292,5 +296,3 @@ export function ProfileSettings({ profile }: { profile: Profile | null }) {
     </>
   );
 }
-
-    

@@ -37,64 +37,74 @@ export default async function AccessibilityPage() {
     const workTypeStatusConfig = (statusConfigSetting?.value as WorkTypeStatusConfig | undefined) || {};
 
   return (
-    <div className="p-4 md:p-8 lg:p-10">
-      <Tabs defaultValue="set-times" className="space-y-4">
-        <TabsList className="bg-transparent p-0 border-b rounded-none gap-6">
+    <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f] text-zinc-100">
+      <header className="mb-12 border-b border-white/10 pb-8">
+        <h1 className="text-4xl font-black text-white tracking-tighter uppercase">Accessibility Center</h1>
+        <p className="text-sm text-zinc-500 font-bold uppercase tracking-[0.25em] mt-1">Configure workspace rules and dynamic studio parameters</p>
+      </header>
+
+      <Tabs defaultValue="set-times" className="space-y-10">
+        <TabsList className="bg-white/5 border border-white/10 rounded-full p-1 h-12 w-full max-w-2xl flex items-center justify-between">
           <TabsTrigger
             value="set-times"
-            className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2"
+            className="flex-1 rounded-full h-9 text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-zinc-950"
           >
-            Set Times
+            System Times
           </TabsTrigger>
           <TabsTrigger
             value="cache-timer"
-            className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2"
+            className="flex-1 rounded-full h-9 text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-zinc-950"
           >
-            Cache Timer
+            Optimization
           </TabsTrigger>
           <TabsTrigger
             value="types"
-            className="data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none bg-transparent text-muted-foreground px-1 pb-2"
+            className="flex-1 rounded-full h-9 text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-zinc-950"
           >
-            Types
+            Data Schemas
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="set-times" className="mt-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Set Times</CardTitle>
-                    <CardDescription>
-                        Configure various time-related settings for the application.
+        
+        <TabsContent value="set-times" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Card className="border border-white/10 bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-10">
+                <CardHeader className="p-0 mb-10">
+                    <CardTitle className="text-2xl font-black text-white tracking-tight">Clock Settings</CardTitle>
+                    <CardDescription className="text-zinc-500 font-medium">
+                        Configure global shift windows and break parameters for the entire organization.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                     <SetTimesForm currentLunchTime={lunchStartTime} />
                 </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="cache-timer" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cache Timer</CardTitle>
-              <CardDescription>
-                Manage cache settings.
+        
+        <TabsContent value="cache-timer" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="border border-white/10 bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-10">
+            <CardHeader className="p-0 mb-10">
+              <CardTitle className="text-2xl font-black text-white tracking-tight">System Cache</CardTitle>
+              <CardDescription className="text-zinc-500 font-medium">
+                Manage data persistence and live-sync intervals for the dashboard.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p>Cache timer settings will be here.</p>
+            <CardContent className="p-0">
+               <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
+                <p className="text-zinc-600 font-black uppercase tracking-widest text-[10px]">Cache management protocols under construction</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="types" className="mt-6">
-          <Tabs defaultValue="industry-type" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="industry-type">Industry type</TabsTrigger>
-              <TabsTrigger value="work-type">Work type</TabsTrigger>
+        
+        <TabsContent value="types" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Tabs defaultValue="industry-type" className="space-y-8">
+            <TabsList className="bg-transparent p-0 border-b border-white/5 rounded-none gap-8">
+              <TabsTrigger value="industry-type" className="bg-transparent border-0 rounded-none px-0 pb-3 text-zinc-500 font-bold uppercase tracking-widest text-[10px] data-[state=active]:text-sky-400 data-[state=active]:border-b-2 data-[state=active]:border-sky-400 shadow-none">Client Industries</TabsTrigger>
+              <TabsTrigger value="work-type" className="bg-transparent border-0 rounded-none px-0 pb-3 text-zinc-500 font-bold uppercase tracking-widest text-[10px] data-[state=active]:text-sky-400 data-[state=active]:border-b-2 data-[state=active]:border-sky-400 shadow-none">Task Archetypes</TabsTrigger>
             </TabsList>
-            <TabsContent value="industry-type">
+            <TabsContent value="industry-type" className="mt-0">
               <IndustryTypes initialIndustries={industriesData as Industry[] ?? []} />
             </TabsContent>
-            <TabsContent value="work-type">
+            <TabsContent value="work-type" className="mt-0">
               <WorkTypes initialWorkTypes={workTypesData as WorkType[] ?? []} initialStatusConfig={workTypeStatusConfig} />
             </TabsContent>
           </Tabs>

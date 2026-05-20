@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -13,7 +12,8 @@ import {
   User,
   Building,
   Plane,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Filter
 } from 'lucide-react';
 import { format, parse, addMonths, subMonths, isSameDay, addWeeks, subWeeks, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import type { OfficialHoliday } from '@/lib/types';
@@ -246,7 +246,7 @@ export default function CalendarClient({
   };
 
   if (!currentDate) {
-    return <div className="flex h-full w-full items-center justify-center">Loading...</div>;
+    return <div className="flex h-full w-full items-center justify-center bg-[#0f0f0f] text-zinc-400">Loading...</div>;
   }
   
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
@@ -256,40 +256,40 @@ export default function CalendarClient({
       switch (view) {
           case 'day':
               return (
-                  <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(subDays(currentDate, 1))}>
-                          <ChevronLeft className="h-4 w-4" />
+                  <div className="flex items-center gap-4">
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white" onClick={() => handleDateSelect(subDays(currentDate, 1))}>
+                          <ChevronLeft className="h-5 w-5" />
                       </Button>
-                      <h2 className="text-lg font-semibold w-48 text-center">{format(currentDate, 'MMMM d, yyyy')}</h2>
-                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(addDays(currentDate, 1))}>
-                          <ChevronRight className="h-4 w-4" />
+                      <h2 className="text-lg font-black tracking-tighter w-48 text-center text-white">{format(currentDate, 'MMMM d, yyyy')}</h2>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white" onClick={() => handleDateSelect(addDays(currentDate, 1))}>
+                          <ChevronRight className="h-5 w-5" />
                       </Button>
                   </div>
               )
           case 'week':
               return (
-                  <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(subWeeks(currentDate, 1))}>
-                          <ChevronLeft className="h-4 w-4" />
+                  <div className="flex items-center gap-4">
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white" onClick={() => handleDateSelect(subWeeks(currentDate, 1))}>
+                          <ChevronLeft className="h-5 w-5" />
                       </Button>
-                      <h2 className="text-lg font-semibold w-48 text-center">
+                      <h2 className="text-lg font-black tracking-tighter w-48 text-center text-white">
                           {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d')}
                       </h2>
-                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(addWeeks(currentDate, 1))}>
-                          <ChevronRight className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white" onClick={() => handleDateSelect(addWeeks(currentDate, 1))}>
+                          <ChevronRight className="h-5 w-5" />
                       </Button>
                   </div>
               )
           case 'month':
           default:
               return (
-                  <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(subMonths(currentDate, 1))}>
-                          <ChevronLeft className="h-4 w-4" />
+                  <div className="flex items-center gap-4">
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white" onClick={() => handleDateSelect(subMonths(currentDate, 1))}>
+                          <ChevronLeft className="h-5 w-5" />
                       </Button>
-                      <h2 className="text-lg font-semibold w-48 text-center">{format(currentDate, 'MMMM yyyy')}</h2>
-                      <Button variant="outline" size="icon" onClick={() => handleDateSelect(addMonths(currentDate, 1))}>
-                          <ChevronRight className="h-4 w-4" />
+                      <h2 className="text-xl font-black tracking-tighter w-48 text-center text-white">{format(currentDate, 'MMMM yyyy')}</h2>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white" onClick={() => handleDateSelect(addMonths(currentDate, 1))}>
+                          <ChevronRight className="h-5 w-5" />
                       </Button>
                   </div>
               )
@@ -297,23 +297,23 @@ export default function CalendarClient({
   }
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-[#0f0f0f] text-zinc-100">
       <header
         id="calendar-header"
-        className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b bg-white p-4 shadow-sm"
+        className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-white/10 bg-[#0f0f0f]/80 backdrop-blur-xl p-4 shadow-sm"
       >
-        <div className="flex flex-shrink-0 items-center gap-2">
-          <Button variant="outline" onClick={() => handleDateSelect(new Date())}>
+        <div className="flex flex-shrink-0 items-center gap-3">
+          <Button variant="outline" onClick={() => handleDateSelect(new Date())} className="rounded-full bg-white/5 border-white/10 hover:bg-white/10 text-zinc-300">
             Today
           </Button>
            <Popover>
             <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-auto justify-start text-left font-normal")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                <Button variant="outline" className={cn("rounded-full bg-white/5 border-white/10 hover:bg-white/10 text-zinc-300 w-auto justify-start text-left font-normal")}>
+                    <CalendarIcon className="mr-2 h-4 w-4 text-sky-400" />
                     <span>{format(currentDate, 'MMMM d, yyyy')}</span>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
+            <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-800">
               <Calendar
                 mode="single"
                 month={currentDate}
@@ -331,63 +331,53 @@ export default function CalendarClient({
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-4">
-          <div className="flex items-center rounded-full bg-muted p-1">
+          <div className="flex items-center rounded-full bg-white/5 border border-white/10 p-1">
             {calendarViews.map(calendar => (
               <Button
                 key={calendar.id}
-                variant={activeCalendar === calendar.id ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 onClick={() => handleCalendarChange(calendar.id as keyof EventSources)}
-                className={cn('rounded-full', activeCalendar === calendar.id && 'shadow-sm bg-white')}
+                className={cn(
+                    'rounded-full px-4 h-8 transition-all duration-300', 
+                    activeCalendar === calendar.id 
+                        ? 'bg-gradient-to-r from-sky-500/20 to-blue-500/10 text-sky-300 shadow-[0_0_20px_rgba(56,189,248,0.12)] border border-sky-500/20' 
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                )}
               >
                 {calendar.label}
               </Button>
             ))}
           </div>
-          <div className="flex items-center rounded-full bg-muted p-1">
-            <Button
-              variant={view === 'day' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => handleViewChange('day')}
-              className={cn('rounded-full', view === 'day' && 'shadow-sm bg-white')}
-            >
-              Day
-            </Button>
-            <Button
-              variant={view === 'week' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => handleViewChange('week')}
-              className={cn('rounded-full', view === 'week' && 'shadow-sm bg-white')}
-            >
-              Week
-            </Button>
-            <Button
-              variant={view === 'month' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => handleViewChange('month')}
-              className={cn('rounded-full', view === 'month' && 'shadow-sm bg-white')}
-            >
-              Month
-            </Button>
+          <div className="flex items-center rounded-full bg-white/5 border border-white/10 p-1">
+            {['day', 'week', 'month'].map((v) => (
+                <Button
+                    key={v}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleViewChange(v as any)}
+                    className={cn(
+                        'rounded-full px-4 h-8 transition-all duration-300 capitalize', 
+                        view === v 
+                            ? 'bg-zinc-800 text-white shadow-sm' 
+                            : 'text-zinc-500 hover:text-zinc-300'
+                    )}
+                >
+                    {v}
+                </Button>
+            ))}
           </div>
 
           <div className="flex gap-2">
-            {activeCalendar === 'falaq_calendar' && (
-                <Button onClick={() => openAddDialog('holiday')} className="rounded-full">
+            {activeCalendar !== 'holidays' ? (
+                <Button onClick={() => openAddDialog(activeCalendar === 'falaq_calendar' ? 'holiday' : 'event')} className="rounded-full bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.3)]">
                     <Plus className="mr-2 h-4 w-4" />
-                    Add
+                    Add {activeCalendar === 'my_calendar' ? 'Event' : ''}
                 </Button>
-            )}
-            {activeCalendar === 'my_calendar' && (
-                <Button onClick={() => openAddDialog('event')} className="rounded-full">
+            ) : (
+                <Button onClick={() => openAddDialog('special_day')} className="rounded-full bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.3)]">
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Event
-                </Button>
-            )}
-             {activeCalendar === 'holidays' && (
-                <Button onClick={() => openAddDialog('special_day')} className="rounded-full">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Special Day
+                    Special Day
                 </Button>
             )}
           </div>
@@ -395,7 +385,7 @@ export default function CalendarClient({
       </header>
 
       <main
-        className="relative flex-1 overflow-auto"
+        className="relative flex-1 overflow-auto custom-scrollbar"
         style={{ height: mainHeight }}
       >
         {renderView()}
@@ -427,6 +417,22 @@ export default function CalendarClient({
           event={eventToEdit}
         />
       )}
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      `}</style>
     </div>
   );
 }

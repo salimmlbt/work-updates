@@ -8,14 +8,14 @@ import { cn } from '@/lib/utils'
 import { useMemo, useRef, useEffect, useState } from 'react'
 
 const typeColorMap: Record<string, { bg: string; border: string; text: string }> = {
-  public: { bg: 'bg-blue-100', border: 'border-blue-500', text: 'text-blue-800' },
-  official: { bg: 'bg-purple-100', border: 'border-purple-500', text: 'text-purple-800' },
-  leave: { bg: 'bg-red-100', border: 'border-red-500', text: 'text-red-800' },
-  working_sunday: { bg: 'bg-emerald-100', border: 'border-emerald-500', text: 'text-emerald-800' },
-  task: { bg: 'bg-yellow-100', border: 'border-yellow-500', text: 'text-yellow-800' },
-  project: { bg: 'bg-green-100', border: 'border-green-500', text: 'text-green-800' },
-  personal: { bg: 'bg-pink-100', border: 'border-pink-500', text: 'text-pink-800' },
-  special_day: { bg: 'bg-indigo-100', border: 'border-indigo-500', text: 'text-indigo-800' },
+  public: { bg: 'bg-blue-900/40', border: 'border-blue-500/50', text: 'text-blue-200' },
+  official: { bg: 'bg-purple-900/40', border: 'border-purple-500/50', text: 'text-purple-200' },
+  leave: { bg: 'bg-red-900/40', border: 'border-red-500/50', text: 'text-red-200' },
+  working_sunday: { bg: 'bg-emerald-900/40', border: 'border-emerald-500/50', text: 'text-emerald-200' },
+  task: { bg: 'bg-yellow-900/40', border: 'border-yellow-500/50', text: 'text-yellow-200' },
+  project: { bg: 'bg-green-900/40', border: 'border-green-500/50', text: 'text-green-200' },
+  personal: { bg: 'bg-pink-900/40', border: 'border-pink-500/50', text: 'text-pink-200' },
+  special_day: { bg: 'bg-indigo-900/40', border: 'border-indigo-500/50', text: 'text-indigo-200' },
 }
 
 function DayContent({
@@ -69,14 +69,14 @@ function DayContent({
       <div
         className={cn(
           'relative flex flex-col h-full p-1.5 sm:p-2 rounded-md overflow-hidden transition-all',
-          isOutside && 'opacity-40'
+          isOutside && 'opacity-20'
         )}
       >
         <span
           className={cn(
-            'self-start mb-1 text-xs font-medium h-6 w-6 flex items-center justify-center rounded-full',
-            isToday(date) && !isSelected && 'text-primary font-bold',
-            isSelected && 'bg-primary text-white'
+            'self-start mb-1 text-xs font-black h-7 w-7 flex items-center justify-center rounded-full transition-all',
+            isToday(date) && !isSelected && 'text-sky-400 font-bold',
+            isSelected && 'bg-sky-500 text-white shadow-[0_0_15px_rgba(56,189,248,0.5)]'
           )}
         >
           {dayNumber}
@@ -90,20 +90,20 @@ function DayContent({
       ref={containerRef}
       className={cn(
         'relative flex flex-col h-full p-1.5 sm:p-2 rounded-md overflow-hidden transition-all',
-        isOutside && 'opacity-40'
+        isOutside && 'opacity-20'
       )}
     >
       <span
         className={cn(
-          'self-start mb-1 text-xs font-medium h-6 w-6 flex items-center justify-center rounded-full',
-          isToday(date) && !isSelected && 'text-primary font-bold',
-          isSelected && 'bg-primary text-white'
+            'self-start mb-1 text-xs font-black h-7 w-7 flex items-center justify-center rounded-full transition-all',
+            isToday(date) && !isSelected && 'text-sky-400 font-bold',
+            isSelected && 'bg-sky-500 text-white shadow-[0_0_15px_rgba(56,189,248,0.5)]'
         )}
       >
         {dayNumber}
       </span>
 
-      <div className="flex-1 overflow-hidden space-y-0.5">
+      <div className="flex-1 overflow-hidden space-y-1">
         {visibleEvents.map(event => {
           const type = (event.falaq_event_type || event.type)?.toLowerCase?.() || 'official'
           const color = typeColorMap[type] || typeColorMap.official
@@ -116,7 +116,7 @@ function DayContent({
               }}
               title={event.name}
               className={cn(
-                'truncate text-[11px] sm:text-xs px-1.5 py-0.5 rounded-sm cursor-pointer border-l-4 shadow-sm hover:shadow-md transition-all',
+                'truncate text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg cursor-pointer border-l-4 shadow-lg backdrop-blur-md transition-all duration-200 hover:scale-[1.02]',
                 color.bg,
                 color.border,
                 color.text
@@ -127,7 +127,7 @@ function DayContent({
           )
         })}
         {overflow > 0 && (
-          <p className="text-[10px] sm:text-xs text-muted-foreground italic mt-0.5">
+          <p className="text-[10px] text-zinc-500 font-bold italic mt-0.5 ml-1">
             +{overflow} more
           </p>
         )}
@@ -169,25 +169,25 @@ export default function MonthView({
       mode="single"
       selected={selectedDate || undefined}
       onSelect={day => day && onDateSelect(day)}
-      className="p-0 h-full flex flex-col"
+      className="p-0 h-full flex flex-col bg-[#0f0f0f]"
       classNames={{
         months: 'flex-1 flex flex-col',
         month: 'flex-1 flex flex-col',
         caption: 'hidden',
         nav: 'hidden',
         table: 'w-full h-full border-collapse table-fixed',
-        head_row: '',
+        head_row: 'bg-white/[0.02]',
         head_cell:
-          'p-2 text-center text-xs sm:text-sm font-medium text-muted-foreground w-[14.28%]',
+          'p-3 text-center text-[10px] uppercase font-black tracking-widest text-zinc-500 w-[14.28%] border-b border-white/10',
         body: 'flex-1',
-        row: 'h-[16.6%] border-t',
-        cell: 'p-0 align-top relative border-r last:border-r-0 hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors',
+        row: 'h-[16.6%] border-b border-white/5',
+        cell: 'p-0 align-top relative border-r border-white/5 last:border-r-0 hover:bg-white/[0.02] transition-colors',
         day: 'w-full h-full flex',
       }}
       components={{
         DayContent: props => {
           const key = format(props.date, 'yyyy-MM-dd')
-          const isSunday = getDay(props.date) === 0
+          const isSun = getDay(props.date) === 0
           const isWorkingSunday = eventsByDay[key]?.some(
             e => e.falaq_event_type === 'working_sunday'
           )
@@ -196,10 +196,10 @@ export default function MonthView({
           return (
             <div
               className={cn(
-                'h-full w-full rounded-sm',
-                isSunday && !isWorkingSunday && 'bg-red-50 dark:bg-red-900/20',
-                isToday(props.date) && !isSelected && 'bg-blue-50 dark:bg-blue-900/20',
-                isSelected && 'bg-blue-100 dark:bg-blue-900/40'
+                'h-full w-full rounded-sm transition-colors',
+                isSun && !isWorkingSunday && 'bg-red-500/[0.02]',
+                isToday(props.date) && !isSelected && 'bg-sky-500/5',
+                isSelected && 'bg-white/[0.04] shadow-inner'
               )}
             >
               <DayContent

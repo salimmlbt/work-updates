@@ -77,18 +77,18 @@ export function LeaveSection({ profile }: { profile: Profile }) {
 
   const getStatusBadge = (status: Leave['status']) => {
     switch (status) {
-      case 'Approved': return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Approved</Badge>
-      case 'Rejected': return <Badge variant="destructive">Rejected</Badge>
-      case 'Cancelled': return <Badge variant="secondary">Cancelled</Badge>
-      default: return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Pending</Badge>
+      case 'Approved': return <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-black uppercase tracking-widest text-[9px] px-2 h-5">Approved</Badge>
+      case 'Rejected': return <Badge variant="destructive" className="bg-rose-500/10 text-rose-400 border-rose-500/20 font-black uppercase tracking-widest text-[9px] px-2 h-5">Rejected</Badge>
+      case 'Cancelled': return <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 border-zinc-700 font-black uppercase tracking-widest text-[9px] px-2 h-5">Cancelled</Badge>
+      default: return <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/20 font-black uppercase tracking-widest text-[9px] px-2 h-5">Pending</Badge>
     }
   }
 
   const statusGlow: Record<Leave['status'], string> = {
     Approved: 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,.8)]',
-    Pending: 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,.8)]',
+    Pending: 'bg-sky-500 shadow-[0_0_12px_rgba(56,189,248,.8)]',
     Rejected: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,.8)]',
-    Cancelled: 'bg-slate-400 shadow-[0_0_10px_rgba(148,163,184,.6)]',
+    Cancelled: 'bg-zinc-500 shadow-[0_0_10px_rgba(113,113,122,.6)]',
   }
 
   const groupedLeaves = useMemo(() => {
@@ -101,22 +101,22 @@ export function LeaveSection({ profile }: { profile: Profile }) {
   }, [leaves])
 
   const renderTimeline = () => (
-    <div className="space-y-12">
+    <div className="space-y-16">
       {Object.entries(groupedLeaves).map(([month, items]) => {
         const isCollapsed = collapsedMonths[month]
         return (
           <div key={month}>
             <button
               onClick={() => setCollapsedMonths(p => ({ ...p, [month]: !p[month] }))}
-              className="w-full flex justify-between items-center px-4 py-3 rounded-xl bg-white/80 border shadow-sm hover:shadow-md transition duration-200"
+              className="w-full flex justify-between items-center px-6 py-3 rounded-2xl bg-white/5 border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-300 group"
             >
-              <span className="text-sm font-semibold uppercase tracking-wide text-slate-600">{month}</span>
-              <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform duration-300", isCollapsed && "rotate-180")} />
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 group-hover:text-zinc-300 transition-colors">{month}</span>
+              <ChevronDown className={cn("h-4 w-4 text-zinc-600 transition-transform duration-500", isCollapsed && "rotate-180")} />
             </button>
 
-            <div className={cn("mt-6 transition-all duration-500", isCollapsed ? "max-h-0 opacity-0 overflow-hidden" : "max-h-[5000px] opacity-100")}>
-              <div className="relative pl-12 space-y-6">
-                <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-blue-400/40 to-transparent" />
+            <div className={cn("mt-10 transition-all duration-700", isCollapsed ? "max-h-0 opacity-0 overflow-hidden" : "max-h-[8000px] opacity-100")}>
+              <div className="relative pl-14 space-y-10">
+                <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-sky-400/40 via-purple-400/20 to-transparent" />
                 {items.map((leave) => {
                   const isApproved = leave.status === 'Approved';
                   const isHalfDay = leave.day_type === 'Half Day';
@@ -132,43 +132,43 @@ export function LeaveSection({ profile }: { profile: Profile }) {
                   
                   return (
                     <div key={leave.id} className="relative group">
-                      <span className={cn("absolute left-[-35px] top-6 w-3 h-3 rounded-full z-10", statusGlow[leave.status])} />
-                      <div className="bg-white/80 backdrop-blur rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                        <div className="flex justify-between gap-4">
+                      <span className={cn("absolute left-[-42px] top-6 w-3 h-3 rounded-full z-10 ring-4 ring-[#0f0f0f]", statusGlow[leave.status])} />
+                      <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2rem] p-6 border border-white/5 shadow-2xl hover:shadow-sky-500/5 transition-all duration-500 hover:-translate-y-1 group-hover:bg-white/[0.05]">
+                        <div className="flex justify-between gap-6">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-1">
+                            <div className="flex items-center gap-3 mb-2">
                               {activeTab === 'team-requests' && leave.profiles && (
-                                <Avatar className="h-6 w-6">
+                                <Avatar className="h-7 w-7 border border-white/10 ring-2 ring-white/5">
                                   <AvatarImage src={leave.profiles.avatar_url ?? undefined} />
-                                  <AvatarFallback className="text-[10px]">{getInitials(leave.profiles.full_name)}</AvatarFallback>
+                                  <AvatarFallback className="text-[8px] bg-zinc-800 text-zinc-400 font-bold">{getInitials(leave.profiles.full_name)}</AvatarFallback>
                                 </Avatar>
                               )}
-                              <span className="font-semibold text-slate-900 truncate">
+                              <span className="font-bold text-white tracking-tight text-lg">
                                 {activeTab === 'team-requests' ? leave.profiles?.full_name : leave.leave_type}
                               </span>
                               {getStatusBadge(leave.status)}
-                              {isHalfDay && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] h-5">Half Day</Badge>}
+                              {isHalfDay && <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20 font-black uppercase tracking-widest text-[9px] h-5">Half Day</Badge>}
                             </div>
                             
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-sm text-slate-500 font-medium">
-                                {isApproved ? 'Approved Dates:' : 'Applied Dates:'}
-                                <span className="ml-1 text-slate-900">
+                            <div className="flex items-center gap-3 mt-2">
+                              <p className="text-xs font-medium text-zinc-500">
+                                {isApproved ? 'Approved Period:' : 'Applied Range:'}
+                                <span className="ml-2 text-zinc-100 font-bold">
                                   {isApproved && leave.approved_days && leave.approved_days.length > 0
                                     ? leave.approved_days.map(d => format(parseISO(d), 'dd MMM')).join(', ')
                                     : `${format(parseISO(leave.start_date), 'dd MMM')} ${leave.start_date !== leave.end_date ? `– ${format(parseISO(leave.end_date), 'dd MMM yyyy')}` : format(parseISO(leave.start_date), 'yyyy')}`
                                   }
                                 </span>
                               </p>
-                              <Badge variant="outline" className="text-[10px] h-5 rounded-full px-2 border-slate-200 bg-slate-50 text-slate-600 font-bold">
+                              <Badge variant="outline" className="text-[10px] h-5 rounded-full px-3 border-white/10 bg-white/5 text-zinc-400 font-black uppercase tracking-tighter">
                                 {duration} {duration === 1 || duration === 0.5 ? 'Day' : 'Days'} {isApproved ? 'Approved' : ''}
                               </Badge>
                             </div>
 
                             {leave.reason && (
-                              <div className="mt-3 flex items-start gap-2 text-xs text-slate-400">
-                                <FileText className="h-3 w-3 mt-0.5 shrink-0" />
-                                <p className="italic line-clamp-2">"{leave.reason}"</p>
+                              <div className="mt-4 flex items-start gap-3 text-xs text-zinc-500 bg-white/[0.02] p-3 rounded-xl border border-white/5">
+                                <FileText className="h-4 w-4 mt-0.5 shrink-0 text-zinc-700" />
+                                <p className="italic font-medium leading-relaxed">"{leave.reason}"</p>
                               </div>
                             )}
                           </div>
@@ -176,44 +176,44 @@ export function LeaveSection({ profile }: { profile: Profile }) {
                           <div className="flex items-center gap-2">
                             {activeTab === 'team-requests' ? (
                               leave.status === 'Pending' && (
-                                <>
-                                  <Button size="sm" variant="ghost" className="text-emerald-600 hover:bg-emerald-50 rounded-full" onClick={() => setLeaveToApprove(leave)}>
-                                    <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+                                <div className="flex flex-col gap-2">
+                                  <Button size="sm" variant="ghost" className="text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 rounded-xl px-4 border border-emerald-500/20" onClick={() => setLeaveToApprove(leave)}>
+                                    <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
                                   </Button>
-                                  <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50 rounded-full" onClick={() => handleAction(leave.id, 'Rejected')}>
-                                    <X className="h-4 w-4 mr-1" /> Reject
+                                  <Button size="sm" variant="ghost" className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 rounded-xl px-4 border border-rose-500/20" onClick={() => handleAction(leave.id, 'Rejected')}>
+                                    <X className="h-4 w-4 mr-2" /> Reject
                                   </Button>
-                                </>
+                                </div>
                               )
                             ) : (
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
                                 {(leave.status === 'Pending' || leave.status === 'Approved') && (
-                                  <Button variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50 rounded-full px-4" onClick={() => handleAction(leave.id, 'Cancelled')}>
-                                    <XCircle className="h-4 w-4 mr-1" /> Cancel
+                                  <Button variant="ghost" size="sm" className="text-rose-400 hover:bg-rose-500/10 rounded-full px-4 font-bold uppercase text-[10px] tracking-widest border border-rose-500/10" onClick={() => handleAction(leave.id, 'Cancelled')}>
+                                    <XCircle className="h-4 w-4 mr-2" /> Cancel
                                   </Button>
                                 )}
                                 {leave.status === 'Cancelled' && (
-                                  <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50 rounded-full px-4" onClick={() => handleAction(leave.id, 'reopen')}>
-                                    <RefreshCcw className="h-4 w-4 mr-1" /> Reopen
+                                  <Button variant="ghost" size="sm" className="text-sky-400 hover:bg-sky-500/10 rounded-full px-4 font-bold uppercase text-[10px] tracking-widest border border-sky-500/10" onClick={() => handleAction(leave.id, 'reopen')}>
+                                    <RefreshCcw className="h-4 w-4 mr-2" /> Reopen
                                   </Button>
                                 )}
                                 {(leave.status === 'Cancelled' || leave.status === 'Rejected') && (
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full h-8 w-8 p-0">
+                                      <Button variant="ghost" size="icon" className="text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-full h-9 w-9">
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="rounded-3xl border shadow-2xl">
+                                    <AlertDialogContent className="rounded-3xl bg-zinc-900 border-zinc-800 text-white shadow-2xl">
                                       <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          This will remove the leave request record from the database. This action cannot be undone.
+                                        <AlertDialogTitle className="text-2xl font-black tracking-tight">Delete request?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-zinc-400 font-medium">
+                                          This will remove the leave request record from the studio database permanently. This action cannot be undone.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleAction(leave.id, 'delete')} className="bg-rose-600 hover:bg-rose-700 rounded-xl">Delete Permanently</AlertDialogAction>
+                                      <AlertDialogFooter className="gap-3">
+                                        <AlertDialogCancel className="rounded-xl bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-zinc-300">Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleAction(leave.id, 'delete')} className="bg-rose-600 hover:bg-rose-700 rounded-xl text-white font-bold">Permanently Delete</AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
@@ -235,35 +235,38 @@ export function LeaveSection({ profile }: { profile: Profile }) {
   )
 
   return (
-    <div className="relative flex flex-col h-full rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
-      <div className="p-6 bg-white/70 backdrop-blur border-b flex justify-between items-center">
+    <div className="relative flex flex-col h-full bg-transparent">
+      <div className="p-8 flex justify-between items-center border-b border-white/5">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Leave Management</h2>
-          <p className="text-sm text-slate-500 mt-1">Track and manage leave requests</p>
+          <h2 className="text-3xl font-black text-white tracking-tighter">Leave Management</h2>
+          <p className="text-sm text-zinc-500 font-medium mt-1">Track history and manage upcoming studio leaves.</p>
         </div>
         {isEditor && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-slate-100 p-1 rounded-full">
-            <TabsList className="bg-transparent border-0 h-8 gap-1">
-              <TabsTrigger value="my-leaves" className="rounded-full px-4 h-6 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">My Leaves</TabsTrigger>
-              <TabsTrigger value="team-requests" className="rounded-full px-4 h-6 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">Team Requests</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white/5 p-1 rounded-full border border-white/10">
+            <TabsList className="bg-transparent border-0 h-9 gap-1">
+              <TabsTrigger value="my-leaves" className="rounded-full px-6 h-7 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-zinc-950 transition-all duration-300">My Leaves</TabsTrigger>
+              <TabsTrigger value="team-requests" className="rounded-full px-6 h-7 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-zinc-950 transition-all duration-300">Team View</TabsTrigger>
             </TabsList>
           </Tabs>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 pb-24">
+      <div className="flex-1 overflow-y-auto p-8 pb-32 custom-scrollbar">
         {isLoading ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
+          <div className="flex justify-center py-32"><Loader2 className="h-10 w-10 animate-spin text-zinc-700" /></div>
         ) : leaves.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 rounded-2xl bg-slate-50 border border-dashed text-slate-400">
-            <FileText className="h-12 w-12 mb-4 opacity-30" /><p className="font-medium">No leave requests found</p>
+          <div className="flex flex-col items-center justify-center py-32 text-center bg-white/[0.01] rounded-[2.5rem] border-2 border-dashed border-white/5 text-zinc-600">
+            <div className="bg-white/5 p-8 rounded-full mb-6">
+                <FileText className="h-12 w-12 opacity-20" />
+            </div>
+            <p className="font-bold uppercase tracking-widest text-[10px]">No leave history recorded yet</p>
           </div>
         ) : renderTimeline()}
       </div>
 
-      <div className="absolute bottom-6 right-6">
-        <Button size="lg" className="rounded-full h-14 px-7 gap-2 shadow-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all active:scale-95" onClick={() => setIsApplyDialogOpen(true)}>
-          <Plus className="h-5 w-5" /> Apply Leave
+      <div className="absolute bottom-8 right-8">
+        <Button size="lg" className="rounded-full h-16 px-8 gap-3 shadow-2xl bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 transition-all active:scale-95 text-white font-bold" onClick={() => setIsApplyDialogOpen(true)}>
+          <Plus className="h-6 w-6" /> Apply for Leave
         </Button>
       </div>
 
@@ -271,6 +274,22 @@ export function LeaveSection({ profile }: { profile: Profile }) {
       {leaveToApprove && (
         <ApproveLeaveDialog isOpen={!!leaveToApprove} setIsOpen={() => setLeaveToApprove(null)} leave={leaveToApprove} onSuccess={fetchLeaves} />
       )}
+      
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      `}</style>
     </div>
   )
 }

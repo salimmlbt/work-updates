@@ -1,3 +1,4 @@
+
 'use client'
 
 import {
@@ -14,15 +15,15 @@ import { cn } from '@/lib/utils'
 import { useMemo, useState, useEffect } from 'react'
 
 const typeColorMap: Record<string, { bg: string; border: string; text: string }> = {
-  public: { bg: 'bg-blue-100', border: 'border-blue-500', text: 'text-blue-800' },
-  official: { bg: 'bg-purple-100', border: 'border-purple-500', text: 'text-purple-800' },
-  leave: { bg: 'bg-red-100', border: 'border-red-500', text: 'text-red-800' },
-  weekend: { bg: 'bg-gray-100', border: 'border-gray-400', text: 'text-gray-700' },
-  task: { bg: 'bg-yellow-100', border: 'border-yellow-500', text: 'text-yellow-800' },
-  project: { bg: 'bg-green-100', border: 'border-green-500', text: 'text-green-800' },
-  personal: { bg: 'bg-pink-100', border: 'border-pink-500', text: 'text-pink-800' },
-  special_day: { bg: 'bg-indigo-100', border: 'border-indigo-500', text: 'text-indigo-800' },
-  working_sunday: { bg: 'bg-emerald-100', border: 'border-emerald-500', text: 'text-emerald-800' },
+  public: { bg: 'bg-blue-900/40', border: 'border-blue-500/50', text: 'text-blue-200' },
+  official: { bg: 'bg-purple-900/40', border: 'border-purple-500/50', text: 'text-purple-200' },
+  leave: { bg: 'bg-red-900/40', border: 'border-red-500/50', text: 'text-red-200' },
+  weekend: { bg: 'bg-zinc-800/60', border: 'border-white/10', text: 'text-zinc-400' },
+  task: { bg: 'bg-yellow-900/40', border: 'border-yellow-500/50', text: 'text-yellow-200' },
+  project: { bg: 'bg-green-900/40', border: 'border-green-500/50', text: 'text-green-200' },
+  personal: { bg: 'bg-pink-900/40', border: 'border-pink-500/50', text: 'text-pink-200' },
+  special_day: { bg: 'bg-indigo-900/40', border: 'border-indigo-500/50', text: 'text-indigo-200' },
+  working_sunday: { bg: 'bg-emerald-900/40', border: 'border-emerald-500/50', text: 'text-emerald-200' },
 }
 
 const hours = Array.from({ length: 24 }, (_, i) => i)
@@ -81,12 +82,12 @@ export default function DayView({
     const top = (getHours(currentTime) + getMinutes(currentTime) / 60) * 64 // 4rem = 64px
     return (
       <div
-        className="absolute w-full pointer-events-none"
+        className="absolute w-full pointer-events-none z-20"
         style={{ top }}
       >
         <div className="relative flex items-center">
-          <div className="h-0.5 bg-red-500 flex-1"></div>
-          <div className="h-3 w-3 bg-red-500 rounded-full shadow"></div>
+          <div className="h-0.5 bg-red-500 flex-1 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+          <div className="h-3 w-3 bg-red-500 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>
         </div>
       </div>
     )
@@ -95,19 +96,19 @@ export default function DayView({
   return (
     <div
       className={cn(
-        'h-full w-full flex flex-col bg-white dark:bg-neutral-900 transition-colors',
-        activeCalendar === 'falaq_calendar' && isFalaqLeave && 'bg-red-50 dark:bg-red-900/10'
+        'h-full w-full flex flex-col bg-[#0f0f0f] transition-colors',
+        activeCalendar === 'falaq_calendar' && isFalaqLeave && 'bg-red-950/10'
       )}
     >
       {/* 🕓 All-day Section */}
-      <div className="border-b bg-gray-50 dark:bg-neutral-800/40">
+      <div className="border-b border-white/10 bg-white/[0.02]">
         <div className="grid grid-cols-[70px_1fr]">
-          <div className="text-center py-2 text-xs text-muted-foreground border-r bg-gray-100 dark:bg-neutral-800 flex items-center justify-center">
+          <div className="text-center py-2 text-[10px] uppercase tracking-widest font-black text-zinc-500 border-r border-white/10 bg-white/5 flex items-center justify-center">
             All-day
           </div>
           <div className="p-2 space-y-2 min-h-[4rem]">
             {allDayEvents.length === 0 && (
-              <p className="text-xs text-gray-400 italic">No all-day events</p>
+              <p className="text-xs text-zinc-600 italic">No all-day events</p>
             )}
             {allDayEvents.map(event => {
               const eventType = (event.falaq_event_type || event.type)?.toLowerCase?.() || 'official'
@@ -120,14 +121,14 @@ export default function DayView({
                     onEventClick(event, e.currentTarget)
                   }}
                   className={cn(
-                    'p-2 rounded-md shadow-sm cursor-pointer border-l-4',
+                    'p-2 rounded-xl shadow-lg cursor-pointer border-l-4 backdrop-blur-md',
                     color.bg,
                     color.border,
                     color.text,
-                    'hover:shadow-md transition'
+                    'hover:shadow-sky-500/10 transition-all duration-300'
                   )}
                 >
-                  <p className="font-semibold truncate">{event.name}</p>
+                  <p className="font-bold truncate text-sm">{event.name}</p>
                 </div>
               )
             })}
@@ -136,13 +137,13 @@ export default function DayView({
       </div>
 
       {/* 🧭 Hourly Grid */}
-      <div className="grid grid-cols-[70px_1fr] flex-1 overflow-y-auto relative">
+      <div className="grid grid-cols-[70px_1fr] flex-1 overflow-y-auto relative custom-scrollbar">
         {/* Hour labels */}
-        <div className="border-r text-right text-xs text-muted-foreground bg-gray-50 dark:bg-neutral-800">
+        <div className="border-r border-white/10 text-right text-[10px] font-bold text-zinc-500 bg-white/[0.02]">
           {hours.map(hour => (
             <div
               key={hour}
-              className="h-16 border-b border-gray-200 dark:border-neutral-700 pr-2 pt-1"
+              className="h-16 border-b border-white/5 pr-2 pt-1 uppercase tracking-tighter"
             >
               {hour > 0 && format(setHours(new Date(), hour), 'ha')}
             </div>
@@ -150,17 +151,17 @@ export default function DayView({
         </div>
 
         {/* Time slots */}
-        <div className="relative bg-white dark:bg-neutral-900">
+        <div className="relative bg-[#0f0f0f]">
           {hours.map(hour => (
             <div
               key={hour}
               onClick={() => onDateSelect(setHours(date, hour))}
               className={cn(
-                'h-16 border-b border-gray-100 dark:border-neutral-800 cursor-pointer transition-colors',
+                'h-16 border-b border-white/5 cursor-pointer transition-colors',
                 isSameHour(setHours(date, hour), selectedDate) && isSameDay(date, selectedDate)
-                  ? 'bg-blue-50 dark:bg-blue-900/30'
-                  : 'hover:bg-gray-50 dark:hover:bg-neutral-800/50',
-                hour % 2 === 0 && 'bg-gray-50/30 dark:bg-neutral-800/20'
+                  ? 'bg-sky-500/10'
+                  : 'hover:bg-white/[0.03]',
+                hour % 2 === 0 && 'bg-white/[0.01]'
               )}
             />
           ))}
@@ -188,16 +189,16 @@ export default function DayView({
                         }}
                         style={{ width: eventWidth, left: `${index * 100 / events.length}%` }}
                         className={cn(
-                          'absolute p-2 rounded-md shadow-sm border-l-4 cursor-pointer pointer-events-auto',
+                          'absolute p-3 rounded-xl shadow-2xl border-l-4 cursor-pointer pointer-events-auto backdrop-blur-lg',
                           color.bg,
                           color.border,
                           color.text,
-                          'hover:shadow-lg transition-all duration-200'
+                          'hover:scale-[1.02] hover:shadow-sky-500/20 transition-all duration-200 z-10'
                         )}
                       >
-                        <p className="font-semibold truncate">{event.name}</p>
+                        <p className="font-bold truncate text-sm">{event.name}</p>
                         {event.description && (
-                          <p className="text-xs opacity-80 truncate">{event.description}</p>
+                          <p className="text-[10px] opacity-60 truncate font-medium mt-0.5">{event.description}</p>
                         )}
                       </div>
                     )
