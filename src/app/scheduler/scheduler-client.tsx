@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useTransition, useEffect, useRef } from 'react';
@@ -396,7 +395,7 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => window.addEventListener('keydown', handleKeyDown);
   }, [selectedClientId, showBin, isAddingSchedule]);
 
   useEffect(() => {
@@ -703,8 +702,9 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
                 <Button onClick={() => setIsAddingSchedule(true)} disabled={!selectedClientId} className="rounded-full bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.3)]">
                   <Plus className="mr-2 h-4 w-4" /> Add Schedule
                 </Button>
-                <Button variant="destructive" className={cn("rounded-full h-10 px-4 transition-all", showBin ? "bg-zinc-800 text-white border-zinc-700" : "bg-red-950/30 text-red-400 hover:bg-red-900/40 border-red-900/30")} onClick={() => setShowBin(true)}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Bin
+                <Button variant="destructive" className={cn("rounded-full h-10 px-4 transition-all", showBin ? "bg-zinc-800 text-white border-zinc-700" : "bg-red-950/30 text-red-400 hover:bg-red-900/40 border-red-900/30")} onClick={() => setShowBin(!showBin)}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {showBin ? 'Exit Bin' : 'Bin'}
                 </Button>
               </>
             )}
@@ -863,13 +863,15 @@ export default function SchedulerClient({ clients, initialSchedules, teams, prof
           )}
         </main>
 
-        <ReassignTaskDialog
-            isOpen={!!scheduleToReassign}
-            setIsOpen={() => setScheduleToReassign(null)}
-            task={scheduleToReassign?.task as TaskWithDetails}
-            profiles={profiles}
-            onTaskCreated={handleTaskCreated}
-        />
+        {scheduleToReassign && scheduleToReassign.task && (
+          <ReassignTaskDialog
+              isOpen={!!scheduleToReassign}
+              setIsOpen={() => setScheduleToReassign(null)}
+              task={scheduleToReassign.task as TaskWithDetails}
+              profiles={profiles}
+              onTaskCreated={handleTaskCreated}
+          />
+        )}
         {scheduleToEdit && (
             <EditScheduleDialog
             isOpen={isEditOpen}

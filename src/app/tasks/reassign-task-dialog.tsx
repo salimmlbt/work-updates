@@ -138,6 +138,8 @@ export function ReassignTaskDialog({
   }, [profiles]);
 
   const onSubmit = async (data: ReassignFormData) => {
+    if (!task) return;
+
     startTransition(async () => {
       const [hours, minutes] = data.post_time.split(':').map(Number);
       const combinedDateTime = new Date(data.post_date);
@@ -170,13 +172,15 @@ export function ReassignTaskDialog({
     return format(date, "dd MMM")
   }
 
+  if (!task) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Re-assign Task for Posting</DialogTitle>
           <DialogDescription>
-            Create a new posting task for '{task.description}'.
+            Create a new posting task for '{task?.description}'.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
