@@ -11,8 +11,9 @@ import type { Profile, Notification, RoleWithPermissions, TaskWithDetails, Leave
 import { Toaster } from "@/components/ui/toaster";
 import { PageSkeleton } from '@/components/dashboard/page-skeleton';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 
 export default function ClientLayout({
   children,
@@ -29,7 +30,7 @@ export default function ClientLayout({
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [activeLeaveNotif, setActiveLeaveNotif] = useState<{ id: string; status: string; type: string } | null>(null);
+  const [activeLeaveNotif, setActiveLeaveNotif] = useState<Leave | null>(null);
 
   const approvedAudioRef = useRef<HTMLAudioElement | null>(null);
   const correctionAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -146,11 +147,7 @@ export default function ClientLayout({
 
           if (newLeave.status !== oldLeave?.status) {
             if (newLeave.status === 'Approved' || newLeave.status === 'Rejected') {
-              setActiveLeaveNotif({
-                id: newLeave.id,
-                status: newLeave.status,
-                type: newLeave.leave_type
-              });
+              setActiveLeaveNotif(newLeave);
             }
           }
         }
@@ -205,6 +202,20 @@ export default function ClientLayout({
   
   const showNav = isAuthenticated && pathname !== '/login';
 
+  const getLeaveDuration = (leave: Leave) => {
+    if (leave.status === 'Approved' && leave.approved_days) {
+      return leave.approved_days.length;
+    }
+    const days = differenceInCalendarDays(parseISO(leave.end_date), parseISO(leave.start_date)) + 1;
+    return leave.day_type === 'Half Day' ? 0.5 : days;
+  }
+
+  const getLeaveDateString = (leave: Leave) => {
+    const start = format(parseISO(leave.start_date), 'dd MMM');
+    const end = format(parseISO(leave.end_date), 'dd MMM yyyy');
+    return leave.start_date === leave.end_date ? format(parseISO(leave.start_date), 'dd MMM yyyy') : `${start} - ${end}`;
+  }
+
   return (
     <div className="flex min-h-screen w-full bg-background">
       {showNav && (
@@ -255,12 +266,25 @@ export default function ClientLayout({
                   Leave {activeLeaveNotif.status}!
                 </h3>
                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-                  {activeLeaveNotif.type}
+                  {activeLeaveNotif.leave_type}
                 </p>
               </div>
             </div>
             
-            <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+            <div className="space-y-3 bg-white/[0.03] p-4 rounded-3xl border border-white/5">
+                <div className="flex items-center gap-3">
+                    <CalendarIcon className="h-4 w-4 text-zinc-500" />
+                    <span className="text-sm font-bold text-zinc-200">{getLeaveDateString(activeLeaveNotif)}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Clock className="h-4 w-4 text-zinc-500" />
+                    <span className="text-sm font-black text-sky-400 uppercase tracking-tight">
+                        {getLeaveDuration(activeLeaveNotif)} Day{getLeaveDuration(activeLeaveNotif) !== 1 ? 's' : ''} {activeLeaveNotif.status === 'Approved' ? 'Approved' : 'Requested'}
+                    </span>
+                </div>
+            </div>
+
+            <p className="text-xs text-zinc-500 font-medium leading-relaxed px-1">
               {activeLeaveNotif.status === 'Approved' 
                 ? "Your leave application has been processed and approved by the studio management." 
                 : "Your leave application was not approved at this time. Please check Falaq Corner for details."}
