@@ -100,26 +100,26 @@ const statusLabels: Record<string, string> = {
 }
 
 const typeColors: { [key: string]: string } = {
-  "Poster": "bg-blue-100 text-blue-800",
-  "Video": "bg-orange-100 text-orange-800",
-  "Story": "bg-purple-100 text-purple-800",
-  "Motion Graphics": "bg-pink-100 text-pink-800",
-  "Animation": "bg-indigo-100 text-indigo-800",
-  "Grid": "bg-green-100 text-green-800",
-  "Posting": "bg-yellow-100 text-yellow-800",
-  "Account Creation": "bg-red-100 text-red-800",
-  "Flyer": "bg-teal-100 text-teal-800",
-  "Profile": "bg-cyan-100 text-cyan-800",
-  "Menu": "bg-lime-100 text-lime-800",
-  "FB Cover": "bg-sky-100 text-sky-800",
-  "Whatsapp Cover": "bg-emerald-100 text-emerald-800",
-  "Profile Picture": "bg-fuchsia-100 text-fuchsia-800",
-  "Highlite Cover": "bg-rose-100 text-rose-800",
-  "Ad Post": "bg-amber-100 text-amber-800",
-  "Shooting": "bg-violet-100 text-violet-800",
-  "Meeting": "bg-gray-100 text-gray-800",
-  "Connect": "bg-slate-100 text-slate-800",
-  "Followup": "bg-stone-100 text-stone-800",
+  "Poster": "bg-blue-900/30 text-blue-300 border-blue-800/50",
+  "Video": "bg-orange-900/30 text-orange-300 border-orange-800/50",
+  "Story": "bg-purple-900/30 text-purple-300 border-purple-800/50",
+  "Motion Graphics": "bg-pink-900/30 text-pink-300 border-pink-800/50",
+  "Animation": "bg-indigo-900/30 text-indigo-300 border-indigo-800/50",
+  "Grid": "bg-green-900/30 text-green-300 border-green-800/50",
+  "Posting": "bg-yellow-900/30 text-yellow-300 border-yellow-800/50",
+  "Account Creation": "bg-red-900/30 text-red-300 border-red-800/50",
+  "Flyer": "bg-teal-900/30 text-teal-300 border-teal-800/50",
+  "Profile": "bg-cyan-900/30 text-cyan-300 border-cyan-800/50",
+  "Menu": "bg-lime-900/30 text-lime-300 border-lime-800/50",
+  "FB Cover": "bg-sky-900/30 text-sky-300 border-sky-800/50",
+  "Whatsapp Cover": "bg-emerald-900/30 text-emerald-300 border-emerald-800/50",
+  "Profile Picture": "bg-fuchsia-900/30 text-fuchsia-300 border-fuchsia-800/50",
+  "Highlite Cover": "bg-rose-900/30 text-rose-300 border-rose-800/50",
+  "Ad Post": "bg-amber-900/30 text-amber-300 border-amber-800/50",
+  "Shooting": "bg-violet-900/30 text-violet-300 border-violet-800/50",
+  "Meeting": "bg-zinc-800/30 text-zinc-300 border-zinc-700/50",
+  "Connect": "bg-slate-800/30 text-slate-300 border-slate-700/50",
+  "Followup": "bg-stone-800/30 text-stone-300 border-stone-700/50",
 };
 
 const getResponsibleAvatar = (profile: Profile | null) => {
@@ -186,7 +186,7 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
         <Button
           ref={triggerRef}
           variant="ghost"
-          className="w-full justify-between font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent px-2"
+          className="w-full justify-between font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-white/[0.05] px-2 text-zinc-100"
         >
           <div className="flex items-center gap-2 truncate">
             {selectedItem?.avatar && (
@@ -195,28 +195,28 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
                 <AvatarFallback className="text-[8px]">{getInitials(selectedItem.name)}</AvatarFallback>
               </Avatar>
             )}
-            <span className={cn("truncate", !selectedItem && "text-muted-foreground")}>
+            <span className={cn("truncate", !selectedItem && "text-zinc-500")}>
               {selectedItem ? selectedItem.name : placeholder}
             </span>
           </div>
           <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 w-[250px]" align="start" onKeyDown={handleKeyDown}>
-        <div className="flex items-center border-b px-3">
-          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+      <PopoverContent className="p-0 w-[250px] bg-zinc-900 border-zinc-800" align="start" onKeyDown={handleKeyDown}>
+        <div className="flex items-center border-b border-zinc-800 px-3">
+          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-zinc-400" />
           <Input
             ref={inputRef}
             placeholder={`Search ${placeholder.toLowerCase()}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none shadow-none ring-0 ring-offset-0"
+            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none shadow-none ring-0 ring-offset-0 text-zinc-100"
           />
         </div>
         <ScrollArea className="h-60">
           <div className="p-1">
             {filteredItems.length === 0 && (
-              <div className="py-6 text-center text-sm text-muted-foreground">No items found.</div>
+              <div className="py-6 text-center text-sm text-zinc-500">No items found.</div>
             )}
             {filteredItems.map((item, index) => (
               <div
@@ -224,8 +224,8 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
                 role="button"
                 className={cn(
                   "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
-                  highlightedIndex === index ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
-                  value === item.id && "bg-accent/30"
+                  highlightedIndex === index ? "bg-zinc-800 text-zinc-100" : "hover:bg-zinc-800/50 text-zinc-300",
+                  value === item.id && "bg-zinc-800/70"
                 )}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 onClick={() => {
@@ -244,7 +244,7 @@ const SearchableDropdown = ({ items, value, onSelect, placeholder, disabled, tri
                   )}
                   <span className="truncate">{item.name}</span>
                 </div>
-                {value === item.id && <Check className="ml-2 h-4 w-4 shrink-0" />}
+                {value === item.id && <Check className="ml-2 h-4 w-4 shrink-0 text-sky-400" />}
               </div>
             ))}
           </div>
@@ -414,30 +414,30 @@ const AddTaskRow = ({
   };
 
   return (
-    <tr className="border-b bg-gray-50/50">
+    <tr className="border-b border-white/5 bg-white/[0.02]">
       <td></td>
-      <td className="px-4 py-3 border-r">
+      <td className="px-4 py-3 border-r border-white/5">
         <Input 
           placeholder="Type Task Details" 
           value={taskName} 
           ref={taskInputRef}
           onChange={(e) => setTaskName(e.target.value)} 
           onKeyDown={handleTaskNameKeyDown}
-          className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none"
+          className="bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none text-zinc-100"
         />
         {attachments.length > 0 && (
           <div className="mt-2 space-y-1">
             {attachments.map((att, index) => (
               <div key={index} className="flex items-center gap-2 text-sm">
-                <LinkIcon className="h-3 w-3" fill="currentColor" />
-                <a href={att.publicUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate" title={att.name}>{att.name}</a>
+                <LinkIcon className="h-3 w-3 text-sky-400" fill="currentColor" />
+                <a href={att.publicUrl} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline truncate" title={att.name}>{att.name}</a>
               </div>
             ))}
           </div>
         )}
       </td>
 
-      <td className="px-4 py-3 border-r">
+      <td className="px-4 py-3 border-r border-white/5">
         <SearchableDropdown
           items={sortedClients.map(c => ({ id: c.id, name: c.name, avatar: c.avatar }))}
           value={clientId}
@@ -448,7 +448,7 @@ const AddTaskRow = ({
         />
       </td>
 
-      <td className="px-4 py-3 border-r">
+      <td className="px-4 py-3 border-r border-white/5">
         <SearchableDropdown
           items={[
             { id: 'no-project', name: 'No project' },
@@ -463,7 +463,7 @@ const AddTaskRow = ({
         />
       </td>
 
-      <td className="px-4 py-3 border-r">
+      <td className="px-4 py-3 border-r border-white/5">
         <SearchableDropdown
           items={sortedProfiles.map(p => ({ id: p.id, name: p.full_name || "", avatar: p.avatar_url }))}
           value={assigneeId}
@@ -474,7 +474,7 @@ const AddTaskRow = ({
         />
       </td>
 
-      <td className="px-4 py-3 border-r">
+      <td className="px-4 py-3 border-r border-white/5">
         <SearchableDropdown
           items={availableTaskTypes.map(t => ({ id: t, name: t }))}
           value={taskType}
@@ -486,19 +486,19 @@ const AddTaskRow = ({
         />
       </td>
 
-      <td className="px-4 py-3 border-r">
+      <td className="px-4 py-3 border-r border-white/5">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
             <Button 
               ref={dueDateTriggerRef}
               variant="ghost" 
-              className="w-full justify-start text-left font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent"
+              className="w-full justify-start text-left font-normal bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-white/[0.05] text-zinc-100"
               onKeyDown={handleDueDateKeyDown}
             >
               {formatDate(dueDate)}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-800">
             <CalendarComponent 
               mode="single" 
               selected={dueDate} 
@@ -512,10 +512,10 @@ const AddTaskRow = ({
           </PopoverContent>
         </Popover>
       </td>
-       <td className="px-4 py-3 border-r"></td>
-      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+       <td className="px-4 py-3 border-r border-white/5"></td>
+      <td className="px-4 py-3 text-sm text-zinc-400 whitespace-nowrap">
         <div className="flex items-center gap-2">
-          {statusIcons[status] || <AlertCircle className="h-4 w-4 text-gray-400" />}
+          {statusIcons[status] || <AlertCircle className="h-4 w-4 text-zinc-500" />}
           <span>{statusLabels[status] || status}</span>
         </div>
       </td>
@@ -532,19 +532,19 @@ const AddTaskRow = ({
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8"
+            className="text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 hover:bg-white/[0.05]"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
           >
             {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AttachIcon className="h-4 w-4" fill="currentColor"/>}
           </Button>
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0">Cancel</Button>
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving} className="focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-400">Cancel</Button>
           <Button 
             ref={saveButtonRef}
             size="sm"
             onClick={handleSave} 
             disabled={isSaving || isUploading} 
-            className="focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="focus-visible:ring-0 focus-visible:ring-offset-0 bg-sky-600 hover:bg-sky-500 text-white"
           >
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save
@@ -679,7 +679,7 @@ const TaskRow = ({
     : task.status;
 
   const currentStatusLabel = statusLabels[currentStatus] || currentStatus;
-  const currentStatusIcon = statusIcons[currentStatus] || <AlertCircle className="h-4 w-4 text-gray-400" />;
+  const currentStatusIcon = statusIcons[currentStatus] || <AlertCircle className="h-4 w-4 text-zinc-500" />;
   
   const allowedStatusesForType = useMemo(() => {
     if (!task.type) return Object.keys(statusLabels);
@@ -692,10 +692,6 @@ const TaskRow = ({
         options = ['todo', 'inprogress', 'review', 'posted', 'scheduled', 'done'];
     } else if (activeTab === 'under-review') {
         const isAssignee = currentUserProfile?.id === task.assignee_id;
-        // Rules:
-        // - Editor is Assignee: Review, Approved, Correction, Recreate, New Task, In Progress
-        // - Editor Only: Review, Approved, Correction, Recreate
-        // - Assignee Only: New task, In Progress, Review
         if (isReviewer && isAssignee) {
             options = ['todo', 'inprogress', 'review', 'approved', 'corrections', 'recreate'];
         } else if (isReviewer) {
@@ -707,7 +703,6 @@ const TaskRow = ({
         options = ['posted', 'scheduled', 'approved', 'review', 'planned', 'todo', 'done'];
     }
     
-    // Filter by allowed statuses for this work type
     return options.filter(opt => allowedStatusesForType.includes(opt));
   };
 
@@ -724,32 +719,33 @@ const TaskRow = ({
   return (
     <>
       {canEdit && (
-        <td className={cn("px-4 py-3", isHighlighted && "bg-blue-50")}>
+        <td className={cn("px-4 py-3", isHighlighted && "bg-sky-500/10")}>
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelect(task.id, !!checked)}
             aria-label="Select task"
+            className="border-zinc-700 data-[state=checked]:bg-sky-500 data-[state=checked]:border-sky-500"
           />
         </td>
       )}
       <td 
         onClick={handleRowClick} 
         onDoubleClick={handleRowDoubleClick}
-        className={cn("px-4 py-3 border-r max-w-[250px] cursor-pointer", isHighlighted && "bg-blue-50")}
+        className={cn("px-4 py-3 border-r border-white/5 max-w-[250px] cursor-pointer text-zinc-100", isHighlighted && "bg-sky-500/10")}
       >
         <div className="flex items-center gap-2">
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
             <span className="truncate shrink">{task.description}</span>
           </div>
-          {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-green-600 shrink-0 transform -rotate-30" fill="currentColor"/>}
-          {isReassigned && <Share2 className="h-4 w-4 text-blue-500 shrink-0" />}
+          {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-emerald-400 shrink-0 transform -rotate-30" fill="currentColor"/>}
+          {isReassigned && <Share2 className="h-4 w-4 text-sky-400 shrink-0" />}
           {(task.revisions?.recreations ?? 0) > 0 && (
-            <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+            <Badge variant="outline" className="text-sky-300 border-sky-800/50 bg-sky-950/30">
               <Repeat className="h-3 w-3 mr-1" /> {task.revisions.recreations}
             </Badge>
           )}
           {(task.revisions?.corrections ?? 0) > 0 && (
-            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
+            <Badge variant="outline" className="text-orange-300 border-orange-800/50 bg-orange-950/30">
               <MessageSquare className="h-3 w-3 mr-1" /> {task.revisions.corrections}
             </Badge>
           )}
@@ -757,7 +753,7 @@ const TaskRow = ({
             <Badge
               key={tag}
               variant="secondary"
-              className={`${tag === 'ASAP' ? 'bg-red-100 text-red-700' : tag === 'Feedback' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'} font-medium ml-2`}
+              className={`${tag === 'ASAP' ? 'bg-red-900/40 text-red-300 border-red-800/50' : tag === 'Feedback' ? 'bg-sky-900/40 text-sky-300 border-sky-800/50' : 'bg-zinc-800/40 text-zinc-300 border-zinc-700/50'} font-medium ml-2`}
             >
               {tag}
             </Badge>
@@ -767,14 +763,14 @@ const TaskRow = ({
       <td 
         onClick={handleRowClick} 
         onDoubleClick={handleRowDoubleClick}
-        className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}
+        className={cn("px-4 py-3 border-r border-white/5 max-w-[150px] cursor-pointer text-zinc-300", isHighlighted && "bg-sky-500/10")}
       >
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.clients?.name || '-'}>{task.clients?.name || '-'}</div>
       </td>
       <td 
         onClick={handleRowClick} 
         onDoubleClick={handleRowDoubleClick}
-        className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}
+        className={cn("px-4 py-3 border-r border-white/5 max-w-[150px] cursor-pointer text-zinc-300", isHighlighted && "bg-sky-500/10")}
       >
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.projects?.name || '-'}>{task.projects?.name || '-'}</div>
       </td>
@@ -782,13 +778,13 @@ const TaskRow = ({
         <td 
           onClick={handleRowClick} 
           onDoubleClick={handleRowDoubleClick}
-          className={cn("px-4 py-3 border-r max-w-[180px] cursor-pointer", isHighlighted && "bg-blue-50")}
+          className={cn("px-4 py-3 border-r border-white/5 max-w-[180px] cursor-pointer text-zinc-300", isHighlighted && "bg-sky-500/10")}
         >
           {task.profiles ? (
             <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.profiles.full_name ?? ''}>
-              <Avatar className="h-6 w-6 shrink-0">
+              <Avatar className="h-6 w-6 shrink-0 border border-white/10">
                 <AvatarImage src={getResponsibleAvatar(task.profiles)} />
-                <AvatarFallback>{getInitials(task.profiles.full_name)}</AvatarFallback>
+                <AvatarFallback className="bg-zinc-800 text-zinc-400">{getInitials(task.profiles.full_name)}</AvatarFallback>
               </Avatar>
               <span className="truncate">{task.profiles.full_name}</span>
             </div>
@@ -798,16 +794,16 @@ const TaskRow = ({
       <td 
         onClick={handleRowClick} 
         onDoubleClick={handleRowDoubleClick}
-        className={cn("px-4 py-3 border-r max-w-[120px] cursor-pointer", isHighlighted && "bg-blue-50")}
+        className={cn("px-4 py-3 border-r border-white/5 max-w-[120px] cursor-pointer", isHighlighted && "bg-sky-500/10")}
       >
         <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.type || ''}>
-          {task.type && <Badge variant="outline" className={cn(`border-0`, typeColors[task.type] || 'bg-gray-100 text-gray-800')}>{task.type}</Badge>}
+          {task.type && <Badge variant="outline" className={cn(`border shadow-sm`, typeColors[task.type] || 'bg-zinc-800/40 text-zinc-300 border-zinc-700/50')}>{task.type}</Badge>}
         </div>
       </td>
       <td 
         onClick={handleRowClick} 
         onDoubleClick={handleRowDoubleClick}
-        className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}
+        className={cn("px-4 py-3 border-r border-white/5 max-w-[150px] cursor-pointer text-zinc-300", isHighlighted && "bg-sky-500/10")}
       >
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dateText}</span>
@@ -816,32 +812,32 @@ const TaskRow = ({
       <td 
         onClick={handleRowClick} 
         onDoubleClick={handleRowDoubleClick}
-        className={cn("px-4 py-3 border-r max-w-[150px] cursor-pointer", isHighlighted && "bg-blue-50")}
+        className={cn("px-4 py-3 border-r border-white/5 max-w-[150px] cursor-pointer text-zinc-300", isHighlighted && "bg-sky-500/10")}
       >
         <div className="flex items-center gap-2 truncate whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="truncate">{dynamicDate}</span>
         </div>
       </td>
-      <td className={cn(isHighlighted && "bg-blue-50")}>
+      <td className={cn(isHighlighted && "bg-sky-500/10")}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild disabled={isStatusChangeDisabled}>
-            <div className={cn("group w-full h-full flex items-center justify-start px-4 py-3", !isStatusChangeDisabled && "cursor-pointer")}>
+            <div className={cn("group w-full h-full flex items-center justify-start px-4 py-3 text-zinc-100", !isStatusChangeDisabled && "cursor-pointer hover:bg-white/[0.05]")}>
               <div className="flex items-center gap-2 whitespace-nowrap">
                 {currentStatusIcon}
                 <span>{currentStatusLabel}</span>
               </div>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent className="bg-zinc-900 border-zinc-800">
              {statusOptions.map(opt => (
                   <DropdownMenuItem
                     key={opt}
                     disabled={currentStatus === opt}
                     onClick={() => handleStatusUpdate(opt)}
-                    className={cn(currentStatus === opt && 'bg-accent')}
+                    className={cn(currentStatus === opt && 'bg-zinc-800 text-sky-400')}
                   >
                     <div className="flex items-center gap-2">
-                      {statusIcons[opt] || <AlertCircle className="h-4 w-4 text-gray-400" />}
+                      {statusIcons[opt] || <AlertCircle className="h-4 w-4 text-zinc-500" />}
                       <span>{statusLabels[opt] || opt}</span>
                     </div>
                   </DropdownMenuItem>
@@ -849,7 +845,7 @@ const TaskRow = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </td>
-      <td className={cn("px-4 py-3 text-right", isHighlighted && "bg-blue-50")}>
+      <td className={cn("px-4 py-3 text-right", isHighlighted && "bg-sky-500/10")}>
         {canEdit && (
         <DropdownMenu
           onOpenChange={(open) => setOpenMenuId(open ? task.id : null)}
@@ -858,19 +854,19 @@ const TaskRow = ({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:opacity-100"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/[0.05] focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:opacity-100"
             >
               <MoreVertical
                 className={cn(
                   "h-4 w-4 transition-colors",
-                  openMenuId === task.id ? "text-blue-500" : "text-gray-500 hover:text-blue-500"
+                  openMenuId === task.id ? "text-sky-400" : "text-zinc-500 hover:text-sky-400"
                 )}
               />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             onCloseAutoFocus={(e) => e.preventDefault()}
-            className="z-50"
+            className="z-50 bg-zinc-900 border-zinc-800 text-zinc-100"
           >
             <DropdownMenuItem onClick={() => onEdit(task)}>
               <Pencil className="mr-2 h-4 w-4" /> Edit
@@ -880,7 +876,7 @@ const TaskRow = ({
                 <Share2 className="mr-2 h-4 w-4" /> Re-assign for Posting
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(task)}>
+            <DropdownMenuItem className="text-red-400 focus:text-red-400 focus:bg-red-950/30" onClick={() => onDelete(task)}>
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -889,10 +885,10 @@ const TaskRow = ({
       </td>
 
       <AlertDialog open={isCorrectionsOpen} onOpenChange={setIsCorrectionsOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
           <AlertDialogHeader>
             <AlertDialogTitle>Request Corrections</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-zinc-400">
               Please provide feedback for the task: "{task.description}". The task will be moved back to 'In Progress'.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -900,10 +896,11 @@ const TaskRow = ({
             placeholder="Type your correction notes here..."
             value={correctionNote}
             onChange={(e) => setCorrectionNote(e.target.value)}
+            className="bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-sky-500/50"
           />
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCorrectionSubmit} disabled={!correctionNote.trim()}>
+            <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCorrectionSubmit} disabled={!correctionNote.trim()} className="bg-sky-600 hover:bg-sky-500 text-white">
               Submit Corrections
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -986,7 +983,7 @@ const TaskTableBody = ({
       {tasks.map((task) => (
         <tr
           key={task.id}
-          className={cn("border-b group hover:bg-muted/50 data-[menu-open=true]:bg-muted/50 transition-colors")}
+          className={cn("border-b border-white/5 group hover:bg-white/[0.04] data-[menu-open=true]:bg-white/[0.04] transition-colors")}
           data-menu-open={openMenuId === task.id}
         >
           <TaskRow
@@ -1261,10 +1258,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const activeTasks = useMemo(() => sortedTasks.filter(t => {
     if (t.is_deleted) return false;
-    
-    // Priority: Scheduled and Posted belong in Completed
     if (t.posting_status === 'Posted' || t.posting_status === 'Scheduled') return false;
-
     const isPlanned = t.posting_status === 'Planned';
     const isNormalActive = ['todo', 'inprogress', 'corrections', 'recreate'].includes(t.status);
     return isPlanned || isNormalActive;
@@ -1272,10 +1266,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
   const underReviewTasks = useMemo(() => sortedTasks.filter(t => {
     if (t.is_deleted) return false;
-    
-    // Priority: Scheduled and Posted belong in Completed
     if (t.posting_status === 'Posted' || t.posting_status === 'Scheduled') return false;
-
     return t.status === 'review' || t.status === 'under-review';
   }), [sortedTasks]);
 
@@ -1460,13 +1451,13 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => {
     const isSorted = sortConfig?.key === sortKey;
     return (
-      <th className={cn("px-4 py-2 text-sm font-medium text-gray-500", className)}>
-          <Button variant="ghost" onClick={() => requestSort(sortKey)} className="p-0 h-auto hover:bg-transparent">
+      <th className={cn("px-4 py-2 text-sm font-medium text-zinc-500", className)}>
+          <Button variant="ghost" onClick={() => requestSort(sortKey)} className="p-0 h-auto hover:bg-transparent text-zinc-500 hover:text-zinc-300">
               {children}
               {isSorted ? (
                 sortConfig?.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
               ) : (
-                <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                <ArrowUpDown className="ml-2 h-4 w-4 text-zinc-600 opacity-0 group-hover:opacity-100" />
               )}
           </Button>
       </th>
@@ -1484,64 +1475,67 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const renderTaskTable = (tasksToRender: TaskWithDetails[], status: Task['status'], isReviewer: boolean, activeTab: string) => {
     const allVisibleTasksSelected = tasksToRender.length > 0 && tasksToRender.every(t => selectedTaskIds.includes(t.id));
     return (
-      <table className="w-full text-left mt-2">
-        <thead>
-          <tr className="border-b border-gray-200 group">
-             {canEditTasks && (
-                <th className="px-4 py-2 w-12">
-                  <Checkbox
-                      checked={allVisibleTasksSelected}
-                      onCheckedChange={(checked) => {
-                      const taskIds = tasksToRender.map(t => t.id);
-                      if (checked) {
-                          setSelectedTaskIds(prev => [...new Set([...prev, ...taskIds])]);
-                      } else {
-                          setSelectedTaskIds(prev => prev.filter(id => !taskIds.includes(id)));
-                      }
-                      }}
-                  />
-                </th>
-             )}
-            <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
-            <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
-            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "150px" }}>Project</th>
-            {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
-            <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
-            <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
-            <SortableHeader sortKey={activeTab === 'active' ? 'created_at' : 'status_updated_at'} className="w-[150px]">{getDynamicDateColumnHeader()}</SortableHeader>
-            <th className="px-4 py-2 text-sm font-medium text-gray-500" style={{ width: "120px" }}>Status</th>
-            <th className="px-4 py-2" style={{ width: "50px" }}></th>
-          </tr>
-        </thead>
-        <TaskTableBody
-          tasks={tasksToRender}
-          allTasks={tasks}
-          isAddingTask={canEditTasks && isAddingTask && activeTab === 'active'}
-          onSaveTask={handleSaveTask}
-          onCancelAddTask={() => { setIsAddingTask(false); setDuplicationData(null); }}
-          projects={allProjects}
-          clients={clients}
-          profiles={profiles}
-          onStatusChange={handleStatusChange}
-          onPostingStatusChange={handlePostingStatusChange}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteClick}
-          canEdit={canEditTasks}
-          onHighlight={setClickedTaskId}
-          onOpenDetails={setSelectedTask}
-          onReassign={setTaskToReassign}
-          status={status}
-          isReviewer={isReviewer}
-          activeTab={activeTab}
-          currentUserProfile={currentUserProfile}
-          selectedTaskIds={selectedTaskIds}
-          onSelectTask={handleSelectTask}
-          highlightedTaskId={highlightedTaskId}
-          clickedTaskId={clickedTaskId}
-          duplicationData={duplicationData}
-          workTypeStatusConfig={workTypeStatusConfig}
-        />
-      </table>
+      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02] backdrop-blur-xl shadow-2xl shadow-black/50">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-white/10 bg-white/5 group">
+               {canEditTasks && (
+                  <th className="px-4 py-2 w-12">
+                    <Checkbox
+                        checked={allVisibleTasksSelected}
+                        onCheckedChange={(checked) => {
+                        const taskIds = tasksToRender.map(t => t.id);
+                        if (checked) {
+                            setSelectedTaskIds(prev => [...new Set([...prev, ...taskIds])]);
+                        } else {
+                            setSelectedTaskIds(prev => prev.filter(id => !taskIds.includes(id)));
+                        }
+                        }}
+                        className="border-zinc-700 data-[state=checked]:bg-sky-500 data-[state=checked]:border-sky-500"
+                    />
+                  </th>
+               )}
+              <SortableHeader sortKey="description" className="w-[250px]">Task Details</SortableHeader>
+              <SortableHeader sortKey="client" className="w-[150px]">Client</SortableHeader>
+              <th className="px-4 py-2 text-sm font-medium text-zinc-500" style={{ width: "150px" }}>Project</th>
+              {canEditTasks && <SortableHeader sortKey="assignee" className="w-[180px]">Responsible</SortableHeader>}
+              <SortableHeader sortKey="type" className="w-[120px]">Type</SortableHeader>
+              <SortableHeader sortKey="deadline" className="w-[150px]">Due date</SortableHeader>
+              <SortableHeader sortKey={activeTab === 'active' ? 'created_at' : 'status_updated_at'} className="w-[150px]">{getDynamicDateColumnHeader()}</SortableHeader>
+              <th className="px-4 py-2 text-sm font-medium text-zinc-500" style={{ width: "120px" }}>Status</th>
+              <th className="px-4 py-2" style={{ width: "50px" }}></th>
+            </tr>
+          </thead>
+          <TaskTableBody
+            tasks={tasksToRender}
+            allTasks={tasks}
+            isAddingTask={canEditTasks && isAddingTask && activeTab === 'active'}
+            onSaveTask={handleSaveTask}
+            onCancelAddTask={() => { setIsAddingTask(false); setDuplicationData(null); }}
+            projects={allProjects}
+            clients={clients}
+            profiles={profiles}
+            onStatusChange={handleStatusChange}
+            onPostingStatusChange={handlePostingStatusChange}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            canEdit={canEditTasks}
+            onHighlight={setClickedTaskId}
+            onOpenDetails={setSelectedTask}
+            onReassign={setTaskToReassign}
+            status={status}
+            isReviewer={isReviewer}
+            activeTab={activeTab}
+            currentUserProfile={currentUserProfile}
+            selectedTaskIds={selectedTaskIds}
+            onSelectTask={handleSelectTask}
+            highlightedTaskId={highlightedTaskId}
+            clickedTaskId={clickedTaskId}
+            duplicationData={duplicationData}
+            workTypeStatusConfig={workTypeStatusConfig}
+          />
+        </table>
+      </div>
     )
   }
 
@@ -1551,62 +1545,66 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         return (
             <div className="mb-4 overflow-x-auto">
             <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                <h2 className="text-lg font-semibold text-zinc-100 mb-3">
                 Deleted Tasks
-                <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 ml-2">{deletedTasks.length}</span>
+                <span className="text-sm font-normal text-zinc-400 bg-zinc-800 rounded-full px-2 py-0.5 ml-2">{deletedTasks.length}</span>
                 </h2>
             </div>
             {deletedTasks.length > 0 ? (
-                <table className="w-full text-left mt-2">
-                <thead>
-                    <tr className="border-b">
-                    <th className="px-4 py-2 w-12">
-                        <Checkbox
-                            checked={allBinTasksSelected}
-                            onCheckedChange={(checked) => {
-                                const taskIds = deletedTasks.map(t => t.id);
-                                if (checked) {
-                                    setSelectedTaskIds(taskIds);
-                                } else {
-                                    setSelectedTaskIds([]);
-                                }
-                            }}
-                        />
-                    </th>
-                    <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[40%]">Task Details</th>
-                    <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Project</th>
-                    <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]">Assignee</th>
-                    <th className="px-4 py-2 text-sm font-medium text-gray-500 w-[20%]"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {deletedTasks.map(task => (
-                    <tr key={task.id} className="border-b group hover:bg-muted/50">
-                        <td className="px-4 py-3">
-                            <Checkbox
-                                checked={selectedTaskIds.includes(task.id)}
-                                onCheckedChange={(checked) => handleSelectTask(task.id, !!checked)}
-                            />
-                        </td>
-                        <td className="px-4 py-3">{task.description}</td>
-                        <td className="px-4 py-3">{task.projects?.name || '-'}</td>
-                        <td className="px-4 py-3">{task.profiles?.full_name || '-'}</td>
-                        <td className="px-4 py-3 text-right">
-                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleRestoreTask(task)}>
-                                  <RefreshCcw className="mr-2 h-4 w-4 mr-2" /> Restore
-                              </Button>
-                              <Button variant="destructive" size="sm" onClick={() => setTaskToDeletePermanently(task)}>
-                                  <Trash2 className="mr-2 h-4 w-4 mr-2" /> Delete Permanently
-                              </Button>
-                          </div>
-                        </td>
-                    </tr>
-                    ))}
-                </tbody>
-                </table>
+                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02] backdrop-blur-xl">
+                  <table className="w-full text-left">
+                  <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                      <th className="px-4 py-2 w-12">
+                          <Checkbox
+                              checked={allBinTasksSelected}
+                              onCheckedChange={(checked) => {
+                                  const taskIds = deletedTasks.map(t => t.id);
+                                  if (checked) {
+                                      setSelectedTaskIds(taskIds);
+                                  } else {
+                                      setSelectedTaskIds([]);
+                                  }
+                              }}
+                              className="border-zinc-700 data-[state=checked]:bg-sky-500 data-[state=checked]:border-sky-500"
+                          />
+                      </th>
+                      <th className="px-4 py-2 text-sm font-medium text-zinc-500 w-[40%]">Task Details</th>
+                      <th className="px-4 py-2 text-sm font-medium text-zinc-500 w-[20%]">Project</th>
+                      <th className="px-4 py-2 text-sm font-medium text-zinc-500 w-[20%]">Assignee</th>
+                      <th className="px-4 py-2 text-sm font-medium text-zinc-500 w-[20%]"></th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {deletedTasks.map(task => (
+                      <tr key={task.id} className="border-b border-white/5 group hover:bg-white/[0.04]">
+                          <td className="px-4 py-3">
+                              <Checkbox
+                                  checked={selectedTaskIds.includes(task.id)}
+                                  onCheckedChange={(checked) => handleSelectTask(task.id, !!checked)}
+                                  className="border-zinc-700 data-[state=checked]:bg-sky-500 data-[state=checked]:border-sky-500"
+                              />
+                          </td>
+                          <td className="px-4 py-3 text-zinc-100">{task.description}</td>
+                          <td className="px-4 py-3 text-zinc-400">{task.projects?.name || '-'}</td>
+                          <td className="px-4 py-3 text-zinc-400">{task.profiles?.full_name || '-'}</td>
+                          <td className="px-4 py-3 text-right">
+                             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => handleRestoreTask(task)} className="text-sky-400 hover:bg-sky-500/10 hover:text-sky-300">
+                                    <RefreshCcw className="mr-2 h-4 w-4" /> Restore
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setTaskToDeletePermanently(task)} className="text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </Button>
+                            </div>
+                          </td>
+                      </tr>
+                      ))}
+                  </tbody>
+                  </table>
+                </div>
             ) : (
-                <p className="text-muted-foreground mt-4 text-center py-8">The bin is empty.</p>
+                <p className="text-zinc-500 mt-4 text-center py-16 bg-white/[0.01] rounded-xl border-2 border-dashed border-white/5">The bin is empty.</p>
             )}
             </div>
         );
@@ -1619,17 +1617,22 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     ];
     return (
       <div className="w-full">
-          <div className="flex items-center rounded-full bg-muted p-1 mb-4">
+          <div className="flex items-center rounded-full bg-white/[0.03] border border-white/10 p-1 mb-6 max-w-lg">
             {tabs.map(tab => (
               <Button
                 key={tab.value}
-                variant={activeTab === tab.value ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 onClick={() => setActiveTab(tab.value)}
-                className={cn('rounded-full flex-1', activeTab === tab.value ? 'bg-white shadow' : '')}
+                className={cn(
+                    'rounded-full flex-1 transition-all duration-300', 
+                    activeTab === tab.value 
+                        ? 'bg-gradient-to-r from-sky-500/20 to-blue-500/10 text-sky-300 shadow-[0_0_20px_rgba(56,189,248,0.12)] border border-sky-500/20' 
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                )}
               >
                 {tab.label}
-                <Badge variant="secondary" className="ml-2">{tab.count}</Badge>
+                <Badge variant="secondary" className="ml-2 bg-white/10 text-zinc-300 border-0">{tab.count}</Badge>
               </Button>
             ))}
           </div>
@@ -1642,7 +1645,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         {activeTab === 'active' && canEditTasks && !isAddingTask && (
           <Button
               variant="ghost"
-              className="mt-2 text-muted-foreground inline-flex p-0 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0 px-0"
+              className="mt-4 text-zinc-500 inline-flex p-0 h-auto hover:bg-transparent hover:text-sky-400 focus:ring-0 focus:ring-offset-0 px-0 transition-colors"
               onClick={() => { setIsAddingTask(true); setDuplicationData(null); }}
           >
               <Plus className="mr-2 h-4 w-4" /> Add task
@@ -1655,7 +1658,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const FilterManager = () => {
     const [filterType, setFilterType] = useState<FilterType | null>(null);
     const [filterValue, setFilterValue] = useState<FilterValue>(null);
-    const [editingFilterId, setEditingFilterId] = useState<string | null>(null);
     
     const addFilter = () => {
       if (filterType && filterValue) {
@@ -1675,7 +1677,6 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
     const updateFilter = (id: string, value: FilterValue) => {
       setActiveFilters(prev => prev.map(f => f.id === id ? {...f, value} : f));
-      setEditingFilterId(null);
     };
   
     const renderFilterValue = (filter: ActiveFilter) => {
@@ -1701,23 +1702,23 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         case 'client':
           return (
             <Select onValueChange={onChange} value={value as string || undefined}>
-              <SelectTrigger><SelectValue placeholder="Select Client" /></SelectTrigger>
-              <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              <SelectTrigger className="bg-zinc-950 border-zinc-800 text-zinc-100"><SelectValue placeholder="Select Client" /></SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           );
         case 'responsible':
           return (
             <Select onValueChange={onChange} value={value as string || undefined}>
-              <SelectTrigger><SelectValue placeholder="Select User" /></SelectTrigger>
-              <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
+              <SelectTrigger className="bg-zinc-950 border-zinc-800 text-zinc-100"><SelectValue placeholder="Select User" /></SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
             </Select>
           );
         case 'type':
            const allTypes = [...new Set(tasks.map(t => t.type).filter(Boolean))];
           return (
             <Select onValueChange={onChange} value={value as string || undefined}>
-              <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
-              <SelectContent>{allTypes.map(t => <SelectItem key={t} value={t!}>{t}</SelectItem>)}</SelectContent>
+              <SelectTrigger className="bg-zinc-950 border-zinc-800 text-zinc-100"><SelectValue placeholder="Select Type" /></SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">{allTypes.map(t => <SelectItem key={t} value={t!}>{t}</SelectItem>)}</SelectContent>
             </Select>
           );
         case 'dueDate':
@@ -1725,24 +1726,24 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           return (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                <Button variant="outline" className="w-full justify-start text-left font-normal bg-zinc-950 border-zinc-800 text-zinc-100 hover:bg-zinc-900">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {value ? format(value as Date, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0"><CalendarComponent mode="single" selected={value as Date} onSelect={(d) => onChange(d || null)} initialFocus /></PopoverContent>
+              <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-800"><CalendarComponent mode="single" selected={value as Date} onSelect={(d) => onChange(d || null)} initialFocus /></PopoverContent>
             </Popover>
           );
         case 'dateRange':
           return (
              <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                <Button variant="outline" className="w-full justify-start text-left font-normal bg-zinc-950 border-zinc-800 text-zinc-100 hover:bg-zinc-900">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {value && 'from' in value && (value as {from:Date, to?:Date}).to ? `${format((value as {from:Date}).from, "LLL dd, y")} - ${format((value as {from:Date, to:Date}).to, "LLL dd, y")}` : <span>Pick a date range</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0"><CalendarComponent mode="range" selected={value as { from: Date; to: Date }} onSelect={(range) => onChange(range || null)} /></PopoverContent>
+              <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-800"><CalendarComponent mode="range" selected={value as { from: Date; to: Date }} onSelect={(range) => onChange(range || null)} /></PopoverContent>
             </Popover>
           );
         default:
@@ -1750,41 +1751,18 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       }
     };
   
-    const EditFilterPopover = ({ filter }: { filter: ActiveFilter }) => {
-      const [localValue, setLocalValue] = useState(filter.value);
-      return (
-        <Popover onOpenChange={(open) => !open && setEditingFilterId(null)}>
-          <PopoverTrigger asChild>
-             <Badge role="button" variant="secondary" className="flex items-center gap-1 cursor-pointer">
-              {filter.type}: {renderFilterValue(filter)}
-            </Badge>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-2">
-              <h4 className="font-medium text-sm capitalize">{filter.type}</h4>
-              {renderFilterInput(filter.type, localValue, setLocalValue)}
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="ghost" size="sm" onClick={() => removeFilter(filter.id)}>Remove</Button>
-                <Button size="sm" onClick={() => updateFilter(filter.id, localValue)}>Save</Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      );
-    };
-
     return (
       <Popover>
         <PopoverTrigger asChild>
-           <Button variant="outline" className="rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+           <Button variant="outline" className="rounded-full bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border-sky-500/20"><Filter className="mr-2 h-4 w-4" />Filter</Button>
         </PopoverTrigger>
-        <PopoverContent className="w-96">
+        <PopoverContent className="w-96 bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl">
           <div className="space-y-4">
-            <h4 className="font-medium leading-none">Filters</h4>
+            <h4 className="font-semibold text-lg">Filters</h4>
             <div className="flex gap-2">
               <Select onValueChange={(v: FilterType) => { setFilterType(v); setFilterValue(null); }}>
-                <SelectTrigger><SelectValue placeholder="Select a filter" /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="bg-zinc-950 border-zinc-800 text-zinc-100"><SelectValue placeholder="Select a filter" /></SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                   <SelectItem value="client">Client</SelectItem>
                   <SelectItem value="responsible">Responsible</SelectItem>
                   <SelectItem value="type">Type</SelectItem>
@@ -1793,15 +1771,18 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                   <SelectItem value="dateRange">Date Range</SelectItem>
                 </SelectContent>
               </Select>
-              <Button onClick={addFilter} disabled={!filterType || !filterValue}>Add</Button>
+              <Button onClick={addFilter} disabled={!filterType || !filterValue} className="bg-sky-600 hover:bg-sky-500">Add</Button>
             </div>
-            {filterType && <div className="p-2 border rounded-md">{renderFilterInput(filterType, filterValue, setFilterValue)}</div>}
+            {filterType && <div className="p-3 border border-zinc-800 rounded-xl bg-white/[0.02]">{renderFilterInput(filterType, filterValue, setFilterValue)}</div>}
             <div className="space-y-2">
-              <h5 className="text-sm font-medium">Active Filters</h5>
-              {activeFilters.length === 0 ? <p className="text-xs text-muted-foreground">No filters applied.</p> : (
+              <h5 className="text-sm font-medium text-zinc-400 uppercase tracking-widest text-[10px]">Active Filters</h5>
+              {activeFilters.length === 0 ? <p className="text-xs text-zinc-600 italic">No filters applied.</p> : (
                 <div className="flex flex-wrap gap-2">
                   {activeFilters.map(f => (
-                    <EditFilterPopover key={f.id} filter={f} />
+                    <Badge key={f.id} variant="secondary" className="flex items-center gap-1.5 bg-zinc-800 text-zinc-200 border-zinc-700 py-1 pl-2 pr-1">
+                      {f.type}: {renderFilterValue(f)}
+                      <button onClick={() => removeFilter(f.id)} className="hover:bg-zinc-700 rounded-full p-0.5"><XIcon className="h-3 w-3" /></button>
+                    </Badge>
                   ))}
                 </div>
               )}
@@ -1813,34 +1794,34 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg h-full w-full flex flex-col">
-      <header className="flex items-center justify-between pb-4 mb-4 border-b">
+    <div className="bg-[#0f0f0f] p-4 md:p-8 lg:p-10 h-full w-full flex flex-col text-zinc-100">
+      <header className="flex items-center justify-between pb-6 mb-2 border-b border-white/10">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold">Tasks</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-white">Tasks</h1>
           {selectedTaskIds.length > 0 ? (
-            <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{selectedTaskIds.length} selected</span>
+            <div className="flex items-center gap-3 animate-in slide-in-from-left-2">
+                <span className="text-sm text-zinc-500 font-medium">{selectedTaskIds.length} selected</span>
                 {showBin ? (
                     <>
-                        <Button variant="outline" size="sm" onClick={handleBulkRestore}>
+                        <Button variant="outline" size="sm" onClick={handleBulkRestore} className="rounded-full bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20">
                             <RefreshCcw className="mr-2 h-4 w-4" /> Restore
                         </Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
+                                <Button variant="destructive" size="sm" className="rounded-full bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20">
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
                                 </Button>
                             </AlertDialogTrigger>
-                             <AlertDialogContent>
+                             <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
+                                    <AlertDialogDescription className="text-zinc-400">
                                         This will permanently delete {selectedTaskIds.length} task(s). This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleBulkDeletePermanently} className={cn(buttonVariants({ variant: "destructive" }))}>
+                                    <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700">Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleBulkDeletePermanently} className="bg-red-600 hover:bg-red-500 text-white">
                                         {isPending ? 'Deleting...' : 'Delete Permanently'}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -1850,21 +1831,21 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                 ) : (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
+                            <Button variant="destructive" size="sm" className="rounded-full bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
+                                <AlertDialogDescription className="text-zinc-400">
                                     This will move {selectedTaskIds.length} task(s) to the bin. This action can be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleBulkDelete} className={cn(buttonVariants({ variant: "destructive" }))}>
+                                <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700">Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-500 text-white">
                                     {isPending ? 'Deleting...' : 'Delete'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
@@ -1875,7 +1856,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           ) : (
             <>
               {canEditTasks && !isAddingTask && !showBin && activeTab === 'active' && (
-                <Button onClick={() => { setIsAddingTask(true); setDuplicationData(null); }} className="rounded-full">
+                <Button onClick={() => { setIsAddingTask(true); setDuplicationData(null); }} className="rounded-full bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.3)]">
                   <Plus className="mr-2 h-4 w-4" />
                   Add new
                 </Button>
@@ -1883,7 +1864,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             </>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
            <div
             className="flex items-center"
             onMouseLeave={() => { if (!searchQuery && searchInputRef.current !== document.activeElement) setIsSearchOpen(false) }}
@@ -1892,7 +1873,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
               {isSearchOpen && (
                 <motion.div
                   initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: 'auto', opacity: 1 }}
+                  animate={{ width: '200px', opacity: 1 }}
                   exit={{ width: 0, opacity: 0 }}
                   transition={{ duration: 0.3 }}
                 >
@@ -1903,46 +1884,46 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onBlur={() => {if(!searchQuery) setIsSearchOpen(false)}}
-                    className="h-9 focus-visible:ring-transparent focus-visible:ring-offset-0"
+                    className="h-10 bg-white/5 border-white/10 text-white focus-visible:ring-sky-500/50 rounded-full pl-4 pr-10"
                   />
                 </motion.div>
               )}
             </AnimatePresence>
-             <Button variant="ghost" size="icon" onClick={handleSearchClick} className={cn(isSearchOpen && 'rounded-l-none')}>
+             <Button variant="ghost" size="icon" onClick={handleSearchClick} className={cn("rounded-full hover:bg-white/5 text-zinc-400", isSearchOpen && '-ml-10')}>
                 <Search className="h-5 w-5" />
             </Button>
           </div>
           <FilterManager />
-          {canEditTasks ? (
-            <div className="flex items-center rounded-full bg-gray-100 p-1">
+          {canEditTasks && !showBin && (
+            <div className="flex items-center rounded-full bg-white/5 border border-white/10 p-1">
               <Button
-                variant={taskView === 'all' ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 onClick={() => setTaskView('all')}
-                className={cn('rounded-full', taskView === 'all' ? 'bg-white shadow' : '')}
+                className={cn('rounded-full px-4 h-8 transition-all', taskView === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300')}
               >
                 All Tasks
               </Button>
               <Button
-                variant={taskView === 'mine' ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 onClick={() => setTaskView('mine')}
-                className={cn('rounded-full', taskView === 'mine' ? 'bg-white shadow' : '')}
+                className={cn('rounded-full px-4 h-8 transition-all', taskView === 'mine' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300')}
               >
                 My Tasks
               </Button>
             </div>
-          ) : null}
+          )}
           {canEditTasks && (
-            <Button variant="destructive" className="bg-red-100 text-red-600 hover:bg-red-200 rounded-full" onClick={() => setShowBin(!showBin)}>
+            <Button variant="destructive" className={cn("rounded-full h-10 px-4 transition-all", showBin ? "bg-zinc-800 text-white border-zinc-700" : "bg-red-950/30 text-red-400 hover:bg-red-900/40 border-red-900/30")} onClick={() => setShowBin(!showBin)}>
               <Trash2 className="mr-2 h-4 w-4" />
-              Bin
+              {showBin ? 'Exit Bin' : 'Bin'}
             </Button>
           )}
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto custom-scrollbar pt-4">
         <div className="min-w-full inline-block align-middle h-full">
           {mainContent()}
         </div>
@@ -1987,18 +1968,18 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         />
       )}
        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-zinc-400">
               This will move the task "{taskToDelete?.description}" to the bin. You can restore it later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteTask}
-              className={cn(buttonVariants({ variant: "destructive" }))}
+              className="bg-red-600 hover:bg-red-500 text-white"
               disabled={isPending}
             >
               {isPending ? "Deleting..." : "Delete"}
@@ -2007,18 +1988,18 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         </AlertDialogContent>
       </AlertDialog>
        <AlertDialog open={!!taskToDeletePermanently} onOpenChange={(open) => !open && setTaskToDeletePermanently(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-zinc-400">
               This action cannot be undone. This will permanently delete the task "{taskToDeletePermanently?.description}".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeletePermanently}
-              className={cn(buttonVariants({ variant: "destructive" }))}
+              className="bg-red-600 hover:bg-red-500 text-white"
               disabled={isPending}
             >
               {isPending ? "Deleting..." : "Delete Permanently"}
@@ -2026,6 +2007,22 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      `}</style>
     </div>
   );
 }
