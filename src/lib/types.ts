@@ -60,9 +60,10 @@ export type RoleWithPermissions = Omit<Role, 'permissions'> & {
 };
 
 export type Attachment = {
-  path: string;
+  path?: string;
   publicUrl: string;
   name: string;
+  type?: 'file' | 'link';
 }
 
 export type Correction = {

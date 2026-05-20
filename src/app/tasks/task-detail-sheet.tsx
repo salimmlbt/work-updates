@@ -1,3 +1,4 @@
+
 'use client'
 
 import {
@@ -19,6 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Send,
+  Globe,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -33,6 +36,9 @@ import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import { uploadAttachment } from '@/app/actions'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const typeColors: Record<string, string> = {
   Poster: 'bg-sky-900/30 text-sky-300 border-sky-800/50',
@@ -80,6 +86,10 @@ export function TaskDetailSheet({
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
+  const [linkName, setLinkName] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
+  const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false)
+
   const supabase = createClient()
   const { toast } = useToast()
   const [currentCorrectionIndex, setCurrentCorrectionIndex] = useState(0)
@@ -99,7 +109,7 @@ export function TaskDetailSheet({
     return format(d, dateFormat)
   }
 
-  const attachments = useMemo(() => {
+  const allAttachments = useMemo(() => {
     if (!task.attachments) return []
     try {
       if (Array.isArray(task.attachments)) {
@@ -113,6 +123,9 @@ export function TaskDetailSheet({
     }
     return []
   }, [task.attachments])
+
+  const links = useMemo(() => allAttachments.filter(a => a.type === 'link'), [allAttachments])
+  const files = useMemo(() => allAttachments.filter(a => a.type === 'file' || !a.type), [allAttachments])
 
   const handleDescriptionUpdate = (newContent: any) => {
     setDescriptionContent(newContent)
@@ -151,11 +164,11 @@ export function TaskDetailSheet({
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+    const filesList = event.target.files;
+    if (!filesList || filesList.length === 0) return;
 
     setIsUploading(true);
-    const selectedFiles = Array.from(files);
+    const selectedFiles = Array.from(filesList);
     const newAttachments: Attachment[] = [];
 
     for (const file of selectedFiles) {
@@ -165,12 +178,12 @@ export function TaskDetailSheet({
       if (error) {
         toast({ title: `Upload failed for ${file.name}`, description: error, variant: "destructive" });
       } else if (data) {
-        newAttachments.push(data);
+        newAttachments.push({ ...data, type: 'file' });
       }
     }
 
     if (newAttachments.length > 0) {
-      const updatedAttachments = [...attachments, ...newAttachments];
+      const updatedAttachments = [...allAttachments, ...newAttachments];
       
       const { error: dbError, data: updatedTask } = await supabase
         .from('tasks')
@@ -193,6 +206,63 @@ export function TaskDetailSheet({
     setIsUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const handleAddLink = async () => {
+    if (!linkUrl.trim() || !linkName.trim()) {
+      toast({ title: "Link name and URL are required", variant: "destructive" });
+      return;
+    }
+
+    let formattedUrl = linkUrl.trim();
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+
+    const newLink: Attachment = {
+      name: linkName.trim(),
+      publicUrl: formattedUrl,
+      type: 'link'
+    };
+
+    const updatedAttachments = [...allAttachments, newLink];
+
+    const { error, data } = await supabase
+      .from('tasks')
+      .update({ attachments: updatedAttachments as any })
+      .eq('id', task.id)
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: "Error adding link", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Link added successfully!" });
+      setLinkName('');
+      setLinkUrl('');
+      setIsLinkPopoverOpen(false);
+      onTaskUpdated({ ...task, ...data });
+    }
+  };
+
+  const removeAttachment = async (attachmentToRemove: Attachment) => {
+    const updatedAttachments = allAttachments.filter(a => 
+      !(a.name === attachmentToRemove.name && a.publicUrl === attachmentToRemove.publicUrl)
+    );
+
+    const { error, data } = await supabase
+      .from('tasks')
+      .update({ attachments: updatedAttachments as any })
+      .eq('id', task.id)
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: "Error removing item", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Item removed" });
+      onTaskUpdated({ ...task, ...data });
+    }
+  }
 
 
   return (
@@ -326,48 +396,144 @@ export function TaskDetailSheet({
 
           <Separator className="bg-white/5" />
 
-          {/* Attachments */}
+          {/* Web Links */}
           <section className="space-y-5">
-            <div className="flex items-center gap-2">
-              <LinkIcon className="h-5 w-5 text-sky-400" />
-              <h3 className="font-bold text-xl text-white">Attachments</h3>
-              <Badge variant="secondary" className="ml-2 bg-white/10 text-zinc-300 border-0">
-                {attachments.length}
-              </Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-sky-400" />
+                <h3 className="font-bold text-xl text-white">Web Links</h3>
+                <Badge variant="secondary" className="ml-2 bg-white/10 text-zinc-300 border-0">
+                  {links.length}
+                </Badge>
+              </div>
+              <Popover open={isLinkPopoverOpen} onOpenChange={setIsLinkPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-full">
+                    <Plus className="h-4 w-4 mr-2" /> Add Link
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4 bg-zinc-900 border-zinc-800 text-white shadow-2xl" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500">Attach a URL</h4>
+                    <div className="space-y-2">
+                      <Label htmlFor="sheet-link-name" className="text-[10px] font-bold uppercase text-zinc-400">Label</Label>
+                      <Input id="sheet-link-name" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="e.g. Reference Folder" className="h-9 bg-zinc-950 border-zinc-800 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sheet-link-url" className="text-[10px] font-bold uppercase text-zinc-400">URL</Label>
+                      <Input id="sheet-link-url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." className="h-9 bg-zinc-950 border-zinc-800 text-sm" />
+                    </div>
+                    <Button size="sm" onClick={handleAddLink} className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold uppercase tracking-widest text-[10px] h-10">Add Link</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
-            {attachments.length > 0 ? (
-              <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
-                {attachments.map((att, i) => (
-                  <a
-                    key={i}
-                    href={att.publicUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-sky-500/50 transition-all shadow-lg shadow-black/20"
-                  >
-                    {att.name.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
-                      <Image
-                        src={att.publicUrl}
-                        alt={att.name}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center p-3 text-center">
-                        <LinkIcon className="h-6 w-6 text-zinc-600 mb-2" />
-                        <p
-                          className="text-[10px] text-zinc-400 line-clamp-2"
-                          title={att.name}
-                        >
-                          {att.name}
-                        </p>
+            {links.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3">
+                {links.map((link, i) => (
+                  <div key={i} className="group flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all">
+                    <a
+                      href={link.publicUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 flex-1 min-w-0"
+                    >
+                      <div className="h-10 w-10 rounded-lg bg-sky-500/10 flex items-center justify-center shrink-0">
+                        <Globe className="h-5 w-5 text-sky-400" />
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                      <span className="text-white text-[10px] font-bold bg-sky-600/80 px-2 py-1 rounded-full uppercase tracking-wider shadow-lg">View File</span>
-                    </div>
-                  </a>
+                      <div className="truncate">
+                        <p className="font-bold text-sm text-zinc-100 truncate">{link.name}</p>
+                        <p className="text-xs text-zinc-500 truncate">{link.publicUrl}</p>
+                      </div>
+                    </a>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => removeAttachment(link)}
+                      className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 h-8 w-8 transition-all"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-10 text-center rounded-xl border-2 border-dashed border-white/5 bg-white/[0.01]">
+                <p className="text-sm text-zinc-600">No web links associated with this task.</p>
+              </div>
+            )}
+          </section>
+
+          <Separator className="bg-white/5" />
+
+          {/* Attachments (Files) */}
+          <section className="space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <LinkIcon className="h-5 w-5 text-sky-400" />
+                <h3 className="font-bold text-xl text-white">Files</h3>
+                <Badge variant="secondary" className="ml-2 bg-white/10 text-zinc-300 border-0">
+                  {files.length}
+                </Badge>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-full"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isUploading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
+                Upload File
+              </Button>
+            </div>
+
+            {files.length > 0 ? (
+              <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
+                {files.map((att, i) => (
+                  <div key={i} className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-sky-500/50 transition-all shadow-lg shadow-black/20">
+                    <a
+                      href={att.publicUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-full w-full block"
+                    >
+                      {att.name.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+                        <Image
+                          src={att.publicUrl}
+                          alt={att.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center p-3 text-center">
+                          <LinkIcon className="h-6 w-6 text-zinc-600 mb-2" />
+                          <p
+                            className="text-[10px] text-zinc-400 line-clamp-2"
+                            title={att.name}
+                          >
+                            {att.name}
+                          </p>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                        <span className="text-white text-[10px] font-bold bg-sky-600/80 px-2 py-1 rounded-full uppercase tracking-wider shadow-lg">View File</span>
+                      </div>
+                    </a>
+                    <Button 
+                      variant="destructive" 
+                      size="icon" 
+                      onClick={(e) => { e.preventDefault(); removeAttachment(att); }}
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                    >
+                      <XIcon className="h-3 w-3" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -383,20 +549,6 @@ export function TaskDetailSheet({
               onChange={handleFileSelect}
               className="hidden"
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-2 text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-full h-9 px-4 transition-all"
-              disabled={isUploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {isUploading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              Attach new file
-            </Button>
           </section>
         </div>
 

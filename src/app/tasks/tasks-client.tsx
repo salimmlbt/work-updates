@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -25,6 +26,8 @@ import {
   Calendar as CalendarIcon,
   Filter,
   Check,
+  Globe,
+  X as XIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -282,6 +285,10 @@ const AddTaskRow = ({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [linkName, setLinkName] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -338,7 +345,7 @@ const AddTaskRow = ({
       if (error) {
         toast({ title: `Upload failed for ${file.name}`, description: error, variant: "destructive" });
       } else if (data) {
-        newAttachments.push(data);
+        newAttachments.push({ ...data, type: 'file' });
       }
     }
 
@@ -352,6 +359,30 @@ const AddTaskRow = ({
     
     setIsUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleAddLink = () => {
+    if (!linkUrl.trim() || !linkName.trim()) {
+      toast({ title: "Link name and URL are required", variant: "destructive" });
+      return;
+    }
+    
+    let formattedUrl = linkUrl.trim();
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+
+    const newLink: Attachment = {
+      name: linkName.trim(),
+      publicUrl: formattedUrl,
+      type: 'link'
+    };
+
+    setAttachments(prev => [...prev, newLink]);
+    setLinkName('');
+    setLinkUrl('');
+    setIsLinkPopoverOpen(false);
+    toast({ title: "Link added" });
   };
 
   const handleSave = async () => {
@@ -429,7 +460,7 @@ const AddTaskRow = ({
           <div className="mt-2 space-y-1">
             {attachments.map((att, index) => (
               <div key={index} className="flex items-center gap-2 text-sm">
-                <LinkIcon className="h-3 w-3 text-sky-400" fill="currentColor" />
+                {att.type === 'link' ? <Globe className="h-3 w-3 text-sky-400" /> : <LinkIcon className="h-3 w-3 text-emerald-400" fill="currentColor" />}
                 <a href={att.publicUrl} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline truncate" title={att.name}>{att.name}</a>
               </div>
             ))}
@@ -522,6 +553,32 @@ const AddTaskRow = ({
 
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-2">
+          <Popover open={isLinkPopoverOpen} onOpenChange={setIsLinkPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 hover:bg-white/[0.05]"
+              >
+                <Globe className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-4 bg-zinc-900 border-zinc-800 text-white" align="end">
+              <div className="space-y-4">
+                <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500">Add Web Link</h4>
+                <div className="space-y-2">
+                  <Label htmlFor="link-name" className="text-[10px] font-bold uppercase text-zinc-400">Link Name</Label>
+                  <Input id="link-name" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="e.g. Reference Folder" className="h-8 bg-zinc-950 border-zinc-800 text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="link-url" className="text-[10px] font-bold uppercase text-zinc-400">URL</Label>
+                  <Input id="link-url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." className="h-8 bg-zinc-950 border-zinc-800 text-sm" />
+                </div>
+                <Button size="sm" onClick={handleAddLink} className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold uppercase tracking-widest text-[10px]">Add Link</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
           <input
             type="file"
             multiple
@@ -605,6 +662,9 @@ const TaskRow = ({
     if (!task.attachments || !Array.isArray(task.attachments)) return [];
     return task.attachments as Attachment[];
   }, [task.attachments]);
+
+  const hasLinks = useMemo(() => attachments.some(a => a.type === 'link'), [attachments]);
+  const hasFiles = useMemo(() => attachments.some(a => a.type === 'file' || !a.type), [attachments]);
 
   useEffect(() => {
     if (task.deadline) {
@@ -737,7 +797,8 @@ const TaskRow = ({
           <div className="truncate whitespace-nowrap overflow-hidden text-ellipsis" title={task.description}>
             <span className="truncate shrink">{task.description}</span>
           </div>
-          {attachments.length > 0 && <AttachIcon className="h-4 w-4 text-emerald-400 shrink-0 transform -rotate-30" fill="currentColor"/>}
+          {hasFiles && <AttachIcon className="h-4 w-4 text-emerald-400 shrink-0 transform -rotate-30" fill="currentColor"/>}
+          {hasLinks && <Globe className="h-3 w-3 text-sky-400 shrink-0" />}
           {isReassigned && <Share2 className="h-4 w-4 text-sky-400 shrink-0" />}
           {(task.revisions?.recreations ?? 0) > 0 && (
             <Badge variant="outline" className="text-sky-300 border-sky-800/50 bg-sky-950/30">
@@ -820,7 +881,7 @@ const TaskRow = ({
       </td>
       <td className={cn(isHighlighted && "bg-sky-500/10")}>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild disabled={isStatusChangeDisabled}>
+          <DropdownMenuTrigger asChild>
             <div className={cn("group w-full h-full flex items-center justify-start px-4 py-3 text-zinc-100", !isStatusChangeDisabled && "cursor-pointer hover:bg-white/[0.05]")}>
               <div className="flex items-center gap-2 whitespace-nowrap">
                 {currentStatusIcon}
@@ -1976,7 +2037,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteTask}
               className="bg-red-600 hover:bg-red-500 text-white"
