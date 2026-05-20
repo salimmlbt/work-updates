@@ -7,6 +7,13 @@ import type { Profile } from '@/lib/types';
 import { type Metadata } from 'next';
 import { PageLoader } from '@/components/page-loader';
 import { ClientCacheProvider } from './client-cache';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Falaq - Work Updates',
@@ -43,11 +50,8 @@ export default async function RootLayout({
   const isAuthenticated = !!user;
 
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className={cn("dark", inter.variable)} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <link rel="icon" href="/icon.svg" sizes="any" />
       </head>
       <body className={cn("min-h-screen bg-background font-body font-sans antialiased text-foreground")}>
