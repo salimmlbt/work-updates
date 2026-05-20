@@ -29,10 +29,11 @@ import { cn, getInitials } from '@/lib/utils'
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { RichTextEditor } from '@/components/rich-text-editor/rich-text-editor'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
+import { uploadAttachment } from '@/app/actions'
 
 const typeColors: Record<string, string> = {
   Poster: 'bg-pink-100 text-pink-800',
@@ -77,6 +78,9 @@ export function TaskDetailSheet({
   const [isPending, startTransition] = useTransition()
   const [descriptionContent, setDescriptionContent] = useState(task.rich_description)
   const [isDescriptionDirty, setIsDescriptionDirty] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
   const supabase = createClient()
   const { toast } = useToast()
   const [currentCorrectionIndex, setCurrentCorrectionIndex] = useState(0)
@@ -102,7 +106,7 @@ export function TaskDetailSheet({
       if (Array.isArray(task.attachments)) {
         return task.attachments as Attachment[]
       }
-      if (typeof task.attachments === 'string' && task.attachments.trim() !== '') {
+      if (typeof task.attachments === 'string' && (task.attachments as string).trim() !== '') {
         return JSON.parse(task.attachments) as Attachment[]
       }
     } catch (e) {
@@ -145,6 +149,44 @@ export function TaskDetailSheet({
   
   const handleNextCorrection = () => {
     setCurrentCorrectionIndex(prev => (prev < corrections.length - 1 ? prev + 1 : 0));
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data: newAttachment, error: uploadError } = await uploadAttachment(formData);
+    
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError, variant: "destructive" });
+      setIsUploading(false);
+      return;
+    }
+
+    if (newAttachment) {
+      const updatedAttachments = [...attachments, newAttachment];
+      
+      const { error: dbError, data: updatedTask } = await supabase
+        .from('tasks')
+        .update({ attachments: updatedAttachments as any })
+        .eq('id', task.id)
+        .select()
+        .single();
+
+      if (dbError) {
+        toast({ title: "Database error", description: dbError.message, variant: "destructive" });
+      } else {
+        toast({ title: "File attached", description: `${file.name} has been attached.` });
+        onTaskUpdated({ ...task, ...updatedTask });
+      }
+    }
+    
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
 
@@ -322,12 +364,24 @@ export function TaskDetailSheet({
               <p className="text-sm text-muted-foreground">No files attached.</p>
             )}
 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
             <Button
               variant="ghost"
               size="sm"
               className="mt-4 text-primary hover:text-primary hover:bg-primary/5"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              {isUploading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
               Attach file
             </Button>
           </section>
