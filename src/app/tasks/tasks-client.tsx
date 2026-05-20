@@ -44,6 +44,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, parseISO, differenceInDays, isPast, isWithinInterval } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import type { Project, Client, Profile, Team, Task, TaskWithDetails, RoleWithPermissions, Attachment, WorkTypeStatusConfig } from '@/lib/types';
 import { updateTaskStatus, deleteTask, restoreTask, deleteTaskPermanently, uploadAttachment, updateTaskPostingStatus, deleteTasks, restoreTasks, deleteTasksPermanently } from '@/app/actions';
 import { createTask } from '@/app/teams/actions';
@@ -1194,7 +1195,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    return () => window.addEventListener('keydown', handleGlobalKeyDown);
   }, [canEditTasks, showBin, clickedTaskId, tasks, toast]);
 
   useEffect(() => {
@@ -1984,7 +1985,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto custom-scrollbar pt-4">
+      <main className="flex-1 overflow-y-auto custom-scrollbar pt-4">
         <div className="min-w-full inline-block align-middle h-full">
           {mainContent()}
         </div>
