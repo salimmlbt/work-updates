@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useTransition, useEffect, useMemo } from 'react'
@@ -73,22 +74,18 @@ export function ApplyLeaveDialog({
     }
   }, [endDate]);
 
-  // Logic for disabled dates based on leave type
   const disabledDates = useMemo(() => {
     const today = startOfToday();
-    if (!leaveType) return { before: today }; // Default to preventing past dates
+    if (!leaveType) return { before: today };
 
     switch (leaveType) {
       case 'Casual Leave':
-        // 2 days after present date
         return { before: addDays(today, 2) };
       case 'Maternity leave':
-        // One week after present date
         return { before: addDays(today, 7) };
       case 'Sick Leave':
       case 'Emergency Leave':
       default:
-        // Present date and future
         return { before: today };
     }
   }, [leaveType]);
@@ -96,7 +93,6 @@ export function ApplyLeaveDialog({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    // Validation: Start date and Reason are mandatory.
     if (!leaveType || !startDate || !reason.trim()) {
       setShowError(true)
       setTimeout(() => setShowError(false), 400)
@@ -108,7 +104,6 @@ export function ApplyLeaveDialog({
       return
     }
 
-    // Special Rule: End Date is strictly mandatory for Maternity leave
     if (leaveType === 'Maternity leave' && !endDate) {
       setShowError(true)
       toast({
@@ -130,7 +125,6 @@ export function ApplyLeaveDialog({
       return
     }
 
-    // Overlap Validation (Client Side)
     const hasOverlap = existingLeaves.some(leave => {
       if (leave.status === 'Cancelled' || leave.status === 'Rejected') return false
       const exStart = parseISO(leave.start_date)
@@ -176,20 +170,19 @@ export function ApplyLeaveDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md rounded-3xl bg-gradient-to-br from-white to-slate-50 border shadow-2xl">
+      <DialogContent className="sm:max-w-md rounded-[2.5rem] bg-zinc-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-3xl text-zinc-100">
         <form onSubmit={handleSubmit} className="space-y-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
+            <DialogTitle className="text-2xl font-black tracking-tight text-white uppercase">
               Apply for Leave
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-zinc-500 font-medium">
               First select the type, then choose your dates.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Leave Type */}
           <div className="space-y-2">
-            <Label>Leave Type <span className="text-rose-500">*</span></Label>
+            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Leave Type <span className="text-rose-500">*</span></Label>
             <Select 
               name="leave_type" 
               value={leaveType} 
@@ -200,10 +193,10 @@ export function ApplyLeaveDialog({
                 setDayType('Full Day');
               }}
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="rounded-2xl h-12 bg-white/5 border-white/10 text-white font-bold transition-all focus:ring-sky-500/50">
                 <SelectValue placeholder="Choose leave type" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent className="rounded-2xl bg-zinc-900 border-white/10 text-white shadow-2xl">
                 <SelectItem value="Casual Leave">Casual Leave</SelectItem>
                 <SelectItem value="Sick Leave">Sick Leave</SelectItem>
                 <SelectItem value="Emergency Leave">Emergency Leave</SelectItem>
@@ -212,11 +205,9 @@ export function ApplyLeaveDialog({
             </Select>
           </div>
 
-          {/* Date Pickers - Only enabled if type is selected */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Start */}
             <div className="space-y-2">
-              <Label>From <span className="text-rose-500">*</span></Label>
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">From <span className="text-rose-500">*</span></Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -224,17 +215,17 @@ export function ApplyLeaveDialog({
                     type="button"
                     disabled={!leaveType}
                     className={cn(
-                      'w-full justify-start rounded-xl text-left font-normal transition-all duration-300',
-                      !startDate && 'text-slate-400',
+                      'w-full justify-start rounded-2xl h-12 text-left font-bold transition-all duration-300 bg-white/5 border-white/10 hover:bg-white/10',
+                      !startDate && 'text-zinc-500',
                       showError && !startDate && 'ring-2 ring-rose-400 animate-shake',
-                      !leaveType && 'opacity-50 grayscale'
+                      !leaveType && 'opacity-50'
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-4 w-4 text-sky-400" />
                     {startDate ? format(startDate, 'PPP') : 'Pick start date'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="p-0 rounded-xl shadow-lg">
+                <PopoverContent className="p-0 rounded-2xl bg-zinc-950 border-white/10 shadow-2xl" align="start">
                   <Calendar
                     mode="single"
                     selected={startDate}
@@ -246,9 +237,8 @@ export function ApplyLeaveDialog({
               </Popover>
             </div>
 
-            {/* End */}
             <div className="space-y-2">
-              <Label>
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">
                 To {leaveType === 'Maternity leave' ? <span className="text-rose-500">*</span> : '(Optional)'}
               </Label>
               <div className="relative group">
@@ -259,17 +249,17 @@ export function ApplyLeaveDialog({
                       type="button"
                       disabled={!startDate}
                       className={cn(
-                        'w-full justify-start rounded-xl text-left font-normal transition-all duration-300',
-                        !endDate && 'text-slate-400',
-                        !startDate && 'opacity-50 grayscale',
+                        'w-full justify-start rounded-2xl h-12 text-left font-bold transition-all duration-300 bg-white/5 border-white/10 hover:bg-white/10',
+                        !endDate && 'text-zinc-500',
+                        !startDate && 'opacity-50',
                         showError && leaveType === 'Maternity leave' && !endDate && 'ring-2 ring-rose-400 animate-shake'
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-4 w-4 text-sky-400" />
                       {endDate ? format(endDate, 'PPP') : leaveType === 'Maternity leave' ? 'Pick end date' : 'Add end date'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="p-0 rounded-xl shadow-lg">
+                  <PopoverContent className="p-0 rounded-2xl bg-zinc-950 border-white/10 shadow-2xl" align="end">
                     <Calendar
                       mode="single"
                       selected={endDate}
@@ -286,7 +276,7 @@ export function ApplyLeaveDialog({
                   <button 
                     type="button"
                     onClick={() => setEndDate(undefined)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -295,15 +285,14 @@ export function ApplyLeaveDialog({
             </div>
           </div>
 
-          {/* Conditional Day Type Option */}
           {startDate && !endDate && (
             <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <Label>Day Type</Label>
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Day Type</Label>
               <Select value={dayType} onValueChange={(val: DayType) => setDayType(val)}>
-                <SelectTrigger className="rounded-xl bg-blue-50/50 border-blue-100">
+                <SelectTrigger className="rounded-2xl h-12 bg-sky-500/10 border-sky-500/20 text-sky-400 font-bold">
                   <SelectValue placeholder="Full or Half Day?" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-2xl bg-zinc-900 border-white/10 text-white shadow-2xl">
                   <SelectItem value="Full Day">Full Day</SelectItem>
                   <SelectItem value="Half Day">Half Day</SelectItem>
                 </SelectContent>
@@ -311,16 +300,14 @@ export function ApplyLeaveDialog({
             </div>
           )}
 
-          {/* Preview Chip */}
           {startDate && (
-            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium w-fit">
+            <div className="inline-flex items-center px-5 py-2 rounded-full bg-sky-500/10 text-sky-400 text-xs font-black uppercase tracking-widest w-fit border border-sky-500/20 shadow-[0_0_15px_rgba(56,189,248,0.1)]">
               {format(startDate, 'MMM dd')} {endDate ? `→ ${format(endDate, 'MMM dd')}` : `(${dayType === 'Half Day' ? 'Half Day' : 'One Day'})`} • {totalDays} day{totalDays !== 1 ? 's' : ''}
             </div>
           )}
 
-          {/* Reason */}
           <div className="space-y-2">
-            <Label className={cn(showError && !reason.trim() && "text-rose-500")}>
+            <Label className={cn("text-[10px] font-black uppercase tracking-[0.2em] ml-1", showError && !reason.trim() ? "text-rose-500" : "text-zinc-500")}>
               Reason <span className="text-rose-500">*</span>
             </Label>
             <Textarea
@@ -329,21 +316,21 @@ export function ApplyLeaveDialog({
               onChange={(e) => setReason(e.target.value)}
               placeholder="Why are you taking leave?"
               className={cn(
-                "rounded-xl min-h-[90px] transition-all duration-300",
+                "rounded-2xl min-h-[110px] bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-sky-500/50 transition-all duration-300",
                 showError && !reason.trim() && "ring-2 ring-rose-400 animate-shake"
               )}
               required
             />
           </div>
 
-          <DialogFooter className="pt-2 flex justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+          <DialogFooter className="pt-2 flex justify-end gap-4">
+            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-12 px-8 text-zinc-400 hover:text-white hover:bg-white/5">
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isPending}
-              className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg px-8"
+              className="rounded-full h-12 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-black uppercase tracking-widest text-xs px-10 shadow-2xl shadow-sky-900/40"
             >
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Apply Now

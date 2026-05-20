@@ -31,7 +31,7 @@ export default async function FalaqCornerPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#f8fafc]">
+    <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f]">
       <FalaqCornerClient profile={profile as Profile} />
     </div>
   );
