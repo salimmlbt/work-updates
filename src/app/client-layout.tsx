@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -8,9 +7,12 @@ import { logout } from './login/actions';
 import { cn } from '@/lib/utils';
 import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
-import type { Profile, Notification, RoleWithPermissions, TaskWithDetails } from '@/lib/types';
+import type { Profile, Notification, RoleWithPermissions, TaskWithDetails, Leave } from '@/lib/types';
 import { Toaster } from "@/components/ui/toaster";
 import { PageSkeleton } from '@/components/dashboard/page-skeleton';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CheckCircle2, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function ClientLayout({
   children,
@@ -27,6 +29,7 @@ export default function ClientLayout({
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [activeLeaveNotif, setActiveLeaveNotif] = useState<{ id: string; status: string; type: string } | null>(null);
 
   const approvedAudioRef = useRef<HTMLAudioElement | null>(null);
   const correctionAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -56,7 +59,8 @@ export default function ClientLayout({
     const supabase = createClient();
     const isEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
 
-    const channel = supabase
+    // 1. Task Notifications
+    const taskChannel = supabase
       .channel('realtime-notifications-new')
       .on<TaskWithDetails>(
         'postgres_changes',
@@ -130,8 +134,32 @@ export default function ClientLayout({
       )
       .subscribe();
 
+    // 2. Leave Status Notifications (Popup)
+    const leaveChannel = supabase
+      .channel('realtime-leave-updates')
+      .on<Leave>(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'leaves', filter: `user_id=eq.${profile.id}` },
+        (payload) => {
+          const newLeave = payload.new;
+          const oldLeave = payload.old;
+
+          if (newLeave.status !== oldLeave?.status) {
+            if (newLeave.status === 'Approved' || newLeave.status === 'Rejected') {
+              setActiveLeaveNotif({
+                id: newLeave.id,
+                status: newLeave.status,
+                type: newLeave.leave_type
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(taskChannel);
+      supabase.removeChannel(leaveChannel);
     };
   }, [profile]);
 
@@ -200,6 +228,65 @@ export default function ClientLayout({
           {isLoading ? <PageSkeleton /> : children}
         </main>
       </div>
+
+      {/* Leave Status Sticky Popup */}
+      <AnimatePresence>
+        {activeLeaveNotif && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
+            animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9, x: 20 }}
+            className={cn(
+              "fixed bottom-8 right-8 z-[200] p-6 rounded-[2.5rem] border backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-5 min-w-[320px] max-w-[400px]",
+              activeLeaveNotif.status === 'Approved' 
+                ? "bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/10" 
+                : "bg-rose-500/10 border-rose-500/20 shadow-rose-500/10"
+            )}
+          >
+            <div className="flex items-center gap-5">
+              <div className={cn(
+                "h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl",
+                activeLeaveNotif.status === 'Approved' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+              )}>
+                {activeLeaveNotif.status === 'Approved' ? <CheckCircle2 className="h-7 w-7" /> : <XCircle className="h-7 w-7" />}
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black uppercase tracking-tight text-white text-xl">
+                  Leave {activeLeaveNotif.status}!
+                </h3>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                  {activeLeaveNotif.type}
+                </p>
+              </div>
+            </div>
+            
+            <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+              {activeLeaveNotif.status === 'Approved' 
+                ? "Your leave application has been processed and approved by the studio management." 
+                : "Your leave application was not approved at this time. Please check Falaq Corner for details."}
+            </p>
+
+            <Button 
+              onClick={() => setActiveLeaveNotif(null)}
+              className={cn(
+                "w-full rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 transition-all active:scale-95 shadow-2xl",
+                activeLeaveNotif.status === 'Approved' 
+                  ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40" 
+                  : "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/40"
+              )}
+            >
+              OK, Understood
+            </Button>
+            
+            {/* Glow Orb */}
+            <div className={cn(
+              "absolute -top-10 -right-10 w-32 h-32 blur-[60px] rounded-full opacity-30 pointer-events-none",
+              activeLeaveNotif.status === 'Approved' ? "bg-emerald-400" : "bg-rose-400"
+            )} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Toaster />
     </div>
   );
