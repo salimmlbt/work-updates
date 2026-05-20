@@ -3,16 +3,15 @@
 
 import * as React from 'react';
 import { useState, useMemo, useTransition, useEffect } from 'react';
-import { Plus, ChevronDown, Filter, LayoutGrid, Table, Folder, MoreVertical, Pencil, Trash2, Trash, RefreshCcw } from 'lucide-react';
+import { Plus, ChevronDown, Filter, Folder, MoreVertical, Pencil, Trash2, Trash, RefreshCcw } from 'lucide-react';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, cn } from '@/lib/utils';
-import type { Project, Profile, Client, ProjectType, Task } from '@/lib/types';
+import type { Project, Profile, Client, ProjectType } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import { format } from 'date-fns';
-import { FilterIcon } from '@/components/icons';
 import { AddProjectDialog } from '@/components/dashboard/add-project-dialog';
 import { CreateTypeDialog } from './create-type-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -27,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectStatus, deleteProjectType, renameProjectType } from '@/app/actions';
+import { deleteProject, restoreProject, deleteProjectPermanently, updateProjectStatus, deleteProjectType } from '@/app/actions';
 import { EditProjectDialog } from './edit-project-dialog';
 import { RenameTypeDialog } from './rename-type-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -49,7 +48,6 @@ interface ProjectsClientProps {
 }
 
 const statusOptions = ['New', 'On Hold', 'In Progress', 'Done'];
-
 
 const ProjectSidebar = ({ 
     activeView, 
@@ -76,10 +74,10 @@ const ProjectSidebar = ({
                     onClick={() => setActiveView('general')}
                     className={cn(
                         buttonVariants({ variant: 'ghost' }),
-                        'w-full justify-start text-left h-auto pr-8 group',
+                        'w-full justify-start text-left h-auto pr-8 rounded-xl transition-all duration-300 border',
                         activeView === 'general'
-                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                            : 'hover:bg-accent'
+                            ? 'bg-sky-500/20 text-sky-300 border-sky-500/20 shadow-[0_0_20px_rgba(56,189,248,0.12)]'
+                            : 'border-transparent text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
                     )}
                 >
                    All projects
@@ -87,46 +85,36 @@ const ProjectSidebar = ({
                 {projectTypes.map(type => (
                      <div
                         key={type.id}
-                        className={cn(
-                            'relative group flex items-center',
-                        )}
+                        className="relative group flex items-center"
                     >
                        <div
                          role="button"
                          onClick={() => setActiveView(type.name)}
                          className={cn(
                            buttonVariants({ variant: 'ghost' }),
-                           'w-full justify-between text-left h-auto pr-2 flex items-center',
+                           'w-full justify-between text-left h-auto pr-2 flex items-center rounded-xl transition-all duration-300 border',
                            activeView === type.name
-                             ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
-                             : 'hover:bg-accent',
-                           'group-has-[[data-state=open]]:bg-accent'
+                             ? 'bg-sky-500/20 text-sky-300 border-sky-500/20 shadow-[0_0_20px_rgba(56,189,248,0.12)]'
+                             : 'border-transparent text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200',
                          )}
                        >
                          <div className="flex items-center gap-2">
                            <Folder className="h-4 w-4" />
                            {type.name}
                          </div>
-                         <span className="text-muted-foreground">{type.count}</span>
+                         <span className={cn("text-xs", activeView === type.name ? "text-sky-300" : "text-zinc-500")}>{type.count}</span>
                        </div>
-                       <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity group-has-[[data-state=open]]:opacity-100">
+                       <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <DropdownMenu>
                                <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className={cn(
-                                      "p-1 h-auto text-gray-500 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0",
-                                      "hover:bg-transparent hover:text-blue-500",
-                                      "data-[state=open]:text-blue-500",
-                                       activeView === type.name ? "dark:hover:bg-blue-900/20 hover:bg-blue-100/50" : "hover:bg-gray-100 dark:hover:bg-gray-800",
-                                       "data-[state=open]:bg-transparent"
-                                    )}
+                                    className="p-1 h-auto text-zinc-500 hover:text-sky-400 transition-colors focus-visible:ring-0 shadow-none"
                                   >
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                </DropdownMenuTrigger>
-                               <DropdownMenuContent>
+                               <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                                   <DropdownMenuItem onClick={() => onRenameType(type)}>
                                      <Pencil className="mr-2 h-4 w-4" />
                                      Rename
@@ -134,7 +122,7 @@ const ProjectSidebar = ({
                                   <DropdownMenuItem 
                                     disabled={type.count > 0}
                                     onClick={() => onDeleteType(type)}
-                                    className="text-red-600 focus:text-red-600"
+                                    className="text-red-400 focus:text-red-400 focus:bg-red-950/30"
                                   >
                                      <Trash2 className="mr-2 h-4 w-4" />
                                      Delete
@@ -146,7 +134,7 @@ const ProjectSidebar = ({
                 ))}
                 <Button
                     variant="ghost"
-                    className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                    className="mt-2 text-zinc-500 inline-flex p-2 h-auto hover:bg-transparent hover:text-sky-400 focus:ring-0 transition-colors"
                     onClick={onAddTypeClick}
                 >
                     <Plus className="mr-2 h-4 w-4" /> Create type
@@ -156,17 +144,17 @@ const ProjectSidebar = ({
                     onClick={() => setActiveView('deleted')}
                     className={cn(
                         buttonVariants({ variant: 'ghost' }),
-                        'w-full justify-between text-left h-auto pr-8 group mt-4',
+                        'w-full justify-between text-left h-auto pr-8 group mt-6 rounded-xl transition-all duration-300 border',
                         activeView === 'deleted'
-                            ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50'
-                            : 'hover:bg-accent'
+                            ? 'bg-red-500/20 text-red-400 border-red-500/20'
+                            : 'border-transparent text-zinc-500 hover:bg-red-950/10 hover:text-red-400'
                     )}
                 >
                    <div className="flex items-center gap-2">
-                     <Trash className="h-4 w-4 text-red-500" />
+                     <Trash className="h-4 w-4" />
                      Deleted Projects
                    </div>
-                   <span className="text-muted-foreground">{deletedCount}</span>
+                   <span className="text-xs">{deletedCount}</span>
                 </div>
             </nav>
         </aside>
@@ -187,33 +175,28 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
 
     return (
         <React.Fragment>
-            <td className="px-4 py-3 font-medium">{project.name}</td>
-            <td className="px-4 py-3">{project.client?.name ?? '-'}</td>
+            <td className="px-4 py-3 font-medium text-zinc-100">{project.name}</td>
+            <td className="px-4 py-3 text-zinc-400">{project.client?.name ?? '-'}</td>
             <td className="px-4 py-3">
-                <Badge variant="outline" className="font-normal border-yellow-500/30 text-yellow-700 dark:text-yellow-400 bg-yellow-500/10">
-                    <span className="mr-2 text-yellow-500">=</span>
+                <Badge variant="outline" className="font-normal border-amber-500/30 text-amber-400 bg-amber-500/10">
+                    <span className="mr-2 text-amber-500">=</span>
                     {project.priority ?? "Medium"}
                 </Badge>
             </td>
-            <td className="px-4 py-3 text-muted-foreground">{project.tasks_count ?? 0}</td>
+            <td className="px-4 py-3 text-zinc-500">{project.tasks_count ?? 0}</td>
             <td className="px-4 py-3">
                 <div className="flex -space-x-2">
                     {project.leaders && project.leaders.slice(0, 3).map(id => {
                         const profile = profiles.find(p => p.id === id);
                         if (!profile) return null;
                         return (
-                            <Avatar key={id} className="h-6 w-6 border-2 border-background">
+                            <Avatar key={id} className="h-6 w-6 border border-zinc-900">
                                 <AvatarImage src={profile.avatar_url ?? undefined} />
-                                <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                                <AvatarFallback className="text-[8px] bg-zinc-800 text-zinc-400">{getInitials(profile.full_name)}</AvatarFallback>
                             </Avatar>
                         )
                     })}
-                    {project.leaders && project.leaders.length > 3 && (
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
-                            +{project.leaders.length - 3}
-                        </div>
-                    )}
-                     {(!project.leaders || project.leaders.length === 0) && '-'}
+                     {(!project.leaders || project.leaders.length === 0) && <span className="text-zinc-600">-</span>}
                 </div>
             </td>
             <td className="px-4 py-3">
@@ -222,29 +205,24 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                         const profile = profiles.find(p => p.id === id);
                         if (!profile) return null;
                         return (
-                            <Avatar key={id} className="h-6 w-6 border-2 border-background">
+                            <Avatar key={id} className="h-6 w-6 border border-zinc-900">
                                 <AvatarImage src={profile.avatar_url ?? undefined} />
-                                <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                                <AvatarFallback className="text-[8px] bg-zinc-800 text-zinc-400">{getInitials(profile.full_name)}</AvatarFallback>
                             </Avatar>
                         )
                     })}
-                    {project.members && project.members.length > 3 && (
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border-2 border-background">
-                            +{project.members.length - 3}
-                        </div>
-                    )}
                 </div>
             </td>
-             <td className="px-4 py-3 text-muted-foreground">{formatDate(dateToShow)}</td>
+             <td className="px-4 py-3 text-zinc-500 text-xs">{formatDate(dateToShow)}</td>
              <td className="px-4 py-3">
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="px-2 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent">
+                        <Button variant="ghost" className="px-2 py-1 h-auto text-zinc-300 hover:text-zinc-100 hover:bg-white/5 focus-visible:ring-0">
                             {project.status ?? "New"}
-                            <ChevronDown className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ChevronDown className="h-4 w-4 ml-2 opacity-40 group-hover:opacity-100 transition-opacity" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent>
+                    <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                         {statusOptions.map(status => (
                             <DropdownMenuItem 
                                 key={status} 
@@ -257,20 +235,20 @@ const ProjectRow = ({ project, profiles, handleEditClick, handleDeleteClick, onS
                     </DropdownMenuContent>
                 </DropdownMenu>
             </td>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 text-right">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-sky-400 hover:bg-white/5">
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                             <DropdownMenuItem onClick={() => handleEditClick(project)}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteClick(project)}>
+                            <DropdownMenuItem className="text-red-400 focus:text-red-400 focus:bg-red-950/30" onClick={() => handleDeleteClick(project)}>
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                             </DropdownMenuItem>
@@ -309,7 +287,7 @@ const ProjectTableBody = ({
                         animate="visible"
                         exit="hidden"
                         transition={{ duration: 0.2, delay: index * 0.05 }}
-                        className="border-b hover:bg-muted/50 group"
+                        className="border-b border-white/5 hover:bg-white/[0.04] group transition-colors"
                     >
                         <ProjectRow project={project} {...rest} />
                     </motion.tr>
@@ -328,7 +306,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const cachedProjects = cache['projects'] as ProjectWithOwnerAndClient[] | null;
   const cachedProjectTypes = cache['projectTypes'] as ProjectType[] | null;
 
-
   const [projects, setProjects] = useState<ProjectWithOwnerAndClient[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>(cachedProjectTypes || initialProjectTypes);
 
@@ -345,8 +322,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   const [closedProjectsOpen, setClosedProjectsOpen] = useState(true);
   
   const [showActiveProjects, setShowActiveProjects] = useState(true);
-  const [showClosedProjects, setShowClosedProjects] = useState(true);
-
 
   const [typeToRename, setTypeToRename] = useState<ProjectType | null>(null);
   const [isRenameTypeOpen, setRenameTypeOpen] = useState(false);
@@ -397,12 +372,8 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
   }, [activeRawProjects, projectTypes]);
 
   const filteredProjects = useMemo(() => {
-    if (activeView === 'general') {
-        return activeRawProjects;
-    }
-    if (activeView === 'deleted') {
-        return deletedRawProjects;
-    }
+    if (activeView === 'general') return activeRawProjects;
+    if (activeView === 'deleted') return deletedRawProjects;
     return activeRawProjects.filter(p => p.type === activeView);
   }, [activeRawProjects, deletedRawProjects, activeView]);
 
@@ -451,9 +422,7 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     setProjects(newProjects);
     setCache('projects', newProjects);
 
-    if (activeView === oldName) {
-        setActiveView(updatedType.name);
-    }
+    if (activeView === oldName) setActiveView(updatedType.name);
   }
 
   const handleEditClick = (project: ProjectWithOwnerAndClient) => {
@@ -468,13 +437,12 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleDeleteProject = () => {
     if (!projectToDelete) return;
-
     startTransition(async () => {
         const result = await deleteProject(projectToDelete.id);
         if (result.error) {
             toast({ title: "Error deleting project", description: result.error, variant: "destructive" });
         } else {
-            toast({ title: "Project moved to bin", description: `Project "${projectToDelete.name}" has been deleted.` });
+            toast({ title: "Project moved to bin" });
             const newProjects = projects.map(p => p.id === projectToDelete.id ? {...p, is_deleted: true, updated_at: new Date().toISOString() } : p);
             setProjects(newProjects);
             setCache('projects', newProjects);
@@ -516,7 +484,6 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
 
   const handleStatusChange = (projectId: string, newStatus: string) => {
     const originalProjects = [...projects];
-    
     const newProjects = projects.map(p =>
         p.id === projectId ? { ...p, status: newStatus, updated_at: new Date().toISOString() } : p
     );
@@ -524,10 +491,10 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
     setCache('projects', newProjects);
 
     startTransition(async () => {
-        const { error, data } = await updateProjectStatus(projectId, newStatus);
+        const { error } = await updateProjectStatus(projectId, newStatus);
         if (error) {
             toast({ title: "Error updating status", description: error, variant: "destructive" });
-            setProjects(originalProjects); // Revert on error
+            setProjects(originalProjects);
             setCache('projects', originalProjects);
         }
     });
@@ -544,135 +511,98 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
         const newTypes = projectTypes.filter(t => t.id !== typeToDelete.id);
         setProjectTypes(newTypes);
         setCache('projectTypes', newTypes);
-        if (activeView === typeToDelete.name) {
-          setActiveView('general');
-        }
+        if (activeView === typeToDelete.name) setActiveView('general');
       }
       setDeleteTypeAlertOpen(false);
       setTypeToDelete(null);
     });
   }
 
-  const handleToggleActiveProjects = () => {
-    if (activeProjectsOpen) {
-      setShowActiveProjects(false);
-      const totalAnimationTime = (activeProjects.length - 1) * 0.05 * 1000 + 200;
-      setTimeout(() => {
-        setActiveProjectsOpen(false);
-      }, totalAnimationTime);
-    } else {
-      setActiveProjectsOpen(true);
-      setShowActiveProjects(true);
-    }
-  };
-
-  const handleToggleClosedProjects = () => {
-    if (closedProjectsOpen) {
-      setShowClosedProjects(false);
-      const totalAnimationTime = (closedProjects.length - 1) * 0.05 * 1000 + 200;
-      setTimeout(() => {
-        setClosedProjectsOpen(false);
-      }, totalAnimationTime);
-    } else {
-      setClosedProjectsOpen(true);
-      setShowClosedProjects(true);
-    }
-  };
-
   const mainContent = () => {
     if (activeView === 'deleted') {
         return (
-            <div className="mb-8">
-                <div className="overflow-x-auto">
-                    {deletedRawProjects.length > 0 ? (
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b">
-                                <th className="px-4 py-3 font-medium text-muted-foreground w-1/3">Name</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground">Due date</th>
-                                <th className="px-4 py-3 font-medium text-muted-foreground w-[5%]"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {deletedRawProjects.map(project => (
-                                <tr key={project.id} className="border-b hover:bg-muted/50 group">
-                                    <td className="px-4 py-3 font-medium">{project.name}</td>
-                                    <td className="px-4 py-3">{project.status ?? "New"}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{format(new Date(project.due_date || ''), 'dd MMM yyyy')}</td>
-                                    <td className="px-4 py-3">
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => handleRestoreProject(project)}>
-                                                        <RefreshCcw className="mr-2 h-4 w-4" />
-                                                        Restore project
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => setProjectToDeletePermanently(project)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        Delete permanently
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </td>
-                                </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <div className="text-center py-10 text-muted-foreground">
-                            The bin is empty.
-                        </div>
-                    )}
-                </div>
+            <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02] backdrop-blur-xl">
+                <table className="w-full text-left">
+                    <thead>
+                        <tr className="border-b border-white/10 bg-white/5">
+                            <th className="px-4 py-3 font-medium text-zinc-500 w-1/3">Name</th>
+                            <th className="px-4 py-3 font-medium text-zinc-500">Status</th>
+                            <th className="px-4 py-3 font-medium text-zinc-500">Due date</th>
+                            <th className="px-4 py-3 w-[5%]"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {deletedRawProjects.map(project => (
+                        <tr key={project.id} className="border-b border-white/5 hover:bg-white/[0.04] group transition-colors">
+                            <td className="px-4 py-3 font-medium text-zinc-100">{project.name}</td>
+                            <td className="px-4 py-3 text-zinc-400">{project.status ?? "New"}</td>
+                            <td className="px-4 py-3 text-zinc-500 text-xs">{format(new Date(project.due_date || ''), 'dd MMM yyyy')}</td>
+                            <td className="px-4 py-3">
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-sky-400">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                                            <DropdownMenuItem onClick={() => handleRestoreProject(project)}>
+                                                <RefreshCcw className="mr-2 h-4 w-4" />
+                                                Restore project
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-400 focus:text-red-400 focus:bg-red-950/30" onClick={() => setProjectToDeletePermanently(project)}>
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete permanently
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </td>
+                        </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {deletedRawProjects.length === 0 && (
+                    <div className="text-center py-20 text-zinc-600 italic text-sm">
+                        The bin is empty.
+                    </div>
+                )}
             </div>
         )
     }
 
     return (
-        <>
-            <div className="mb-8 overflow-x-auto">
-                <Collapsible.Root open={activeProjectsOpen} onOpenChange={handleToggleActiveProjects}>
-                    <div className="flex items-center gap-2">
-                        <Collapsible.Trigger asChild>
-                            <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
-                                <div className="flex items-center gap-2">
-                                <ChevronDown className={cn("w-5 h-5 transition-transform", !activeProjectsOpen && "-rotate-90")} />
-                                Active projects
-                                <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeProjects.length}</span>
-                                </div>
-                            </Button>
-                        </Collapsible.Trigger>
-                    </div>
+        <div className="space-y-8">
+            <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02] backdrop-blur-xl shadow-2xl shadow-black/50">
+                <Collapsible.Root open={activeProjectsOpen} onOpenChange={setActiveProjectsOpen}>
+                    <Collapsible.Trigger asChild>
+                        <Button variant="ghost" className="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-white/5 group">
+                            <div className="flex items-center gap-3">
+                                <ChevronDown className={cn("w-5 h-5 text-zinc-500 transition-transform duration-300", !activeProjectsOpen && "-rotate-90")} />
+                                <span className="font-bold text-white tracking-tight">Active projects</span>
+                                <Badge variant="secondary" className="bg-white/10 text-zinc-300 border-0">{activeProjects.length}</Badge>
+                            </div>
+                        </Button>
+                    </Collapsible.Trigger>
                     <Collapsible.Content asChild>
                       <motion.div
                           initial="collapsed"
                           animate={activeProjectsOpen ? 'open' : 'collapsed'}
-                          variants={{
-                            open: { opacity: 1, height: 'auto' },
-                            collapsed: { opacity: 0, height: 0 },
-                          }}
-                          transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                          className="overflow-hidden"
+                          variants={{ open: { opacity: 1, height: 'auto' }, collapsed: { opacity: 0, height: 0 } }}
+                          transition={{ duration: 0.3 }}
                       >
-                          <table className="w-full text-left mt-2 table-fixed">
+                          <table className="w-full text-left table-fixed">
                               <thead>
-                                  <tr className="border-b">
-                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[18%]">Name</th>
-                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Client</th>
-                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Priority</th>
-                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[8%]">Tasks</th>
-                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
-                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
-                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Created date</th>
-                                      <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
-                                      <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[6%]"></th>
+                                  <tr className="border-b border-white/10 bg-white/5">
+                                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[20%]">Name</th>
+                                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[12%]">Client</th>
+                                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[10%]">Priority</th>
+                                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[8%]">Tasks</th>
+                                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[12%]">Leaders</th>
+                                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[12%]">Members</th>
+                                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[12%]">Created</th>
+                                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[10%]">Status</th>
+                                      <th className="px-4 py-3 w-[4%]"></th>
                                   </tr>
                               </thead>
                                <ProjectTableBody
@@ -685,65 +615,55 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                                 isCompleted={false}
                                />
                           </table>
-                           <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: showActiveProjects ? 1 : 0 }}
-                                transition={{ duration: 0.2 }}
-                           >
+                           <div className="p-2 border-t border-white/5">
                             <Button
                                 variant="ghost"
-                                className="mt-2 text-muted-foreground inline-flex p-2 h-auto hover:bg-transparent hover:text-blue-500 focus:ring-0 focus:ring-offset-0"
+                                className="text-zinc-500 inline-flex p-2 h-auto hover:bg-transparent hover:text-sky-400 transition-colors"
                                 onClick={() => setAddProjectOpen(true)}
                             >
                                 <Plus className="mr-2 h-4 w-4" /> Add project
                             </Button>
-                           </motion.div>
+                           </div>
                       </motion.div>
                     </Collapsible.Content>
                 </Collapsible.Root>
-               
             </div>
+
             {closedProjects.length > 0 && (
-                <div className="mb-4 overflow-x-auto">
-                     <Collapsible.Root open={closedProjectsOpen} onOpenChange={handleToggleClosedProjects}>
-                        <div className="flex items-center gap-2">
-                            <Collapsible.Trigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
-                                    <div className="flex items-center gap-2">
-                                    <ChevronDown className={cn("w-5 h-5 transition-transform", !closedProjectsOpen && "-rotate-90")} />
-                                    Closed projects
-                                    <span className="text-sm font-normal text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{closedProjects.length}</span>
-                                    </div>
-                                </Button>
-                            </Collapsible.Trigger>
-                        </div>
+                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02] backdrop-blur-xl">
+                     <Collapsible.Root open={closedProjectsOpen} onOpenChange={setClosedProjectsOpen}>
+                        <Collapsible.Trigger asChild>
+                            <Button variant="ghost" className="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-white/5 group">
+                                <div className="flex items-center gap-3">
+                                    <ChevronDown className={cn("w-5 h-5 text-zinc-500 transition-transform duration-300", !closedProjectsOpen && "-rotate-90")} />
+                                    <span className="font-bold text-white tracking-tight opacity-70">Closed projects</span>
+                                    <Badge variant="secondary" className="bg-white/10 text-zinc-500 border-0">{closedProjects.length}</Badge>
+                                </div>
+                            </Button>
+                        </Collapsible.Trigger>
                         <Collapsible.Content asChild>
                             <motion.div
                                 initial="collapsed"
                                 animate={closedProjectsOpen ? "open" : "collapsed"}
-                                variants={{
-                                    open: { opacity: 1, height: 'auto' },
-                                    collapsed: { opacity: 0, height: 0 },
-                                }}
-                                transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                                className="overflow-hidden"
+                                variants={{ open: { opacity: 1, height: 'auto' }, collapsed: { opacity: 0, height: 0 } }}
+                                transition={{ duration: 0.3 }}
                             >
-                                <table className="w-full text-left mt-2 table-fixed">
+                                <table className="w-full text-left table-fixed opacity-60 grayscale-[0.5]">
                                     <thead>
-                                        <tr className="border-b">
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[18%]">Name</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Client</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Priority</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[8%]">Tasks</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Leaders</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Members</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[12%]">Completed date</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[10%]">Status</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground w-[6%]"></th>
+                                        <tr className="border-b border-white/10 bg-white/5">
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[20%]">Name</th>
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[12%]">Client</th>
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[10%]">Priority</th>
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[8%]">Tasks</th>
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[12%]">Leaders</th>
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[12%]">Members</th>
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[12%]">Completed</th>
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 w-[10%]">Status</th>
+                                            <th className="px-4 py-3 w-[4%]"></th>
                                         </tr>
                                     </thead>
                                     <ProjectTableBody
-                                        isOpen={showClosedProjects}
+                                        isOpen={true}
                                         projects={closedProjects}
                                         profiles={profiles}
                                         handleEditClick={handleEditClick}
@@ -757,24 +677,25 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                     </Collapsible.Root>
                 </div>
             )}
-        </>
+        </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 lg:p-10 h-full flex flex-col">
-       <header className="flex items-center justify-between pb-4 mb-4">
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setAddProjectOpen(true)}>
+    <div className="bg-[#0f0f0f] p-4 md:p-8 lg:p-10 h-full w-full flex flex-col text-zinc-100">
+       <header className="flex items-center justify-between pb-6 mb-2 border-b border-white/10">
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Projects</h1>
+          <Button onClick={() => setAddProjectOpen(true)} className="rounded-full bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.3)]">
             <Plus className="mr-2 h-4 w-4" />
             Add new
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+          <Button variant="outline" className="rounded-full bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border-sky-500/20"><Filter className="mr-2 h-4 w-4" />Filter</Button>
         </div>
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start flex-1 pt-6">
         <ProjectSidebar 
             activeView={activeView} 
             setActiveView={setActiveView} 
@@ -784,10 +705,11 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
             onDeleteType={(type) => { setTypeToDelete(type); setDeleteTypeAlertOpen(true); }}
             deletedCount={deletedRawProjects.length}
         />
-        <main className="md:col-span-4">
+        <main className="md:col-span-4 overflow-auto custom-scrollbar">
             {mainContent()}
         </main>
       </div>
+
        <AddProjectDialog
           isOpen={isAddProjectOpen}
           setIsOpen={setAddProjectOpen}
@@ -822,16 +744,17 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                 onTypeRenamed={handleTypeRenamed}
             />
         )}
+
         <AlertDialog open={isDeleteTypeAlertOpen} onOpenChange={setDeleteTypeAlertOpen}>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-zinc-400">
                         This action cannot be undone. This will permanently delete the project type "{typeToDelete?.name}".
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setTypeToDelete(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700">Cancel</AlertDialogCancel>
                     <AlertDialogAction 
                         onClick={handleDeleteTypeAction}
                         className={cn(buttonVariants({ variant: "destructive" }))}
@@ -842,17 +765,17 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
         <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will move the project
-                        "{projectToDelete?.name}" to the bin.
+                    <AlertDialogTitle>Move to bin?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-zinc-400">
+                        The project "{projectToDelete?.name}" will be moved to the bin. You can restore it later.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setProjectToDelete(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700">Cancel</AlertDialogCancel>
                     <AlertDialogAction 
                         onClick={handleDeleteProject}
                         className={cn(buttonVariants({ variant: "destructive" }))}
@@ -863,26 +786,43 @@ export default function ProjectsClient({ initialProjects, currentUser, profiles,
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
         <AlertDialog open={!!projectToDeletePermanently} onOpenChange={(open) => !open && setProjectToDeletePermanently(null)}>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the project "{projectToDeletePermanently?.name}" and all its associated data.
+                    <AlertDialogDescription className="text-zinc-400">
+                        This action is irreversible. All associated data for "{projectToDeletePermanently?.name}" will be removed.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700">Cancel</AlertDialogCancel>
                     <AlertDialogAction 
                         onClick={handleDeletePermanently}
                         className={cn(buttonVariants({ variant: "destructive" }))}
                         disabled={isPending}
                     >
-                       {isPending ? 'Permanently Delete' : 'Permanently Delete'}
+                       {isPending ? 'Deleting...' : 'Permanently Delete'}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        <style jsx global>{`
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+        `}</style>
     </div>
   );
 }
