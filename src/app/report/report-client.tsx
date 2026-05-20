@@ -250,7 +250,7 @@ export default function ReportClient({ initialProfiles, initialSubmissions, sele
                 {format(parseISO(date), "PPP")}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 rounded-3xl bg-zinc-900 border-zinc-800 shadow-2xl" align="end">
+            <PopoverContent className="w-auto p-0 rounded-3xl bg-zinc-950 border-zinc-800 shadow-2xl overflow-hidden" align="end">
               <Calendar mode="single" selected={parseISO(date)} onSelect={handleCalendarSelect} initialFocus />
             </PopoverContent>
           </Popover>

@@ -43,14 +43,14 @@ export default async function RootLayout({
   const isAuthenticated = !!user;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <link rel="icon" href="/icon.svg" sizes="any" />
       </head>
-      <body className={cn("min-h-screen bg-background font-body font-sans antialiased")}>
+      <body className={cn("min-h-screen bg-background font-body font-sans antialiased text-foreground")}>
         <PageLoader />
         <ClientCacheProvider>
           <ClientLayout
