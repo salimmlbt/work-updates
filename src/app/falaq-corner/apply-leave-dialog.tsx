@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useTransition, useEffect, useMemo } from 'react'
@@ -150,9 +149,9 @@ export function ApplyLeaveDialog({
 
     const formData = new FormData(e.currentTarget)
     formData.set('leave_type', leaveType)
-    formData.set('start_date', startDate.toISOString().slice(0, 10))
+    formData.set('start_date', format(startDate, 'yyyy-MM-dd'))
     if (endDate) {
-      formData.set('end_date', endDate.toISOString().slice(0, 10))
+      formData.set('end_date', format(endDate, 'yyyy-MM-dd'))
     }
     formData.set('day_type', dayType)
     formData.set('reason', reason.trim())
