@@ -1,12 +1,23 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Clock, Folder, Calendar, Eye, Briefcase, Check, X as XIcon } from 'lucide-react';
-import type { Profile, Task, Project, Attendance, OfficialHoliday } from '@/lib/types';
-import { format, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, isToday, startOfToday, parseISO, addDays, getDay } from 'date-fns';
+import type { Profile } from '@/lib/types';
+import { format, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, startOfToday, parseISO, addDays, getDay } from 'date-fns';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -26,6 +37,9 @@ interface DashboardClientProps {
   initialHolidays: any[];
 }
 
+const cardClass =
+  'relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.45)] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-b before:from-white/[0.03] before:to-transparent before:pointer-events-none';
+
 const CustomLegend = (props: any) => {
   const { payload } = props;
   return (
@@ -36,8 +50,8 @@ const CustomLegend = (props: any) => {
             className="w-2.5 h-2.5 rounded-full mr-2"
             style={{ backgroundColor: entry.color }}
           />
-          <span className="text-zinc-400 mr-2">{entry.value}:</span>
-          <span className="font-semibold text-zinc-200">{entry.payload.value} items</span>
+          <span className="text-slate-400 mr-2">{entry.value}:</span>
+          <span className="font-semibold text-white">{entry.payload.value} items</span>
         </li>
       ))}
     </ul>
@@ -56,7 +70,6 @@ export default function DashboardClient({
   const router = useRouter();
   const supabase = createClient();
 
-  // Local State for Real-time Data
   const [tasks, setTasks] = useState<any[]>(initialTasks);
   const [projects, setProjects] = useState<any[]>(initialProjects);
   const [attendance, setAttendance] = useState<any[]>(initialAttendance);
@@ -66,7 +79,6 @@ export default function DashboardClient({
     setHasMounted(true);
   }, []);
 
-  // Real-time Listeners
   useEffect(() => {
     if (!profile) return;
 
@@ -149,7 +161,6 @@ export default function DashboardClient({
     };
   }, [profile, supabase]);
 
-  // Derived Stats Calculations
   const stats = useMemo(() => {
     const isTaskCompleted = (t: any) => {
         return ['Posted', 'Scheduled'].includes(t.posting_status) || ['done', 'approved'].includes(t.status);
@@ -245,7 +256,7 @@ export default function DashboardClient({
       totalMonthlyHours,
       averageDailyHours
     };
-  }, [tasks, projects, attendance, holidays, profile]);
+  }, [tasks, projects, attendance, holidays]);
 
   const handleTaskCardClick = (tab: string) => {
     if (isTasksLoading) return;
@@ -256,170 +267,179 @@ export default function DashboardClient({
   return (
     <>
       {isTasksLoading && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 rounded-full border-2 border-sky-800 border-t-sky-400 animate-spin" />
-            <p className="text-sm text-zinc-300 font-medium">Loading your tasks…</p>
+            <div className="h-10 w-10 rounded-full border-2 border-sky-400/30 border-t-sky-400 animate-spin" />
+            <p className="text-sm text-slate-200 font-medium">Loading your tasks…</p>
           </div>
         </div>
       )}
 
-      <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f] text-zinc-100">
-        <header className="mb-8">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 border-2 border-zinc-800 shadow-sm">
+      <div className="min-h-screen p-4 md:p-8 lg:p-10 bg-[#0f0f0f] text-white">
+        <header className="mb-10">
+          <div className="flex items-center gap-5">
+            <Avatar className="h-20 w-20 border-2 border-white/10 shadow-2xl">
               <AvatarImage src={profile?.avatar_url ?? undefined} />
-              <AvatarFallback className="bg-sky-950 text-sky-400 font-semibold">
+              <AvatarFallback className="bg-sky-500/20 text-sky-300 text-xl font-bold">
                 {getInitials(profile?.full_name)}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+              <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-white">
                 Welcome back, {profile?.full_name?.split(' ')[0]}!
               </h1>
-              <p className="text-zinc-400 mt-1">Here is your live overview for today.</p>
+              <p className="text-slate-400 font-medium text-lg mt-1">Here is your live overview for today.</p>
             </div>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <button onClick={() => handleTaskCardClick('active')} className="text-left">
-                <Card className="shadow-2xl shadow-black/40 rounded-2xl bg-gradient-to-br from-sky-950/40 via-zinc-900 to-zinc-900 border border-sky-900/60 hover:-translate-y-1 transition-transform duration-300 cursor-pointer h-full">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-sky-400">Pending Tasks</CardTitle>
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-950/80 border border-sky-800 shadow-sm"><AlertCircle className="h-4 w-4 text-sky-400" /></span>
+              <button onClick={() => handleTaskCardClick('active')} className="text-left group">
+                <Card className={cn(cardClass, 'bg-gradient-to-br from-sky-500/10 via-sky-500/5 to-transparent hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(56,189,248,0.2)] transition-all duration-500 cursor-pointer h-full')}>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-black uppercase tracking-widest text-sky-400">Pending Tasks</CardTitle>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 group-hover:scale-110 transition-transform"><AlertCircle className="h-4 w-4 text-sky-400" /></span>
                   </CardHeader>
-                  <CardContent><div className="text-4xl font-bold text-sky-100">{stats.pending}</div><p className="mt-1 text-xs text-sky-300/70">Tasks waiting for your action.</p></CardContent>
+                  <CardContent>
+                    <div className="text-5xl font-black text-white tracking-tighter">{stats.pending}</div>
+                    <p className="mt-2 text-xs text-slate-400 font-medium">Tasks waiting for your action.</p>
+                  </CardContent>
                 </Card>
               </button>
 
-              <button onClick={() => handleTaskCardClick('under-review')} className="text-left">
-                <Card className="shadow-2xl shadow-black/40 rounded-2xl bg-gradient-to-br from-purple-950/40 via-zinc-900 to-zinc-900 border border-purple-900/60 hover:-translate-y-1 transition-transform duration-300 cursor-pointer h-full">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-purple-400">Review Tasks</CardTitle>
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-purple-950/80 border border-purple-800 shadow-sm"><Eye className="h-4 w-4 text-purple-400" /></span>
+              <button onClick={() => handleTaskCardClick('under-review')} className="text-left group">
+                <Card className={cn(cardClass, 'bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] transition-all duration-500 cursor-pointer h-full')}>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-black uppercase tracking-widest text-violet-400">Review Tasks</CardTitle>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 group-hover:scale-110 transition-transform"><Eye className="h-4 w-4 text-violet-400" /></span>
                   </CardHeader>
-                  <CardContent><div className="text-4xl font-bold text-purple-100">{stats.review}</div><p className="mt-1 text-xs text-purple-300/70">Awaiting review or feedback.</p></CardContent>
+                  <CardContent>
+                    <div className="text-5xl font-black text-white tracking-tighter">{stats.review}</div>
+                    <p className="mt-2 text-xs text-slate-400 font-medium">Awaiting review or feedback.</p>
+                  </CardContent>
                 </Card>
               </button>
 
-              <button onClick={() => handleTaskCardClick('completed')} className="text-left">
-                <Card className="shadow-2xl shadow-black/40 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-zinc-900 to-zinc-900 border border-emerald-900/60 hover:-translate-y-1 transition-transform duration-300 cursor-pointer h-full">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-emerald-400">Completed</CardTitle>
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-950/80 border border-emerald-800 shadow-sm"><CheckCircle2 className="h-4 w-4 text-emerald-400" /></span>
+              <button onClick={() => handleTaskCardClick('completed')} className="text-left group">
+                <Card className={cn(cardClass, 'bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(34,197,94,0.2)] transition-all duration-500 cursor-pointer h-full')}>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-black uppercase tracking-widest text-emerald-400">Completed</CardTitle>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 group-hover:scale-110 transition-transform"><CheckCircle2 className="h-4 w-4 text-emerald-400" /></span>
                   </CardHeader>
-                  <CardContent><div className="text-4xl font-bold text-emerald-100">{stats.completed}</div><p className="mt-1 text-xs text-emerald-300/70">Tasks successfully closed.</p></CardContent>
+                  <CardContent>
+                    <div className="text-5xl font-black text-white tracking-tighter">{stats.completed}</div>
+                    <p className="mt-2 text-xs text-slate-400 font-medium">Tasks successfully closed.</p>
+                  </CardContent>
                 </Card>
               </button>
             </div>
 
-            <Card className="shadow-2xl shadow-black/50 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md text-zinc-100">
+            <Card className={cn(cardClass, 'p-1')}>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-zinc-100"><Clock className="h-4 w-4 text-sky-400" />Monthly Work Hours</CardTitle>
-                  <CardDescription className="mt-1 text-zinc-400">Live log of your monthly work hours.</CardDescription>
+                  <CardTitle className="flex items-center gap-2 text-white font-bold"><Clock className="h-5 w-5 text-sky-400" />Monthly Work Hours</CardTitle>
+                  <CardDescription className="text-slate-400 font-medium">Live log of your monthly performance.</CardDescription>
                 </div>
-                <div className="flex flex-col items-end gap-1 text-right">
-                  <p className="text-xs text-zinc-400 uppercase tracking-wide">Total Hours</p>
-                  <p className="text-2xl font-semibold text-zinc-100">{stats.totalMonthlyHours.toFixed(1)}h</p>
-                  <p className="text-xs text-zinc-500">Avg / day: {stats.averageDailyHours.toFixed(1)}h</p>
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total Hours</p>
+                  <p className="text-3xl font-black text-white tracking-tighter">{stats.totalMonthlyHours.toFixed(1)}h</p>
+                  <p className="text-xs text-sky-400 font-bold">Avg: {stats.averageDailyHours.toFixed(1)}h/day</p>
                 </div>
               </CardHeader>
-              <CardContent className="pl-0 pr-2 pb-4">
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={stats.attendanceChartData} barSize={18} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <CardContent className="pl-0 pr-2">
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={stats.attendanceChartData} barSize={14}>
                     <defs>
-                      <linearGradient id="hoursGradient" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.8} />
-                        <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.15} />
+                        <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
-                    <XAxis dataKey="name" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} tickMargin={8} />
-                    <YAxis stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}h`} />
-                    <Bar dataKey="hours" fill="url(#hoursGradient)" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickMargin={10} />
+                    <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}h`} />
+                    <Bar dataKey="hours" fill="url(#barGrad)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card className="shadow-2xl shadow-black/50 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md text-zinc-100">
+            <Card className={cn(cardClass)}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-zinc-100"><Folder className="h-4 w-4 text-purple-400" />Assigned Projects</CardTitle>
-                <CardDescription className="mt-1 text-zinc-400">Status distribution of projects you are part of.</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-white font-bold"><Folder className="h-5 w-5 text-purple-400" />Assigned Projects</CardTitle>
+                <CardDescription className="text-slate-400 font-medium">Status distribution across your active portfolio.</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-                <div className="w-full lg:w-1/2">
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie data={stats.projectStatusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={3} dataKey="value" nameKey="name" labelLine={false} label={({ midAngle, innerRadius, outerRadius, percent }) => {
-                          const radius = innerRadius + (outerRadius - innerRadius) * 1.25;
-                          const x = 50 + radius * Math.cos(-midAngle * (Math.PI / 180));
-                          const y = 50 + radius * Math.sin(-midAngle * (Math.PI / 180));
-                          return <text x={`${x}%`} y={`${y}%`} fill="#f4f4f5" textAnchor={x > 50 ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight={500}>{`${(percent * 100).toFixed(0)}%`}</text>;
-                        }}>
-                        {stats.projectStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name]} />)}
-                      </Pie>
-                      <Legend verticalAlign="middle" align="right" layout="vertical" content={<CustomLegend />} />
-                    </PieChart>
-                  </ResponsiveContainer>
+              <CardContent>
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="flex-1 w-full h-[250px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={stats.projectStatusData} innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
+                          {stats.projectStatusData.map((entry, index) => <Cell key={index} fill={STATUS_COLORS[entry.name]} />)}
+                        </Pie>
+                        <Legend verticalAlign="middle" align="right" layout="vertical" content={<CustomLegend />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="lg:col-span-1 space-y-6">
-            <Card className="shadow-2xl shadow-black/50 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md text-zinc-100">
+          <div className="lg:col-span-1 space-y-8">
+            <Card className={cn(cardClass)}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-zinc-100"><Calendar className="h-4 w-4 text-amber-500" />Urgent & Upcoming Deadlines</CardTitle>
-                <CardDescription className="text-zinc-400">Overdue tasks and nearest due dates.</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-white font-bold"><Calendar className="h-5 w-5 text-amber-500" />Upcoming Deadlines</CardTitle>
+                <CardDescription className="text-slate-400 font-medium">Critical deliverables for this week.</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {stats.deadlines.length > 0 ? (
-                    stats.deadlines.map((task) => (
-                      <div key={task.id} className={cn('flex items-start gap-4 rounded-xl border px-3 py-3 transition-colors', task.isOverdue ? 'bg-red-950/20 border-red-900/40 hover:bg-red-950/30' : 'bg-zinc-800/30 border-zinc-800/60 hover:bg-zinc-800/50')}>
-                        <div className="flex-shrink-0 mt-0.5">
-                          <div className={cn('h-12 w-10 rounded-xl bg-zinc-950 shadow-sm border flex flex-col items-center justify-center text-xs font-semibold', task.isOverdue ? 'border-red-900/60 text-red-400' : 'border-zinc-700 text-zinc-300')}>
-                            {hasMounted ? (<><span className={cn('text-[0.65rem] uppercase tracking-wide', task.isOverdue ? 'text-red-400' : 'text-zinc-500')}>{format(parseISO(task.deadline), 'MMM')}</span><span className={cn('text-lg leading-tight', task.isOverdue ? 'text-red-200' : 'text-zinc-100')}>{format(parseISO(task.deadline), 'dd')}</span></>) : <div className="h-full w-full bg-zinc-800 animate-pulse rounded-xl" />}
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={cn('font-medium leading-snug line-clamp-2', task.isOverdue ? 'text-red-200' : 'text-zinc-100')}>{task.description}</p>
-                          <p className={cn('text-sm mt-1', task.isOverdue ? 'text-red-400/80' : 'text-zinc-400')}>{task.projects?.name}</p>
-                        </div>
+              <CardContent className="space-y-4">
+                {stats.deadlines.length > 0 ? (
+                  stats.deadlines.map((task) => (
+                    <div key={task.id} className={cn('flex items-start gap-4 p-4 rounded-2xl border transition-all duration-300', task.isOverdue ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/10 hover:bg-white/10')}>
+                      <div className={cn('h-12 w-11 rounded-xl flex flex-col items-center justify-center font-bold shadow-lg', task.isOverdue ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-300')}>
+                        {hasMounted && (
+                          <>
+                            <span className="text-[10px] uppercase tracking-tighter opacity-80">{format(parseISO(task.deadline), 'MMM')}</span>
+                            <span className="text-lg leading-none">{format(parseISO(task.deadline), 'dd')}</span>
+                          </>
+                        )}
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-sm text-zinc-500 py-8">No upcoming deadlines.</div>
-                  )}
-                </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn('font-bold leading-snug line-clamp-2', task.isOverdue ? 'text-red-200' : 'text-white')}>{task.description}</p>
+                        <p className="text-xs text-slate-400 mt-1 font-medium truncate">{task.projects?.name}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-10 text-center text-slate-500 text-sm font-medium italic">No active deadlines detected.</div>
+                )}
               </CardContent>
             </Card>
 
-            <Card className="shadow-2xl shadow-black/50 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md text-zinc-100">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between text-sm font-medium text-zinc-300">
-                  <span>Monthly Attendance</span>
-                  <span className="text-xs rounded-full bg-sky-950/50 px-2 py-0.5 border border-sky-900/50 text-sky-400">{hasMounted ? format(new Date(), 'MMMM yyyy') : ''}</span>
+            <Card className={cn(cardClass)}>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between text-sm font-black uppercase tracking-widest text-slate-400">
+                  <span>Monthly Summary</span>
+                  {hasMounted && <Badge className="rounded-full bg-sky-500/20 text-sky-400 border-sky-500/20">{format(new Date(), 'MMMM')}</Badge>}
                 </CardTitle>
-                <CardDescription className="text-zinc-400">Snapshot of your presence this month.</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl bg-zinc-800/40 border border-zinc-800 p-3 flex flex-col items-center justify-center">
-                  <div className="flex items-center justify-center text-xs gap-1 text-zinc-400 mb-1"><Briefcase className="h-4 w-4" /><span>Working Days</span></div>
-                  <p className="text-2xl font-bold text-zinc-100 leading-tight">{stats.totalWorkingDays}</p>
+              <CardContent className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col items-center p-3 rounded-2xl bg-white/5 border border-white/5">
+                  <Briefcase className="h-4 w-4 text-slate-500 mb-2" />
+                  <span className="text-2xl font-black text-white">{stats.totalWorkingDays}</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase mt-1">Days</span>
                 </div>
-                <div className="rounded-xl bg-emerald-950/30 border border-emerald-900/50 p-3 flex flex-col items-center justify-center">
-                  <div className="flex items-center justify-center text-xs gap-1 text-emerald-400 mb-1"><Check className="h-4 w-4" /><span>Present</span></div>
-                  <p className="text-2xl font-bold text-emerald-400 leading-tight">{stats.presentDaysSoFar}</p>
+                <div className="flex flex-col items-center p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/10">
+                  <Check className="h-4 w-4 text-emerald-500 mb-2" />
+                  <span className="text-2xl font-black text-emerald-500">{stats.presentDaysSoFar}</span>
+                  <span className="text-[10px] font-bold text-emerald-600/80 uppercase mt-1">Present</span>
                 </div>
-                <div className="rounded-xl bg-rose-950/30 border border-rose-900/50 p-3 flex flex-col items-center justify-center">
-                  <div className="flex items-center justify-center text-xs gap-1 text-rose-400 mb-1"><XIcon className="h-4 w-4" /><span>Absent</span></div>
-                  <p className="text-2xl font-bold text-rose-400 leading-tight">{stats.absentDays}</p>
+                <div className="flex flex-col items-center p-3 rounded-2xl bg-rose-500/10 border border-rose-500/10">
+                  <XIcon className="h-4 w-4 text-rose-500 mb-2" />
+                  <span className="text-2xl font-black text-rose-500">{stats.absentDays}</span>
+                  <span className="text-[10px] font-bold text-rose-600/80 uppercase mt-1">Absent</span>
                 </div>
               </CardContent>
             </Card>
