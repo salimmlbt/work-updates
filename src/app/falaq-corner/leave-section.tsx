@@ -1,7 +1,6 @@
-
 'use client'
 
-import { useState, useTransition, useEffect, useMemo } from 'react'
+import { useState, useTransition, useEffect, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, FileText, XCircle, Loader2, ChevronDown, CheckCircle2, X, RefreshCcw, Trash2 } from 'lucide-react'
@@ -42,8 +41,8 @@ export function LeaveSection({ profile }: { profile: Profile }) {
   const permissions = (profile.roles as RoleWithPermissions)?.permissions || {}
   const isEditor = permissions.falaq_corner === 'Editor' || profile.roles?.name === 'Falaq Admin'
 
-  const fetchLeaves = async () => {
-    setIsLoading(true)
+  const fetchLeaves = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true)
     let query = supabase.from('leaves').select('*, profiles(*)').order('start_date', { ascending: false })
 
     if (!isEditor || activeTab === 'my-leaves') {
@@ -52,10 +51,29 @@ export function LeaveSection({ profile }: { profile: Profile }) {
 
     const { data, error } = await query
     if (!error && data) setLeaves(data as any)
-    setIsLoading(false)
-  }
+    if (showLoading) setIsLoading(false)
+  }, [supabase, isEditor, activeTab, profile.id])
 
-  useEffect(() => { fetchLeaves() }, [activeTab])
+  useEffect(() => { 
+    fetchLeaves();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('realtime-leaves-corner')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leaves' },
+        () => {
+          // Re-fetch when any change occurs to ensure joins are up to date
+          fetchLeaves(false);
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchLeaves, supabase])
 
   const handleAction = (id: string, action: Leave['status'] | 'reopen' | 'delete') => {
     startTransition(async () => {
@@ -70,7 +88,8 @@ export function LeaveSection({ profile }: { profile: Profile }) {
       } else {
         const msg = action === 'reopen' ? 'reopened' : action === 'delete' ? 'deleted' : action.toLowerCase();
         toast({ title: 'Success', description: `Leave ${msg} successfully.` })
-        fetchLeaves()
+        // fetchLeaves is handled by real-time subscription now, but we keep it for immediate feedback
+        fetchLeaves(false);
       }
     })
   }
@@ -271,9 +290,9 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         </Button>
       </div>
 
-      <ApplyLeaveDialog isOpen={isApplyDialogOpen} setIsOpen={setIsApplyDialogOpen} onSuccess={fetchLeaves} existingLeaves={leaves} />
+      <ApplyLeaveDialog isOpen={isApplyDialogOpen} setIsOpen={setIsApplyDialogOpen} onSuccess={() => fetchLeaves(false)} existingLeaves={leaves} />
       {leaveToApprove && (
-        <ApproveLeaveDialog isOpen={!!leaveToApprove} setIsOpen={() => setLeaveToApprove(null)} leave={leaveToApprove} onSuccess={fetchLeaves} />
+        <ApproveLeaveDialog isOpen={!!leaveToApprove} setIsOpen={() => setLeaveToApprove(null)} leave={leaveToApprove} onSuccess={() => fetchLeaves(false)} />
       )}
       
       <style jsx global>{`
