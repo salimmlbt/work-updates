@@ -1,4 +1,3 @@
-
 'use client'
 
 import {
@@ -152,23 +151,26 @@ export function TaskDetailSheet({
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
+    const selectedFiles = Array.from(files);
+    const newAttachments: Attachment[] = [];
 
-    const { data: newAttachment, error: uploadError } = await uploadAttachment(formData);
-    
-    if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError, variant: "destructive" });
-      setIsUploading(false);
-      return;
+    for (const file of selectedFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data, error } = await uploadAttachment(formData);
+      if (error) {
+        toast({ title: `Upload failed for ${file.name}`, description: error, variant: "destructive" });
+      } else if (data) {
+        newAttachments.push(data);
+      }
     }
 
-    if (newAttachment) {
-      const updatedAttachments = [...attachments, newAttachment];
+    if (newAttachments.length > 0) {
+      const updatedAttachments = [...attachments, ...newAttachments];
       
       const { error: dbError, data: updatedTask } = await supabase
         .from('tasks')
@@ -180,7 +182,10 @@ export function TaskDetailSheet({
       if (dbError) {
         toast({ title: "Database error", description: dbError.message, variant: "destructive" });
       } else {
-        toast({ title: "File attached", description: `${file.name} has been attached.` });
+        toast({ 
+          title: "Files attached", 
+          description: `${newAttachments.length} file(s) have been attached.` 
+        });
         onTaskUpdated({ ...task, ...updatedTask });
       }
     }
@@ -366,6 +371,7 @@ export function TaskDetailSheet({
 
             <input
               type="file"
+              multiple
               ref={fileInputRef}
               onChange={handleFileSelect}
               className="hidden"

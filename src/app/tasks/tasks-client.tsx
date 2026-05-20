@@ -324,22 +324,34 @@ const AddTaskRow = ({
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
+    const selectedFiles = Array.from(files);
+    const newAttachments: Attachment[] = [];
 
-    const { data, error } = await uploadAttachment(formData);
+    for (const file of selectedFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data, error } = await uploadAttachment(formData);
+      if (error) {
+        toast({ title: `Upload failed for ${file.name}`, description: error, variant: "destructive" });
+      } else if (data) {
+        newAttachments.push(data);
+      }
+    }
+
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments]);
+      toast({ 
+        title: "Files attached", 
+        description: `${newAttachments.length} file(s) have been attached.` 
+      });
+    }
     
     setIsUploading(false);
-    if (error) {
-      toast({ title: "Upload failed", description: error, variant: "destructive" });
-    } else if (data) {
-      setAttachments(prev => [...prev, data]);
-      toast({ title: "File attached", description: `${file.name} has been attached.` });
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSave = async () => {
@@ -512,6 +524,7 @@ const AddTaskRow = ({
         <div className="flex items-center justify-end gap-2">
           <input
             type="file"
+            multiple
             ref={fileInputRef}
             onChange={handleFileSelect}
             className="hidden"
