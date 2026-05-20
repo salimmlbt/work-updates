@@ -269,7 +269,7 @@ export default function DashboardClient({
         </div>
       )}
 
-      <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-sky-50">
+      <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f]">
         <header className="mb-8">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 border-2 border-primary shadow-sm">
@@ -279,10 +279,10 @@ export default function DashboardClient({
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
                 Welcome back, {profile?.full_name?.split(' ')[0]}!
               </h1>
-              <p className="text-muted-foreground mt-1">Here is your live overview for today.</p>
+              <p className="text-slate-400 mt-1">Here is your live overview for today.</p>
             </div>
           </div>
         </header>
@@ -321,7 +321,7 @@ export default function DashboardClient({
               </button>
             </div>
 
-            <Card className="shadow-lg shadow-slate-200/70 rounded-2xl border border-slate-100 bg-white/90 backdrop-blur-sm">
+            <Card className="shadow-2xl shadow-black/50 rounded-2xl border border-white/10 bg-white/95 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2 text-slate-900"><Clock className="h-4 w-4 text-sky-600" />Monthly Work Hours</CardTitle>
@@ -351,7 +351,7 @@ export default function DashboardClient({
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg shadow-slate-200/70 rounded-2xl border border-slate-100 bg-white/90 backdrop-blur-sm">
+            <Card className="shadow-2xl shadow-black/50 rounded-2xl border border-white/10 bg-white/95 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-slate-900"><Folder className="h-4 w-4 text-indigo-600" />Assigned Projects</CardTitle>
                 <CardDescription className="mt-1">Status distribution of projects you are part of.</CardDescription>
@@ -377,7 +377,7 @@ export default function DashboardClient({
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <Card className="shadow-lg shadow-slate-200/70 rounded-2xl border border-slate-100 bg-white/90 backdrop-blur-sm">
+            <Card className="shadow-2xl shadow-black/50 rounded-2xl border border-white/10 bg-white/95 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-slate-900"><Calendar className="h-4 w-4 text-amber-600" />Urgent & Upcoming Deadlines</CardTitle>
                 <CardDescription>Overdue tasks and nearest due dates.</CardDescription>
@@ -405,7 +405,7 @@ export default function DashboardClient({
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg shadow-slate-200/70 rounded-2xl border border-slate-100 bg-white/90 backdrop-blur-sm">
+            <Card className="shadow-2xl shadow-black/50 rounded-2xl border border-white/10 bg-white/95 backdrop-blur-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between text-sm font-medium text-slate-700">
                   <span>Monthly Attendance</span>
