@@ -1265,7 +1265,6 @@ export async function getPublicHolidays(year: number, countryCode: string): Prom
         const API_KEY = process.env.GOOGLE_API_KEY;
         if (!API_KEY) {
           const msg = 'Google API Key is not set in environment variables (GOOGLE_API_KEY)';
-          console.error(msg);
           return { error: msg };
         }
 

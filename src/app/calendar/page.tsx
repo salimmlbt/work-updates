@@ -1,5 +1,4 @@
 
-
 import { createServerClient } from '@/lib/supabase/server';
 import CalendarClient from './calendar-client';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, getDay, getYear, startOfYear, endOfYear } from 'date-fns';
@@ -13,7 +12,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   
   const { data: { user } } = await supabase.auth.getUser();
 
-  const selectedMonth = searchParams.month || format(new Date(), 'yyyy-MM');
+  const selectedMonth = (await searchParams).month || format(new Date(), 'yyyy-MM');
   const selectedDate = new Date(`${selectedMonth}-01T00:00:00Z`);
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
@@ -57,7 +56,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
   if (myTasksError) console.error('Error fetching user tasks:', myTasksError.message);
   if (allProjectsError) console.error('Error fetching projects:', allProjectsError.message);
   if (officialHolidaysError) console.error('Error fetching official holidays:', officialHolidaysError.message);
-  if (publicHolidaysError) console.error('Error fetching public holidays:', publicHolidaysError);
+  
+  // Graceful handling of missing Google API Key for public holidays
+  if (publicHolidaysError && !publicHolidaysError.includes('GOOGLE_API_KEY')) {
+    console.error('Error fetching public holidays:', publicHolidaysError);
+  }
 
   const allHolidays = officialHolidays as OfficialHoliday[] || [];
   
