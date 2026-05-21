@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -908,7 +907,7 @@ const TaskRow = ({
         </DropdownMenu>
       </td>
       <td className={cn("px-4 py-3 text-right", isHighlighted && "bg-sky-500/10")}>
-        {canEdit && (
+        {canEditTasks && (
         <DropdownMenu
           onOpenChange={(open) => setOpenMenuId(open ? task.id : null)}
         >
@@ -2064,7 +2063,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
               className="bg-red-600 hover:bg-red-500 text-white"
               disabled={isPending}
             >
-              {isPending ? "Deleting..." : "Delete Permanently"}
+              {isPending ? "Delete Permanently" : "Delete Permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
