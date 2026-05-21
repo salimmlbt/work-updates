@@ -7,6 +7,7 @@ import { logout } from './login/actions';
 import { cn, getInitials } from '@/lib/utils';
 import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
+import MobileNav from '@/components/dashboard/mobile-nav';
 import type { Profile, Notification, RoleWithPermissions, TaskWithDetails, Leave } from '@/lib/types';
 import { Toaster } from "@/components/ui/toaster";
 import { PageSkeleton } from '@/components/dashboard/page-skeleton';
@@ -260,18 +261,27 @@ export default function ClientLayout({
   return (
     <div className="flex min-h-screen w-full bg-background">
       {showNav && (
-        <Sidebar 
-            profile={profile} 
-            isCollapsed={isSidebarCollapsed}
-            setIsCollapsed={setSidebarCollapsed}
-            setIsLoading={setIsLoading}
+        <>
+          <Sidebar 
+              profile={profile} 
+              isCollapsed={isSidebarCollapsed}
+              setIsCollapsed={setSidebarCollapsed}
+              setIsLoading={setIsLoading}
+              notifications={notifications}
+              setNotifications={setNotifications}
+          />
+          <MobileNav
+            profile={profile}
             notifications={notifications}
             setNotifications={setNotifications}
-        />
+            setIsLoading={setIsLoading}
+          />
+        </>
       )}
       <div className={cn(
           "flex flex-1 flex-col transition-all duration-300",
-          showNav && (isSidebarCollapsed ? "ml-20" : "ml-64")
+          showNav && "pt-16 md:pt-0",
+          showNav && (isSidebarCollapsed ? "md:ml-20" : "md:ml-64")
         )}>
         {showNav && <Header />}
         <main className="flex-1 overflow-y-auto">
