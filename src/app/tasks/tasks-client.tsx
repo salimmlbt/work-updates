@@ -907,7 +907,7 @@ const TaskRow = ({
         </DropdownMenu>
       </td>
       <td className={cn("px-4 py-3 text-right", isHighlighted && "bg-sky-500/10")}>
-        {canEditTasks && (
+        {canEdit && (
         <DropdownMenu
           onOpenChange={(open) => setOpenMenuId(open ? task.id : null)}
         >
@@ -1817,7 +1817,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
         <PopoverTrigger asChild>
            <Button variant="outline" className="rounded-full bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border-sky-500/20"><Filter className="mr-2 h-4 w-4" />Filter</Button>
         </PopoverTrigger>
-        <PopoverContent className="w-96 bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl">
+        <PopoverContent className="w-96 bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl" align="end">
           <div className="space-y-4">
             <h4 className="font-semibold text-lg">Filters</h4>
             <div className="flex gap-2">
