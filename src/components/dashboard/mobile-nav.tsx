@@ -151,7 +151,7 @@ export default function MobileNav({ profile, notifications, setNotifications, se
                 {filteredBottomNavItems.map(item => (
                   <NavLink key={item.href} item={item} />
                 ))}
-                <form action={logout}>
+                <form action={logout} suppressHydrationWarning>
                   <button className="w-full flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-300 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 text-slate-400 hover:text-white">
                     <LogOut className="h-5 w-5 text-slate-500" />
                     <span className="text-sm font-medium">Log out</span>

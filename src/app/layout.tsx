@@ -1,4 +1,3 @@
-
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { createServerClient } from '@/lib/supabase/server';
@@ -54,7 +53,10 @@ export default async function RootLayout({
       <head>
         <link rel="icon" href="/icon.svg" sizes="any" />
       </head>
-      <body className={cn("min-h-screen bg-background font-body font-sans antialiased text-foreground")} suppressHydrationWarning>
+      <body 
+        className={cn("min-h-screen bg-background font-body font-sans antialiased text-foreground")} 
+        suppressHydrationWarning
+      >
         <PageLoader />
         <ClientCacheProvider>
           <ClientLayout

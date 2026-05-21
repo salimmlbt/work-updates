@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -213,7 +212,7 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
                 <NavLink key={item.href} item={item} />
               ))}
 
-              <form action={logout}>
+              <form action={logout} suppressHydrationWarning>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button type="submit" className="flex w-full items-center gap-4 rounded-xl px-4 py-2 transition-all duration-300 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 group/logout">
