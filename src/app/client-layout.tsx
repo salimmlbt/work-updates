@@ -16,6 +16,7 @@ import { CheckCircle2, XCircle, Calendar as CalendarIcon, Clock, Eye, AlertCircl
 import { Button } from '@/components/ui/button';
 import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function ClientLayout({
   children,
@@ -259,165 +260,167 @@ export default function ClientLayout({
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      {showNav && (
-        <>
-          <Sidebar 
-              profile={profile} 
-              isCollapsed={isSidebarCollapsed}
-              setIsCollapsed={setSidebarCollapsed}
-              setIsLoading={setIsLoading}
+    <TooltipProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        {showNav && (
+          <>
+            <Sidebar 
+                profile={profile} 
+                isCollapsed={isSidebarCollapsed}
+                setIsCollapsed={setSidebarCollapsed}
+                setIsLoading={setIsLoading}
+                notifications={notifications}
+                setNotifications={setNotifications}
+            />
+            <MobileNav
+              profile={profile}
               notifications={notifications}
               setNotifications={setNotifications}
-          />
-          <MobileNav
-            profile={profile}
-            notifications={notifications}
-            setNotifications={setNotifications}
-            setIsLoading={setIsLoading}
-          />
-        </>
-      )}
-      <div className={cn(
-          "flex flex-1 flex-col transition-all duration-300",
-          showNav && "pt-16 md:pt-0",
-          showNav && (isSidebarCollapsed ? "md:ml-20" : "md:ml-64")
-        )}>
-        {showNav && <Header />}
-        <main className="flex-1 overflow-y-auto">
-          {isLoading ? <PageSkeleton /> : children}
-        </main>
-      </div>
+              setIsLoading={setIsLoading}
+            />
+          </>
+        )}
+        <div className={cn(
+            "flex flex-1 flex-col transition-all duration-300",
+            showNav && "pt-16 md:pt-0",
+            showNav && (isSidebarCollapsed ? "md:ml-20" : "md:ml-64")
+          )}>
+          {showNav && <Header />}
+          <main className="flex-1 overflow-y-auto">
+            {isLoading ? <PageSkeleton /> : children}
+          </main>
+        </div>
 
-      {/* Leave Status Sticky Popup (For Applicant) */}
-      <AnimatePresence>
-        {activeLeaveNotif && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
-            animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9, x: 20 }}
-            className={cn(
-              "fixed bottom-8 right-8 z-[200] p-6 rounded-[2.5rem] border backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-5 min-w-[320px] max-w-[400px]",
-              activeLeaveNotif.status === 'Approved' 
-                ? "bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/10" 
-                : "bg-rose-500/10 border-rose-500/20 shadow-rose-500/10"
-            )}
-          >
-            <div className="flex items-center gap-5">
-              <div className={cn(
-                "h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl",
-                activeLeaveNotif.status === 'Approved' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
-              )}>
-                {activeLeaveNotif.status === 'Approved' ? <CheckCircle2 className="h-7 w-7" /> : <XCircle className="h-7 w-7" />}
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-black uppercase tracking-tight text-white text-xl">
-                  Leave {activeLeaveNotif.status}!
-                </h3>
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-                  {activeLeaveNotif.leave_type}
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-3 bg-white/[0.03] p-4 rounded-3xl border border-white/5">
-                <div className="flex items-center gap-3">
-                    <CalendarIcon className="h-4 w-4 text-zinc-500" />
-                    <span className="text-sm font-bold text-zinc-200">{getLeaveDateString(activeLeaveNotif)}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Clock className="h-4 w-4 text-zinc-500" />
-                    <span className="text-sm font-black text-sky-400 uppercase tracking-tight">
-                        {getLeaveDuration(activeLeaveNotif)} Day{getLeaveDuration(activeLeaveNotif) !== 1 ? 's' : ''} {activeLeaveNotif.status === 'Approved' ? 'Approved' : 'Requested'}
-                    </span>
-                </div>
-            </div>
-
-            <p className="text-xs text-zinc-500 font-medium leading-relaxed px-1">
-              {activeLeaveNotif.status === 'Approved' 
-                ? "Your leave application has been processed and approved by the studio management." 
-                : "Your leave application was not approved at this time. Please check Falaq Corner for details."}
-            </p>
-
-            <Button 
-              onClick={() => setActiveLeaveNotif(null)}
+        {/* Leave Status Sticky Popup (For Applicant) */}
+        <AnimatePresence>
+          {activeLeaveNotif && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
+              animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9, x: 20 }}
               className={cn(
-                "w-full rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 transition-all active:scale-95 shadow-2xl",
+                "fixed bottom-8 right-8 z-[200] p-6 rounded-[2.5rem] border backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-5 min-w-[320px] max-w-[400px]",
                 activeLeaveNotif.status === 'Approved' 
-                  ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40" 
-                  : "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/40"
+                  ? "bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/10" 
+                  : "bg-rose-500/10 border-rose-500/20 shadow-rose-500/10"
               )}
             >
-              OK, Understood
-            </Button>
-            
-            <div className={cn(
-              "absolute -top-10 -right-10 w-32 h-32 blur-[60px] rounded-full opacity-30 pointer-events-none",
-              activeLeaveNotif.status === 'Approved' ? "bg-emerald-400" : "bg-rose-400"
-            )} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* New Leave Review Popup (For Editors) */}
-      <AnimatePresence>
-        {newLeaveToReview && (
-           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
-            animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9, x: 20 }}
-            className="fixed bottom-8 right-8 z-[200] p-6 rounded-[2.5rem] border border-amber-500/20 bg-zinc-950/80 backdrop-blur-3xl shadow-[0_20px_50px_rgba(245,158,11,0.15)] flex flex-col gap-5 min-w-[320px] max-w-[400px]"
-          >
-            <div className="flex items-center gap-5">
-              <div className="h-14 w-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shadow-2xl ring-1 ring-amber-500/30">
-                <AlertCircle className="h-7 w-7" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-black uppercase tracking-tight text-white text-xl">
-                  New Leave!
-                </h3>
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-                  Awaiting your decision
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 p-4 rounded-3xl bg-white/[0.03] border border-white/5 shadow-inner">
-                <Avatar className="h-10 w-10 border border-white/10">
-                    <AvatarImage src={newLeaveToReview.profiles?.avatar_url ?? undefined} />
-                    <AvatarFallback className="bg-amber-500/10 text-amber-400 font-black">{getInitials(newLeaveToReview.profiles?.full_name)}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <p className="text-sm font-black text-white">{newLeaveToReview.profiles?.full_name}</p>
-                    <p className="text-[10px] font-bold text-sky-400 uppercase tracking-tight">
-                        {newLeaveToReview.leave_type} • {getLeaveDuration(newLeaveToReview)} Day{getLeaveDuration(newLeaveToReview) !== 1 ? 's' : ''}
-                    </p>
+              <div className="flex items-center gap-5">
+                <div className={cn(
+                  "h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl",
+                  activeLeaveNotif.status === 'Approved' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                )}>
+                  {activeLeaveNotif.status === 'Approved' ? <CheckCircle2 className="h-7 w-7" /> : <XCircle className="h-7 w-7" />}
                 </div>
-            </div>
+                <div className="space-y-1">
+                  <h3 className="font-black uppercase tracking-tight text-white text-xl">
+                    Leave {activeLeaveNotif.status}!
+                  </h3>
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                    {activeLeaveNotif.leave_type}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-3 bg-white/[0.03] p-4 rounded-3xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                      <CalendarIcon className="h-4 w-4 text-zinc-500" />
+                      <span className="text-sm font-bold text-zinc-200">{getLeaveDateString(activeLeaveNotif)}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                      <Clock className="h-4 w-4 text-zinc-500" />
+                      <span className="text-sm font-black text-sky-400 uppercase tracking-tight">
+                          {getLeaveDuration(activeLeaveNotif)} Day{getLeaveDuration(activeLeaveNotif) !== 1 ? 's' : ''} {activeLeaveNotif.status === 'Approved' ? 'Approved' : 'Requested'}
+                      </span>
+                  </div>
+              </div>
 
-            <div className="flex gap-3">
-               <Button 
-                variant="ghost"
-                onClick={() => setNewLeaveToReview(null)}
-                className="flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 text-zinc-500 hover:text-white hover:bg-white/5"
-              >
-                Later
-              </Button>
+              <p className="text-xs text-zinc-500 font-medium leading-relaxed px-1">
+                {activeLeaveNotif.status === 'Approved' 
+                  ? "Your leave application has been processed and approved by the studio management." 
+                  : "Your leave application was not approved at this time. Please check Falaq Corner for details."}
+              </p>
+
               <Button 
-                onClick={handleReviewLeave}
-                className="flex-[2] rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 bg-amber-600 hover:bg-amber-500 text-white shadow-2xl shadow-amber-900/40"
+                onClick={() => setActiveLeaveNotif(null)}
+                className={cn(
+                  "w-full rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 transition-all active:scale-95 shadow-2xl",
+                  activeLeaveNotif.status === 'Approved' 
+                    ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40" 
+                    : "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/40"
+                )}
               >
-                <Eye className="h-4 w-4 mr-2" /> Review Now
+                OK, Understood
               </Button>
-            </div>
+              
+              <div className={cn(
+                "absolute -top-10 -right-10 w-32 h-32 blur-[60px] rounded-full opacity-30 pointer-events-none",
+                activeLeaveNotif.status === 'Approved' ? "bg-emerald-400" : "bg-rose-400"
+              )} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* Golden Glow Effect */}
-            <div className="absolute -top-10 -right-10 w-32 h-32 blur-[60px] rounded-full bg-amber-500 opacity-20 pointer-events-none" />
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* New Leave Review Popup (For Editors) */}
+        <AnimatePresence>
+          {newLeaveToReview && (
+             <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
+              animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9, x: 20 }}
+              className="fixed bottom-8 right-8 z-[200] p-6 rounded-[2.5rem] border border-amber-500/20 bg-zinc-950/80 backdrop-blur-3xl shadow-[0_20px_50px_rgba(245,158,11,0.15)] flex flex-col gap-5 min-w-[320px] max-w-[400px]"
+            >
+              <div className="flex items-center gap-5">
+                <div className="h-14 w-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shadow-2xl ring-1 ring-amber-500/30">
+                  <AlertCircle className="h-7 w-7" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-black uppercase tracking-tight text-white text-xl">
+                    New Leave!
+                  </h3>
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                    Awaiting your decision
+                  </p>
+                </div>
+              </div>
 
-      <Toaster />
-    </div>
+              <div className="flex items-center gap-4 p-4 rounded-3xl bg-white/[0.03] border border-white/5 shadow-inner">
+                  <Avatar className="h-10 w-10 border border-white/10">
+                      <AvatarImage src={newLeaveToReview.profiles?.avatar_url ?? undefined} />
+                      <AvatarFallback className="bg-amber-500/10 text-amber-400 font-black">{getInitials(newLeaveToReview.profiles?.full_name)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                      <p className="text-sm font-black text-white">{newLeaveToReview.profiles?.full_name}</p>
+                      <p className="text-[10px] font-bold text-sky-400 uppercase tracking-tight">
+                          {newLeaveToReview.leave_type} • {getLeaveDuration(newLeaveToReview)} Day{getLeaveDuration(newLeaveToReview) !== 1 ? 's' : ''}
+                      </p>
+                  </div>
+              </div>
+
+              <div className="flex gap-3">
+                 <Button 
+                  variant="ghost"
+                  onClick={() => setNewLeaveToReview(null)}
+                  className="flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 text-zinc-500 hover:text-white hover:bg-white/5"
+                >
+                  Later
+                </Button>
+                <Button 
+                  onClick={handleReviewLeave}
+                  className="flex-[2] rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 bg-amber-600 hover:bg-amber-500 text-white shadow-2xl shadow-amber-900/40"
+                >
+                  <Eye className="h-4 w-4 mr-2" /> Review Now
+                </Button>
+              </div>
+
+              {/* Golden Glow Effect */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 blur-[60px] rounded-full bg-amber-500 opacity-20 pointer-events-none" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Toaster />
+      </div>
+    </TooltipProvider>
   );
 }
