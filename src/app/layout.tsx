@@ -54,7 +54,7 @@ export default async function RootLayout({
       <head>
         <link rel="icon" href="/icon.svg" sizes="any" />
       </head>
-      <body className={cn("min-h-screen bg-background font-body font-sans antialiased text-foreground")}>
+      <body className={cn("min-h-screen bg-background font-body font-sans antialiased text-foreground")} suppressHydrationWarning>
         <PageLoader />
         <ClientCacheProvider>
           <ClientLayout

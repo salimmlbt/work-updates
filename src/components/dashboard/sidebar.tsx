@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -212,10 +213,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
                 <NavLink key={item.href} item={item} />
               ))}
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <form action={logout}>
-                    <button className="flex w-full items-center gap-4 rounded-xl px-4 py-3 transition-all duration-300 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 group/logout">
+              <form action={logout}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="submit" className="flex w-full items-center gap-4 rounded-xl px-4 py-2 transition-all duration-300 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 group/logout">
                       <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
                         <LogOut className="h-5 w-5 text-slate-500 transition-all duration-300 group-hover/logout:text-red-400" />
                       </span>
@@ -228,10 +229,10 @@ export default function Sidebar({ profile, isCollapsed, setIsCollapsed, setIsLoa
                         Log out
                       </span>
                     </button>
-                  </form>
-                </TooltipTrigger>
-                {isCollapsed && <TooltipContent side="right" className="border-white/10 bg-[#111827] text-white">Log out</TooltipContent>}
-              </Tooltip>
+                  </TooltipTrigger>
+                  {isCollapsed && <TooltipContent side="right" className="border-white/10 bg-[#111827] text-white">Log out</TooltipContent>}
+                </Tooltip>
+              </form>
             </nav>
 
             <div className="border-t border-white/10 pt-4">
