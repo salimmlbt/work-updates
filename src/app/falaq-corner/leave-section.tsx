@@ -25,14 +25,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useSearchParams } from 'next/navigation'
 
 export function LeaveSection({ profile }: { profile: Profile }) {
+  const searchParams = useSearchParams()
   const [leaves, setLeaves] = useState<(Leave & { profiles?: Profile })[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false)
   const [leaveToApprove, setLeaveToApprove] = useState<Leave & { profiles?: Profile } | null>(null)
   const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({})
-  const [activeTab, setActiveTab] = useState('my-leaves')
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'my-leaves')
   const [isPending, startTransition] = useTransition()
 
   const { toast } = useToast()
@@ -40,6 +42,14 @@ export function LeaveSection({ profile }: { profile: Profile }) {
 
   const permissions = (profile.roles as RoleWithPermissions)?.permissions || {}
   const isEditor = permissions.falaq_corner === 'Editor' || profile.roles?.name === 'Falaq Admin'
+
+  // Update active tab if query param changes
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab && (tab === 'my-leaves' || tab === 'team-requests')) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   const fetchLeaves = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoading(true)

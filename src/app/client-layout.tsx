@@ -11,7 +11,7 @@ import type { Profile, Notification, RoleWithPermissions, TaskWithDetails, Leave
 import { Toaster } from "@/components/ui/toaster";
 import { PageSkeleton } from '@/components/dashboard/page-skeleton';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, XCircle, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Calendar as CalendarIcon, Clock, Eye, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 
@@ -31,6 +31,7 @@ export default function ClientLayout({
   const [isLoading, setIsLoading] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeLeaveNotif, setActiveLeaveNotif] = useState<Leave | null>(null);
+  const [newLeaveToReview, setNewLeaveToReview] = useState<(Leave & { profiles?: Profile }) | null>(null);
 
   const approvedAudioRef = useRef<HTMLAudioElement | null>(null);
   const correctionAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -58,7 +59,8 @@ export default function ClientLayout({
     if (!profile) return;
 
     const supabase = createClient();
-    const isEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
+    const isTaskEditor = (profile.roles as RoleWithPermissions)?.permissions?.tasks === 'Editor' || profile.roles?.name === 'Falaq Admin';
+    const isFalaqCornerEditor = (profile.roles as RoleWithPermissions)?.permissions?.falaq_corner === 'Editor' || profile.roles?.name === 'Falaq Admin';
 
     // 1. Task Notifications
     const taskChannel = supabase
@@ -123,7 +125,7 @@ export default function ClientLayout({
                 }
 
                 // To reviewers
-                if (isEditor && task.status === 'review' && oldTask.status !== 'review' && task.status_updated_by !== profile.id) {
+                if (isTaskEditor && task.status === 'review' && oldTask.status !== 'review' && task.status_updated_by !== profile.id) {
                     notification = { id: `review-${task.id}-${task.status_updated_at}`, type: 'review', title: 'Task ready for review', description: `Task "${task.description}" is now ready for your review.` };
                 }
              }
@@ -137,36 +139,53 @@ export default function ClientLayout({
       )
       .subscribe();
 
-    // 2. Leave Status Notifications (Popup + Tray)
+    // 2. Leave Status & Review Notifications
     const leaveChannel = supabase
-      .channel('realtime-leave-updates')
+      .channel('realtime-leave-global')
       .on<Leave>(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'leaves', filter: `user_id=eq.${profile.id}` },
-        (payload) => {
-          const newLeave = payload.new;
-          const oldLeave = payload.old;
+        { event: '*', schema: 'public', table: 'leaves' },
+        async (payload) => {
+          const newLeave = payload.new as Leave;
+          const oldLeave = payload.old as Leave;
 
-          if (newLeave.status !== oldLeave?.status) {
-            if (newLeave.status === 'Approved' || newLeave.status === 'Rejected') {
-              setActiveLeaveNotif(newLeave);
-              
-              // Add to notification tray
-              const trayNotif: Notification = {
-                id: `leave-${newLeave.id}-${Date.now()}`,
-                type: newLeave.status === 'Approved' ? 'leave_approved' : 'leave_rejected',
-                title: `Leave Request ${newLeave.status}`,
-                description: `Your ${newLeave.leave_type} request for ${newLeave.start_date} has been ${newLeave.status.toLowerCase()}.`,
-              };
-              setNotifications(prev => [trayNotif, ...prev]);
-              
-              // Browser push + Sound
-              if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                new Notification(trayNotif.title, { body: trayNotif.description, icon: '/icon.svg' });
+          // A. To Employee (Status Updates: Approve/Reject)
+          if (payload.eventType === 'UPDATE' && newLeave.user_id === profile.id) {
+            if (newLeave.status !== oldLeave?.status) {
+              if (newLeave.status === 'Approved' || newLeave.status === 'Rejected') {
+                setActiveLeaveNotif(newLeave);
+                
+                const trayNotif: Notification = {
+                  id: `leave-${newLeave.id}-${Date.now()}`,
+                  type: newLeave.status === 'Approved' ? 'leave_approved' : 'leave_rejected',
+                  title: `Leave Request ${newLeave.status}`,
+                  description: `Your ${newLeave.leave_type} request for ${newLeave.start_date} has been ${newLeave.status.toLowerCase()}.`,
+                };
+                setNotifications(prev => [trayNotif, ...prev]);
+                
+                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                  new Notification(trayNotif.title, { body: trayNotif.description, icon: '/icon.svg' });
+                }
+                const audioToPlay = newLeave.status === 'Approved' ? approvedAudioRef : recreateAudioRef;
+                audioToPlay.current?.play().catch(() => {});
               }
-              const audioToPlay = newLeave.status === 'Approved' ? approvedAudioRef : recreateAudioRef;
-              audioToPlay.current?.play().catch(() => {});
             }
+          }
+
+          // B. To Editors (New Applications)
+          if (payload.eventType === 'INSERT' && isFalaqCornerEditor && newLeave.user_id !== profile.id) {
+            // Fetch profile for the popup name
+            const { data: requesterProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', newLeave.user_id)
+              .single();
+
+            const leaveWithProfile = { ...newLeave, profiles: requesterProfile as Profile };
+            setNewLeaveToReview(leaveWithProfile);
+            
+            // Audio alert for review
+            reviewAudioRef.current?.play().catch(() => {});
           }
         }
       )
@@ -232,6 +251,11 @@ export default function ClientLayout({
     return leave.start_date === leave.end_date ? format(parseISO(leave.start_date), 'dd MMM yyyy') : `${start} - ${end}`;
   }
 
+  const handleReviewLeave = () => {
+    setNewLeaveToReview(null);
+    router.push('/falaq-corner?tab=team-requests');
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-background">
       {showNav && (
@@ -254,7 +278,7 @@ export default function ClientLayout({
         </main>
       </div>
 
-      {/* Leave Status Sticky Popup */}
+      {/* Leave Status Sticky Popup (For Applicant) */}
       <AnimatePresence>
         {activeLeaveNotif && (
           <motion.div
@@ -320,6 +344,64 @@ export default function ClientLayout({
               "absolute -top-10 -right-10 w-32 h-32 blur-[60px] rounded-full opacity-30 pointer-events-none",
               activeLeaveNotif.status === 'Approved' ? "bg-emerald-400" : "bg-rose-400"
             )} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* New Leave Review Popup (For Editors) */}
+      <AnimatePresence>
+        {newLeaveToReview && (
+           <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
+            animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9, x: 20 }}
+            className="fixed bottom-8 right-8 z-[200] p-6 rounded-[2.5rem] border border-amber-500/20 bg-zinc-950/80 backdrop-blur-3xl shadow-[0_20px_50px_rgba(245,158,11,0.15)] flex flex-col gap-5 min-w-[320px] max-w-[400px]"
+          >
+            <div className="flex items-center gap-5">
+              <div className="h-14 w-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shadow-2xl ring-1 ring-amber-500/30">
+                <AlertCircle className="h-7 w-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black uppercase tracking-tight text-white text-xl">
+                  New Leave!
+                </h3>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                  Awaiting your decision
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 p-4 rounded-3xl bg-white/[0.03] border border-white/5 shadow-inner">
+                <Avatar className="h-10 w-10 border border-white/10">
+                    <AvatarImage src={newLeaveToReview.profiles?.avatar_url ?? undefined} />
+                    <AvatarFallback className="bg-amber-500/10 text-amber-400 font-black">{getInitials(newLeaveToReview.profiles?.full_name)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <p className="text-sm font-black text-white">{newLeaveToReview.profiles?.full_name}</p>
+                    <p className="text-[10px] font-bold text-sky-400 uppercase tracking-tight">
+                        {newLeaveToReview.leave_type} • {getLeaveDuration(newLeaveToReview)} Day{getLeaveDuration(newLeaveToReview) !== 1 ? 's' : ''}
+                    </p>
+                </div>
+            </div>
+
+            <div className="flex gap-3">
+               <Button 
+                variant="ghost"
+                onClick={() => setNewLeaveToReview(null)}
+                className="flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 text-zinc-500 hover:text-white hover:bg-white/5"
+              >
+                Later
+              </Button>
+              <Button 
+                onClick={handleReviewLeave}
+                className="flex-[2] rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 bg-amber-600 hover:bg-amber-500 text-white shadow-2xl shadow-amber-900/40"
+              >
+                <Eye className="h-4 w-4 mr-2" /> Review Now
+              </Button>
+            </div>
+
+            {/* Golden Glow Effect */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 blur-[60px] rounded-full bg-amber-500 opacity-20 pointer-events-none" />
           </motion.div>
         )}
       </AnimatePresence>
