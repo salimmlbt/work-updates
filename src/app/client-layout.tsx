@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { logout } from './login/actions';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import Sidebar from '@/components/dashboard/sidebar';
 import Header from '@/components/dashboard/header';
 import type { Profile, Notification, RoleWithPermissions, TaskWithDetails, Leave } from '@/lib/types';
@@ -14,6 +14,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Calendar as CalendarIcon, Clock, Eye, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO, differenceInCalendarDays } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function ClientLayout({
   children,
