@@ -80,10 +80,12 @@ export default function ClientLayout({
               'approved': approvedAudioRef,
               'correction': correctionAudioRef,
               'recreate': recreateAudioRef,
-              'deadline': null, // No sound for deadline
+              'deadline': null,
+              'leave_approved': approvedAudioRef,
+              'leave_rejected': recreateAudioRef,
             };
             
-            const audioToPlayRef = audioMap[type];
+            const audioToPlayRef = audioMap[type as keyof typeof audioMap];
             audioToPlayRef?.current?.play().catch(e => console.error(`Audio play failed: ${e.message}`));
           };
 
@@ -135,7 +137,7 @@ export default function ClientLayout({
       )
       .subscribe();
 
-    // 2. Leave Status Notifications (Popup)
+    // 2. Leave Status Notifications (Popup + Tray)
     const leaveChannel = supabase
       .channel('realtime-leave-updates')
       .on<Leave>(
@@ -148,6 +150,22 @@ export default function ClientLayout({
           if (newLeave.status !== oldLeave?.status) {
             if (newLeave.status === 'Approved' || newLeave.status === 'Rejected') {
               setActiveLeaveNotif(newLeave);
+              
+              // Add to notification tray
+              const trayNotif: Notification = {
+                id: `leave-${newLeave.id}-${Date.now()}`,
+                type: newLeave.status === 'Approved' ? 'leave_approved' : 'leave_rejected',
+                title: `Leave Request ${newLeave.status}`,
+                description: `Your ${newLeave.leave_type} request for ${newLeave.start_date} has been ${newLeave.status.toLowerCase()}.`,
+              };
+              setNotifications(prev => [trayNotif, ...prev]);
+              
+              // Browser push + Sound
+              if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                new Notification(trayNotif.title, { body: trayNotif.description, icon: '/icon.svg' });
+              }
+              const audioToPlay = newLeave.status === 'Approved' ? approvedAudioRef : recreateAudioRef;
+              audioToPlay.current?.play().catch(() => {});
             }
           }
         }
@@ -169,7 +187,6 @@ export default function ClientLayout({
   }, [initialIsAuthenticated, profile, router]);
 
   useEffect(() => {
-    // When the path changes, the new page has loaded.
     setIsLoading(false);
   }, [pathname]);
 
@@ -184,7 +201,6 @@ export default function ClientLayout({
       }
 
       if (event === 'USER_UPDATED' && session?.user) {
-         // If user is archived, log them out
          (async () => {
             const {data} = await supabase.from('profiles').select('is_archived').eq('id', session.user.id).single()
             if (data?.is_archived) {
@@ -219,16 +235,14 @@ export default function ClientLayout({
   return (
     <div className="flex min-h-screen w-full bg-background">
       {showNav && (
-        <>
-          <Sidebar 
-              profile={profile} 
-              isCollapsed={isSidebarCollapsed}
-              setIsCollapsed={setSidebarCollapsed}
-              setIsLoading={setIsLoading}
-              notifications={notifications}
-              setNotifications={setNotifications}
-          />
-        </>
+        <Sidebar 
+            profile={profile} 
+            isCollapsed={isSidebarCollapsed}
+            setIsCollapsed={setSidebarCollapsed}
+            setIsLoading={setIsLoading}
+            notifications={notifications}
+            setNotifications={setNotifications}
+        />
       )}
       <div className={cn(
           "flex flex-1 flex-col transition-all duration-300",
@@ -302,7 +316,6 @@ export default function ClientLayout({
               OK, Understood
             </Button>
             
-            {/* Glow Orb */}
             <div className={cn(
               "absolute -top-10 -right-10 w-32 h-32 blur-[60px] rounded-full opacity-30 pointer-events-none",
               activeLeaveNotif.status === 'Approved' ? "bg-emerald-400" : "bg-rose-400"

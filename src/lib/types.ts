@@ -1,4 +1,3 @@
-
 import type { Database as DB } from './database.types';
 
 export type Database = DB;
@@ -106,7 +105,7 @@ export type TaskStatusHistory = {
 
 export type Notification = {
     id: string;
-    type: 'new' | 'deadline' | 'review' | 'approved' | 'correction' | 'recreate';
+    type: 'new' | 'deadline' | 'review' | 'approved' | 'correction' | 'recreate' | 'leave_approved' | 'leave_rejected';
     title: string;
     description: string;
 }

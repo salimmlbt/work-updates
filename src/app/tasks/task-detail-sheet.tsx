@@ -1,4 +1,3 @@
-
 'use client'
 
 import {
@@ -22,6 +21,7 @@ import {
   Send,
   Globe,
   Trash2,
+  X as XIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
