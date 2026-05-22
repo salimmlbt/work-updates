@@ -36,9 +36,9 @@ import {
   Check,
   Building2,
   Globe,
+  User,
   Lock,
-  Wallet,
-  User as UserIcon
+  Wallet
 } from 'lucide-react'
 
 import { useToast } from '@/hooks/use-toast'
@@ -109,14 +109,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
 
   useEffect(() => {
     const { name, email, roleId, password, confirmPassword, workStartTime, workEndTime } = formState;
-    const isValid = name.trim() !== '' &&
-                    email.trim() !== '' &&
-                    roleId !== '' &&
-                    password.trim() !== '' &&
-                    password.length >= 6 &&
-                    password === confirmPassword &&
-                    workStartTime.trim() !== '' &&
-                    workEndTime.trim() !== '';
+    const isValid = name.trim() !== '' && email.trim() !== '' && roleId !== '' && password.trim() !== '' && password.length >= 6 && password === confirmPassword && workStartTime.trim() !== '' && workEndTime.trim() !== '';
     setIsFormValid(isValid);
   }, [formState]);
   
@@ -139,9 +132,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   
   const handleTeamSelect = (teamId: string) => {
     setFormState(prev => {
-      const newTeamIds = prev.teamIds.includes(teamId)
-        ? prev.teamIds.filter(id => id !== teamId)
-        : [...prev.teamIds, teamId];
+      const newTeamIds = prev.teamIds.includes(teamId) ? prev.teamIds.filter(id => id !== teamId) : [...prev.teamIds, teamId];
       return { ...prev, teamIds: newTeamIds };
     });
   };
@@ -150,22 +141,12 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     setFormState(prev => {
         const isPermitted = prev.permitted_locations.some(l => l.id === office.id);
         if (isPermitted) {
-            return {
-                ...prev,
-                permitted_locations: prev.permitted_locations.filter(l => l.id !== office.id)
-            };
-        } else {
-            return {
-                ...prev,
-                permitted_locations: [...prev.permitted_locations, {
-                    id: office.id,
-                    name: office.name,
-                    latitude: office.latitude,
-                    longitude: office.longitude,
-                    radius: office.radius
-                }]
-            };
+            return { ...prev, permitted_locations: prev.permitted_locations.filter(l => l.id !== office.id) };
         }
+        return {
+            ...prev,
+            permitted_locations: [...prev.permitted_locations, { id: office.id, name: office.name, latitude: office.latitude, longitude: office.longitude, radius: office.radius }]
+        };
     });
   };
 
@@ -173,11 +154,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setFormState(prev => ({
-          ...prev,
-          latitude: position.coords.latitude.toString(),
-          longitude: position.coords.longitude.toString(),
-        }));
+        setFormState(prev => ({ ...prev, latitude: position.coords.latitude.toString(), longitude: position.coords.longitude.toString() }));
         setIsLocating(false);
         toast({ title: "Position Synced" });
       },
@@ -185,7 +162,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
         setIsLocating(false);
         toast({ title: "GPS Error", description: error.message, variant: "destructive" });
       },
-      { enableHighAccuracy: true, timeout: 5000 }
+      { enableHighAccuracy: true }
     );
   };
 
@@ -193,9 +170,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageToCrop(reader.result as string);
-      };
+      reader.onloadend = () => setImageToCrop(reader.result as string);
       reader.readAsDataURL(file);
     }
     if (e.target) e.target.value = '';
@@ -212,7 +187,6 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     if (!isFormValid) return;
 
     const fullEmail = `${formState.email}@falaq.com`;
-    
     const formData = new FormData();
     formData.append('full_name', formState.name);
     formData.append('email', fullEmail);
@@ -262,7 +236,6 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
             flex
             flex-col
             overflow-hidden
-            overflow-x-hidden
           "
         >
           <DialogHeader className="shrink-0 border-b border-white/5 px-5 md:px-10 pt-8 pb-5">
@@ -273,9 +246,11 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
           <ScrollArea className="flex-1 min-h-0 overflow-x-hidden">
             <div className="w-full overflow-x-hidden px-5 md:px-10 py-5">
               <form id="add-user-form" onSubmit={handleAddUser} className="w-full min-w-0 space-y-10 pb-12">
+                 
+                 {/* 👤 IDENTITY */}
                  <div className="space-y-6 min-w-0">
                     <div className="flex min-w-0 items-center gap-3">
-                        <UserIcon className="h-4 w-4 shrink-0 text-sky-400" />
+                        <User className="h-4 w-4 shrink-0 text-sky-400" />
                         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identity Statement</h3>
                     </div>
                     <div className="flex flex-col lg:flex-row items-start gap-8 bg-white/[0.03] p-5 md:p-8 rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden">
@@ -283,56 +258,28 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
                           <Avatar className="h-32 w-32 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105">
                             <AvatarImage src={avatarPreview ?? undefined} />
-                            <AvatarFallback className="bg-zinc-900 text-zinc-700"><UserIcon className="h-16 w-16" /></AvatarFallback>
+                            <AvatarFallback className="bg-zinc-900 text-zinc-700 font-black text-2xl">?</AvatarFallback>
                           </Avatar>
                           <button type="button" className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => fileInputRef.current?.click()}>
                             <Pencil className="h-5 w-5" />
                           </button>
                         </div>
                         <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2 min-w-0">
-                                <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Name</Label>
-                                <Input name="name" value={formState.name} onChange={handleInputChange} placeholder="Enter full name" className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4" required />
-                            </div>
-                            <div className="space-y-2 min-w-0">
-                                <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Email Username</Label>
-                                <div className="flex items-center group">
-                                    <Input name="email" value={formState.email} onChange={handleInputChange} placeholder="your.name" className="h-12 rounded-r-none bg-white/5 border-white/10 text-white rounded-l-xl font-bold px-4" required />
-                                    <span className="inline-flex h-12 items-center px-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-xl">@falaq.com</span>
-                                </div>
-                            </div>
+                            <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Name</Label><Input name="name" value={formState.name} onChange={handleInputChange} placeholder="Enter full name" className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-white" required /></div>
+                            <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Email Username</Label><div className="flex items-center group"><Input name="email" value={formState.email} onChange={handleInputChange} placeholder="your.name" className="h-12 rounded-r-none bg-white/5 border-white/10 text-white rounded-l-xl font-bold px-4" required /><span className="inline-flex h-12 items-center px-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-xl">@falaq.com</span></div></div>
                         </div>
                     </div>
                  </div>
 
+                {/* 🔑 ACCESS + FINANCE */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 min-w-0">
                   <div className="space-y-6 min-w-0">
-                    <div className="flex items-center gap-3"><Lock className="h-4 w-4 text-purple-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Access Statement</h3></div>
+                    <div className="flex items-center gap-3"><Lock className="h-4 w-4 text-purple-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Access Control</h3></div>
                     <div className="bg-white/[0.03] p-5 md:p-6 rounded-[2rem] border border-white/10 space-y-6 overflow-hidden">
-                      <div className="space-y-2 min-w-0">
-                        <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Security Role</Label>
-                        <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required>
-                          <SelectTrigger className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-200"><SelectValue placeholder="Select a role" /></SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white">{roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2 min-w-0">
-                        <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Assigned Teams</Label>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full min-w-0 justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-300">
-                              <span className="truncate">{formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Selected` : "Select teams"}</span>
-                              <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-[calc(100vw-80px)] max-w-[320px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
-                            <ScrollArea className="h-60">{teams.map(team => <DropdownMenuCheckboxItem key={team.id} checked={formState.teamIds.includes(team.id)} onCheckedChange={() => handleTeamSelect(team.id)} onSelect={(e) => e.preventDefault()}>{team.name}</DropdownMenuCheckboxItem>)}</ScrollArea>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Security Role</Label><Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required><SelectTrigger className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-200"><SelectValue placeholder="Select a role" /></SelectTrigger><SelectContent className="bg-zinc-900 border-zinc-800 text-white">{roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}</SelectContent></Select></div>
+                      <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Assigned Teams</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full min-w-0 justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-300"><span className="truncate">{formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Selected` : "Select teams"}</span><ChevronDown className="h-4 w-4 opacity-50 shrink-0" /></Button></DropdownMenuTrigger><DropdownMenuContent align="start" className="w-[calc(100vw-80px)] max-w-[320px] bg-zinc-900 border-zinc-800 text-white shadow-2xl"><ScrollArea className="h-60">{teams.map(team => <DropdownMenuCheckboxItem key={team.id} checked={formState.teamIds.includes(team.id)} onCheckedChange={() => handleTeamSelect(team.id)} onSelect={(e) => e.preventDefault()}>{team.name}</DropdownMenuCheckboxItem>)}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
                     </div>
                   </div>
-
                   <div className="space-y-6 min-w-0">
                     <div className="flex items-center gap-3"><Wallet className="h-4 w-4 text-emerald-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Finance & Shift</h3></div>
                     <div className="bg-white/[0.03] p-5 md:p-6 rounded-[2rem] border border-white/10 space-y-6 overflow-hidden">
@@ -345,6 +292,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                   </div>
                 </div>
 
+                {/* 📍 PROXIMITY PROTOCOLS */}
                 <div className="space-y-8 min-w-0">
                     <div className="flex items-center justify-between bg-white/[0.03] p-5 md:p-8 rounded-[2rem] border border-white/10 shadow-2xl">
                         <div className="flex items-center gap-6 min-w-0">
@@ -379,16 +327,16 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Radius (m)</Label><Input name="radius" type="number" value={formState.radius} onChange={handleInputChange} className="h-10 bg-zinc-950 border-white/5 text-white font-bold text-xs" /></div>
                                     </div>
                                     <LocationPicker lat={parseFloat(formState.latitude) || null} lng={parseFloat(formState.longitude) || null} radius={parseInt(formState.radius) || 100} onLocationChange={(lat, lng) => setFormState(p => ({ ...p, latitude: lat.toString(), longitude: lng.toString() }))} />
-                                    <Button type="button" variant="outline" className="w-full rounded-xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-12" onClick={handleCaptureLocation} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Navigation className="h-4 w-4 mr-3" />}Use Current Coordinates</Button>
+                                    <Button type="button" variant="outline" className="w-full rounded-xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-12" onClick={handleCaptureLocation} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Navigation className="h-4 w-4 mr-3" />}Sync Current Location</Button>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-10 border-t border-white/5">
-                    <div className="space-y-2 min-w-0"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Secure Password</Label><Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4" required /></div>
-                    <div className="space-y-2 min-w-0"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Password</Label><Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4" required /></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-10 border-t border-white/5 min-w-0">
+                    <div className="space-y-2 min-w-0"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Secure Password</Label><Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-white" required /></div>
+                    <div className="space-y-2 min-w-0"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Password</Label><Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-white" required /></div>
                 </div>
               </form>
             </div>

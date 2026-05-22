@@ -55,14 +55,14 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
       attributionControl: isLarge,
     }).setView(initialPos, isLarge ? 18 : 16);
 
-    // Using CartoDB Voyager Dark for better contrast and landmark visibility
+    // Using CartoDB Voyager labels under for better contrast and landmark visibility
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: 'abcd',
       maxZoom: 20
     }).addTo(map);
 
-    // Force a size invalidation to fix the "black screen" issue where leaflet doesn't know container size
+    // Force a size invalidation to fix the "black screen" issue
     setTimeout(() => {
       map.invalidateSize();
     }, 100);
@@ -108,7 +108,6 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
 
   useEffect(() => {
     if (isExpanded && largeMapRef.current) {
-      // Small timeout to ensure the dialog has finished opening and the ref is definitely attached
       setTimeout(() => {
          if (largeMapRef.current) initMap(largeMapRef.current, true);
       }, 50);
@@ -136,19 +135,19 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
     }
   }, [lat, lng, radius]);
 
-  if (!isMounted) return <Skeleton className="w-full h-[350px] rounded-[2rem] bg-white/5" />;
+  if (!isMounted) return <Skeleton className="w-full h-[200px] rounded-[2rem] bg-white/5" />;
 
   return (
     <div className="space-y-4">
       <div className="relative group overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
         <div 
           ref={mapRef} 
-          className="w-full h-[350px] z-0 bg-[#0f0f0f]" 
+          className="w-full h-[200px] z-0 bg-[#0f0f0f]" 
         />
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
              <div className="bg-sky-600/90 text-white px-6 py-3 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-2 scale-90 group-hover:scale-100 transition-transform">
                 <Maximize2 className="h-4 w-4" />
-                Click to choose precise location
+                Choose Location
              </div>
         </div>
         <button 
@@ -160,7 +159,7 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
         <div className="absolute top-4 left-4 z-10 pointer-events-none">
           <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
             <MapPin className="h-3 w-3 text-sky-400" />
-            <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Workspace Zone Preview</span>
+            <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Site Preview</span>
           </div>
         </div>
       </div>
@@ -172,7 +171,7 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
                <div className="h-10 w-10 rounded-2xl bg-sky-500/10 flex items-center justify-center">
                   <MapPin className="h-6 w-6 text-sky-400" />
                </div>
-               Set Attendance Boundary
+               Precision GPS Boundary
             </DialogTitle>
           </DialogHeader>
           
@@ -180,7 +179,7 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
             <div ref={largeMapRef} className="w-full h-full" />
             <div className="absolute top-6 left-6 z-[1000] pointer-events-none space-y-2">
                <div className="bg-black/80 backdrop-blur-md p-4 rounded-3xl border border-white/10 shadow-2xl">
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Precision Control</p>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Instructions</p>
                   <p className="text-sm text-zinc-200 font-medium">Click anywhere on the map or drag the pin to set the user's check-in point.</p>
                </div>
             </div>
@@ -200,11 +199,11 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
             </div>
             <div className="flex gap-4">
                <Button variant="ghost" onClick={() => setIsExpanded(false)} className="rounded-2xl h-14 px-8 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-[10px]">
-                  Discard
+                  Cancel
                </Button>
                <Button onClick={() => setIsExpanded(false)} className="rounded-2xl h-14 px-10 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">
                   <Check className="h-5 w-5 mr-2" />
-                  Save Position
+                  Apply Location
                </Button>
             </div>
           </DialogFooter>
