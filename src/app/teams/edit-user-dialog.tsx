@@ -25,7 +25,20 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { Loader2, Pencil, ChevronDown, Trash2, MapPin, Navigation, Check, Building2, Globe, Lock, Wallet, Clock } from 'lucide-react'
+import { 
+  Loader2, 
+  Pencil, 
+  ChevronDown, 
+  Trash2, 
+  MapPin, 
+  Navigation, 
+  Check, 
+  Building2, 
+  Globe, 
+  Lock, 
+  Wallet, 
+  User as UserIcon 
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile, OfficeLocation, PermittedLocation } from '@/lib/types'
 import { updateUser } from './actions'
@@ -281,7 +294,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                     {/* 👤 IDENTITY SECTION */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                            <User className="h-4 w-4 text-sky-400" />
+                            <UserIcon className="h-4 w-4 text-sky-400" />
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identity Statement</h3>
                         </div>
                         <div className="flex flex-col md:flex-row items-center gap-8 bg-white/[0.03] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
