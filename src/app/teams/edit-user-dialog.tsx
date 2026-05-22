@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useRef, useMemo } from 'react'
+import { useState, useEffect, useTransition, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -25,7 +25,7 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { Loader2, Pencil, User, ChevronDown, Trash2, MapPin, Navigation, Check, Building2, Globe } from 'lucide-react'
+import { Loader2, Pencil, ChevronDown, Trash2, MapPin, Navigation, Check, Building2, Globe, Lock, Wallet, Clock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile, OfficeLocation, PermittedLocation } from '@/lib/types'
 import { updateUser } from './actions'
@@ -192,7 +192,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
         setIsLocating(false);
         toast({ title: "Location Failed", description: error.message, variant: "destructive" });
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 5000 }
     );
   };
 
@@ -253,13 +253,13 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
       const { data, error } = await updateUser(user.id, formData);
       if (error) {
         toast({ 
-          title: "Error updating user", 
+          title: "Update failed", 
           description: typeof error === 'string' ? error : (error as any).message || "Unknown error", 
           variant: "destructive" 
         });
       } else if (data) {
         onUserUpdated(data);
-        toast({ title: "User updated successfully" });
+        toast({ title: "Statement Updated" });
         setIsOpen(false);
       }
     });
@@ -268,143 +268,144 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
   return (
       <>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-4xl h-[90vh] p-0 rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
-            <DialogHeader className="p-10 pb-4 shrink-0">
-              <DialogTitle className="text-3xl font-black tracking-tight text-white uppercase">User Data Statement</DialogTitle>
+          <DialogContent className="sm:max-w-4xl w-[95vw] h-[92vh] max-h-[92vh] p-0 rounded-[2.5rem] md:rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden">
+            <DialogHeader className="p-8 md:p-10 pb-5 shrink-0 border-b border-white/5">
+              <DialogTitle className="text-2xl md:text-3xl font-black tracking-tight text-white uppercase">User Data Statement</DialogTitle>
               <DialogDescription className="text-zinc-500 font-medium">
                 Audit core credentials and manage proximity attendance protocols.
               </DialogDescription>
             </DialogHeader>
             
-            <ScrollArea className="flex-1 px-10 py-2 custom-scrollbar">
-                <form id="edit-user-form" onSubmit={handleUpdateUser} className="space-y-12 pb-10 pt-4">
-                    <div className="flex items-center gap-8 bg-white/[0.02] p-8 rounded-[2.5rem] border border-white/5">
-                        <div className="relative group">
-                            <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleAvatarChange}
-                            />
-                            <Avatar
-                            className="h-28 w-28 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105"
-                            onClick={() => fileInputRef.current?.click()}
-                            >
-                            <AvatarImage src={avatarPreview ?? undefined} />
-                            <AvatarFallback className="bg-zinc-900 text-zinc-700 font-black text-xl">
-                                {getInitials(user.full_name)}
-                            </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute bottom-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                    type="button"
-                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <Pencil className="h-4 w-4" />
-                                </button>
-                                {avatarPreview && (
-                                    <button
-                                        type="button"
-                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-600 text-white shadow-xl"
-                                        onClick={handleDeleteAvatar}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
+            <ScrollArea className="flex-1 px-8 md:px-10 py-4 custom-scrollbar bg-black/20">
+                <form id="edit-user-form" onSubmit={handleUpdateUser} className="space-y-10 pb-12">
+                    {/* 👤 IDENTITY SECTION */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <User className="h-4 w-4 text-sky-400" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identity Statement</h3>
+                        </div>
+                        <div className="flex flex-col md:flex-row items-center gap-8 bg-white/[0.03] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+                            <div className="relative group">
+                                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
+                                <Avatar className="h-28 w-28 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105">
+                                    <AvatarImage src={avatarPreview ?? undefined} />
+                                    <AvatarFallback className="bg-zinc-900 text-zinc-600 font-black text-2xl">{getInitials(user.full_name)}</AvatarFallback>
+                                </Avatar>
+                                <div className="absolute bottom-0 right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button type="button" className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl" onClick={() => fileInputRef.current?.click()}>
+                                        <Pencil className="h-4 w-4" />
                                     </button>
-                                )}
+                                    {avatarPreview && (
+                                        <button type="button" className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-600 text-white shadow-xl" onClick={handleDeleteAvatar}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                        <div className="space-y-1 flex-1">
-                             <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 ml-1">Official Studio Name</Label>
-                                <Input name="name" value={formState.name} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-black px-6 text-xl text-white focus-visible:ring-sky-500/50" />
+                            <div className="flex-1 w-full space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Full Name</Label>
+                                    <Input name="name" value={formState.name} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-white focus-visible:ring-sky-500/50" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Studio Email</Label>
+                                    <Input value={user.email || ''} disabled className="h-12 bg-white/[0.01] border-white/5 rounded-xl px-4 text-zinc-600 font-bold opacity-70" />
+                                </div>
                             </div>
                         </div>
                     </div>
 
+                    {/* 🔑 ACCESS SECTION */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Access Role</Label>
-                            <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId}>
-                                <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6 text-zinc-300">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                                    {roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Assigned Teams</Label>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-between h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6 text-zinc-300">
-                                        <span className="truncate">{formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Active` : "No Team Assigned"}</span>
-                                        <ChevronDown className="h-4 w-4 opacity-50" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[350px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
-                                    <ScrollArea className="h-60">
-                                        {teams.map(team => (
-                                            <DropdownMenuCheckboxItem
-                                                key={team.id}
-                                                checked={formState.teamIds.includes(team.id)}
-                                                onCheckedChange={(checked) => {
-                                                  handleTeamSelect(team.id);
-                                                }}
-                                                onSelect={(e) => e.preventDefault()}
-                                            >
-                                                {team.name}
-                                            </DropdownMenuCheckboxItem>
-                                        ))}
-                                    </ScrollArea>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8 rounded-[2.5rem] bg-white/[0.01] border border-white/5">
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Monthly Salary</Label>
-                            <div className="relative">
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">₹</span>
-                                <Input name="monthlySalary" type="number" value={formState.monthlySalary} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-black pl-10 pr-6 text-emerald-400" />
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <Lock className="h-4 w-4 text-purple-400" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Access Control</h3>
+                            </div>
+                            <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/10 space-y-6">
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Security Role</Label>
+                                    <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId}>
+                                        <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-200">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                            {roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Team Assignments</Label>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" className="w-full justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-300">
+                                                <span className="truncate">{formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Active` : "Unassigned"}</span>
+                                                <ChevronDown className="h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[300px] bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl">
+                                            <ScrollArea className="h-60">
+                                                {teams.map(team => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={team.id}
+                                                        checked={formState.teamIds.includes(team.id)}
+                                                        onCheckedChange={() => handleTeamSelect(team.id)}
+                                                        onSelect={(e) => e.preventDefault()}
+                                                    >
+                                                        {team.name}
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </ScrollArea>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
                             </div>
                         </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Daily Check In</Label>
-                            <Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-black px-6 text-sky-400" />
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Daily Check Out</Label>
-                            <Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-black px-6 text-rose-400" />
+
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <Wallet className="h-4 w-4 text-emerald-400" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Finance & Shift</h3>
+                            </div>
+                            <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/10 space-y-6">
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Monthly Salary (INR)</Label>
+                                    <Input name="monthlySalary" type="number" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-black px-4 text-emerald-400" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">In Time</Label>
+                                        <Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-sky-400" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Out Time</Label>
+                                        <Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-rose-400" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="space-y-8 pt-6">
-                        <div className="flex items-center justify-between bg-white/[0.02] p-8 rounded-[2.5rem] border border-white/10">
+                    {/* 📍 PROXIMITY SECTION */}
+                    <div className="space-y-8">
+                        <div className="flex items-center justify-between bg-white/[0.03] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
                             <div className="flex items-center gap-6">
                                 <div className={cn(
-                                    "h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-2xl",
+                                    "h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-lg",
                                     formState.geofencing_enabled ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-600"
                                 )}>
                                     <MapPin className="h-7 w-7" />
                                 </div>
                                 <div>
                                     <h4 className="text-xl font-black text-white uppercase tracking-tight">Proximity Protocols</h4>
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Enforce location-based studio check-in</p>
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Enforce location-based attendance tracking</p>
                                 </div>
                             </div>
-                            <Switch 
-                                checked={formState.geofencing_enabled} 
-                                onCheckedChange={(val) => setFormState(p => ({ ...p, geofencing_enabled: val }))}
-                                className="scale-125 data-[state=checked]:bg-emerald-500"
-                            />
+                            <Switch checked={formState.geofencing_enabled} onCheckedChange={(val) => setFormState(p => ({ ...p, geofencing_enabled: val }))} className="scale-125 data-[state=checked]:bg-emerald-500" />
                         </div>
 
                         {formState.geofencing_enabled && (
-                            <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-500 pb-4">
+                            <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-500">
                                 <div className="space-y-4">
                                     <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 ml-2">Permitted Office Zones</Label>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -415,8 +416,8 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                                                     key={office.id}
                                                     onClick={() => handleOfficeZoneToggle(office)}
                                                     className={cn(
-                                                        "flex items-center justify-between p-5 rounded-[2rem] border-2 cursor-pointer transition-all duration-300",
-                                                        isSelected ? "bg-sky-500/10 border-sky-500/40 shadow-[0_0_20px_rgba(56,189,248,0.1)]" : "bg-white/[0.02] border-white/5 opacity-60 hover:opacity-100"
+                                                        "flex items-center justify-between p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300",
+                                                        isSelected ? "bg-sky-500/10 border-sky-500/40 shadow-lg" : "bg-white/[0.02] border-white/5 opacity-60 hover:opacity-100"
                                                     )}
                                                 >
                                                     <div className="flex items-center gap-4">
@@ -430,9 +431,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                                                 </div>
                                             )
                                         })}
-                                        {officeLocations.length === 0 && (
-                                            <p className="col-span-2 text-xs text-zinc-600 italic p-4 text-center border-2 border-dashed border-white/5 rounded-2xl">No default office zones configured in Accessibility Center.</p>
-                                        )}
                                     </div>
                                 </div>
 
@@ -442,46 +440,29 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                                             <Globe className={cn("h-4 w-4", formState.customLocation.enabled ? "text-amber-400" : "text-zinc-600")} />
                                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">On-Site / Custom Location</span>
                                         </div>
-                                        <Switch 
-                                            checked={formState.customLocation.enabled}
-                                            onCheckedChange={(val) => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, enabled: val } }))}
-                                            className="data-[state=checked]:bg-amber-500"
-                                        />
+                                        <Switch checked={formState.customLocation.enabled} onCheckedChange={(val) => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, enabled: val } }))} className="data-[state=checked]:bg-amber-500" />
                                     </div>
 
                                     {formState.customLocation.enabled && (
-                                        <div className="space-y-8 animate-in zoom-in-95 duration-300 bg-white/[0.01] p-8 rounded-[2.5rem] border border-white/5">
+                                        <div className="space-y-8 animate-in zoom-in-95 duration-300 bg-white/[0.02] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                 <div className="space-y-2">
-                                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Latitude</Label>
-                                                    <Input value={formState.customLocation.latitude} onChange={e => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, latitude: e.target.value } }))} className="h-12 bg-zinc-950 border-white/5 text-amber-400 font-mono" />
+                                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Latitude</Label>
+                                                    <Input value={formState.customLocation.latitude} onChange={e => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, latitude: e.target.value } }))} className="h-10 bg-zinc-950 border-white/5 text-amber-400 font-mono text-xs" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Longitude</Label>
-                                                    <Input value={formState.customLocation.longitude} onChange={e => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, longitude: e.target.value } }))} className="h-12 bg-zinc-950 border-white/5 text-amber-400 font-mono" />
+                                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Longitude</Label>
+                                                    <Input value={formState.customLocation.longitude} onChange={e => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, longitude: e.target.value } }))} className="h-10 bg-zinc-950 border-white/5 text-amber-400 font-mono text-xs" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Radius (Meters)</Label>
-                                                    <Input type="number" value={formState.customLocation.radius} onChange={e => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, radius: e.target.value } }))} className="h-12 bg-zinc-950 border-white/5 text-white font-bold" />
+                                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Radius (m)</Label>
+                                                    <Input type="number" value={formState.customLocation.radius} onChange={e => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, radius: e.target.value } }))} className="h-10 bg-zinc-950 border-white/5 text-white font-bold text-xs" />
                                                 </div>
                                             </div>
-
-                                            <LocationPicker 
-                                                lat={parseFloat(formState.customLocation.latitude) || null} 
-                                                lng={parseFloat(formState.customLocation.longitude) || null} 
-                                                radius={parseInt(formState.customLocation.radius) || 100}
-                                                onLocationChange={(lat, lng) => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, latitude: lat.toString(), longitude: lng.toString() } }))}
-                                            />
-
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                className="w-full rounded-2xl border-amber-500/20 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 font-bold h-14"
-                                                onClick={handleCaptureLocation}
-                                                disabled={isLocating}
-                                            >
+                                            <LocationPicker lat={parseFloat(formState.customLocation.latitude) || null} lng={parseFloat(formState.customLocation.longitude) || null} radius={parseInt(formState.customLocation.radius) || 100} onLocationChange={(lat, lng) => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, latitude: lat.toString(), longitude: lng.toString() } }))} />
+                                            <Button type="button" variant="outline" className="w-full rounded-xl border-amber-500/20 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 font-bold h-12" onClick={handleCaptureLocation} disabled={isLocating}>
                                                 {isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Navigation className="h-4 w-4 mr-3" />}
-                                                Sync to Precise Current Position
+                                                Set to Current GPS Position
                                             </Button>
                                         </div>
                                     )}
@@ -490,47 +471,35 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                         )}
                     </div>
 
+                    {/* 🔐 SECURITY OVERRIDE */}
                     <div className="space-y-6 pt-10 border-t border-white/5">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 ml-1">Security Credential Override</Label>
-                        <Input name="password" type="password" placeholder="Enter new password to override (min 6 characters)" value={formState.password} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6 text-zinc-300" />
+                        <div className="flex items-center gap-3">
+                            <Lock className="h-4 w-4 text-rose-400" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Credential Override</h3>
+                        </div>
+                        <div className="bg-rose-500/5 border border-rose-500/10 p-8 rounded-[2rem]">
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500/60 ml-1">New Secure Password</Label>
+                            <Input name="password" type="password" placeholder="Leave blank to keep current password" value={formState.password} onChange={handleInputChange} className="h-12 bg-black/20 border-white/5 mt-2 rounded-xl font-bold px-4 text-zinc-300 focus-visible:ring-rose-500/50" />
+                        </div>
                     </div>
                 </form>
             </ScrollArea>
 
-            <DialogFooter className="p-10 pt-6 border-t border-white/10 flex gap-6 bg-zinc-950 shrink-0">
-              <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-16 px-10 text-zinc-500 hover:text-white font-bold uppercase tracking-widest text-xs">Discard</Button>
-              <Button 
-                type="submit" 
-                form="edit-user-form"
-                disabled={isPending || !isFormValid}
-                className="flex-1 rounded-3xl h-16 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-sm shadow-2xl shadow-sky-900/40"
-              >
-                {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5 mr-3" />}
+            <DialogFooter className="p-8 border-t border-white/10 flex flex-col-reverse sm:flex-row gap-4 bg-black/40 backdrop-blur-xl shrink-0">
+              <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-14 px-8 text-zinc-500 hover:text-white font-bold uppercase tracking-widest text-[10px]">Discard</Button>
+              <Button type="submit" form="edit-user-form" disabled={isPending || !isFormValid} className="flex-1 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">
+                {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}
                 Commit User Statement
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <ImageCropperDialog
-          isOpen={!!imageToCrop}
-          image={imageToCrop}
-          onClose={() => setImageToCrop(null)}
-          onCropComplete={onCropComplete}
-        />
+        <ImageCropperDialog isOpen={!!imageToCrop} image={imageToCrop} onClose={() => setImageToCrop(null)} onCropComplete={onCropComplete} />
         <style jsx global>{`
-          .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.1);
-          }
+          .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+          .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
         `}</style>
       </>
   )

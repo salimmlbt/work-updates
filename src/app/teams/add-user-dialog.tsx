@@ -25,16 +25,17 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { Loader2, Pencil, User, ChevronDown, MapPin, Navigation, Check } from 'lucide-react'
+import { Loader2, Pencil, User, ChevronDown, MapPin, Navigation, Check, Building2, Globe, Lock, Wallet, Clock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import type { Role, Team, Profile } from '@/lib/types'
+import type { Role, Team, Profile, OfficeLocation, PermittedLocation } from '@/lib/types'
 import { addUser } from './actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn, getInitials } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
+import { cn, getInitials } from '@/lib/utils'
 import { LocationPicker } from '@/components/dashboard/location-picker'
+import { createClient } from '@/lib/supabase/client'
 
 interface AddUserDialogProps {
   isOpen: boolean
@@ -52,18 +53,20 @@ const initialFormState = {
     password: '',
     confirmPassword: '',
     avatar: null as File | null,
-    workStartTime: '',
-    workEndTime: '',
+    workStartTime: '09:00',
+    workEndTime: '18:00',
     monthlySalary: '',
     latitude: '',
     longitude: '',
     radius: '100',
     geofencing_enabled: false,
+    permitted_locations: [] as PermittedLocation[],
 };
 
 export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: AddUserDialogProps) {
   const [isPending, startTransition] = useTransition();
   const [isLocating, setIsLocating] = useState(false);
+  const [officeLocations, setOfficeLocations] = useState<OfficeLocation[]>([]);
   const [formState, setFormState] = useState(initialFormState);
   const [isFormValid, setIsFormValid] = useState(false);
   const { toast } = useToast();
@@ -71,6 +74,17 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
+  useEffect(() => {
+    if (isOpen) {
+        const fetchOffices = async () => {
+            const supabase = createClient();
+            const { data } = await supabase.from('office_locations').select('*');
+            if (data) setOfficeLocations(data as OfficeLocation[]);
+        };
+        fetchOffices();
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const { name, email, roleId, password, confirmPassword, workStartTime, workEndTime } = formState;
     const isValid = name.trim() !== '' &&
@@ -110,6 +124,29 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     });
   };
 
+  const handleOfficeZoneToggle = (office: OfficeLocation) => {
+    setFormState(prev => {
+        const isPermitted = prev.permitted_locations.some(l => l.id === office.id);
+        if (isPermitted) {
+            return {
+                ...prev,
+                permitted_locations: prev.permitted_locations.filter(l => l.id !== office.id)
+            };
+        } else {
+            return {
+                ...prev,
+                permitted_locations: [...prev.permitted_locations, {
+                    id: office.id,
+                    name: office.name,
+                    latitude: office.latitude,
+                    longitude: office.longitude,
+                    radius: office.radius
+                }]
+            };
+        }
+    });
+  };
+
   const handleCaptureLocation = () => {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
@@ -120,13 +157,13 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
           longitude: position.coords.longitude.toString(),
         }));
         setIsLocating(false);
-        toast({ title: "Location Captured", description: "Coordinates updated to your current location." });
+        toast({ title: "Position Synced" });
       },
       (error) => {
         setIsLocating(false);
-        toast({ title: "Location Failed", description: error.message, variant: "destructive" });
+        toast({ title: "GPS Error", description: error.message, variant: "destructive" });
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 5000 }
     );
   };
 
@@ -139,9 +176,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
       };
       reader.readAsDataURL(file);
     }
-    if (e.target) {
-      e.target.value = '';
-    }
+    if (e.target) e.target.value = '';
   };
 
   const onCropComplete = (croppedImage: File) => {
@@ -168,19 +203,18 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     formData.append('longitude', formState.longitude);
     formData.append('radius', formState.radius);
     formData.append('geofencing_enabled', formState.geofencing_enabled.toString());
+    formData.append('permitted_locations', JSON.stringify(formState.permitted_locations));
 
     if(formState.monthlySalary) formData.append('monthly_salary', formState.monthlySalary);
-    if (formState.avatar) {
-      formData.append('avatar', formState.avatar);
-    }
+    if (formState.avatar) formData.append('avatar', formState.avatar);
 
     startTransition(async () => {
       const { data, error } = await addUser(formData);
       if (error) {
-        toast({ title: "Error adding user", description: error, variant: "destructive" });
+        toast({ title: "Invite failed", description: typeof error === 'string' ? error : (error as any).message, variant: "destructive" });
       } else if (data) {
         onUserAdded(data as Profile);
-        toast({ title: "User invited", description: `An invitation has been sent to ${fullEmail}.` });
+        toast({ title: "User Invited", description: `Invitation sent to ${fullEmail}.` });
         handleDialogChange(false);
       }
     });
@@ -189,221 +223,140 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="sm:max-w-3xl h-[90vh] p-0 rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
-          <DialogHeader className="p-10 pb-4 shrink-0">
-            <DialogTitle className="text-3xl font-black tracking-tight text-white uppercase">Invite Studio Member</DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium">
-              Onboard a new professional to the FALAQ workspace infrastructure.
-            </DialogDescription>
+        <DialogContent className="sm:max-w-4xl w-[95vw] h-[92vh] max-h-[92vh] p-0 rounded-[2.5rem] md:rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden">
+          <DialogHeader className="p-8 md:p-10 pb-5 shrink-0 border-b border-white/5">
+            <DialogTitle className="text-2xl md:text-3xl font-black tracking-tight text-white uppercase">Invite Studio Member</DialogTitle>
+            <DialogDescription className="text-zinc-500 font-medium">Onboard a new professional to the FALAQ workspace infrastructure.</DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 px-10 py-4 custom-scrollbar">
-              <form id="add-user-form" onSubmit={handleAddUser} className="space-y-12 pb-10">
-                 <div className="flex justify-center">
+          <ScrollArea className="flex-1 px-8 md:px-10 py-4 custom-scrollbar bg-black/20">
+              <form id="add-user-form" onSubmit={handleAddUser} className="space-y-10 pb-12">
+                 <div className="flex flex-col md:flex-row items-center gap-8 bg-white/[0.03] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
                     <div className="relative group">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        ref={fileInputRef}
-                        onChange={handleAvatarChange}
-                      />
-                      <Avatar
-                        className="h-32 w-32 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
+                      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
+                      <Avatar className="h-32 w-32 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105">
                         <AvatarImage src={avatarPreview ?? undefined} />
-                        <AvatarFallback className="bg-zinc-900 text-zinc-700">
-                          <User className="h-16 w-16" />
-                        </AvatarFallback>
+                        <AvatarFallback className="bg-zinc-900 text-zinc-700"><User className="h-16 w-16" /></AvatarFallback>
                       </Avatar>
-                      <button
-                        type="button"
-                        className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
+                      <button type="button" className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => fileInputRef.current?.click()}>
                         <Pencil className="h-5 w-5" />
                       </button>
                     </div>
+                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Name</Label>
+                            <Input name="name" value={formState.name} onChange={handleInputChange} placeholder="Enter full name" className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4" required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Email Username</Label>
+                            <div className="flex items-center group">
+                                <Input name="email" value={formState.email} onChange={handleInputChange} placeholder="your.name" className="h-12 rounded-r-none bg-white/5 border-white/10 text-white rounded-l-xl font-bold px-4" required />
+                                <span className="inline-flex h-12 items-center px-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-xl">@falaq.com</span>
+                            </div>
+                        </div>
+                    </div>
                   </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Official Name</Label>
-                        <Input name="name" placeholder="Enter full name" value={formState.name} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6 text-lg" required />
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3"><Lock className="h-4 w-4 text-purple-400" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Access Statement</h3></div>
+                    <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/10 space-y-6">
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Security Role</Label>
+                        <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required>
+                          <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4"><SelectValue placeholder="Select a role" /></SelectTrigger>
+                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white">{roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Assigned Teams</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-300">
+                              <span className="truncate">{formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Selected` : "Select teams"}</span>
+                              <ChevronDown className="h-4 w-4 opacity-50" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[300px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
+                            <ScrollArea className="h-60">{teams.map(team => <DropdownMenuCheckboxItem key={team.id} checked={formState.teamIds.includes(team.id)} onCheckedChange={() => handleTeamSelect(team.id)} onSelect={(e) => e.preventDefault()}>{team.name}</DropdownMenuCheckboxItem>)}</ScrollArea>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Email Username</Label>
-                        <div className="flex items-center group">
-                            <Input name="email" type="text" placeholder="your.name" value={formState.email} onChange={handleInputChange} className="h-14 rounded-r-none bg-white/5 border-white/10 text-white focus-visible:ring-sky-500/50 rounded-l-2xl font-bold px-6 text-lg" required />
-                            <span className="inline-flex h-14 items-center px-6 text-xs font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-2xl">
-                            @falaq.com
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Access Role</Label>
-                    <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required>
-                      <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6">
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                        {roles.map(role => (
-                          <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Assigned Teams</Label>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6">
-                          <span className="truncate">
-                            {formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Selected` : "Select teams"}
-                          </span>
-                          <ChevronDown className="h-4 w-4 opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[350px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
-                        <ScrollArea className="h-60">
-                          {teams.map(team => (
-                            <DropdownMenuCheckboxItem
-                              key={team.id}
-                              checked={formState.teamIds.includes(team.id)}
-                              onCheckedChange={() => handleTeamSelect(team.id)}
-                              onSelect={(e) => e.preventDefault()}
-                            >
-                              {team.name}
-                            </DropdownMenuCheckboxItem>
-                          ))}
-                        </ScrollArea>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3"><Wallet className="h-4 w-4 text-emerald-400" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Finance & Shift</h3></div>
+                    <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/10 space-y-6">
+                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Monthly Salary (INR)</Label><Input name="monthlySalary" type="number" placeholder="Enter amount" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-black px-4 text-emerald-400" /></div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Check In</Label><Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-sky-400" required /></div>
+                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Check Out</Label><Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-rose-400" required /></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Monthly Salary (INR)</Label>
-                        <Input name="monthlySalary" type="number" placeholder="Enter amount" value={formState.monthlySalary} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" />
-                    </div>
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Check In Time</Label>
-                        <Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" required />
-                    </div>
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Check Out Time</Label>
-                        <Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" required />
-                    </div>
-                </div>
-
-                <div className="space-y-8 pt-10 border-t border-white/5">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-400 shadow-lg shadow-sky-900/10">
-                                <MapPin className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <h4 className="text-lg font-black text-white uppercase tracking-tight">Proximity Attendance</h4>
-                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Enforce location-based studio check-in</p>
-                            </div>
+                <div className="space-y-8 pt-6">
+                    <div className="flex items-center justify-between bg-white/[0.03] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+                        <div className="flex items-center gap-6">
+                            <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-lg", formState.geofencing_enabled ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-600")}><MapPin className="h-7 w-7" /></div>
+                            <div><h4 className="text-xl font-black text-white uppercase tracking-tight">Proximity Protocols</h4><p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Enforce location-based attendance tracking</p></div>
                         </div>
-                        <Switch 
-                            checked={formState.geofencing_enabled} 
-                            onCheckedChange={(val) => setFormState(p => ({ ...p, geofencing_enabled: val }))}
-                            className="scale-125 data-[state=checked]:bg-sky-500"
-                        />
+                        <Switch checked={formState.geofencing_enabled} onCheckedChange={(val) => setFormState(p => ({ ...p, geofencing_enabled: val }))} className="scale-125 data-[state=checked]:bg-emerald-500" />
                     </div>
 
                     {formState.geofencing_enabled && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500 bg-white/[0.01] p-8 rounded-[3rem] border border-white/5">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Latitude</Label>
-                                    <Input name="latitude" value={formState.latitude} onChange={handleInputChange} placeholder="e.g. 25.1234" className="h-12 bg-zinc-950 border-white/5 text-sky-300 font-mono" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Longitude</Label>
-                                    <Input name="longitude" value={formState.longitude} onChange={handleInputChange} placeholder="e.g. 55.5678" className="h-12 bg-zinc-950 border-white/5 text-sky-300 font-mono" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Radius (Meters)</Label>
-                                    <Input name="radius" type="number" value={formState.radius} onChange={handleInputChange} placeholder="100" className="h-12 bg-zinc-950 border-white/5 text-white font-bold" />
+                        <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-500">
+                             <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 ml-2">Permitted Office Zones</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {officeLocations.map(office => {
+                                        const isSelected = formState.permitted_locations.some(l => l.id === office.id);
+                                        return (
+                                            <div key={office.id} onClick={() => handleOfficeZoneToggle(office)} className={cn("flex items-center justify-between p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300", isSelected ? "bg-sky-500/10 border-sky-500/40 shadow-lg" : "bg-white/[0.02] border-white/5 opacity-60 hover:opacity-100")}>
+                                                <div className="flex items-center gap-4"><Building2 className={cn("h-5 w-5", isSelected ? "text-sky-400" : "text-zinc-600")} /><div><p className={cn("font-bold text-sm", isSelected ? "text-white" : "text-zinc-400")}>{office.name}</p><p className="text-[9px] font-bold text-zinc-600 uppercase tracking-tighter">{office.radius}m Radius</p></div></div>
+                                                {isSelected && <Check className="h-5 w-5 text-sky-400" />}
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             </div>
-
-                            <LocationPicker 
-                              lat={parseFloat(formState.latitude) || null} 
-                              lng={parseFloat(formState.longitude) || null} 
-                              radius={parseInt(formState.radius) || 100}
-                              onLocationChange={(lat, lng) => setFormState(p => ({ ...p, latitude: lat.toString(), longitude: lng.toString() }))}
-                            />
-
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                className="w-full rounded-2xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-14 transition-all"
-                                onClick={handleCaptureLocation}
-                                disabled={isLocating}
-                            >
-                                {isLocating ? <Loader2 className="h-5 w-5 animate-spin mr-3" /> : <Navigation className="h-5 w-5 mr-3" />}
-                                Use My Current Coordinates
-                            </Button>
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between px-2"><div className="flex items-center gap-3"><Globe className={cn("h-4 w-4", formState.latitude ? "text-amber-400" : "text-zinc-600")} /><span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">On-Site / Custom Site</span></div></div>
+                                <div className="space-y-8 bg-white/[0.02] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Latitude</Label><Input name="latitude" value={formState.latitude} onChange={handleInputChange} className="h-10 bg-zinc-950 border-white/5 text-amber-400 font-mono text-xs" /></div>
+                                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Longitude</Label><Input name="longitude" value={formState.longitude} onChange={handleInputChange} className="h-10 bg-zinc-950 border-white/5 text-amber-400 font-mono text-xs" /></div>
+                                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Radius (m)</Label><Input name="radius" type="number" value={formState.radius} onChange={handleInputChange} className="h-10 bg-zinc-950 border-white/5 text-white font-bold text-xs" /></div>
+                                    </div>
+                                    <LocationPicker lat={parseFloat(formState.latitude) || null} lng={parseFloat(formState.longitude) || null} radius={parseInt(formState.radius) || 100} onLocationChange={(lat, lng) => setFormState(p => ({ ...p, latitude: lat.toString(), longitude: lng.toString() }))} />
+                                    <Button type="button" variant="outline" className="w-full rounded-xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-12" onClick={handleCaptureLocation} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Navigation className="h-4 w-4 mr-3" />}Use Current Coordinates</Button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Secure Password</Label>
-                        <Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" required />
-                    </div>
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Password</Label>
-                        <Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" required />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-10 border-t border-white/5">
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Secure Password</Label><Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4" required /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Password</Label><Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4" required /></div>
                 </div>
               </form>
           </ScrollArea>
           
-          <DialogFooter className="p-10 pt-6 border-t border-white/10 flex gap-6 bg-zinc-950 shrink-0">
-            <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)} className="rounded-2xl h-16 px-10 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-xs">Cancel</Button>
-            <Button 
-              type="submit" 
-              form="add-user-form"
-              disabled={isPending || !isFormValid}
-              className="flex-1 rounded-3xl h-16 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-sm shadow-2xl shadow-sky-900/40"
-            >
-              {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5 mr-3" />}
-              Send Onboarding Invite
-            </Button>
+          <DialogFooter className="p-8 border-t border-white/10 flex flex-col-reverse sm:flex-row gap-6 bg-black/40 backdrop-blur-xl shrink-0">
+            <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)} className="rounded-2xl h-14 px-10 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-[10px]">Cancel</Button>
+            <Button type="submit" form="add-user-form" disabled={isPending || !isFormValid} className="flex-1 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5 mr-3" />}Send Onboarding Invite</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-       <ImageCropperDialog
-        isOpen={!!imageToCrop}
-        image={imageToCrop}
-        onClose={() => setImageToCrop(null)}
-        onCropComplete={onCropComplete}
-      />
+      <ImageCropperDialog isOpen={!!imageToCrop} image={imageToCrop} onClose={() => setImageToCrop(null)} onCropComplete={onCropComplete} />
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
       `}</style>
     </>
   )
