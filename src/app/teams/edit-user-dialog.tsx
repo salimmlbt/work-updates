@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
@@ -37,9 +36,9 @@ import {
   Check,
   Building2,
   Globe,
+  User as UserIcon,
   Lock,
   Wallet,
-  User as UserIcon
 } from 'lucide-react'
 
 import { useToast } from '@/hooks/use-toast'
@@ -914,35 +913,14 @@ export function EditUserDialog({
             </Button>
 
           </DialogFooter>
-
         </DialogContent>
-
       </Dialog>
-
-      <ImageCropperDialog
-        isOpen={!!imageToCrop}
-        image={imageToCrop}
-        onClose={() => setImageToCrop(null)}
-        onCropComplete={onCropComplete}
-      />
-
+      <ImageCropperDialog isOpen={!!imageToCrop} image={imageToCrop} onClose={() => setImageToCrop(null)} onCropComplete={onCropComplete} />
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.08);
-          border-radius: 999px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.18);
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); }
       `}</style>
     </>
   )
