@@ -1,9 +1,8 @@
-
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Maximize2, Check, X } from 'lucide-react';
+import { MapPin, Maximize2, Check, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,6 +39,7 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
   const initMap = async (element: HTMLDivElement, isLarge: boolean) => {
     const L = (await import('leaflet')).default;
 
+    // Explicitly set icon paths to avoid broken assets in build
     // @ts-ignore
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
@@ -55,18 +55,23 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
       attributionControl: isLarge,
     }).setView(initialPos, isLarge ? 18 : 16);
 
-    // Using a more detailed dark tile layer for better landmarks
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Using CartoDB Voyager Dark for better contrast and landmark visibility
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: 'abcd',
       maxZoom: 20
     }).addTo(map);
 
+    // Force a size invalidation to fix the "black screen" issue where leaflet doesn't know container size
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
     const marker = L.marker(initialPos, { draggable: true }).addTo(map);
     const circle = L.circle(initialPos, {
       radius: radius || 100,
       color: '#38bdf8',
-      weight: 1,
+      weight: 2,
       fillColor: '#38bdf8',
       fillOpacity: 0.15,
     }).addTo(map);
@@ -102,8 +107,11 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
   }, [isMounted]);
 
   useEffect(() => {
-    if (isExpanded && largeMapRef.current && !largeMapInstance.current) {
-      initMap(largeMapRef.current, true);
+    if (isExpanded && largeMapRef.current) {
+      // Small timeout to ensure the dialog has finished opening and the ref is definitely attached
+      setTimeout(() => {
+         if (largeMapRef.current) initMap(largeMapRef.current, true);
+      }, 50);
     }
   }, [isExpanded]);
 
@@ -116,12 +124,14 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
         markerInstance.current.setLatLng(pos);
         circleInstance.current.setLatLng(pos);
         circleInstance.current.setRadius(radius);
+        mapInstance.current.setView(pos);
       }
       
       if (largeMapInstance.current && largeMarkerInstance.current && largeCircleInstance.current) {
         largeMarkerInstance.current.setLatLng(pos);
         largeCircleInstance.current.setLatLng(pos);
         largeCircleInstance.current.setRadius(radius);
+        largeMapInstance.current.setView(pos);
       }
     }
   }, [lat, lng, radius]);
@@ -133,9 +143,9 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
       <div className="relative group overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
         <div 
           ref={mapRef} 
-          className="w-full h-[350px] z-0" 
+          className="w-full h-[350px] z-0 bg-[#0f0f0f]" 
         />
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
              <div className="bg-sky-600/90 text-white px-6 py-3 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-2 scale-90 group-hover:scale-100 transition-transform">
                 <Maximize2 className="h-4 w-4" />
                 Click to choose precise location
@@ -144,10 +154,10 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
         <button 
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="absolute inset-0 w-full h-full z-10 opacity-0"
+            className="absolute inset-0 w-full h-full z-20 opacity-0"
             aria-label="Expand map"
         />
-        <div className="absolute top-4 left-4 z-20 pointer-events-none">
+        <div className="absolute top-4 left-4 z-10 pointer-events-none">
           <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
             <MapPin className="h-3 w-3 text-sky-400" />
             <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Workspace Zone Preview</span>
@@ -166,7 +176,7 @@ export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationP
             </DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 relative">
+          <div className="flex-1 relative bg-[#0f0f0f]">
             <div ref={largeMapRef} className="w-full h-full" />
             <div className="absolute top-6 left-6 z-[1000] pointer-events-none space-y-2">
                <div className="bg-black/80 backdrop-blur-md p-4 rounded-3xl border border-white/10 shadow-2xl">

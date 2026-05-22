@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
@@ -26,14 +25,13 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { Loader2, Pencil, User, ChevronDown, X, MapPin, Navigation } from 'lucide-react'
+import { Loader2, Pencil, User, ChevronDown, MapPin, Navigation, Check } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile } from '@/lib/types'
 import { addUser } from './actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
 import { cn, getInitials } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { LocationPicker } from '@/components/dashboard/location-picker'
