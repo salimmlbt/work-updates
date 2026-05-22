@@ -34,6 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
+import { cn, getInitials } from '@/lib/utils'
 
 interface AddUserDialogProps {
   isOpen: boolean

@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
@@ -33,6 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
+import { cn, getInitials } from '@/lib/utils'
 
 interface EditUserDialogProps {
   isOpen: boolean
