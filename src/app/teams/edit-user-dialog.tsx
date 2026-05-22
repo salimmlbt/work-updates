@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
@@ -26,7 +25,7 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { Loader2, Pencil, User, ChevronDown, Trash2, MapPin, Navigation } from 'lucide-react'
+import { Loader2, Pencil, User, ChevronDown, Trash2, MapPin, Navigation, Check } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile } from '@/lib/types'
 import { updateUser } from './actions'
