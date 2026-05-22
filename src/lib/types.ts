@@ -13,6 +13,7 @@ export type Profile = Omit<DB['public']['Tables']['profiles']['Row'], 'role_id'>
     longitude?: number | null;
     radius?: number | null;
     geofencing_enabled?: boolean;
+    permitted_locations?: PermittedLocation[] | null;
 };
 export type Role = DB['public']['Tables']['roles']['Row'];
 export type Team = DB['public']['Tables']['teams']['Row'];
@@ -25,6 +26,23 @@ export type WorkType = DB['public']['Tables']['work_types']['Row'];
 export type Attendance = DB['public']['Tables']['attendance']['Row'] & {
   check_in_reason?: string | null;
 };
+
+export interface OfficeLocation {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  created_at: string;
+}
+
+export interface PermittedLocation {
+  id?: string; // id exists if it's a global office location
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+}
 
 export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
 

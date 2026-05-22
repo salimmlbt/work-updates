@@ -23,6 +23,7 @@ import { differenceInSeconds, parse, isAfter } from 'date-fns';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Loader2, MapPinOff } from 'lucide-react';
+import type { Profile, PermittedLocation } from '@/lib/types';
 
 const formatTime = (totalSeconds: number) => {
   const hours = Math.floor(totalSeconds / 3600);
@@ -41,7 +42,7 @@ export default function Header() {
   
   const [isLateReasonOpen, setIsLateReasonOpen] = useState(false);
   const [lateReason, setLateReason] = useState('');
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
 
   const [showGreeting, setShowGreeting] = useState(false);
   const [greetingText, setGreetingText] = useState('');
@@ -64,6 +65,23 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
+    if (!isTimerRunning) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);
+
+  useEffect(() => {
+    if (attendanceRecord?.check_in) {
+        const start = new Date(attendanceRecord.check_in).getTime();
+        const now = new Date().getTime();
+        setElapsedSeconds(Math.floor((now - start) / 1000));
+    }
+  }, [attendanceRecord]);
+
+
+  useEffect(() => {
     if (!hasMounted) return;
 
     const fetchInitialData = async () => {
@@ -77,7 +95,7 @@ export default function Header() {
         supabase.from('attendance').select('*')
           .eq('user_id', user.id)
           .eq('date', new Date().toISOString().split('T')[0])
-          .single(),
+          .maybeSingle(),
         supabase.from('app_settings').select('value')
           .eq('key', 'lunch_start_time')
           .single(),
@@ -88,12 +106,12 @@ export default function Header() {
       ]);
 
       if (profileRes.data) {
-        setUserProfile(profileRes.data);
+        setUserProfile(profileRes.data as Profile);
       }
 
       setGlobalGeofencingEnabled(geofenceRes.data?.value === true);
 
-      const { data: attendanceData } = attendanceRes;
+      const attendanceData = attendanceRes.data;
       if (attendanceData) {
         setAttendanceRecord(attendanceData);
         if (attendanceData.check_in && !attendanceData.lunch_out && !attendanceData.check_out) {
@@ -132,47 +150,63 @@ export default function Header() {
   }, [supabase, hasMounted]);
 
   const verifyLocation = async (): Promise<boolean> => {
-    // Check if geofencing is enabled globally or for this specific user
     const isGeofenceActive = globalGeofencingEnabled || userProfile?.geofencing_enabled;
-    
     if (!isGeofenceActive) return true;
 
-    if (!userProfile?.latitude || !userProfile?.longitude) {
-      console.warn("Geofencing enabled but no coordinates set for user.");
-      return true; // Fail safe if admin hasn't set coordinates
+    const permittedZones: PermittedLocation[] = [...(userProfile?.permitted_locations || [])];
+    
+    // Add legacy single custom location if defined
+    if (userProfile?.latitude && userProfile?.longitude) {
+        permittedZones.push({
+            name: 'Primary Workplace',
+            latitude: userProfile.latitude,
+            longitude: userProfile.longitude,
+            radius: userProfile.radius || 100
+        });
+    }
+
+    if (permittedZones.length === 0) {
+      console.warn("Geofencing active but no permitted zones set for user.");
+      return true; // Safe fallback
     }
 
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
-        toast({ title: "Unsupported Browser", description: "Your browser doesn't support location services.", variant: "destructive" });
+        toast({ title: "Unsupported Browser", description: "Location services not available.", variant: "destructive" });
         resolve(false);
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const distance = calculateDistance(
-            position.coords.latitude,
-            position.coords.longitude,
-            userProfile.latitude,
-            userProfile.longitude
-          );
+          const { latitude: userLat, longitude: userLng } = position.coords;
+          
+          // Check all permitted zones
+          let isWithinAnyZone = false;
+          let closestDistance = Infinity;
 
-          const radius = userProfile.radius || 100;
+          for (const zone of permittedZones) {
+              const distance = calculateDistance(userLat, userLng, zone.latitude, zone.longitude);
+              if (distance <= zone.radius) {
+                  isWithinAnyZone = true;
+                  break;
+              }
+              closestDistance = Math.min(closestDistance, distance);
+          }
 
-          if (distance <= radius) {
+          if (isWithinAnyZone) {
             resolve(true);
           } else {
             toast({ 
               title: "Access Denied", 
-              description: `You are not within the permitted workspace boundary (${Math.round(distance)}m away).`,
+              description: `You are outside your permitted attendance zones (Nearest zone: ${Math.round(closestDistance)}m away).`,
               variant: "destructive" 
             });
             resolve(false);
           }
         },
         (error) => {
-          toast({ title: "Location Error", description: "Please enable location services to proceed.", variant: "destructive" });
+          toast({ title: "Location Error", description: "Proximity check failed. Please enable GPS.", variant: "destructive" });
           resolve(false);
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -185,7 +219,6 @@ export default function Header() {
     setIsLateReasonOpen(false);
     setIsActionPending(true);
 
-    // Step 1: Verify Location
     const isLocationValid = await verifyLocation();
     if (!isLocationValid) {
         setIsActionPending(false);

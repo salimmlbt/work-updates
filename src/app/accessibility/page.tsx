@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SetTimesForm } from './set-times-form';
 import IndustryTypes from './industry-types';
 import WorkTypes from './work-types';
-import type { Industry, WorkType, WorkTypeStatusConfig } from '@/lib/types';
+import StudioLocations from './studio-locations';
+import type { Industry, WorkType, WorkTypeStatusConfig, OfficeLocation } from '@/lib/types';
 import { GeofencingToggle } from './geofencing-toggle';
 
 export const dynamic = 'force-dynamic';
@@ -24,16 +25,19 @@ export default async function AccessibilityPage() {
         { data: geofencingSetting },
         { data: industriesData, error: industriesError },
         { data: workTypesData, error: workTypesError },
+        { data: locationsData, error: locationsError },
     ] = await Promise.all([
         supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
         supabase.from('app_settings').select('value').eq('key', 'work_type_status_config').single(),
         supabase.from('app_settings').select('value').eq('key', 'global_geofencing_enabled').single(),
         supabase.from('industries').select('*'),
         supabase.from('work_types').select('*'),
+        supabase.from('office_locations').select('*'),
     ]);
     
     if (industriesError) console.error('Error fetching industries', industriesError);
     if (workTypesError) console.error('Error fetching work types', workTypesError);
+    if (locationsError) console.error('Error fetching locations', locationsError);
 
     const lunchStartTime = (lunchSetting?.value as string | undefined) || '13:00';
     const workTypeStatusConfig = (statusConfigSetting?.value as WorkTypeStatusConfig | undefined) || {};
@@ -83,26 +87,37 @@ export default async function AccessibilityPage() {
         </TabsContent>
         
         <TabsContent value="security" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="border border-white/10 bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-10">
-            <CardHeader className="p-0 mb-10">
-              <CardTitle className="text-2xl font-black text-white tracking-tight">Access Control</CardTitle>
-              <CardDescription className="text-zinc-500 font-medium">
-                Manage global geofencing and proximity-based attendance protocols.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-               <div className="max-w-md space-y-8">
-                  <GeofencingToggle initialValue={globalGeofencingEnabled} />
-                  
-                  <div className="p-6 rounded-[2rem] bg-sky-500/5 border border-sky-500/10">
-                    <h4 className="text-sky-400 font-black uppercase tracking-widest text-[10px] mb-2">Protocol Note</h4>
-                    <p className="text-xs text-zinc-500 leading-relaxed font-medium">
-                        When Global Geofencing is enabled, all users (except those with exceptions) must be within their assigned radius to log attendance. User-level coordinates are managed in the Team & Users section.
-                    </p>
+          <Tabs defaultValue="geofencing" className="space-y-10">
+            <TabsList className="bg-transparent p-0 border-b border-white/5 rounded-none gap-8">
+              <TabsTrigger value="geofencing" className="bg-transparent border-0 rounded-none px-0 pb-3 text-zinc-500 font-bold uppercase tracking-widest text-[10px] data-[state=active]:text-sky-400 data-[state=active]:border-b-2 data-[state=active]:border-sky-400 shadow-none">Global Control</TabsTrigger>
+              <TabsTrigger value="locations" className="bg-transparent border-0 rounded-none px-0 pb-3 text-zinc-500 font-bold uppercase tracking-widest text-[10px] data-[state=active]:text-sky-400 data-[state=active]:border-b-2 data-[state=active]:border-sky-400 shadow-none">Studio Locations</TabsTrigger>
+            </TabsList>
+            <TabsContent value="geofencing" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <Card className="border border-white/10 bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-10">
+                <CardHeader className="p-0 mb-10">
+                  <CardTitle className="text-2xl font-black text-white tracking-tight">Access Control</CardTitle>
+                  <CardDescription className="text-zinc-500 font-medium">
+                    Manage global geofencing and proximity-based attendance protocols.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="max-w-md space-y-8">
+                      <GeofencingToggle initialValue={globalGeofencingEnabled} />
+                      
+                      <div className="p-6 rounded-[2rem] bg-sky-500/5 border border-sky-500/10">
+                        <h4 className="text-sky-400 font-black uppercase tracking-widest text-[10px] mb-2">Protocol Note</h4>
+                        <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+                            When Global Geofencing is enabled, all users (except those with exceptions) must be within their assigned radius to log attendance. User-level coordinates are managed in the Team & Users section.
+                        </p>
+                      </div>
                   </div>
-               </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="locations" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <StudioLocations initialLocations={locationsData as OfficeLocation[] ?? []} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
         
         <TabsContent value="types" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">

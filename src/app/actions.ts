@@ -1,10 +1,9 @@
-
 'use server'
 
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
 import { generateVoiceGreeting } from '@/ai/flows/generate-voice-greeting'
-import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction, Revisions, SubmissionHistoryEntry, SubmissionType } from '@/lib/types'
+import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction, Revisions, SubmissionHistoryEntry, SubmissionType, OfficeLocation } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { google } from 'googleapis';
@@ -12,8 +11,6 @@ import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * CORE REPORT LOGGING HANDLER
- * Strictly event-driven. Creates report_entries on submission events (Review, Posted, Scheduled, Done).
- * Distinguishes between work updates and new correction cycles.
  */
 async function handleReportLogging(supabase: any, taskId: string, userId: string, fromStatus: string, toStatus: string) {
     const now = new Date();
@@ -22,7 +19,6 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
     const normalizedToStatus = toStatus.toLowerCase();
     const normalizedFromStatus = fromStatus?.toLowerCase() || '';
 
-    // 1. Audit transition in history table
     await supabase.from('task_history').insert({
         task_id: taskId,
         previous_status: fromStatus,
@@ -30,14 +26,10 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         changed_at: timestamp
     });
 
-    // Valid work submission states (States that represent "I am done with my part")
     const workSubmissionStates = ['review', 'posted', 'scheduled', 'done'];
-    // Feedback states (States that require the user to start a "Correction Cycle")
     const feedbackStates = ['corrections', 'recreate'];
 
-    // 2. Logic for Creating or Updating Report Entries
     if (workSubmissionStates.includes(normalizedToStatus)) {
-        // Find latest submission entry to check if we are in a new cycle
         const { data: latestEntry } = await supabase
             .from('report_entries')
             .select('*')
@@ -50,10 +42,8 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
         let isCorrection = false;
 
         if (!latestEntry) {
-            // First time ever submitting work for this task
             createNew = true;
         } else {
-            // Check if there was any negative feedback (Correction/Recreate) since the last submission
             const { data: historySince } = await supabase
                 .from('task_history')
                 .select('*')
@@ -65,12 +55,10 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 feedbackStates.includes(h.new_status?.toLowerCase())
             );
 
-            // If it's a resubmission after feedback (Correction Cycle)
             if (hadFeedback) {
                 createNew = true;
                 isCorrection = true;
             } else {
-                // Otherwise, it's just an update to the current session (e.g. status change to Approved/Done)
                 await supabase.from('report_entries').update({ 
                     final_status: toStatus,
                 }).eq('id', latestEntry.id);
@@ -87,7 +75,6 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
             });
         }
     } 
-    // 3. Logic for updating the outcome of an existing submission (Approved, Correction, etc.)
     else if ([...feedbackStates, 'approved'].includes(normalizedToStatus)) {
         const { data: latestEntry } = await supabase
             .from('report_entries')
@@ -98,7 +85,6 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
             .maybeSingle();
 
         if (latestEntry) {
-            // Update the status of the current submission session
             await supabase.from('report_entries').update({ 
                 final_status: toStatus 
             }).eq('id', latestEntry.id);
@@ -558,9 +544,7 @@ export async function updateTaskStatus(
         return { error: error.message };
     }
 
-    // --- Report Logging Logic (Event System) ---
     await handleReportLogging(supabase, taskId, user.id, fromStatus, status);
-    // -------------------------------------------------
 
     revalidatePath('/tasks');
     revalidatePath('/report');
@@ -598,9 +582,7 @@ export async function updateTaskPostingStatus(taskId: string, posting_status: 'P
         return { error: error.message };
     }
 
-    // --- Report Logging Logic (Event System) ---
     await handleReportLogging(supabase, taskId, user.id, fromStatus, posting_status);
-    // -------------------------------------------------
 
     revalidatePath('/tasks');
     revalidatePath('/dashboard');
@@ -765,9 +747,7 @@ export async function updateClient(clientId: string, formData: FormData) {
     const avatarFile = formData.get('avatar') as File | null;
     let avatarUrl = currentClient.avatar;
 
-    // Handle new avatar upload
     if (avatarFile && avatarFile.size > 0) {
-        // Delete old avatar if it's not a pravatar link
         if (currentClient.avatar && !currentClient.avatar.includes('pravatar.cc')) {
             const oldAvatarPath = new URL(currentClient.avatar).pathname.split('/avatars/').pop();
             if (oldAvatarPath) {
@@ -775,7 +755,6 @@ export async function updateClient(clientId: string, formData: FormData) {
             }
         }
 
-        // Upload new avatar
         const newFilePath = `public/${Date.now()}_${avatarFile.name}`;
         const { error: uploadError } = await supabase.storage
             .from('avatars')
@@ -1009,7 +988,6 @@ export async function createProjectType(name: string) {
 export async function renameProjectType(id: string, oldName: string, newName: string) {
     const supabase = await createServerClient();
 
-    // First update all projects with the old type name
     const { error: projectsError } = await supabase
         .from('projects')
         .update({ type: newName })
@@ -1020,7 +998,6 @@ export async function renameProjectType(id: string, oldName: string, newName: st
         return { error: `Failed to update projects: ${projectsError.message}` };
     }
 
-    // Then update the project type itself
     const { data, error } = await supabase
         .from('project_types')
         .update({ name: newName })
@@ -1113,8 +1090,6 @@ export async function updateProfile(userId: string, formData: FormData) {
   if (birthdayDay && birthdayMonth) {
     const monthIndex = months.indexOf(birthdayMonth);
     if (monthIndex > -1) {
-      // Use a placeholder year like 2000, since we are not storing it.
-      // Store as YYYY-MM-DD format in UTC
       const date = new Date(Date.UTC(2000, monthIndex, parseInt(birthdayDay, 10)));
       birthday = date.toISOString();
     }
@@ -1214,7 +1189,7 @@ export async function delete_task_attachments(task_id: string) {
 
     const attachments = task.attachments as Attachment[] | null;
     if (attachments && attachments.length > 0) {
-        const BirdPaths = attachments.map(att => att.path);
+        const BirdPaths = attachments.map(att => att.path!);
         const { error: deleteError } = await supabase.storage.from('attachments').remove(BirdPaths);
         if (deleteError) {
             console.error('Error deleting attachments from storage:', deleteError);
@@ -1236,7 +1211,6 @@ export async function updateSetting(key: string, value: any) {
     .single();
 
   if (error) {
-    // If the setting doesn't exist, create it.
     if (error.code === 'PGRST116') {
       const { data: insertData, error: insertError } = await supabase
         .from('app_settings')
@@ -1248,14 +1222,14 @@ export async function updateSetting(key: string, value: any) {
         return { error: `Failed to create setting: ${insertError.message}` };
       }
       revalidatePath('/accessibility');
-      revalidatePath('/dashboard', 'layout'); // Revalidate layout to update header
+      revalidatePath('/dashboard', 'layout');
       return { data: insertData };
     }
     return { error: `Failed to update setting: ${error.message}` };
   }
 
   revalidatePath('/accessibility');
-  revalidatePath('/dashboard', 'layout'); // Revalidate layout to update header
+  revalidatePath('/dashboard', 'layout');
   return { data };
 }
 
@@ -1428,6 +1402,22 @@ export async function deleteWorkType(id: number): Promise<{ error: string | null
     return { error: null };
 }
 
+export async function addOfficeLocation(name: string, lat: number, lng: number, radius: number): Promise<{ data: OfficeLocation | null, error: string | null }> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.from('office_locations').insert({ name, latitude: lat, longitude: lng, radius }).select().single();
+    if (error) return { data: null, error: error.message };
+    revalidatePath('/accessibility');
+    return { data: data as OfficeLocation, error: null };
+}
+
+export async function deleteOfficeLocation(id: string): Promise<{ error: string | null }> {
+    const supabase = await createServerClient();
+    const { error } = await supabase.from('office_locations').delete().eq('id', id);
+    if (error) return { error: error.message };
+    revalidatePath('/accessibility');
+    return { error: null };
+}
+
 export async function addSchedule(formData: FormData): Promise<{ data?: ContentSchedule, error?: string }> {
     const supabase = await createServerClient();
 
@@ -1536,7 +1526,6 @@ export async function createTaskFromSchedule(schedule: ContentSchedule): Promise
         return { error: "Cannot assign task: schedule is not associated with a team." };
     }
 
-    // Find the first member of the team to assign the task to.
     const { data: teamMembers, error: teamMembersError } = await supabase
         .from('profile_teams')
         .select('profile_id')
