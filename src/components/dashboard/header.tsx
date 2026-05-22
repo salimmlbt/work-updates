@@ -112,7 +112,7 @@ export default function Header() {
       }
 
       // --- REAL-TIME PROFILE SYNC ---
-      // This ensures geofencing changes are applied immediately without refresh
+      // Listens for location/geofencing updates and applies them immediately
       profileChannel = supabase
         .channel(`header-profile-sync-${user.id}`)
         .on(
@@ -124,7 +124,6 @@ export default function Header() {
             filter: `id=eq.${user.id}` 
           },
           (payload) => {
-            console.log('Real-time profile update detected:', payload.new);
             setUserProfile(prev => ({ ...prev, ...payload.new } as Profile));
           }
         )
@@ -174,30 +173,49 @@ export default function Header() {
     };
   }, [supabase, hasMounted]);
 
+  useEffect(() => {
+    if (!hasMounted || !lunchTimeSetting) return;
+
+    const checkLunchTime = () => {
+      const now = new Date();
+      const isFriday = now.getDay() === 5;
+      const targetTimeStr = isFriday ? lunchTimeSetting.friday : lunchTimeSetting.default;
+      
+      if (!targetTimeStr) return;
+
+      const [hours, minutes] = targetTimeStr.split(':').map(Number);
+      const targetDate = new Date();
+      targetDate.setHours(hours, minutes, 0, 0);
+
+      setShowLunchButton(now >= targetDate);
+    };
+
+    checkLunchTime();
+    const interval = setInterval(checkLunchTime, 30000);
+    return () => clearInterval(interval);
+  }, [lunchTimeSetting, hasMounted]);
+
   const verifyLocation = async (): Promise<boolean> => {
     const isGeofenceActive = globalGeofencingEnabled || userProfile?.geofencing_enabled;
     if (!isGeofenceActive) return true;
 
     const permittedZones: PermittedLocation[] = [...(userProfile?.permitted_locations || [])];
     
-    // Add legacy single custom location if defined
+    // Support legacy single custom location if defined
     if (userProfile?.latitude && userProfile?.longitude) {
         permittedZones.push({
-            name: 'Primary Workplace',
+            name: 'Assigned Site',
             latitude: userProfile.latitude,
             longitude: userProfile.longitude,
             radius: userProfile.radius || 100
         });
     }
 
-    if (permittedZones.length === 0) {
-      console.warn("Geofencing active but no permitted zones set for user.");
-      return true; // Safe fallback
-    }
+    if (permittedZones.length === 0) return true;
 
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
-        toast({ title: "Unsupported Browser", description: "Location services not available.", variant: "destructive" });
+        toast({ title: "Hardware Error", description: "GPS services not available on this device.", variant: "destructive" });
         resolve(false);
         return;
       }
@@ -206,9 +224,8 @@ export default function Header() {
         (position) => {
           const { latitude: userLat, longitude: userLng } = position.coords;
           
-          // Check all permitted zones
           let isWithinAnyZone = false;
-          let closestDistance = Infinity;
+          let minDistance = Infinity;
 
           for (const zone of permittedZones) {
               const distance = calculateDistance(userLat, userLng, zone.latitude, zone.longitude);
@@ -216,7 +233,7 @@ export default function Header() {
                   isWithinAnyZone = true;
                   break;
               }
-              closestDistance = Math.min(closestDistance, distance);
+              minDistance = Math.min(minDistance, distance);
           }
 
           if (isWithinAnyZone) {
@@ -224,14 +241,14 @@ export default function Header() {
           } else {
             toast({ 
               title: "Access Denied", 
-              description: `You are outside your permitted attendance zones (Nearest zone: ${Math.round(closestDistance)}m away).`,
+              description: `You are currently outside your permitted attendance zones (Nearest: ${Math.round(minDistance)}m).`,
               variant: "destructive" 
             });
             resolve(false);
           }
         },
         (error) => {
-          toast({ title: "Location Error", description: "Proximity check failed. Please enable GPS.", variant: "destructive" });
+          toast({ title: "Location Error", description: "Proximity validation failed. Please enable location access.", variant: "destructive" });
           resolve(false);
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -244,6 +261,7 @@ export default function Header() {
     setIsLateReasonOpen(false);
     setIsActionPending(true);
 
+    // Mandatory Proximity Check for ALL actions
     const isLocationValid = await verifyLocation();
     if (!isLocationValid) {
         setIsActionPending(false);
@@ -295,7 +313,7 @@ export default function Header() {
     if (error) {
       setStatus(originalStatus);
       setIsTimerRunning(originalStatus === 'checked-in' || originalStatus === 'lunch-complete');
-      toast({ title: 'Error', description: error, variant: 'destructive' });
+      toast({ title: 'System Error', description: error, variant: 'destructive' });
     } else if (data) {
       setAttendanceRecord((prev: any) => ({ ...prev, ...data }));
     }
@@ -313,7 +331,7 @@ export default function Header() {
   const playTone = (type: 'in' | 'out') => {
     if (typeof window === 'undefined') return;
     const audio = new Audio(type === 'in' ? '/checkin-tone.mp3' : '/checkout-tone.mp3');
-    audio.play().catch(e => console.warn("Tone play blocked:", e));
+    audio.play().catch(() => {});
   };
 
   const triggerGreeting = (name: string, audioUri?: string | null) => {
@@ -324,7 +342,7 @@ export default function Header() {
     playTone('in');
     if (audioUri) {
       const audio = new Audio(audioUri);
-      audio.play().catch(e => console.warn("AI Voice play blocked:", e));
+      audio.play().catch(() => {});
     } else {
       const utterance = new SpeechSynthesisUtterance(`${greeting}, ${name}`);
       utterance.rate = 0.9;
@@ -340,7 +358,7 @@ export default function Header() {
     playTone('out');
     if (audioUri) {
       const audio = new Audio(audioUri);
-      audio.play().catch(e => console.warn("AI Voice play blocked:", e));
+      audio.play().catch(() => {});
     } else {
       const utterance = new SpeechSynthesisUtterance(`See you next day, ${name}`);
       utterance.rate = 0.9;
@@ -398,9 +416,7 @@ export default function Header() {
     );
   }
 
-  if (status === 'session-complete' && !showGreeting) {
-    return null;
-  }
+  if (status === 'session-complete' && !showGreeting) return null;
 
   const headerHeight = isExpanded ? '5rem' : '10px';
 
@@ -515,14 +531,14 @@ export default function Header() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-bold">Late Check-In Detected</AlertDialogTitle>
             <AlertDialogDescription>
-              It looks like you're checking in after your scheduled start time ({userProfile?.work_start_time?.slice(0, 5)}). Please provide a reason for the delay.
+              Scheduled start time: {userProfile?.work_start_time?.slice(0, 5)}. Please provide a valid reason for the late entry.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4 space-y-2">
-            <Label htmlFor="late-reason" className="text-sm font-semibold text-slate-700">Reason for delay</Label>
+            <Label htmlFor="late-reason" className="text-sm font-semibold text-slate-700">Reason Statement</Label>
             <Textarea 
                 id="late-reason" 
-                placeholder="e.g., Traffic, Personal emergency, Technical issues..." 
+                placeholder="Traffic, emergency, or other cause..." 
                 className="rounded-xl min-h-[100px]"
                 value={lateReason}
                 onChange={(e) => setLateReason(e.target.value)}
@@ -545,12 +561,12 @@ export default function Header() {
         <AlertDialogContent className="rounded-3xl border shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-bold">
-              {alertType === 'checkout' ? 'End your work day?' : 'Ready for lunch?'}
+              {alertType === 'checkout' ? 'Commit your work day?' : 'Initiate break period?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {alertType === 'checkout'
-                ? 'This will finalize your attendance for today. Make sure all your tasks are updated!'
-                : 'You can either start your lunch break or end your work day entirely.'}
+                ? 'Finalizing your attendance. Proximity check will be performed immediately.'
+                : 'Proximity check will be performed to start your lunch break.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">

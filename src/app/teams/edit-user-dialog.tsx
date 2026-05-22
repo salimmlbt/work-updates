@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 
 import {
@@ -38,7 +39,8 @@ import {
   Globe,
   User as UserIcon,
   Lock,
-  Wallet
+  Wallet,
+  Archive
 } from 'lucide-react'
 
 import { useToast } from '@/hooks/use-toast'
