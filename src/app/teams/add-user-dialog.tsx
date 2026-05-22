@@ -210,7 +210,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
         toast({ title: "Invite failed", description: typeof error === 'string' ? error : (error as any).message, variant: "destructive" });
       } else if (data) {
         onUserAdded(data as Profile);
-        toast({ title: "User Invited", description: `Invitation sent to ${fullEmail}.` });
+        toast({ title: "User Invited", description: `Invitation sent to ${fullEmail}.`, variant: 'success' });
         handleDialogChange(false);
       }
     });

@@ -93,7 +93,7 @@ export function EditUserDialog({
     deleteAvatar: false,
     permitted_locations: (user.permitted_locations || []) as PermittedLocation[],
     customLocation: {
-      enabled: user.latitude ? true : false,
+      enabled: !!user.latitude,
       latitude: user.latitude?.toString() || '',
       longitude: user.longitude?.toString() || '',
       radius: user.radius?.toString() || '100',
@@ -146,7 +146,7 @@ export function EditUserDialog({
         deleteAvatar: false,
         permitted_locations: (user.permitted_locations || []) as PermittedLocation[],
         customLocation: {
-          enabled: user.latitude ? true : false,
+          enabled: !!user.latitude,
           latitude: user.latitude?.toString() || '',
           longitude: user.longitude?.toString() || '',
           radius: user.radius?.toString() || '100',
@@ -257,7 +257,7 @@ export function EditUserDialog({
         toast({ title: 'Update failed', description: typeof error === 'string' ? error : (error as any).message, variant: 'destructive' })
       } else if (data) {
         onUserUpdated(data)
-        toast({ title: 'User data statement committed' })
+        toast({ title: 'User Data Statement Committed', variant: 'success' })
         setIsOpen(false)
       }
     })
