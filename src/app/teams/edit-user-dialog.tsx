@@ -195,8 +195,8 @@ export function EditUserDialog({
         toast({ title: 'Coordinates Synced' })
       },
       (error) => {
-        setIsLocating(false)
-        toast({ title: 'GPS Error', description: error.message, variant: "destructive" })
+        setIsLocating(false);
+        toast({ title: 'GPS Error', description: error.message, variant: "destructive" });
       },
       { enableHighAccuracy: true }
     )

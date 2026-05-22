@@ -84,6 +84,8 @@ export default function Header() {
   useEffect(() => {
     if (!hasMounted) return;
 
+    let profileChannel: any;
+
     const fetchInitialData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -108,6 +110,25 @@ export default function Header() {
       if (profileRes.data) {
         setUserProfile(profileRes.data as Profile);
       }
+
+      // --- REAL-TIME PROFILE SYNC ---
+      // This ensures geofencing changes are applied immediately without refresh
+      profileChannel = supabase
+        .channel(`header-profile-sync-${user.id}`)
+        .on(
+          'postgres_changes',
+          { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'profiles', 
+            filter: `id=eq.${user.id}` 
+          },
+          (payload) => {
+            console.log('Real-time profile update detected:', payload.new);
+            setUserProfile(prev => ({ ...prev, ...payload.new } as Profile));
+          }
+        )
+        .subscribe();
 
       setGlobalGeofencingEnabled(geofenceRes.data?.value === true);
 
@@ -147,6 +168,10 @@ export default function Header() {
     };
 
     fetchInitialData();
+
+    return () => {
+      if (profileChannel) supabase.removeChannel(profileChannel);
+    };
   }, [supabase, hasMounted]);
 
   const verifyLocation = async (): Promise<boolean> => {
