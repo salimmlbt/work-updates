@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin } from 'lucide-react';
 
@@ -15,182 +14,114 @@ interface LocationPickerProps {
 
 export function LocationPicker({ lat, lng, radius, onLocationChange }: LocationPickerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [googleMaps, setGoogleMaps] = useState<any>(null);
-  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
-  
   const mapInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
   const circleInstance = useRef<any>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      setStatus('error');
-      return;
-    }
-
-    const loader = new Loader({
-      apiKey: apiKey,
-      version: 'weekly',
-    });
-
-    loader.load().then((google) => {
-      setGoogleMaps(google);
-      setStatus('ready');
-    }).catch(e => {
-      console.error("Google Maps failed to load", e);
-      setStatus('error');
-    });
+    setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!googleMaps || !mapRef.current || status !== 'ready') return;
+    if (!isMounted || !mapRef.current) return;
 
-    const initialPos = { 
-      lat: lat || 25.1234, 
-      lng: lng || 55.5678 
+    const initMap = async () => {
+      // Dynamic import to avoid SSR issues with Leaflet
+      const L = (await import('leaflet')).default;
+
+      // Fix for default marker icons in Next.js/Webpack
+      // @ts-ignore
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      });
+
+      const initialPos: [number, number] = [lat || 25.1234, lng || 55.5678];
+
+      if (!mapInstance.current && mapRef.current) {
+        const map = L.map(mapRef.current, {
+            zoomControl: false,
+            attributionControl: true,
+        }).setView(initialPos, 16);
+
+        // Using CartoDB Dark Matter tiles - FREE and looks premium with dark mode
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20
+        }).addTo(map);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        const marker = L.marker(initialPos, { draggable: true }).addTo(map);
+        
+        const circle = L.circle(initialPos, {
+          radius: radius || 100,
+          color: '#38bdf8',
+          weight: 1,
+          fillColor: '#38bdf8',
+          fillOpacity: 0.15,
+        }).addTo(map);
+
+        mapInstance.current = map;
+        markerInstance.current = marker;
+        circleInstance.current = circle;
+
+        map.on('click', (e: any) => {
+          const { lat, lng } = e.latlng;
+          marker.setLatLng([lat, lng]);
+          circle.setLatLng([lat, lng]);
+          onLocationChange(lat, lng);
+        });
+
+        marker.on('dragend', (e: any) => {
+          const { lat, lng } = e.target.getLatLng();
+          circle.setLatLng([lat, lng]);
+          onLocationChange(lat, lng);
+        });
+      }
     };
 
-    const map = new googleMaps.maps.Map(mapRef.current, {
-      center: initialPos,
-      zoom: 16,
-      disableDefaultUI: false,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-      styles: [
-        { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-        { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-        { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-        {
-          featureType: "administrative.locality",
-          elementType: "labels.text.fill",
-          stylers: [{ color: "#d59563" }],
-        },
-        {
-          featureType: "poi",
-          elementType: "labels.text.fill",
-          stylers: [{ color: "#d59563" }],
-        },
-        {
-          featureType: "poi.park",
-          elementType: "geometry",
-          stylers: [{ color: "#263c3f" }],
-        },
-        {
-          featureType: "poi.park",
-          elementType: "labels.text.fill",
-          stylers: [{ color: "#6b9a76" }],
-        },
-        {
-          featureType: "road",
-          elementType: "geometry",
-          stylers: [{ color: "#38414e" }],
-        },
-        {
-          featureType: "road",
-          elementType: "geometry.stroke",
-          stylers: [{ color: "#212a37" }],
-        },
-        {
-          featureType: "road",
-          elementType: "labels.text.fill",
-          stylers: [{ color: "#9ca5b3" }],
-        },
-        {
-          featureType: "road.highway",
-          elementType: "geometry",
-          stylers: [{ color: "#746855" }],
-        },
-        {
-          featureType: "road.highway",
-          elementType: "geometry.stroke",
-          stylers: [{ color: "#1f2835" }],
-        },
-        {
-          featureType: "road.highway",
-          elementType: "labels.text.fill",
-          stylers: [{ color: "#f3d19c" }],
-        },
-        {
-          featureType: "transit",
-          elementType: "geometry",
-          stylers: [{ color: "#2f3948" }],
-        },
-        {
-          featureType: "transit.station",
-          elementType: "labels.text.fill",
-          stylers: [{ color: "#d59563" }],
-        },
-        {
-          featureType: "water",
-          elementType: "geometry",
-          stylers: [{ color: "#17263c" }],
-        },
-        {
-          featureType: "water",
-          elementType: "labels.text.fill",
-          stylers: [{ color: "#515c6d" }],
-        },
-        {
-          featureType: "water",
-          elementType: "labels.text.stroke",
-          stylers: [{ color: "#17263c" }],
-        },
-      ],
-    });
-    mapInstance.current = map;
+    initMap();
 
-    const marker = new googleMaps.maps.Marker({
-      position: initialPos,
-      map: map,
-      draggable: true,
-    });
-    markerInstance.current = marker;
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, [isMounted]);
 
-    const circle = new googleMaps.maps.Circle({
-      map: map,
-      radius: radius,
-      fillColor: '#38bdf8',
-      fillOpacity: 0.15,
-      strokeColor: '#38bdf8',
-      strokeWeight: 1,
-      center: initialPos,
-      clickable: false,
-    });
-    circleInstance.current = circle;
-
-    map.addListener('click', (e: any) => {
-      const newLat = e.latLng.lat();
-      const newLng = e.latLng.lng();
-      onLocationChange(newLat, newLng);
-    });
-
-    marker.addListener('dragend', (e: any) => {
-      const newLat = e.latLng.lat();
-      const newLng = e.latLng.lng();
-      onLocationChange(newLat, newLng);
-    });
-
-  }, [googleMaps, status]);
-
+  // Update map visual state when props change (manual input or slider)
   useEffect(() => {
     if (mapInstance.current && markerInstance.current && circleInstance.current && lat && lng) {
-      const pos = { lat, lng };
-      markerInstance.current.setPosition(pos);
-      circleInstance.current.setCenter(pos);
+      const pos: [number, number] = [lat, lng];
+      markerInstance.current.setLatLng(pos);
+      circleInstance.current.setLatLng(pos);
       circleInstance.current.setRadius(radius);
+      
+      // Only pan if coordinates were explicitly updated (prevents jumpiness)
+      // mapInstance.current.panTo(pos);
     }
   }, [lat, lng, radius]);
 
-  if (status === 'loading') return <Skeleton className="w-full h-[300px] rounded-2xl bg-white/5" />;
-  
-  if (status === 'error') return (
-    <div className="w-full h-[300px] rounded-2xl border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center text-center p-6 gap-3">
-        <MapPin className="h-10 w-10 text-zinc-700" />
-        <p className="text-sm text-zinc-500 font-medium italic">Google Maps API Key missing or invalid.<br/>Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in .env</p>
+  if (!isMounted) return <Skeleton className="w-full h-[300px] rounded-[2rem] bg-white/5" />;
+
+  return (
+    <div className="relative group">
+        <div 
+            ref={mapRef} 
+            className="w-full h-[300px] rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden z-0" 
+        />
+        <div className="absolute top-4 left-4 z-10 pointer-events-none">
+            <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                <MapPin className="h-3 w-3 text-sky-400" />
+                <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Attendance Zone</span>
+            </div>
+        </div>
     </div>
   );
-
-  return <div ref={mapRef} className="w-full h-[300px] rounded-2xl border border-white/10 shadow-2xl" />;
 }
