@@ -47,8 +47,8 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
   const [isPending, startTransition] = useTransition();
   const [formState, setFormState] = useState({
     name: user.full_name || '',
-    roleId: user.roles?.id || '',
-    teamIds: (Array.isArray(user.teams) ? user.teams.map(t => t.teams?.id).filter(Boolean) : []) as string[],
+    roleId: '',
+    teamIds: [] as string[],
     password: '',
     confirmPassword: '',
     avatar: null as File | null,
@@ -76,10 +76,18 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
   
   useEffect(() => {
     if (isOpen) {
+      // Robust initialization for team IDs handling both raw nested and flattened formats
+      const initialTeamIds = Array.isArray(user.teams) 
+        ? user.teams.map((t: any) => t.teams?.id || t.id || (typeof t === 'string' ? t : null)).filter(Boolean) as string[]
+        : [];
+      
+      // Robust initialization for role ID
+      const initialRoleId = user.roles?.id || (user as any).role_id || '';
+
       setFormState({
           name: user.full_name || '',
-          roleId: user.roles?.id || '',
-          teamIds: (Array.isArray(user.teams) ? user.teams.map(t => t.teams?.id).filter((id): id is string => !!id) : []),
+          roleId: initialRoleId,
+          teamIds: initialTeamIds,
           password: '',
           confirmPassword: '',
           avatar: null,
@@ -259,7 +267,12 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                                 <DropdownMenuCheckboxItem
                                   key={team.id}
                                   checked={formState.teamIds.includes(team.id)}
-                                  onCheckedChange={() => handleTeamSelect(team.id)}
+                                  onCheckedChange={(checked) => {
+                                    const newTeamIds = checked 
+                                      ? [...formState.teamIds, team.id]
+                                      : formState.teamIds.filter(id => id !== team.id);
+                                    handleTeamSelect(team.id);
+                                  }}
                                   onSelect={(e) => e.preventDefault()}
                                 >
                                   {team.name}

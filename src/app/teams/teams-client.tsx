@@ -206,27 +206,23 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
 
   const usersWithData = useMemo(() => users.map((user) => {
     const isAdmin = user.email === 'admin@falaq.com';
-    const userTeams = Array.isArray(user.teams) ? user.teams.map(t => t.teams).filter(Boolean) as Team[] : [];
-    
     return {
       ...user,
-      teams: userTeams,
-      role: isAdmin ? initialRoles.find(r => r.name === 'Falaq Admin') : user.roles,
+      isAdmin,
       is_archived: user.is_archived || false,
-      isAdmin
     }
   }).sort((a, b) => {
     if (a.isAdmin && !b.isAdmin) return -1;
     if (!a.isAdmin && b.isAdmin) return 1;
     return (a.full_name || '').localeCompare(b.full_name || '');
-  }), [users, initialRoles]);
+  }), [users]);
 
 	const adminUser = usersWithData.find(user => user.isAdmin);
   const otherUsers = usersWithData.filter(user => !user.isAdmin);
 
   const teamFilteredUsers = selectedTeam === 'All teams'
     ? otherUsers
-    : otherUsers.filter(user => user.teams.some(t => t.name === selectedTeam));
+    : otherUsers.filter(user => (user.teams || []).some(t => t.teams?.name === selectedTeam));
 
   const searchedUsers = teamFilteredUsers.filter(u => 
     u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -237,12 +233,12 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
   const archivedUsers = searchedUsers.filter(u => u.is_archived);
 
 	const teamUserCounts = useMemo(() => teams.reduce((acc, team) => {
-		acc[team.id] = usersWithData.filter(u => u.teams.some(t => t.id === team.id)).length;
+		acc[team.id] = usersWithData.filter(u => (u.teams || []).some(t => t.teams?.id === team.id)).length;
 		return acc;
 	}, {} as Record<string, number>), [teams, usersWithData]);
 
   const UserRow = ({ user }: { user: (typeof usersWithData)[0] }) => {
-    const userTeamIds = user.teams.map(t => t.id);
+    const userTeamIds = (user.teams || []).map(t => t.teams?.id).filter(Boolean) as string[];
 
     return (
         <div className="grid grid-cols-6 items-center py-4 px-6 group border-b border-white/5 hover:bg-white/[0.04] transition-all duration-300">
@@ -262,8 +258,8 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="w-full justify-start text-left font-normal h-auto min-h-10 hover:bg-white/5" disabled={isPending || user.is_archived}>
                           <div className="flex flex-wrap gap-1">
-                            {user.teams.length > 0 
-                              ? user.teams.map(t => <Badge key={t.id} variant="secondary" className="bg-zinc-800 text-zinc-300 border-zinc-700 text-[10px]">{t.name}</Badge>)
+                            {user.teams && user.teams.length > 0 
+                              ? user.teams.map(t => t.teams && <Badge key={t.teams.id} variant="secondary" className="bg-zinc-800 text-zinc-300 border-zinc-700 text-[10px]">{t.teams.name}</Badge>)
                               : <span className="text-zinc-600 text-xs italic">No team assigned</span>
                             }
                           </div>
@@ -294,12 +290,12 @@ export default function TeamsClient({ initialUsers, initialRoles, initialTeams, 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start text-left font-bold text-zinc-300 hover:bg-white/5" disabled={isPending || user.is_archived || user.isAdmin}>
-                      {user.role ? user.role.name : <span className="text-zinc-600 italic">No role</span>}
+                      {user.roles ? user.roles.name : <span className="text-zinc-600 italic">No role</span>}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl">
                      {initialRoles.filter(r => r.name !== 'Falaq Admin').map(role => (
-                        <DropdownMenuItem key={role.id} onSelect={() => handleRoleChange(user.id, role.id)} className={cn(user.role?.id === role.id && 'bg-sky-500/20 text-sky-400')}>
+                        <DropdownMenuItem key={role.id} onSelect={() => handleRoleChange(user.id, role.id)} className={cn(user.roles?.id === role.id && 'bg-sky-500/20 text-sky-400')}>
                            {role.name}
                         </DropdownMenuItem>
                       ))}
