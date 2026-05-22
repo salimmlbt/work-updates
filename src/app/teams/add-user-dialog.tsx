@@ -189,8 +189,8 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="sm:max-w-3xl max-h-[95vh] p-0 rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
-          <DialogHeader className="p-10 pb-4">
+        <DialogContent className="sm:max-w-3xl h-[90vh] p-0 rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
+          <DialogHeader className="p-10 pb-4 shrink-0">
             <DialogTitle className="text-3xl font-black tracking-tight text-white uppercase">Invite Studio Member</DialogTitle>
             <DialogDescription className="text-zinc-500 font-medium">
               Onboard a new professional to the FALAQ workspace infrastructure.
@@ -370,7 +370,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
               </form>
           </ScrollArea>
           
-          <DialogFooter className="p-10 pt-6 border-t border-white/10 flex gap-6 bg-zinc-950">
+          <DialogFooter className="p-10 pt-6 border-t border-white/10 flex gap-6 bg-zinc-950 shrink-0">
             <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)} className="rounded-2xl h-16 px-10 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-xs">Cancel</Button>
             <Button 
               type="submit" 
@@ -378,7 +378,8 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
               disabled={isPending || !isFormValid}
               className="flex-1 rounded-3xl h-16 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-sm shadow-2xl shadow-sky-900/40"
             >
-              {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Send Onboarding Invite"}
+              {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5 mr-3" />}
+              Send Onboarding Invite
             </Button>
           </DialogFooter>
         </DialogContent>

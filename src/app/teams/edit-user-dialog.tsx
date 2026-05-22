@@ -62,7 +62,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     workEndTime: user.work_end_time || '',
     monthlySalary: user.monthly_salary?.toString() || '',
     deleteAvatar: false,
-    // Multi-location state
     permitted_locations: (user.permitted_locations || []) as PermittedLocation[],
     customLocation: {
         enabled: user.latitude ? true : false,
@@ -269,7 +268,7 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
   return (
       <>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-4xl max-h-[90vh] p-0 rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
+          <DialogContent className="sm:max-w-4xl h-[90vh] p-0 rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
             <DialogHeader className="p-10 pb-4 shrink-0">
               <DialogTitle className="text-3xl font-black tracking-tight text-white uppercase">User Data Statement</DialogTitle>
               <DialogDescription className="text-zinc-500 font-medium">
