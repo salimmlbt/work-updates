@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
@@ -200,7 +201,12 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     startTransition(async () => {
       const { data, error } = await updateUser(user.id, formData);
       if (error) {
-        toast({ title: "Error updating user", description: error.message, variant: "destructive" });
+        // Robust error display for strings
+        toast({ 
+          title: "Error updating user", 
+          description: typeof error === 'string' ? error : (error as any).message || "Unknown error", 
+          variant: "destructive" 
+        });
       } else if (data) {
         onUserUpdated(data);
         toast({ title: "User updated", description: "The user's profile has been updated." });

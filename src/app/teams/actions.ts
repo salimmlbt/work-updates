@@ -1,3 +1,4 @@
+
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server'
@@ -130,7 +131,9 @@ export async function addUser(formData: FormData) {
     const avatarFile = formData.get('avatar') as File | null;
     const workStartTime = formData.get('work_start_time') as string;
     const workEndTime = formData.get('work_end_time') as string;
-    const monthlySalary = formData.get('monthly_salary') as string;
+    const monthlySalaryStr = formData.get('monthly_salary') as string;
+    
+    const monthlySalary = (monthlySalaryStr && monthlySalaryStr.trim() !== '') ? parseFloat(monthlySalaryStr) : null;
     
     let avatarUrl = `https://i.pravatar.cc/150?u=${email}`;
 
@@ -184,7 +187,7 @@ export async function addUser(formData: FormData) {
         role_id: roleId,
         work_start_time: workStartTime,
         work_end_time: workEndTime,
-        monthly_salary: monthlySalary ? parseFloat(monthlySalary) : null,
+        monthly_salary: monthlySalary,
       });
       
     if (profileError) {
@@ -230,13 +233,19 @@ export async function updateUser(userId: string, formData: FormData) {
     const avatarFile = formData.get('avatar') as File | null;
     const workStartTime = formData.get('work_start_time') as string;
     const workEndTime = formData.get('work_end_time') as string;
-    const monthlySalary = formData.get('monthly_salary') as string;
-    const latitude = formData.get('latitude') ? parseFloat(formData.get('latitude') as string) : null;
-    const longitude = formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null;
-    const radius = formData.get('radius') ? parseInt(formData.get('radius') as string) : null;
+    const monthlySalaryStr = formData.get('monthly_salary') as string;
+    const latStr = formData.get('latitude') as string;
+    const lonStr = formData.get('longitude') as string;
+    const radStr = formData.get('radius') as string;
     const geofencing_enabled = formData.get('geofencing_enabled') === 'true';
     const deleteAvatar = formData.get('delete_avatar') === 'true';
     
+    // Robust parsing for numeric fields to avoid NaN insertion errors
+    const latitude = (latStr && latStr.trim() !== '') ? parseFloat(latStr) : null;
+    const longitude = (lonStr && lonStr.trim() !== '') ? parseFloat(lonStr) : null;
+    const radius = (radStr && radStr.trim() !== '') ? parseInt(radStr) : null;
+    const monthlySalary = (monthlySalaryStr && monthlySalaryStr.trim() !== '') ? parseFloat(monthlySalaryStr) : null;
+
     const { data: currentProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('avatar_url')
@@ -292,7 +301,7 @@ export async function updateUser(userId: string, formData: FormData) {
             avatar_url: avatarUrl,
             work_start_time: workStartTime,
             work_end_time: workEndTime,
-            monthly_salary: monthlySalary ? parseFloat(monthlySalary) : null,
+            monthly_salary: monthlySalary,
             latitude,
             longitude,
             radius,
