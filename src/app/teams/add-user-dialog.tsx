@@ -191,16 +191,16 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0 rounded-[2.5rem] bg-zinc-950 border-white/10 shadow-2xl">
-          <DialogHeader className="p-8 pb-0">
+        <DialogContent className="sm:max-w-3xl max-h-[95vh] p-0 rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
+          <DialogHeader className="p-10 pb-4">
             <DialogTitle className="text-3xl font-black tracking-tight text-white uppercase">Invite Studio Member</DialogTitle>
             <DialogDescription className="text-zinc-500 font-medium">
               Onboard a new professional to the FALAQ workspace infrastructure.
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 p-8 pt-6">
-              <form id="add-user-form" onSubmit={handleAddUser} className="space-y-8">
+          <ScrollArea className="flex-1 px-10 py-4 custom-scrollbar">
+              <form id="add-user-form" onSubmit={handleAddUser} className="space-y-12 pb-10">
                  <div className="flex justify-center">
                     <div className="relative group">
                       <input
@@ -211,45 +211,45 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                         onChange={handleAvatarChange}
                       />
                       <Avatar
-                        className="h-28 w-28 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105"
+                        className="h-32 w-32 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <AvatarImage src={avatarPreview ?? undefined} />
-                        <AvatarFallback>
-                          <User className="h-12 w-12 text-zinc-700" />
+                        <AvatarFallback className="bg-zinc-900 text-zinc-700">
+                          <User className="h-16 w-16" />
                         </AvatarFallback>
                       </Avatar>
                       <button
                         type="button"
-                        className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-5 w-5" />
                       </button>
                     </div>
                   </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
                         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Official Name</Label>
-                        <Input name="name" placeholder="Enter full name" value={formState.name} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                        <Input name="name" placeholder="Enter full name" value={formState.name} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6 text-lg" required />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Email Username</Label>
                         <div className="flex items-center group">
-                            <Input name="email" type="text" placeholder="your.name" value={formState.email} onChange={handleInputChange} className="h-12 rounded-r-none bg-white/5 border-white/10 text-white focus-visible:ring-sky-500/50 rounded-l-xl font-bold" required />
-                            <span className="inline-flex h-12 items-center px-4 text-xs font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-xl">
+                            <Input name="email" type="text" placeholder="your.name" value={formState.email} onChange={handleInputChange} className="h-14 rounded-r-none bg-white/5 border-white/10 text-white focus-visible:ring-sky-500/50 rounded-l-2xl font-bold px-6 text-lg" required />
+                            <span className="inline-flex h-14 items-center px-6 text-xs font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-2xl">
                             @falaq.com
                             </span>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Access Role</Label>
                     <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required>
-                      <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold">
+                      <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6">
                         <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
@@ -259,18 +259,18 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Assigned Teams</Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold">
+                        <Button variant="outline" className="w-full justify-between h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6">
                           <span className="truncate">
-                            {formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams` : "Select teams"}
+                            {formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Selected` : "Select teams"}
                           </span>
                           <ChevronDown className="h-4 w-4 opacity-50" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[300px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
+                      <DropdownMenuContent className="w-[350px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
                         <ScrollArea className="h-60">
                           {teams.map(team => (
                             <DropdownMenuCheckboxItem
@@ -288,54 +288,53 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Monthly Salary</Label>
-                        <Input name="monthlySalary" type="number" placeholder="INR" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Monthly Salary (INR)</Label>
+                        <Input name="monthlySalary" type="number" placeholder="Enter amount" value={formState.monthlySalary} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" />
                     </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Check In</Label>
-                        <Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Check In Time</Label>
+                        <Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" required />
                     </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Check Out</Label>
-                        <Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Check Out Time</Label>
+                        <Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" required />
                     </div>
                 </div>
 
-                {/* Proximity Attendance Section */}
-                <div className="space-y-6 pt-6 border-t border-white/5">
+                <div className="space-y-8 pt-10 border-t border-white/5">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-400">
-                                <MapPin className="h-5 w-5" />
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-400 shadow-lg shadow-sky-900/10">
+                                <MapPin className="h-6 w-6" />
                             </div>
                             <div>
-                                <h4 className="text-sm font-black text-white uppercase tracking-tight">Proximity Attendance</h4>
-                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Enforce location-based check-in</p>
+                                <h4 className="text-lg font-black text-white uppercase tracking-tight">Proximity Attendance</h4>
+                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Enforce location-based studio check-in</p>
                             </div>
                         </div>
                         <Switch 
                             checked={formState.geofencing_enabled} 
                             onCheckedChange={(val) => setFormState(p => ({ ...p, geofencing_enabled: val }))}
-                            className="data-[state=checked]:bg-sky-500"
+                            className="scale-125 data-[state=checked]:bg-sky-500"
                         />
                     </div>
 
                     {formState.geofencing_enabled && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500 bg-white/[0.02] p-6 rounded-[2rem] border border-white/5">
+                        <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500 bg-white/[0.01] p-8 rounded-[3rem] border border-white/5">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="space-y-2">
                                     <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Latitude</Label>
-                                    <Input name="latitude" value={formState.latitude} onChange={handleInputChange} placeholder="e.g. 25.1234" className="h-11 bg-zinc-950 border-white/5 text-sky-300 font-mono" />
+                                    <Input name="latitude" value={formState.latitude} onChange={handleInputChange} placeholder="e.g. 25.1234" className="h-12 bg-zinc-950 border-white/5 text-sky-300 font-mono" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Longitude</Label>
-                                    <Input name="longitude" value={formState.longitude} onChange={handleInputChange} placeholder="e.g. 55.5678" className="h-11 bg-zinc-950 border-white/5 text-sky-300 font-mono" />
+                                    <Input name="longitude" value={formState.longitude} onChange={handleInputChange} placeholder="e.g. 55.5678" className="h-12 bg-zinc-950 border-white/5 text-sky-300 font-mono" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Radius (Meters)</Label>
-                                    <Input name="radius" type="number" value={formState.radius} onChange={handleInputChange} placeholder="100" className="h-11 bg-zinc-950 border-white/5 text-white font-bold" />
+                                    <Input name="radius" type="number" value={formState.radius} onChange={handleInputChange} placeholder="100" className="h-12 bg-zinc-950 border-white/5 text-white font-bold" />
                                 </div>
                             </div>
 
@@ -349,39 +348,39 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                             <Button 
                                 type="button" 
                                 variant="outline" 
-                                className="w-full rounded-xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-11"
+                                className="w-full rounded-2xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-14 transition-all"
                                 onClick={handleCaptureLocation}
                                 disabled={isLocating}
                             >
-                                {isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Navigation className="h-4 w-4 mr-2" />}
-                                Capture Coordinates
+                                {isLocating ? <Loader2 className="h-5 w-5 animate-spin mr-3" /> : <Navigation className="h-5 w-5 mr-3" />}
+                                Use My Current Coordinates
                             </Button>
                         </div>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                    <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
+                    <div className="space-y-3">
                         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Secure Password</Label>
-                        <Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                        <Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" required />
                     </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Credentials</Label>
-                        <Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Password</Label>
+                        <Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6" required />
                     </div>
                 </div>
               </form>
           </ScrollArea>
           
-          <DialogFooter className="p-8 pt-4 border-t border-white/10 flex gap-4">
-            <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)} className="rounded-2xl h-14 px-8 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-[10px]">Cancel</Button>
+          <DialogFooter className="p-10 pt-6 border-t border-white/10 flex gap-6 bg-zinc-950">
+            <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)} className="rounded-2xl h-16 px-10 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-xs">Cancel</Button>
             <Button 
               type="submit" 
               form="add-user-form"
               disabled={isPending || !isFormValid}
-              className="flex-1 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40"
+              className="flex-1 rounded-3xl h-16 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-sm shadow-2xl shadow-sky-900/40"
             >
-              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Invitation"}
+              {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Send Onboarding Invite"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -392,6 +391,21 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
         onClose={() => setImageToCrop(null)}
         onCropComplete={onCropComplete}
       />
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      `}</style>
     </>
   )
 }
