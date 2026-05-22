@@ -76,7 +76,6 @@ export function EditUserDialog({
   teams,
   onUserUpdated
 }: EditUserDialogProps) {
-
   const [isPending, startTransition] = useTransition()
   const [isLocating, setIsLocating] = useState(false)
   const [officeLocations, setOfficeLocations] = useState<OfficeLocation[]>([])
@@ -197,7 +196,7 @@ export function EditUserDialog({
       },
       (error) => {
         setIsLocating(false)
-        toast({ title: 'GPS Error', description: error.message, variant: 'destructive' })
+        toast({ title: 'GPS Error', description: error.message, variant: "destructive" })
       },
       { enableHighAccuracy: true }
     )
