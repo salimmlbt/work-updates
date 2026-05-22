@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
@@ -25,9 +26,31 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { Loader2, Pencil, User, ChevronDown, MapPin, Navigation, Check, Building2, Globe, Lock, Wallet, Clock } from 'lucide-react'
+
+import {
+  Loader2,
+  Pencil,
+  ChevronDown,
+  Trash2,
+  MapPin,
+  Navigation,
+  Check,
+  Building2,
+  Globe,
+  Lock,
+  Wallet,
+  User as UserIcon
+} from 'lucide-react'
+
 import { useToast } from '@/hooks/use-toast'
-import type { Role, Team, Profile, OfficeLocation, PermittedLocation } from '@/lib/types'
+import type {
+  Role,
+  Team,
+  Profile,
+  OfficeLocation,
+  PermittedLocation
+} from '@/lib/types'
+
 import { addUser } from './actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
@@ -223,61 +246,87 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="sm:max-w-4xl w-[95vw] h-[92vh] max-h-[92vh] p-0 rounded-[2.5rem] md:rounded-[3rem] bg-zinc-950 border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden">
-          <DialogHeader className="p-8 md:p-10 pb-5 shrink-0 border-b border-white/5">
-            <DialogTitle className="text-2xl md:text-3xl font-black tracking-tight text-white uppercase">Invite Studio Member</DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium">Onboard a new professional to the FALAQ workspace infrastructure.</DialogDescription>
+        <DialogContent
+          className="
+            w-[95vw]
+            max-w-5xl
+            h-[92vh]
+            max-h-[92vh]
+            p-0
+            rounded-[2rem]
+            md:rounded-[3rem]
+            bg-[rgba(10,10,15,0.96)]
+            backdrop-blur-2xl
+            border
+            border-white/10
+            shadow-[0_25px_80px_rgba(0,0,0,0.85)]
+            flex
+            flex-col
+            overflow-hidden
+            overflow-x-hidden
+          "
+        >
+          <DialogHeader className="shrink-0 border-b border-white/5 px-5 md:px-10 pt-8 pb-5">
+            <DialogTitle className="text-2xl md:text-3xl font-black tracking-tight text-white uppercase break-words">Invite Studio Member</DialogTitle>
+            <DialogDescription className="text-zinc-500 font-medium break-words">Onboard a new professional to the FALAQ workspace infrastructure.</DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 px-8 md:px-10 py-4 custom-scrollbar bg-black/20">
-              <form id="add-user-form" onSubmit={handleAddUser} className="space-y-10 pb-12">
-                 <div className="flex flex-col md:flex-row items-center gap-8 bg-white/[0.03] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
-                    <div className="relative group">
-                      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
-                      <Avatar className="h-32 w-32 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105">
-                        <AvatarImage src={avatarPreview ?? undefined} />
-                        <AvatarFallback className="bg-zinc-900 text-zinc-700"><User className="h-16 w-16" /></AvatarFallback>
-                      </Avatar>
-                      <button type="button" className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => fileInputRef.current?.click()}>
-                        <Pencil className="h-5 w-5" />
-                      </button>
+          <ScrollArea className="flex-1 min-h-0 overflow-x-hidden">
+            <div className="w-full overflow-x-hidden px-5 md:px-10 py-5">
+              <form id="add-user-form" onSubmit={handleAddUser} className="w-full min-w-0 space-y-10 pb-12">
+                 <div className="space-y-6 min-w-0">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <UserIcon className="h-4 w-4 shrink-0 text-sky-400" />
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identity Statement</h3>
                     </div>
-                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Name</Label>
-                            <Input name="name" value={formState.name} onChange={handleInputChange} placeholder="Enter full name" className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4" required />
+                    <div className="flex flex-col lg:flex-row items-start gap-8 bg-white/[0.03] p-5 md:p-8 rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden">
+                        <div className="relative group shrink-0 mx-auto lg:mx-0">
+                          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
+                          <Avatar className="h-32 w-32 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105">
+                            <AvatarImage src={avatarPreview ?? undefined} />
+                            <AvatarFallback className="bg-zinc-900 text-zinc-700"><UserIcon className="h-16 w-16" /></AvatarFallback>
+                          </Avatar>
+                          <button type="button" className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => fileInputRef.current?.click()}>
+                            <Pencil className="h-5 w-5" />
+                          </button>
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Email Username</Label>
-                            <div className="flex items-center group">
-                                <Input name="email" value={formState.email} onChange={handleInputChange} placeholder="your.name" className="h-12 rounded-r-none bg-white/5 border-white/10 text-white rounded-l-xl font-bold px-4" required />
-                                <span className="inline-flex h-12 items-center px-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-xl">@falaq.com</span>
+                        <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2 min-w-0">
+                                <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Name</Label>
+                                <Input name="name" value={formState.name} onChange={handleInputChange} placeholder="Enter full name" className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4" required />
+                            </div>
+                            <div className="space-y-2 min-w-0">
+                                <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Email Username</Label>
+                                <div className="flex items-center group">
+                                    <Input name="email" value={formState.email} onChange={handleInputChange} placeholder="your.name" className="h-12 rounded-r-none bg-white/5 border-white/10 text-white rounded-l-xl font-bold px-4" required />
+                                    <span className="inline-flex h-12 items-center px-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-xl">@falaq.com</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                  </div>
+                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3"><Lock className="h-4 w-4 text-purple-400" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Access Statement</h3></div>
-                    <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/10 space-y-6">
-                      <div className="space-y-2">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 min-w-0">
+                  <div className="space-y-6 min-w-0">
+                    <div className="flex items-center gap-3"><Lock className="h-4 w-4 text-purple-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Access Statement</h3></div>
+                    <div className="bg-white/[0.03] p-5 md:p-6 rounded-[2rem] border border-white/10 space-y-6 overflow-hidden">
+                      <div className="space-y-2 min-w-0">
                         <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Security Role</Label>
                         <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required>
-                          <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4"><SelectValue placeholder="Select a role" /></SelectTrigger>
+                          <SelectTrigger className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-200"><SelectValue placeholder="Select a role" /></SelectTrigger>
                           <SelectContent className="bg-zinc-900 border-zinc-800 text-white">{roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-2 min-w-0">
                         <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Assigned Teams</Label>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-300">
+                            <Button variant="outline" className="w-full min-w-0 justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-300">
                               <span className="truncate">{formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Selected` : "Select teams"}</span>
-                              <ChevronDown className="h-4 w-4 opacity-50" />
+                              <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-[300px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
+                          <DropdownMenuContent align="start" className="w-[calc(100vw-80px)] max-w-[320px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
                             <ScrollArea className="h-60">{teams.map(team => <DropdownMenuCheckboxItem key={team.id} checked={formState.teamIds.includes(team.id)} onCheckedChange={() => handleTeamSelect(team.id)} onSelect={(e) => e.preventDefault()}>{team.name}</DropdownMenuCheckboxItem>)}</ScrollArea>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -285,11 +334,11 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                     </div>
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3"><Wallet className="h-4 w-4 text-emerald-400" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Finance & Shift</h3></div>
-                    <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/10 space-y-6">
-                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Monthly Salary (INR)</Label><Input name="monthlySalary" type="number" placeholder="Enter amount" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-black px-4 text-emerald-400" /></div>
-                      <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-6 min-w-0">
+                    <div className="flex items-center gap-3"><Wallet className="h-4 w-4 text-emerald-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Finance & Shift</h3></div>
+                    <div className="bg-white/[0.03] p-5 md:p-6 rounded-[2rem] border border-white/10 space-y-6 overflow-hidden">
+                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Monthly Salary (INR)</Label><Input name="monthlySalary" type="number" placeholder="Enter amount" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-black px-4 text-emerald-400" /></div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Check In</Label><Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-sky-400" required /></div>
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Check Out</Label><Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-rose-400" required /></div>
                       </div>
@@ -297,34 +346,34 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                   </div>
                 </div>
 
-                <div className="space-y-8 pt-6">
-                    <div className="flex items-center justify-between bg-white/[0.03] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
-                        <div className="flex items-center gap-6">
-                            <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-lg", formState.geofencing_enabled ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-600")}><MapPin className="h-7 w-7" /></div>
-                            <div><h4 className="text-xl font-black text-white uppercase tracking-tight">Proximity Protocols</h4><p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Enforce location-based attendance tracking</p></div>
+                <div className="space-y-8 min-w-0">
+                    <div className="flex items-center justify-between bg-white/[0.03] p-5 md:p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+                        <div className="flex items-center gap-6 min-w-0">
+                            <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-lg shrink-0", formState.geofencing_enabled ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-600")}><MapPin className="h-7 w-7" /></div>
+                            <div className="min-w-0"><h4 className="text-xl font-black text-white uppercase tracking-tight truncate">Proximity Protocols</h4><p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5 truncate">Enforce location-based attendance tracking</p></div>
                         </div>
-                        <Switch checked={formState.geofencing_enabled} onCheckedChange={(val) => setFormState(p => ({ ...p, geofencing_enabled: val }))} className="scale-125 data-[state=checked]:bg-emerald-500" />
+                        <Switch checked={formState.geofencing_enabled} onCheckedChange={(val) => setFormState(p => ({ ...p, geofencing_enabled: val }))} className="scale-125 data-[state=checked]:bg-emerald-500 shrink-0" />
                     </div>
 
                     {formState.geofencing_enabled && (
-                        <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-500">
-                             <div className="space-y-4">
+                        <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-500 min-w-0">
+                             <div className="space-y-4 min-w-0">
                                 <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 ml-2">Permitted Office Zones</Label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {officeLocations.map(office => {
                                         const isSelected = formState.permitted_locations.some(l => l.id === office.id);
                                         return (
-                                            <div key={office.id} onClick={() => handleOfficeZoneToggle(office)} className={cn("flex items-center justify-between p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300", isSelected ? "bg-sky-500/10 border-sky-500/40 shadow-lg" : "bg-white/[0.02] border-white/5 opacity-60 hover:opacity-100")}>
-                                                <div className="flex items-center gap-4"><Building2 className={cn("h-5 w-5", isSelected ? "text-sky-400" : "text-zinc-600")} /><div><p className={cn("font-bold text-sm", isSelected ? "text-white" : "text-zinc-400")}>{office.name}</p><p className="text-[9px] font-bold text-zinc-600 uppercase tracking-tighter">{office.radius}m Radius</p></div></div>
-                                                {isSelected && <Check className="h-5 w-5 text-sky-400" />}
+                                            <div key={office.id} onClick={() => handleOfficeZoneToggle(office)} className={cn("flex items-center justify-between p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 min-w-0", isSelected ? "bg-sky-500/10 border-sky-500/40 shadow-lg" : "bg-white/[0.02] border-white/5 opacity-60 hover:opacity-100")}>
+                                                <div className="flex items-center gap-4 min-w-0"><Building2 className={cn("h-5 w-5 shrink-0", isSelected ? "text-sky-400" : "text-zinc-600")} /><div className="min-w-0"><p className={cn("font-bold text-sm truncate", isSelected ? "text-white" : "text-zinc-400")}>{office.name}</p><p className="text-[9px] font-bold text-zinc-600 uppercase tracking-tighter truncate">{office.radius}m Radius</p></div></div>
+                                                {isSelected && <Check className="h-5 w-5 text-sky-400 shrink-0" />}
                                             </div>
                                         )
                                     })}
                                 </div>
                             </div>
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between px-2"><div className="flex items-center gap-3"><Globe className={cn("h-4 w-4", formState.latitude ? "text-amber-400" : "text-zinc-600")} /><span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">On-Site / Custom Site</span></div></div>
-                                <div className="space-y-8 bg-white/[0.02] p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+                            <div className="space-y-6 min-w-0">
+                                <div className="flex items-center justify-between px-2"><div className="flex items-center gap-3 min-w-0"><Globe className={cn("h-4 w-4 shrink-0", formState.latitude ? "text-amber-400" : "text-zinc-600")} /><span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 truncate">On-Site / Custom Site</span></div></div>
+                                <div className="space-y-8 bg-white/[0.02] p-5 md:p-8 rounded-[2rem] border border-white/10 shadow-2xl min-w-0">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Latitude</Label><Input name="latitude" value={formState.latitude} onChange={handleInputChange} className="h-10 bg-zinc-950 border-white/5 text-amber-400 font-mono text-xs" /></div>
                                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Longitude</Label><Input name="longitude" value={formState.longitude} onChange={handleInputChange} className="h-10 bg-zinc-950 border-white/5 text-amber-400 font-mono text-xs" /></div>
@@ -339,15 +388,16 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-10 border-t border-white/5">
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Secure Password</Label><Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4" required /></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Password</Label><Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4" required /></div>
+                    <div className="space-y-2 min-w-0"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Secure Password</Label><Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4" required /></div>
+                    <div className="space-y-2 min-w-0"><Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Password</Label><Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4" required /></div>
                 </div>
               </form>
+            </div>
           </ScrollArea>
           
-          <DialogFooter className="p-8 border-t border-white/10 flex flex-col-reverse sm:flex-row gap-6 bg-black/40 backdrop-blur-xl shrink-0">
+          <DialogFooter className="shrink-0 border-t border-white/10 bg-black/40 backdrop-blur-xl px-5 md:px-10 py-5 flex flex-col-reverse sm:flex-row gap-4">
             <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)} className="rounded-2xl h-14 px-10 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-[10px]">Cancel</Button>
-            <Button type="submit" form="add-user-form" disabled={isPending || !isFormValid} className="flex-1 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5 mr-3" />}Send Onboarding Invite</Button>
+            <Button type="submit" form="add-user-form" disabled={isPending || !isFormValid} className="flex-1 min-w-0 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5 mr-3" />}Send Onboarding Invite</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -355,8 +405,8 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); }
       `}</style>
     </>
   )

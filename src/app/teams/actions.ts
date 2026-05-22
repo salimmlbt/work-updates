@@ -132,7 +132,15 @@ export async function addUser(formData: FormData) {
     const workStartTime = formData.get('work_start_time') as string;
     const workEndTime = formData.get('work_end_time') as string;
     const monthlySalaryStr = formData.get('monthly_salary') as string;
+    const latStr = formData.get('latitude') as string;
+    const lonStr = formData.get('longitude') as string;
+    const radStr = formData.get('radius') as string;
+    const geofencing_enabled = formData.get('geofencing_enabled') === 'true';
+    const permitted_locations = formData.get('permitted_locations') as string;
     
+    const latitude = (latStr && latStr.trim() !== '') ? parseFloat(latStr) : null;
+    const longitude = (lonStr && lonStr.trim() !== '') ? parseFloat(lonStr) : null;
+    const radius = (radStr && radStr.trim() !== '') ? parseInt(radStr) : null;
     const monthlySalary = (monthlySalaryStr && monthlySalaryStr.trim() !== '') ? parseFloat(monthlySalaryStr) : null;
     
     let avatarUrl = `https://i.pravatar.cc/150?u=${email}`;
@@ -188,6 +196,11 @@ export async function addUser(formData: FormData) {
         work_start_time: workStartTime,
         work_end_time: workEndTime,
         monthly_salary: monthlySalary,
+        latitude,
+        longitude,
+        radius,
+        geofencing_enabled,
+        permitted_locations: JSON.parse(permitted_locations || '[]'),
       });
       
     if (profileError) {
@@ -238,6 +251,7 @@ export async function updateUser(userId: string, formData: FormData) {
     const lonStr = formData.get('longitude') as string;
     const radStr = formData.get('radius') as string;
     const geofencing_enabled = formData.get('geofencing_enabled') === 'true';
+    const permitted_locations = formData.get('permitted_locations') as string;
     const deleteAvatar = formData.get('delete_avatar') === 'true';
     
     // Robust parsing for numeric fields to avoid NaN insertion errors
@@ -306,6 +320,7 @@ export async function updateUser(userId: string, formData: FormData) {
             longitude,
             radius,
             geofencing_enabled,
+            permitted_locations: JSON.parse(permitted_locations || '[]'),
         })
         .eq('id', userId)
         .select('full_name, avatar_url, roles(*)')
