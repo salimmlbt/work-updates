@@ -4,7 +4,6 @@ import { createServerClient } from '@/lib/supabase/server';
 import ClientLayout from './client-layout';
 import type { Profile } from '@/lib/types';
 import { type Metadata } from 'next';
-import { PageLoader } from '@/components/page-loader';
 import { ClientCacheProvider } from './client-cache';
 import { Inter } from 'next/font/google';
 
@@ -57,7 +56,6 @@ export default async function RootLayout({
         className={cn("min-h-screen bg-background font-body font-sans antialiased text-foreground")} 
         suppressHydrationWarning
       >
-        <PageLoader />
         <ClientCacheProvider>
           <ClientLayout
             isAuthenticated={isAuthenticated}

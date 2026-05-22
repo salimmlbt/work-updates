@@ -17,6 +17,11 @@ import { Button } from '@/components/ui/button';
 import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import dynamic from 'next/dynamic';
+
+const PageLoader = dynamic(() => import('@/components/page-loader').then(mod => mod.PageLoader), { 
+  ssr: false 
+});
 
 export default function ClientLayout({
   children,
@@ -213,7 +218,8 @@ export default function ClientLayout({
   }, [pathname]);
 
   useEffect(() => {
-    const supabase = createClient();
+    const createSupabaseClient = () => createClient();
+    const supabase = createSupabaseClient();
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       const newIsAuthenticated = !!session;
       setIsAuthenticated(newIsAuthenticated);
@@ -261,6 +267,7 @@ export default function ClientLayout({
 
   return (
     <TooltipProvider>
+      <PageLoader />
       <div className="flex min-h-screen w-full bg-background">
         {showNav && (
           <>
