@@ -8,6 +8,11 @@ export type Profile = Omit<DB['public']['Tables']['profiles']['Row'], 'role_id'>
     roles: Role | null;
     teams: { teams: Team | null }[];
     designation?: string | null;
+    // Location-based attendance fields
+    latitude?: number | null;
+    longitude?: number | null;
+    radius?: number | null;
+    geofencing_enabled?: boolean;
 };
 export type Role = DB['public']['Tables']['roles']['Row'];
 export type Team = DB['public']['Tables']['teams']['Row'];

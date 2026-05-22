@@ -1,4 +1,3 @@
-
 import { createServerClient } from '@/lib/supabase/server';
 import {
   Card,
@@ -12,6 +11,7 @@ import { SetTimesForm } from './set-times-form';
 import IndustryTypes from './industry-types';
 import WorkTypes from './work-types';
 import type { Industry, WorkType, WorkTypeStatusConfig } from '@/lib/types';
+import { GeofencingToggle } from './geofencing-toggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,11 +21,13 @@ export default async function AccessibilityPage() {
     const [
         { data: lunchSetting },
         { data: statusConfigSetting },
+        { data: geofencingSetting },
         { data: industriesData, error: industriesError },
         { data: workTypesData, error: workTypesError },
     ] = await Promise.all([
         supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
         supabase.from('app_settings').select('value').eq('key', 'work_type_status_config').single(),
+        supabase.from('app_settings').select('value').eq('key', 'global_geofencing_enabled').single(),
         supabase.from('industries').select('*'),
         supabase.from('work_types').select('*'),
     ]);
@@ -35,6 +37,7 @@ export default async function AccessibilityPage() {
 
     const lunchStartTime = (lunchSetting?.value as string | undefined) || '13:00';
     const workTypeStatusConfig = (statusConfigSetting?.value as WorkTypeStatusConfig | undefined) || {};
+    const globalGeofencingEnabled = geofencingSetting?.value === true;
 
   return (
     <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f] text-zinc-100">
@@ -52,10 +55,10 @@ export default async function AccessibilityPage() {
             System Times
           </TabsTrigger>
           <TabsTrigger
-            value="cache-timer"
+            value="security"
             className="flex-1 rounded-full h-9 text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-zinc-950"
           >
-            Optimization
+            Security & Location
           </TabsTrigger>
           <TabsTrigger
             value="types"
@@ -79,18 +82,25 @@ export default async function AccessibilityPage() {
             </Card>
         </TabsContent>
         
-        <TabsContent value="cache-timer" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <TabsContent value="security" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Card className="border border-white/10 bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-10">
             <CardHeader className="p-0 mb-10">
-              <CardTitle className="text-2xl font-black text-white tracking-tight">System Cache</CardTitle>
+              <CardTitle className="text-2xl font-black text-white tracking-tight">Access Control</CardTitle>
               <CardDescription className="text-zinc-500 font-medium">
-                Manage data persistence and live-sync intervals for the dashboard.
+                Manage global geofencing and proximity-based attendance protocols.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-               <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
-                <p className="text-zinc-600 font-black uppercase tracking-widest text-[10px]">Cache management protocols under construction</p>
-              </div>
+               <div className="max-w-md space-y-8">
+                  <GeofencingToggle initialValue={globalGeofencingEnabled} />
+                  
+                  <div className="p-6 rounded-[2rem] bg-sky-500/5 border border-sky-500/10">
+                    <h4 className="text-sky-400 font-black uppercase tracking-widest text-[10px] mb-2">Protocol Note</h4>
+                    <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+                        When Global Geofencing is enabled, all users (except those with exceptions) must be within their assigned radius to log attendance. User-level coordinates are managed in the Team & Users section.
+                    </p>
+                  </div>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>

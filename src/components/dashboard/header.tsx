@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -18,12 +17,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from '../ui/skeleton';
-import { cn } from '@/lib/utils';
+import { cn, calculateDistance } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { differenceInSeconds, parse, isAfter } from 'date-fns';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPinOff } from 'lucide-react';
 
 const formatTime = (totalSeconds: number) => {
   const hours = Math.floor(totalSeconds / 3600);
@@ -44,7 +43,6 @@ export default function Header() {
   const [lateReason, setLateReason] = useState('');
   const [userProfile, setUserProfile] = useState<any>(null);
 
-  // Greeting State
   const [showGreeting, setShowGreeting] = useState(false);
   const [greetingText, setGreetingText] = useState('');
   const [greetingMode, setGreetingType] = useState<'in' | 'out'>('in');
@@ -53,6 +51,7 @@ export default function Header() {
 
   const [showLunchButton, setShowLunchButton] = useState(false);
   const [lunchTimeSetting, setLunchTimeSetting] = useState<any>({ default: '13:00', friday: '13:00' });
+  const [globalGeofencingEnabled, setGlobalGeofencingEnabled] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -64,7 +63,6 @@ export default function Header() {
     setHasMounted(true);
   }, []);
 
-  // Initial fetch + listen for settings updates
   useEffect(() => {
     if (!hasMounted) return;
 
@@ -75,7 +73,7 @@ export default function Header() {
         return;
       }
 
-      const [attendanceRes, settingsRes, profileRes] = await Promise.all([
+      const [attendanceRes, settingsRes, geofenceRes, profileRes] = await Promise.all([
         supabase.from('attendance').select('*')
           .eq('user_id', user.id)
           .eq('date', new Date().toISOString().split('T')[0])
@@ -83,12 +81,17 @@ export default function Header() {
         supabase.from('app_settings').select('value')
           .eq('key', 'lunch_start_time')
           .single(),
+        supabase.from('app_settings').select('value')
+          .eq('key', 'global_geofencing_enabled')
+          .single(),
         supabase.from('profiles').select('*').eq('id', user.id).single()
       ]);
 
       if (profileRes.data) {
         setUserProfile(profileRes.data);
       }
+
+      setGlobalGeofencingEnabled(geofenceRes.data?.value === true);
 
       const { data: attendanceData } = attendanceRes;
       if (attendanceData) {
@@ -126,177 +129,55 @@ export default function Header() {
     };
 
     fetchInitialData();
-
-    const channel = supabase
-      .channel('app-settings-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'app_settings', filter: `key=eq.lunch_start_time` },
-        (payload) => {
-          const rawValue = payload.new.value;
-          if (rawValue && typeof rawValue === 'string' && rawValue.trim().startsWith('{')) {
-              try {
-                  setLunchTimeSetting(JSON.parse(rawValue));
-              } catch (e) {
-                  setLunchTimeSetting({ default: '13:00', friday: '13:00' });
-              }
-          } else if (rawValue && typeof rawValue === 'string' && rawValue.trim() !== '') {
-              setLunchTimeSetting({ default: rawValue, friday: rawValue });
-          } else if (rawValue && typeof rawValue === 'object') {
-              setLunchTimeSetting(rawValue);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
   }, [supabase, hasMounted]);
 
-  useEffect(() => {
-    if (!attendanceRecord?.id) return;
+  const verifyLocation = async (): Promise<boolean> => {
+    // Check if geofencing is enabled globally or for this specific user
+    const isGeofenceActive = globalGeofencingEnabled || userProfile?.geofencing_enabled;
+    
+    if (!isGeofenceActive) return true;
 
-    const channel = supabase
-      .channel('realtime-attendance')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `id=eq.${attendanceRecord.id}` }, (payload) => {
-        if (payload.new) {
-          setAttendanceRecord(payload.new);
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [attendanceRecord?.id]);
-
-  useEffect(() => {
-    if (!attendanceRecord?.check_in) {
-      setElapsedSeconds(0);
-      return;
+    if (!userProfile?.latitude || !userProfile?.longitude) {
+      console.warn("Geofencing enabled but no coordinates set for user.");
+      return true; // Fail safe if admin hasn't set coordinates
     }
 
-    const calculateWorkedSeconds = () => {
-      const checkInTime = new Date(attendanceRecord.check_in);
-      const now = new Date();
-
-      let totalElapsed = differenceInSeconds(now, checkInTime);
-
-      if (attendanceRecord.lunch_out && attendanceRecord.lunch_in) {
-        const lunchOutTime = new Date(attendanceRecord.lunch_out);
-        const lunchInTime = new Date(attendanceRecord.lunch_in);
-        totalElapsed -= differenceInSeconds(lunchInTime, lunchOutTime);
-      } else if (attendanceRecord.lunch_out && !attendanceRecord.lunch_in) {
-        const lunchOutTime = new Date(attendanceRecord.lunch_out);
-        totalElapsed = differenceInSeconds(lunchOutTime, checkInTime);
-      } else if (attendanceRecord.check_out) {
-        const checkOutTime = new Date(attendanceRecord.check_out);
-        totalElapsed = differenceInSeconds(checkOutTime, checkInTime);
-        if (attendanceRecord.lunch_out && attendanceRecord.lunch_in) {
-          const lunchOutTime = new Date(attendanceRecord.lunch_out);
-          const lunchInTime = new Date(attendanceRecord.lunch_in);
-          totalElapsed -= differenceInSeconds(lunchInTime, lunchOutTime);
-        }
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        toast({ title: "Unsupported Browser", description: "Your browser doesn't support location services.", variant: "destructive" });
+        resolve(false);
+        return;
       }
 
-      return Math.max(0, totalElapsed);
-    };
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const distance = calculateDistance(
+            position.coords.latitude,
+            position.coords.longitude,
+            userProfile.latitude,
+            userProfile.longitude
+          );
 
-    setElapsedSeconds(calculateWorkedSeconds());
+          const radius = userProfile.radius || 100;
 
-    let interval: NodeJS.Timeout | null = null;
-
-    if (isTimerRunning && !attendanceRecord.check_out) {
-      interval = setInterval(() => {
-        setElapsedSeconds(calculateWorkedSeconds());
-      }, 1000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [
-    isTimerRunning,
-    attendanceRecord?.check_in,
-    attendanceRecord?.lunch_out,
-    attendanceRecord?.lunch_in,
-    attendanceRecord?.check_out
-  ]);
-
-  useEffect(() => {
-    if (isLoading || !hasMounted) return;
-
-    const checkTime = () => {
-      const now = new Date();
-      const isFriday = now.getDay() === 5;
-      const targetTimeStr = isFriday ? (lunchTimeSetting.friday || '13:00') : (lunchTimeSetting.default || '13:00');
-      
-      const [hours, minutes] = targetTimeStr.split(':').map(Number);
-      setShowLunchButton(now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= minutes));
-    };
-
-    checkTime();
-    const interval = setInterval(checkTime, 30000);
-    return () => clearInterval(interval);
-  }, [isLoading, lunchTimeSetting, hasMounted]);
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-
-  const playTone = (type: 'in' | 'out') => {
-    if (typeof window === 'undefined') return;
-    const audio = new Audio(type === 'in' ? '/checkin-tone.mp3' : '/checkout-tone.mp3');
-    audio.play().catch(e => console.warn("Tone play blocked:", e));
-  };
-
-  const triggerGreeting = (name: string, audioUri?: string | null) => {
-    const greeting = getGreeting();
-    setGreetingText(greeting);
-    setGreetingType('in');
-    
-    // START Visual Animation + Audio together
-    setShowGreeting(true);
-    playTone('in');
-    
-    if (audioUri) {
-      const audio = new Audio(audioUri);
-      audio.play().catch(e => console.warn("AI Voice play blocked:", e));
-    } else {
-      // Fallback
-      const utterance = new SpeechSynthesisUtterance(`${greeting}, ${name}`);
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
-    
-    setTimeout(() => {
-      setShowGreeting(false);
-    }, 4500);
-  };
-
-  const triggerCheckoutGreeting = (name: string, audioUri?: string | null) => {
-    setGreetingText('See you Next Day');
-    setGreetingType('out');
-    
-    // START Visual Animation + Audio together
-    setShowGreeting(true);
-    playTone('out');
-    
-    if (audioUri) {
-      const audio = new Audio(audioUri);
-      audio.play().catch(e => console.warn("AI Voice play blocked:", e));
-    } else {
-      // Fallback
-      const utterance = new SpeechSynthesisUtterance(`See you next day, ${name}`);
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
-    
-    setTimeout(() => {
-      setShowGreeting(false);
-    }, 4500);
+          if (distance <= radius) {
+            resolve(true);
+          } else {
+            toast({ 
+              title: "Access Denied", 
+              description: `You are not within the permitted workspace boundary (${Math.round(distance)}m away).`,
+              variant: "destructive" 
+            });
+            resolve(false);
+          }
+        },
+        (error) => {
+          toast({ title: "Location Error", description: "Please enable location services to proceed.", variant: "destructive" });
+          resolve(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
   };
 
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn', reason?: string) => {
@@ -304,22 +185,25 @@ export default function Header() {
     setIsLateReasonOpen(false);
     setIsActionPending(true);
 
+    // Step 1: Verify Location
+    const isLocationValid = await verifyLocation();
+    if (!isLocationValid) {
+        setIsActionPending(false);
+        return;
+    }
+
     const firstName = userProfile?.full_name?.split(' ')[0] || '';
     let audioUri = null;
 
-    // PRE-FETCH AI VOICE if needed so we can trigger audio + animation together
     if (action === 'checkIn' || action === 'checkOut') {
       const greeting = action === 'checkIn' ? getGreeting() : 'See you next day';
       const text = `${greeting}, ${firstName}`;
       try {
         const voiceResult = await getVoiceGreeting(text);
         audioUri = voiceResult.data;
-      } catch (e) {
-        console.warn("AI Greeting fetch failed, will use fallback.");
-      }
+      } catch (e) {}
     }
 
-    // Now trigger the "Premium" experience (Animation + Voice starting together)
     if (action === 'checkIn') {
       triggerGreeting(firstName, audioUri);
     } else if (action === 'checkOut') {
@@ -337,7 +221,6 @@ export default function Header() {
     setIsTimerRunning(action === 'checkIn' || action === 'lunchIn');
     setStatus(optimisticStateMap[action]);
 
-    // Handle database background logic
     let result;
     if (action === 'checkIn') {
         result = await checkIn(reason);
@@ -360,6 +243,52 @@ export default function Header() {
     }
     
     setIsActionPending(false);
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const playTone = (type: 'in' | 'out') => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio(type === 'in' ? '/checkin-tone.mp3' : '/checkout-tone.mp3');
+    audio.play().catch(e => console.warn("Tone play blocked:", e));
+  };
+
+  const triggerGreeting = (name: string, audioUri?: string | null) => {
+    const greeting = getGreeting();
+    setGreetingText(greeting);
+    setGreetingType('in');
+    setShowGreeting(true);
+    playTone('in');
+    if (audioUri) {
+      const audio = new Audio(audioUri);
+      audio.play().catch(e => console.warn("AI Voice play blocked:", e));
+    } else {
+      const utterance = new SpeechSynthesisUtterance(`${greeting}, ${name}`);
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+    setTimeout(() => setShowGreeting(false), 4500);
+  };
+
+  const triggerCheckoutGreeting = (name: string, audioUri?: string | null) => {
+    setGreetingText('See you Next Day');
+    setGreetingType('out');
+    setShowGreeting(true);
+    playTone('out');
+    if (audioUri) {
+      const audio = new Audio(audioUri);
+      audio.play().catch(e => console.warn("AI Voice play blocked:", e));
+    } else {
+      const utterance = new SpeechSynthesisUtterance(`See you next day, ${name}`);
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+    setTimeout(() => setShowGreeting(false), 4500);
   };
 
   const handleMainButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -411,7 +340,6 @@ export default function Header() {
     );
   }
 
-  // Hide the header entirely if the session is complete and no greeting is showing
   if (status === 'session-complete' && !showGreeting) {
     return null;
   }

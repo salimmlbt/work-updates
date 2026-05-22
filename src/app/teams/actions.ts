@@ -1,4 +1,3 @@
-
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server'
@@ -64,8 +63,6 @@ export async function deleteTeam(id: string) {
     const { error: deleteError } = await supabase.from('teams').delete().eq('id', id)
 
     if (deleteError) {
-        // Re-assign users if delete fails? Or handle it differently.
-        // For now, just return the error.
         return { error: `Failed to delete team: ${deleteError.message}` }
     }
 
@@ -107,7 +104,7 @@ export async function updateRole(id: string, name: string, permissions: Record<s
 
 export async function deleteRole(id: string) {
     const supabase = await createServerClient()
-    const { error } = await supabase.from('roles').delete().eq('id', id)
+    const { error = null } = await supabase.from('roles').delete().eq('id', id)
 
     if (error) {
         return { error: error.message }
@@ -159,11 +156,10 @@ export async function addUser(formData: FormData) {
     }
 
 
-    // 1. Create the user in Supabase Auth using the admin client
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,
-      email_confirm: true, // Auto-confirm email
+      email_confirm: true,
       user_metadata: {
         full_name: fullName,
         avatar_url: avatarUrl,
@@ -178,7 +174,6 @@ export async function addUser(formData: FormData) {
       return { error: "User could not be created in Auth."}
     }
     
-    // 2. Manually insert the profile record
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
@@ -193,7 +188,6 @@ export async function addUser(formData: FormData) {
       });
       
     if (profileError) {
-        // If creating the profile fails, delete the auth user to avoid orphans.
         if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
@@ -201,23 +195,19 @@ export async function addUser(formData: FormData) {
     }
 
 
-    // 3. Link user to teams
     if (teamIds.length > 0) {
       const teamLinks = teamIds.map(team_id => ({ profile_id: authData.user!.id, team_id }));
       const { error: teamLinkError } = await supabase.from('profile_teams').insert(teamLinks);
       if (teamLinkError) {
-        // Rollback profile and auth user creation
          if (supabaseAdmin) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
-        // Also delete the profile we just created
         await supabase.from('profiles').delete().eq('id', authData.user.id);
         
         return { error: `Failed to link user to teams: ${teamLinkError.message}` };
       }
     }
     
-    // 4. Fetch the complete profile data to return to the client
     const { data: finalProfileData, error: finalFetchError } = await supabase.from('profiles').select('*, roles(*), teams:profile_teams(teams(*))').eq('id', authData.user.id).single();
 
     if (finalFetchError) {
@@ -241,6 +231,10 @@ export async function updateUser(userId: string, formData: FormData) {
     const workStartTime = formData.get('work_start_time') as string;
     const workEndTime = formData.get('work_end_time') as string;
     const monthlySalary = formData.get('monthly_salary') as string;
+    const latitude = formData.get('latitude') ? parseFloat(formData.get('latitude') as string) : null;
+    const longitude = formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null;
+    const radius = formData.get('radius') ? parseInt(formData.get('radius') as string) : null;
+    const geofencing_enabled = formData.get('geofencing_enabled') === 'true';
     const deleteAvatar = formData.get('delete_avatar') === 'true';
     
     const { data: currentProfile, error: fetchError } = await supabase
@@ -290,7 +284,6 @@ export async function updateUser(userId: string, formData: FormData) {
         avatarUrl = publicUrlData.publicUrl;
     }
 
-    // Update profile in 'profiles' table
     const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -300,6 +293,10 @@ export async function updateUser(userId: string, formData: FormData) {
             work_start_time: workStartTime,
             work_end_time: workEndTime,
             monthly_salary: monthlySalary ? parseFloat(monthlySalary) : null,
+            latitude,
+            longitude,
+            radius,
+            geofencing_enabled,
         })
         .eq('id', userId)
         .select('full_name, avatar_url, roles(*)')
@@ -309,7 +306,6 @@ export async function updateUser(userId: string, formData: FormData) {
         return { error: `Failed to update user profile: ${profileError.message}` };
     }
     
-    // Update team memberships
     const { error: deleteTeamsError } = await supabase.from('profile_teams').delete().eq('profile_id', userId);
     if (deleteTeamsError) {
       return { error: `Failed to update teams: ${deleteTeamsError.message}` };
@@ -371,7 +367,6 @@ export async function updateUserRole(userId: string, roleId: string) {
 export async function updateUserTeams(userId: string, teamIds: string[]) {
   const supabase = await createServerClient()
   
-  // First, remove all existing team associations for the user
   const { error: deleteError } = await supabase
     .from('profile_teams')
     .delete()
@@ -381,7 +376,6 @@ export async function updateUserTeams(userId: string, teamIds: string[]) {
     return { error: `Failed to remove old teams: ${deleteError.message}` };
   }
 
-  // Then, add the new team associations
   if (teamIds.length > 0) {
     const newLinks = teamIds.map(team_id => ({ profile_id: userId, team_id }));
     const { error: insertError } = await supabase.from('profile_teams').insert(newLinks);
@@ -403,7 +397,6 @@ export async function updateUserIsArchived(userId: string, isArchived: boolean) 
     return { error: "Admin client not initialized. Service key may be missing." };
   }
 
-  // 1. Update the is_archived status in the profiles table
   const { error: profileError } = await supabase
     .from('profiles')
     .update({ is_archived: isArchived })
@@ -414,7 +407,6 @@ export async function updateUserIsArchived(userId: string, isArchived: boolean) 
     return { error: `Could not update user status: ${profileError.message}` };
   }
 
-  // 2. Ban or un-ban the user in Supabase Auth
   const oneHundredYearsInHours = '876000h';
   const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
     userId,
@@ -425,7 +417,6 @@ export async function updateUserIsArchived(userId: string, isArchived: boolean) 
 
   if (authError) {
     console.error('Error updating user ban status:', authError);
-    // Revert the profile update
     await supabase.from('profiles').update({ is_archived: !isArchived }).eq('id', userId);
     return { error: `Could not update user auth status: ${authError.message}` };
   }
@@ -442,22 +433,18 @@ export async function deleteUserPermanently(userId: string) {
         return { error: "Admin client not initialized. Cannot delete user." };
     }
 
-    // First delete from auth
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (authError) {
         return { error: `Failed to permanently delete user from auth: ${authError.message}` };
     }
     
-    // Then delete from profiles table. This is necessary if ON DELETE CASCADE is not set on the foreign key.
     const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', userId);
 
     if (profileError) {
-        // This is a problematic state, the auth user is gone but the profile remains.
-        // Logging it is important.
         console.error(`CRITICAL: Auth user ${userId} deleted but profile deletion failed: ${profileError.message}`);
         return { error: `User deleted from auth, but failed to delete profile: ${profileError.message}` };
     }
@@ -504,7 +491,7 @@ export async function createTask(taskData: {
         .insert({
             ...taskData,
             is_deleted: false,
-            created_by: user.id, // Add the creator's ID
+            created_by: user.id,
         })
         .select('*, profiles(*), projects(*), clients(*)')
         .single();
@@ -517,7 +504,3 @@ export async function createTask(taskData: {
     revalidatePath('/scheduler');
     return { data };
 }
-
-    
-
-    
