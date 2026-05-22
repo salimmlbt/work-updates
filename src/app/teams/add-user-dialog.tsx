@@ -26,7 +26,7 @@ import {
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
-import { Loader2, Pencil, User, ChevronDown, X } from 'lucide-react'
+import { Loader2, Pencil, User, ChevronDown, X, MapPin, Navigation } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Role, Team, Profile } from '@/lib/types'
 import { addUser } from './actions'
@@ -35,6 +35,8 @@ import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { cn, getInitials } from '@/lib/utils'
+import { Switch } from '@/components/ui/switch'
+import { LocationPicker } from '@/components/dashboard/location-picker'
 
 interface AddUserDialogProps {
   isOpen: boolean
@@ -55,10 +57,15 @@ const initialFormState = {
     workStartTime: '',
     workEndTime: '',
     monthlySalary: '',
+    latitude: '',
+    longitude: '',
+    radius: '100',
+    geofencing_enabled: false,
 };
 
 export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: AddUserDialogProps) {
   const [isPending, startTransition] = useTransition();
+  const [isLocating, setIsLocating] = useState(false);
   const [formState, setFormState] = useState(initialFormState);
   const [isFormValid, setIsFormValid] = useState(false);
   const { toast } = useToast();
@@ -105,6 +112,26 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     });
   };
 
+  const handleCaptureLocation = () => {
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormState(prev => ({
+          ...prev,
+          latitude: position.coords.latitude.toString(),
+          longitude: position.coords.longitude.toString(),
+        }));
+        setIsLocating(false);
+        toast({ title: "Location Captured", description: "Coordinates updated to your current location." });
+      },
+      (error) => {
+        setIsLocating(false);
+        toast({ title: "Location Failed", description: error.message, variant: "destructive" });
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -139,6 +166,11 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
     formData.append('team_ids', formState.teamIds.join(','));
     formData.append('work_start_time', formState.workStartTime);
     formData.append('work_end_time', formState.workEndTime);
+    formData.append('latitude', formState.latitude);
+    formData.append('longitude', formState.longitude);
+    formData.append('radius', formState.radius);
+    formData.append('geofencing_enabled', formState.geofencing_enabled.toString());
+
     if(formState.monthlySalary) formData.append('monthly_salary', formState.monthlySalary);
     if (formState.avatar) {
       formData.append('avatar', formState.avatar);
@@ -159,17 +191,18 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Add User</DialogTitle>
-            <DialogDescription>
-              Invite a new user to your workspace.
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0 rounded-[2.5rem] bg-zinc-950 border-white/10 shadow-2xl">
+          <DialogHeader className="p-8 pb-0">
+            <DialogTitle className="text-3xl font-black tracking-tight text-white uppercase">Invite Studio Member</DialogTitle>
+            <DialogDescription className="text-zinc-500 font-medium">
+              Onboard a new professional to the FALAQ workspace infrastructure.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleAddUser}>
-              <div className="space-y-4 py-4">
+          
+          <ScrollArea className="flex-1 p-8 pt-6">
+              <form id="add-user-form" onSubmit={handleAddUser} className="space-y-8">
                  <div className="flex justify-center">
-                    <div className="relative">
+                    <div className="relative group">
                       <input
                         type="file"
                         accept="image/*"
@@ -178,44 +211,48 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                         onChange={handleAvatarChange}
                       />
                       <Avatar
-                        className="h-24 w-24 cursor-pointer"
+                        className="h-28 w-28 cursor-pointer border-2 border-white/10 shadow-2xl transition-all group-hover:scale-105"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <AvatarImage src={avatarPreview ?? undefined} />
                         <AvatarFallback>
-                          <User className="h-12 w-12 text-muted-foreground" />
+                          <User className="h-12 w-12 text-zinc-700" />
                         </AvatarFallback>
                       </Avatar>
                       <button
                         type="button"
-                        className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                        className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" name="name" placeholder="Enter full name" value={formState.name} onChange={handleInputChange} required />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Official Name</Label>
+                        <Input name="name" placeholder="Enter full name" value={formState.name} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Email Username</Label>
+                        <div className="flex items-center group">
+                            <Input name="email" type="text" placeholder="your.name" value={formState.email} onChange={handleInputChange} className="h-12 rounded-r-none bg-white/5 border-white/10 text-white focus-visible:ring-sky-500/50 rounded-l-xl font-bold" required />
+                            <span className="inline-flex h-12 items-center px-4 text-xs font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-xl">
+                            @falaq.com
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="flex items-center">
-                    <Input id="email" name="email" type="text" placeholder="Enter email username" value={formState.email} onChange={handleInputChange} className="rounded-r-none" required />
-                    <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600 h-10">
-                      @falaq.com
-                    </span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Access Role</Label>
                     <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId} required>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold">
                         <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
                         {roles.map(role => (
                           <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                         ))}
@@ -223,17 +260,17 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="team">Team</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Assigned Teams</Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between font-normal">
+                        <Button variant="outline" className="w-full justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold">
                           <span className="truncate">
-                            {formState.teamIds.length > 0 ? `${formState.teamIds.length} team(s) selected` : "Select teams"}
+                            {formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams` : "Select teams"}
                           </span>
                           <ChevronDown className="h-4 w-4 opacity-50" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                      <DropdownMenuContent className="w-[300px] bg-zinc-900 border-zinc-800 text-white shadow-2xl">
                         <ScrollArea className="h-60">
                           {teams.map(team => (
                             <DropdownMenuCheckboxItem
@@ -250,42 +287,103 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                     </DropdownMenu>
                   </div>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="monthlySalary">Salary</Label>
-                    <Input id="monthlySalary" name="monthlySalary" type="number" placeholder="Enter monthly salary" value={formState.monthlySalary} onChange={handleInputChange} />
-                  </div>
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                    <Label htmlFor="workStartTime">Check In Time</Label>
-                    <Input id="workStartTime" name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="workEndTime">Check Out Time</Label>
-                    <Input id="workEndTime" name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} required />
-                  </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Monthly Salary</Label>
+                        <Input name="monthlySalary" type="number" placeholder="INR" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Check In</Label>
+                        <Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Check Out</Label>
+                        <Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                    </div>
                 </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" name="password" type="password" placeholder="Enter password" value={formState.password} onChange={handleInputChange} required />
+
+                {/* Proximity Attendance Section */}
+                <div className="space-y-6 pt-6 border-t border-white/5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-400">
+                                <MapPin className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-white uppercase tracking-tight">Proximity Attendance</h4>
+                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Enforce location-based check-in</p>
+                            </div>
+                        </div>
+                        <Switch 
+                            checked={formState.geofencing_enabled} 
+                            onCheckedChange={(val) => setFormState(p => ({ ...p, geofencing_enabled: val }))}
+                            className="data-[state=checked]:bg-sky-500"
+                        />
+                    </div>
+
+                    {formState.geofencing_enabled && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500 bg-white/[0.02] p-6 rounded-[2rem] border border-white/5">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Latitude</Label>
+                                    <Input name="latitude" value={formState.latitude} onChange={handleInputChange} placeholder="e.g. 25.1234" className="h-11 bg-zinc-950 border-white/5 text-sky-300 font-mono" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Longitude</Label>
+                                    <Input name="longitude" value={formState.longitude} onChange={handleInputChange} placeholder="e.g. 55.5678" className="h-11 bg-zinc-950 border-white/5 text-sky-300 font-mono" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Radius (Meters)</Label>
+                                    <Input name="radius" type="number" value={formState.radius} onChange={handleInputChange} placeholder="100" className="h-11 bg-zinc-950 border-white/5 text-white font-bold" />
+                                </div>
+                            </div>
+
+                            <LocationPicker 
+                              lat={parseFloat(formState.latitude) || null} 
+                              lng={parseFloat(formState.longitude) || null} 
+                              radius={parseInt(formState.radius) || 100}
+                              onLocationChange={(lat, lng) => setFormState(p => ({ ...p, latitude: lat.toString(), longitude: lng.toString() }))}
+                            />
+
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                className="w-full rounded-xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-11"
+                                onClick={handleCaptureLocation}
+                                disabled={isLocating}
+                            >
+                                {isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Navigation className="h-4 w-4 mr-2" />}
+                                Capture Coordinates
+                            </Button>
+                        </div>
+                    )}
                 </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm password" value={formState.confirmPassword} onChange={handleInputChange} required />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Secure Password</Label>
+                        <Input name="password" type="password" placeholder="Min 6 characters" value={formState.password} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirm Credentials</Label>
+                        <Input name="confirmPassword" type="password" placeholder="Repeat password" value={formState.confirmPassword} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold" required />
+                    </div>
                 </div>
-              </div>
-              <DialogFooter className="justify-end sm:justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isPending || !isFormValid}
-                >
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Add User
-                </Button>
-              </DialogFooter>
-          </form>
+              </form>
+          </ScrollArea>
+          
+          <DialogFooter className="p-8 pt-4 border-t border-white/10 flex gap-4">
+            <Button type="button" variant="ghost" onClick={() => handleDialogChange(false)} className="rounded-2xl h-14 px-8 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-[10px]">Cancel</Button>
+            <Button 
+              type="submit" 
+              form="add-user-form"
+              disabled={isPending || !isFormValid}
+              className="flex-1 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40"
+            >
+              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Invitation"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
        <ImageCropperDialog

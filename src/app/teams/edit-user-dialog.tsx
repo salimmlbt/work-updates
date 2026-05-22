@@ -35,6 +35,7 @@ import { ImageCropperDialog } from '@/app/clients/image-cropper-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { cn, getInitials } from '@/lib/utils'
+import { LocationPicker } from '@/components/dashboard/location-picker'
 
 interface EditUserDialogProps {
   isOpen: boolean
@@ -201,7 +202,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     startTransition(async () => {
       const { data, error } = await updateUser(user.id, formData);
       if (error) {
-        // Robust error display for strings
         toast({ 
           title: "Error updating user", 
           description: typeof error === 'string' ? error : (error as any).message || "Unknown error", 
@@ -367,6 +367,14 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                                         <Input name="radius" type="number" value={formState.radius} onChange={handleInputChange} placeholder="100" className="h-11 bg-zinc-950 border-white/5 text-white font-bold" />
                                     </div>
                                 </div>
+
+                                <LocationPicker 
+                                  lat={parseFloat(formState.latitude) || null} 
+                                  lng={parseFloat(formState.longitude) || null} 
+                                  radius={parseInt(formState.radius) || 100}
+                                  onLocationChange={(lat, lng) => setFormState(p => ({ ...p, latitude: lat.toString(), longitude: lng.toString() }))}
+                                />
+
                                 <Button 
                                     type="button" 
                                     variant="outline" 
