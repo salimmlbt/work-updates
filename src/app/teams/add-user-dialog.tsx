@@ -36,7 +36,7 @@ import {
   Check,
   Building2,
   Globe,
-  User,
+  User as UserIcon,
   Lock,
   Wallet
 } from 'lucide-react'
@@ -156,7 +156,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
       (position) => {
         setFormState(prev => ({ ...prev, latitude: position.coords.latitude.toString(), longitude: position.coords.longitude.toString() }));
         setIsLocating(false);
-        toast({ title: "Position Synced" });
+        toast({ title: "Coordinates Updated" });
       },
       (error) => {
         setIsLocating(false);
@@ -226,7 +226,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
             h-[92vh]
             max-h-[92vh]
             p-0
-            rounded-[2rem]
+            rounded-[2.5rem]
             md:rounded-[3rem]
             bg-[rgba(10,10,15,0.96)]
             backdrop-blur-2xl
@@ -250,7 +250,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                  {/* 👤 IDENTITY */}
                  <div className="space-y-6 min-w-0">
                     <div className="flex min-w-0 items-center gap-3">
-                        <User className="h-4 w-4 shrink-0 text-sky-400" />
+                        <UserIcon className="h-4 w-4 shrink-0 text-sky-400" />
                         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identity Statement</h3>
                     </div>
                     <div className="flex flex-col lg:flex-row items-start gap-8 bg-white/[0.03] p-5 md:p-8 rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden">
@@ -327,7 +327,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Radius (m)</Label><Input name="radius" type="number" value={formState.radius} onChange={handleInputChange} className="h-10 bg-zinc-950 border-white/5 text-white font-bold text-xs" /></div>
                                     </div>
                                     <LocationPicker lat={parseFloat(formState.latitude) || null} lng={parseFloat(formState.longitude) || null} radius={parseInt(formState.radius) || 100} onLocationChange={(lat, lng) => setFormState(p => ({ ...p, latitude: lat.toString(), longitude: lng.toString() }))} />
-                                    <Button type="button" variant="outline" className="w-full rounded-xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-12" onClick={handleCaptureLocation} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Navigation className="h-4 w-4 mr-3" />}Sync Current Location</Button>
+                                    <Button type="button" variant="outline" className="w-full rounded-xl border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 font-bold h-12" onClick={handleCaptureLocation} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Navigation className="h-4 w-4 mr-3" />}Sync GPS Coordinates</Button>
                                 </div>
                             </div>
                         </div>
