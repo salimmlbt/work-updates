@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -35,7 +36,6 @@ import { Switch } from '@/components/ui/switch'
 import { cn, getInitials } from '@/lib/utils'
 import { LocationPicker } from '@/components/dashboard/location-picker'
 import { createClient } from '@/lib/supabase/client'
-import { Badge } from '@/components/ui/badge'
 
 interface EditUserDialogProps {
   isOpen: boolean
@@ -236,7 +236,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
     formData.append('geofencing_enabled', formState.geofencing_enabled.toString());
     formData.append('permitted_locations', JSON.stringify(formState.permitted_locations));
 
-    // Handle Custom Zone as old-style top-level fields for backwards compatibility or single main zone
     if (formState.customLocation.enabled) {
         formData.append('latitude', formState.customLocation.latitude);
         formData.append('longitude', formState.customLocation.longitude);
@@ -278,9 +277,8 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
               </DialogDescription>
             </DialogHeader>
             
-            <div className="flex-1 overflow-y-auto px-10 py-2 custom-scrollbar">
+            <ScrollArea className="flex-1 px-10 py-2 custom-scrollbar">
                 <form id="edit-user-form" onSubmit={handleUpdateUser} className="space-y-12 pb-10 pt-4">
-                    {/* Identity Section */}
                     <div className="flex items-center gap-8 bg-white/[0.02] p-8 rounded-[2.5rem] border border-white/5">
                         <div className="relative group">
                             <input
@@ -326,7 +324,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                         </div>
                     </div>
 
-                    {/* Access & Teams */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
                             <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Access Role</Label>
@@ -354,7 +351,9 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                                             <DropdownMenuCheckboxItem
                                                 key={team.id}
                                                 checked={formState.teamIds.includes(team.id)}
-                                                onCheckedChange={() => handleTeamSelect(team.id)}
+                                                onCheckedChange={(checked) => {
+                                                  handleTeamSelect(team.id);
+                                                }}
                                                 onSelect={(e) => e.preventDefault()}
                                             >
                                                 {team.name}
@@ -366,7 +365,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                         </div>
                     </div>
 
-                    {/* Salary & Shifts */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8 rounded-[2.5rem] bg-white/[0.01] border border-white/5">
                         <div className="space-y-3">
                             <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Monthly Salary</Label>
@@ -385,7 +383,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                         </div>
                     </div>
 
-                    {/* Proximity Attendance Advanced */}
                     <div className="space-y-8 pt-6">
                         <div className="flex items-center justify-between bg-white/[0.02] p-8 rounded-[2.5rem] border border-white/10">
                             <div className="flex items-center gap-6">
@@ -409,7 +406,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
 
                         {formState.geofencing_enabled && (
                             <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-500 pb-4">
-                                {/* Permitted Office Zones */}
                                 <div className="space-y-4">
                                     <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 ml-2">Permitted Office Zones</Label>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -441,7 +437,6 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                                     </div>
                                 </div>
 
-                                {/* Custom Zone Switch */}
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between px-2">
                                         <div className="flex items-center gap-3">
@@ -496,13 +491,12 @@ export function EditUserDialog({ isOpen, setIsOpen, user, roles, teams, onUserUp
                         )}
                     </div>
 
-                    {/* Security Section */}
                     <div className="space-y-6 pt-10 border-t border-white/5">
                         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 ml-1">Security Credential Override</Label>
                         <Input name="password" type="password" placeholder="Enter new password to override (min 6 characters)" value={formState.password} onChange={handleInputChange} className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold px-6 text-zinc-300" />
                     </div>
                 </form>
-            </div>
+            </ScrollArea>
 
             <DialogFooter className="p-10 pt-6 border-t border-white/10 flex gap-6 bg-zinc-950 shrink-0">
               <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-16 px-10 text-zinc-500 hover:text-white font-bold uppercase tracking-widest text-xs">Discard</Button>
