@@ -313,7 +313,7 @@ export function EditUserDialog({
                         {avatarPreview && (<button type="button" className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-600 text-white shadow-xl" onClick={handleDeleteAvatar}><Trash2 className="h-4 w-4" /></button>)}
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex-1 min-w-0 w-full space-y-4">
                       <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Full Name</Label><Input name="name" value={formState.name} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-white" /></div>
                       <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Studio Email</Label><Input value={user.email || ''} disabled className="h-12 w-full min-w-0 bg-white/[0.01] border-white/5 rounded-xl px-4 text-zinc-600 font-bold" /></div>
                     </div>
@@ -382,7 +382,7 @@ export function EditUserDialog({
                               <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Radius (m)</Label><Input type="number" value={formState.customLocation.radius} onChange={e => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, radius: e.target.value } }))} className="h-10 bg-zinc-950 border-white/5 text-white font-bold text-xs" /></div>
                             </div>
                             <LocationPicker lat={parseFloat(formState.customLocation.latitude) || null} lng={parseFloat(formState.customLocation.longitude) || null} radius={parseInt(formState.customLocation.radius) || 100} onLocationChange={(lat, lng) => setFormState(p => ({ ...p, customLocation: { ...p.customLocation, latitude: lat.toString(), longitude: lng.toString() } }))} />
-                            <Button type="button" variant="outline" className="w-full rounded-xl border-amber-500/20 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 font-bold h-12" onClick={handleCaptureLocation} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Navigation className="h-4 w-4 mr-3" />}Sync Current GPS Position</Button>
+                            <Button type="button" variant="outline" className="w-full rounded-xl border-amber-500/20 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 font-bold h-12" onClick={handleCaptureLocation} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Navigation className="h-4 w-4 mr-3" />}Sync GPS Coordinates</Button>
                           </div>
                         )}
                       </div>

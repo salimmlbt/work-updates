@@ -6,7 +6,6 @@ import { MapPin, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useDebounce } from 'use-debounce';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -114,8 +113,7 @@ export function LocationPicker({
     previewMap.current.setView(pos);
   }, [lat, lng, radius]);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearchAction = async () => {
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
@@ -142,35 +140,44 @@ export function LocationPicker({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearchAction();
+    }
+  };
+
   if (!mounted) {
-    return <Skeleton className="w-full h-[240px] rounded-2xl bg-white/5" />;
+    return <Skeleton className="w-full h-[160px] rounded-2xl bg-white/5" />;
   }
 
   return (
     <div className="space-y-4">
-      {/* Search Input */}
-      <form onSubmit={handleSearch} className="flex gap-2">
+      {/* Search Bar - No form to prevent nesting errors */}
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
           <Input
             placeholder="Search address or landmark..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="h-10 pl-10 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-sky-500/50"
           />
         </div>
         <Button 
-          type="submit" 
+          type="button"
+          onClick={handleSearchAction}
           disabled={isSearching || !searchQuery.trim()}
           className="h-10 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-white/5"
         >
           {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
         </Button>
-      </form>
+      </div>
 
       {/* Map Container */}
       <div className="relative group overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl bg-black/20">
-        <div ref={previewRef} className="w-full h-[200px] z-0" />
+        <div ref={previewRef} className="w-full h-[160px] z-0" />
         
         <div className="absolute top-3 left-3 z-30 pointer-events-none">
           <div className="bg-black/70 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">

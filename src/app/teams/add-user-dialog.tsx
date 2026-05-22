@@ -264,7 +264,7 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                             <Pencil className="h-5 w-5" />
                           </button>
                         </div>
-                        <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex-1 min-w-0 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Name</Label><Input name="name" value={formState.name} onChange={handleInputChange} placeholder="Enter full name" className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-white" required /></div>
                             <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Email Username</Label><div className="flex items-center group"><Input name="email" value={formState.email} onChange={handleInputChange} placeholder="your.name" className="h-12 rounded-r-none bg-white/5 border-white/10 text-white rounded-l-xl font-bold px-4" required /><span className="inline-flex h-12 items-center px-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-white/[0.03] border border-l-0 border-white/10 rounded-r-xl">@falaq.com</span></div></div>
                         </div>
@@ -285,8 +285,8 @@ export function AddUserDialog({ isOpen, setIsOpen, roles, teams, onUserAdded }: 
                     <div className="bg-white/[0.03] p-5 md:p-6 rounded-[2rem] border border-white/10 space-y-6 overflow-hidden">
                       <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Monthly Salary (INR)</Label><Input name="monthlySalary" type="number" placeholder="Enter amount" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-black px-4 text-emerald-400" /></div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Check In</Label><Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-sky-400" required /></div>
-                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Check Out</Label><Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-rose-400" required /></div>
+                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">In Time</Label><Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-sky-400" required /></div>
+                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Out Time</Label><Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-rose-400" required /></div>
                       </div>
                     </div>
                   </div>
