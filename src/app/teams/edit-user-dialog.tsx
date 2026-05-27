@@ -40,7 +40,6 @@ import {
   Lock,
   Wallet,
   Archive,
-  UserCog
 } from 'lucide-react'
 
 import { useToast } from '@/hooks/use-toast'
@@ -406,8 +405,8 @@ export function EditUserDialog({
           </ScrollArea>
 
           <DialogFooter className="shrink-0 border-t border-white/10 bg-black/40 backdrop-blur-xl px-5 md:px-10 py-5 flex flex-col-reverse sm:flex-row gap-4">
-            <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-14 px-10 text-zinc-500 hover:text-white font-bold uppercase tracking-widest text-[10px]">Discard</Button>
-            <Button type="submit" form="edit-user-form" disabled={isPending || !isFormValid} className="flex-1 min-w-0 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}Commit User Statement</Button>
+            <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-14 px-8 text-zinc-500 hover:text-white font-bold uppercase tracking-widest text-[10px]">Discard</Button>
+            <Button type="submit" form="edit-user-form" disabled={isPending || !isFormValid} className="flex-1 min-w-0 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}Commit User Statement</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
