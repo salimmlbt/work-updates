@@ -24,7 +24,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 
 import {
@@ -37,10 +36,9 @@ import {
   Check,
   Building2,
   Globe,
-  User as UserIcon,
+  User,
   Lock,
-  Wallet,
-  Archive
+  Wallet
 } from 'lucide-react'
 
 import { useToast } from '@/hooks/use-toast'
@@ -299,7 +297,7 @@ export function EditUserDialog({
                 {/* 👤 IDENTITY */}
                 <div className="space-y-6 min-w-0">
                   <div className="flex min-w-0 items-center gap-3">
-                    <UserIcon className="h-4 w-4 shrink-0 text-sky-400" />
+                    <User className="h-4 w-4 shrink-0 text-sky-400" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identity Statement</h3>
                   </div>
 

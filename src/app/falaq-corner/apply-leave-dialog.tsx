@@ -55,7 +55,6 @@ export function ApplyLeaveDialog({
   const [reason, setReason] = useState('')
   const [showError, setShowError] = useState(false)
 
-  // Reset form when opened
   useEffect(() => {
     if (isOpen) {
       setLeaveType('')
@@ -67,7 +66,6 @@ export function ApplyLeaveDialog({
     }
   }, [isOpen])
 
-  // Reset Day Type if an End Date is selected
   useEffect(() => {
     if (endDate) {
       setDayType('Full Day');
@@ -160,8 +158,8 @@ export function ApplyLeaveDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md rounded-[2.5rem] bg-zinc-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-3xl text-zinc-100 flex flex-col p-0 h-[85vh] md:h-auto md:max-h-[90vh]">
-        <DialogHeader className="p-8 pb-5 border-b border-white/5">
+      <DialogContent className="sm:max-w-md rounded-[2.5rem] bg-zinc-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-3xl text-zinc-100 flex flex-col p-0 h-[85vh] md:h-auto md:max-h-[90vh] overflow-hidden">
+        <DialogHeader className="p-8 pb-5 border-b border-white/5 shrink-0">
           <DialogTitle className="text-2xl font-black tracking-tight text-white uppercase">
             Apply for Leave
           </DialogTitle>
@@ -220,7 +218,7 @@ export function ApplyLeaveDialog({
                     <Calendar
                       mode="single"
                       selected={startDate}
-                      onSelect={setStartDate}
+                      onSelect={(d) => { setStartDate(d); }}
                       disabled={disabledDates}
                       initialFocus
                     />
@@ -254,7 +252,7 @@ export function ApplyLeaveDialog({
                       <Calendar
                         mode="single"
                         selected={endDate}
-                        onSelect={setEndDate}
+                        onSelect={(d) => { setEndDate(d); }}
                         disabled={[
                           disabledDates,
                           { before: startDate || new Date() }
@@ -316,7 +314,7 @@ export function ApplyLeaveDialog({
           </form>
         </ScrollArea>
 
-        <DialogFooter className="p-8 border-t border-white/5 flex justify-end gap-4 bg-black/20">
+        <DialogFooter className="p-8 border-t border-white/5 flex justify-end gap-4 bg-black/20 shrink-0">
           <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-12 px-8 text-zinc-400 hover:text-white hover:bg-white/5 font-bold uppercase tracking-widest text-[10px]">
             Cancel
           </Button>
