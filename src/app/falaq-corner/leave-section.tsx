@@ -23,6 +23,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useSearchParams } from 'next/navigation'
 
@@ -82,7 +83,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
       if (result.error) {
         toast({ title: 'Error', description: result.error, variant: 'destructive' })
       } else {
-        const msg = action === 'reopen' ? 'reopened' : action === 'delete' ? 'deleted' : action.toLowerCase();
+        const msg = action === 'reopen' ? 'reopened' : action === 'delete' ? 'deleted' : (action as string).toLowerCase();
         toast({ title: 'Success', description: `Leave ${msg} successfully.`, variant: 'success' })
         fetchLeaves(false);
       }
@@ -115,7 +116,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
   }, [leaves])
 
   const renderTimeline = () => (
-    <div className="space-y-16 pb-20">
+    <div className="space-y-16 pb-32">
       {Object.entries(groupedLeaves).map(([month, items]) => {
         const isCollapsed = collapsedMonths[month]
         return (
@@ -255,7 +256,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
   )
 
   return (
-    <div className="relative flex flex-col h-full bg-transparent">
+    <div className="relative flex flex-col h-full bg-transparent overflow-hidden">
       <div className="p-8 md:p-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/5 shrink-0">
         <div>
           <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Leave Center</h2>
@@ -285,20 +286,20 @@ export function LeaveSection({ profile }: { profile: Profile }) {
             <p className="font-black uppercase tracking-[0.4em] text-[10px]">No active leave statements found</p>
           </div>
         ) : renderTimeline()}
+      </div>
 
-        {/* FLOATING ACTION BUTTON - DARK GLOW STYLE */}
-        <div className="fixed bottom-10 right-10 z-[150] pointer-events-none md:sticky md:float-right md:bottom-10 md:mr-0 md:mt-[-80px]">
-            <Button 
-                size="lg" 
-                onClick={() => setIsApplyDialogOpen(true)}
-                className="pointer-events-auto rounded-full h-20 px-12 gap-5 shadow-[0_25px_60px_rgba(56,189,248,0.4)] bg-gradient-to-br from-sky-600 to-blue-800 hover:from-sky-500 hover:to-blue-600 transition-all active:scale-95 text-white font-black uppercase tracking-[0.2em] text-xs border-2 border-white/20 ring-4 ring-sky-500/10 group"
-            >
-                <div className="h-8 w-8 rounded-xl bg-white/10 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
-                    <Plus className="h-6 w-6" />
-                </div>
-                Apply for Leave
-            </Button>
-        </div>
+      {/* FIXED ACTION BUTTON - DARK GLOW STYLE */}
+      <div className="absolute bottom-10 right-10 z-[150]">
+          <Button 
+              size="lg" 
+              onClick={() => setIsApplyDialogOpen(true)}
+              className="rounded-full h-20 px-12 gap-5 shadow-[0_25px_60px_rgba(56,189,248,0.4)] bg-gradient-to-br from-sky-600 to-blue-800 hover:from-sky-500 hover:to-blue-600 transition-all active:scale-95 text-white font-black uppercase tracking-[0.2em] text-xs border-2 border-white/20 ring-4 ring-sky-500/10 group"
+          >
+              <div className="h-8 w-8 rounded-xl bg-white/10 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
+                  <Plus className="h-6 w-6" />
+              </div>
+              Apply for Leave
+          </Button>
       </div>
 
       <ApplyLeaveDialog isOpen={isApplyDialogOpen} setIsOpen={setIsApplyDialogOpen} onSuccess={() => fetchLeaves(false)} existingLeaves={leaves} />
@@ -309,7 +310,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 99px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 999px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
       `}</style>
     </div>

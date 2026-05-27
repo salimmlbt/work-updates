@@ -37,7 +37,7 @@ import {
   Check,
   Building2,
   Globe,
-  User,
+  User as UserIcon,
   Lock,
   Wallet,
   Archive,
@@ -298,7 +298,7 @@ export function EditUserDialog({
                 
                 <div className="space-y-6 min-w-0">
                   <div className="flex min-w-0 items-center gap-3">
-                    <User className="h-4 w-4 shrink-0 text-sky-400" />
+                    <UserIcon className="h-4 w-4 shrink-0 text-sky-400" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identity Statement</h3>
                   </div>
 
