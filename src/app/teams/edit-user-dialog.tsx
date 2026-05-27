@@ -295,7 +295,6 @@ export function EditUserDialog({
             <div className="w-full overflow-x-hidden px-5 md:px-10 py-5">
               <form id="edit-user-form" onSubmit={handleUpdateUser} className="w-full min-w-0 space-y-10 pb-12">
                 
-                {/* 👤 IDENTITY */}
                 <div className="space-y-6 min-w-0">
                   <div className="flex min-w-0 items-center gap-3">
                     <User className="h-4 w-4 shrink-0 text-sky-400" />
@@ -321,7 +320,6 @@ export function EditUserDialog({
                   </div>
                 </div>
 
-                {/* 🔑 ACCESS + FINANCE */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 min-w-0">
                   <div className="space-y-6 min-w-0">
                     <div className="flex items-center gap-3"><Lock className="h-4 w-4 text-purple-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Access Control</h3></div>
@@ -346,7 +344,6 @@ export function EditUserDialog({
                   </div>
                 </div>
 
-                {/* 📍 PROXIMITY PROTOCOLS */}
                 <div className="space-y-8 min-w-0">
                   <div className="flex items-center justify-between bg-white/[0.03] p-5 md:p-8 rounded-[2rem] border border-white/10 shadow-2xl">
                     <div className="flex items-center gap-6 min-w-0">
@@ -391,7 +388,6 @@ export function EditUserDialog({
                   )}
                 </div>
 
-                {/* 🔐 SECURITY OVERRIDE */}
                 <div className="space-y-6 pt-10 border-t border-white/5 min-w-0">
                   <div className="flex items-center gap-3"><Lock className="h-4 w-4 text-rose-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Credential Override</h3></div>
                   <div className="bg-rose-500/5 border border-rose-500/10 p-5 md:p-8 rounded-[2rem] min-w-0">
@@ -406,7 +402,7 @@ export function EditUserDialog({
 
           <DialogFooter className="shrink-0 border-t border-white/10 bg-black/40 backdrop-blur-xl px-5 md:px-10 py-5 flex flex-col-reverse sm:flex-row gap-4">
             <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-14 px-8 text-zinc-500 hover:text-white font-bold uppercase tracking-widest text-[10px]">Discard</Button>
-            <Button type="submit" form="edit-user-form" disabled={isPending || !isFormValid} className="flex-1 min-w-0 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}Commit User Statement</Button>
+            <Button type="submit" form="edit-user-form" disabled={isPending || !isFormValid} className="flex-1 min-w-0 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}Commit User Statement</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

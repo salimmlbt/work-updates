@@ -98,7 +98,6 @@ export function LeaveSection({ profile }: { profile: Profile }) {
       } else {
         const msg = action === 'reopen' ? 'reopened' : action === 'delete' ? 'deleted' : action.toLowerCase();
         toast({ title: 'Success', description: `Leave ${msg} successfully.` })
-        // fetchLeaves is handled by real-time subscription now, but we keep it for immediate feedback
         fetchLeaves(false);
       }
     })
@@ -294,7 +293,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         ) : renderTimeline()}
       </div>
 
-      <div className="absolute bottom-10 right-10">
+      <div className="fixed md:absolute bottom-10 right-10 z-[50]">
         <Button size="lg" className="rounded-full h-16 px-10 gap-3 shadow-[0_20px_50px_rgba(56,189,248,0.3)] bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 transition-all active:scale-95 text-white font-black uppercase tracking-widest text-xs border border-sky-400/20" onClick={() => setIsApplyDialogOpen(true)}>
           <Plus className="h-6 w-6" /> Apply for Leave
         </Button>
