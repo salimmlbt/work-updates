@@ -38,7 +38,9 @@ import {
   Globe,
   User,
   Lock,
-  Wallet
+  Wallet,
+  Archive,
+  UserCog
 } from 'lucide-react'
 
 import { useToast } from '@/hooks/use-toast'
@@ -282,7 +284,7 @@ export function EditUserDialog({
             shadow-[0_25px_80px_rgba(0,0,0,0.85)]
             flex
             flex-col
-            overflow-hidden
+            overflow-visible md:overflow-hidden
           "
         >
           <DialogHeader className="shrink-0 border-b border-white/5 px-5 md:px-10 pt-8 pb-5">
@@ -314,8 +316,8 @@ export function EditUserDialog({
                       </div>
                     </div>
                     <div className="flex-1 min-w-0 w-full space-y-4">
-                      <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Full Name</Label><Input name="name" value={formState.name} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-white" /></div>
-                      <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Studio Email</Label><Input value={user.email || ''} disabled className="h-12 w-full min-w-0 bg-white/[0.01] border-white/5 rounded-xl px-4 text-zinc-600 font-bold" /></div>
+                      <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Official Full Name</Label><Input name="name" value={formState.name} onChange={handleInputChange} className="h-12 w-full min-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-white" /></div>
+                      <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Studio Email</Label><Input value={user.email || ''} disabled className="h-12 w-full min-0 bg-white/[0.01] border-white/5 rounded-xl px-4 text-zinc-600 font-bold" /></div>
                     </div>
                   </div>
                 </div>
@@ -326,17 +328,17 @@ export function EditUserDialog({
                     <div className="flex items-center gap-3"><Lock className="h-4 w-4 text-purple-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Access Control</h3></div>
                     <div className="bg-white/[0.03] p-5 md:p-6 rounded-[2rem] border border-white/10 space-y-6 overflow-hidden">
                       <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Security Role</Label>
-                        <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId}><SelectTrigger className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-200"><SelectValue /></SelectTrigger><SelectContent className="bg-zinc-900 border-zinc-800 text-white">{roles.map(role => (<SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>))}</SelectContent></Select>
+                        <Select name="roleId" onValueChange={handleSelectChange('roleId')} value={formState.roleId}><SelectTrigger className="h-12 w-full min-0 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-200"><SelectValue /></SelectTrigger><SelectContent className="bg-zinc-900 border-zinc-800 text-white">{roles.map(role => (<SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>))}</SelectContent></Select>
                       </div>
                       <div className="space-y-2 min-w-0"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Team Assignments</Label>
-                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full min-w-0 justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-300"><span className="truncate">{formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Active` : 'Unassigned'}</span><ChevronDown className="h-4 w-4 opacity-50 shrink-0" /></Button></DropdownMenuTrigger><DropdownMenuContent align="start" className="w-[calc(100vw-80px)] max-w-[320px] bg-zinc-900 border-zinc-800 text-white shadow-2xl"><ScrollArea className="h-60">{teams.map(team => (<DropdownMenuCheckboxItem key={team.id} checked={formState.teamIds.includes(team.id)} onCheckedChange={() => handleTeamSelect(team.id)} onSelect={(e) => e.preventDefault()}>{team.name}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu>
+                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full min-0 justify-between h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-zinc-300"><span className="truncate">{formState.teamIds.length > 0 ? `${formState.teamIds.length} Teams Active` : 'Unassigned'}</span><ChevronDown className="h-4 w-4 opacity-50 shrink-0" /></Button></DropdownMenuTrigger><DropdownMenuContent align="start" className="w-[calc(100vw-80px)] max-w-[320px] bg-zinc-900 border-zinc-800 text-white shadow-2xl"><ScrollArea className="h-60">{teams.map(team => (<DropdownMenuCheckboxItem key={team.id} checked={formState.teamIds.includes(team.id)} onCheckedChange={() => handleTeamSelect(team.id)} onSelect={(e) => e.preventDefault()}>{team.name}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu>
                       </div>
                     </div>
                   </div>
                   <div className="space-y-6 min-w-0">
                     <div className="flex items-center gap-3"><Wallet className="h-4 w-4 text-emerald-400 shrink-0" /><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Finance & Shift</h3></div>
                     <div className="bg-white/[0.03] p-5 md:p-6 rounded-[2rem] border border-white/10 space-y-6 overflow-hidden">
-                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Monthly Salary</Label><Input name="monthlySalary" type="number" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 w-full min-w-0 bg-white/5 border-white/10 rounded-xl font-black px-4 text-emerald-400" /></div>
+                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Monthly Salary</Label><Input name="monthlySalary" type="number" value={formState.monthlySalary} onChange={handleInputChange} className="h-12 w-full min-0 bg-white/5 border-white/10 rounded-xl font-black px-4 text-emerald-400" /></div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Check In</Label><Input name="workStartTime" type="time" value={formState.workStartTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-sky-400" /></div>
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Check Out</Label><Input name="workEndTime" type="time" value={formState.workEndTime} onChange={handleInputChange} className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4 text-rose-400" /></div>
@@ -363,7 +365,7 @@ export function EditUserDialog({
                           {officeLocations.map(office => {
                             const isSelected = formState.permitted_locations.some(l => l.id === office.id);
                             return (
-                              <div key={office.id} onClick={() => handleOfficeZoneToggle(office)} className={cn("flex items-center justify-between p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 min-w-0", isSelected ? "bg-sky-500/10 border-sky-500/40 shadow-lg" : "bg-white/[0.02] border-white/5 opacity-60 hover:opacity-100")}>
+                              <div key={office.id} onClick={() => handleOfficeZoneToggle(office)} className={cn("flex items-center justify-between p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 min-0", isSelected ? "bg-sky-500/10 border-sky-500/40 shadow-lg" : "bg-white/[0.02] border-white/5 opacity-60 hover:opacity-100")}>
                                 <div className="flex items-center gap-4 min-w-0"><Building2 className={cn("h-5 w-5 shrink-0", isSelected ? "text-sky-400" : "text-zinc-600")} /><div className="min-w-0"><p className={cn("font-bold text-sm truncate", isSelected ? "text-white" : "text-zinc-400")}>{office.name}</p><p className="text-[9px] font-bold text-zinc-600 uppercase tracking-tighter truncate">{office.radius}m Radius</p></div></div>
                                 {isSelected && <Check className="h-5 w-5 text-sky-400 shrink-0" />}
                               </div>
@@ -405,7 +407,7 @@ export function EditUserDialog({
 
           <DialogFooter className="shrink-0 border-t border-white/10 bg-black/40 backdrop-blur-xl px-5 md:px-10 py-5 flex flex-col-reverse sm:flex-row gap-4">
             <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-14 px-10 text-zinc-500 hover:text-white font-bold uppercase tracking-widest text-[10px]">Discard</Button>
-            <Button type="submit" form="edit-user-form" disabled={isPending || !isFormValid} className="flex-1 min-w-0 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}Commit User Statement</Button>
+            <Button type="submit" form="edit-user-form" disabled={isPending || !isFormValid} className="flex-1 min-w-0 rounded-2xl h-14 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-sky-900/40">{isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}Commit User Statement</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

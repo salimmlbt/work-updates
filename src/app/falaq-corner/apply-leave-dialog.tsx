@@ -158,7 +158,7 @@ export function ApplyLeaveDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md rounded-[2.5rem] bg-zinc-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-3xl text-zinc-100 flex flex-col p-0 h-[85vh] md:h-auto md:max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-md rounded-[2.5rem] bg-zinc-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-3xl text-zinc-100 flex flex-col p-0 h-[85vh] md:h-auto md:max-h-[90vh] overflow-visible md:overflow-hidden">
         <DialogHeader className="p-8 pb-5 border-b border-white/5 shrink-0">
           <DialogTitle className="text-2xl font-black tracking-tight text-white uppercase">
             Apply for Leave
@@ -214,13 +214,22 @@ export function ApplyLeaveDialog({
                       {startDate ? format(startDate, 'PPP') : 'Pick start date'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="p-0 rounded-2xl bg-zinc-950 border-white/10 shadow-2xl" align="start">
+                  <PopoverContent
+                    className="w-auto p-0 rounded-2xl bg-zinc-950 border-white/10 shadow-2xl z-[9999]"
+                    align="center"
+                    side="bottom"
+                    sideOffset={8}
+                    avoidCollisions={true}
+                  >
                     <Calendar
                       mode="single"
                       selected={startDate}
-                      onSelect={(d) => { setStartDate(d); }}
+                      onSelect={(d) => {
+                        setStartDate(d)
+                      }}
                       disabled={disabledDates}
                       initialFocus
+                      className="rounded-2xl"
                     />
                   </PopoverContent>
                 </Popover>
@@ -248,16 +257,25 @@ export function ApplyLeaveDialog({
                         {endDate ? format(endDate, 'PPP') : leaveType === 'Maternity leave' ? 'Pick end date' : 'Add end date'}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="p-0 rounded-2xl bg-zinc-950 border-white/10 shadow-2xl" align="end">
+                    <PopoverContent
+                      className="w-auto p-0 rounded-2xl bg-zinc-950 border-white/10 shadow-2xl z-[9999]"
+                      align="center"
+                      side="bottom"
+                      sideOffset={8}
+                      avoidCollisions={true}
+                    >
                       <Calendar
                         mode="single"
                         selected={endDate}
-                        onSelect={(d) => { setEndDate(d); }}
+                        onSelect={(d) => {
+                          setEndDate(d)
+                        }}
                         disabled={[
                           disabledDates,
                           { before: startDate || new Date() }
                         ]}
                         initialFocus
+                        className="rounded-2xl"
                       />
                     </PopoverContent>
                   </Popover>
