@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -19,9 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Loader2, Calendar as CalendarIcon, X } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 import { format, differenceInCalendarDays, parseISO, addDays, startOfToday } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { applyLeave } from './actions'
@@ -49,8 +48,8 @@ export function ApplyLeaveDialog({
   const { toast } = useToast()
 
   const [leaveType, setLeaveType] = useState<LeaveType | ''>('')
-  const [startDate, setStartDate] = useState<Date>()
-  const [endDate, setEndDate] = useState<Date>()
+  const [startDateStr, setStartDateStr] = useState('')
+  const [endDateStr, setEndDateStr] = useState('')
   const [dayType, setDayType] = useState<DayType>('Full Day')
   const [reason, setReason] = useState('')
   const [showError, setShowError] = useState(false)
@@ -58,8 +57,8 @@ export function ApplyLeaveDialog({
   useEffect(() => {
     if (isOpen) {
       setLeaveType('')
-      setStartDate(undefined)
-      setEndDate(undefined)
+      setStartDateStr('')
+      setEndDateStr('')
       setDayType('Full Day')
       setReason('')
       setShowError(false)
@@ -67,31 +66,29 @@ export function ApplyLeaveDialog({
   }, [isOpen])
 
   useEffect(() => {
-    if (endDate) {
+    if (endDateStr) {
       setDayType('Full Day');
     }
-  }, [endDate]);
+  }, [endDateStr]);
 
-  const disabledDates = useMemo(() => {
+  const minDate = useMemo(() => {
     const today = startOfToday();
-    if (!leaveType) return { before: today };
+    if (!leaveType) return format(today, 'yyyy-MM-dd');
 
     switch (leaveType) {
       case 'Casual Leave':
-        return { before: addDays(today, 2) };
+        return format(addDays(today, 2), 'yyyy-MM-dd');
       case 'Maternity leave':
-        return { before: addDays(today, 7) };
-      case 'Sick Leave':
-      case 'Emergency Leave':
+        return format(addDays(today, 7), 'yyyy-MM-dd');
       default:
-        return { before: today };
+        return format(today, 'yyyy-MM-dd');
     }
   }, [leaveType]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!leaveType || !startDate || !reason.trim()) {
+    if (!leaveType || !startDateStr || !reason.trim()) {
       setShowError(true)
       setTimeout(() => setShowError(false), 400)
       toast({
@@ -102,9 +99,11 @@ export function ApplyLeaveDialog({
       return
     }
 
-    const finalEndDate = endDate || startDate;
+    const startDate = parseISO(startDateStr)
+    const finalEndDateStr = endDateStr || startDateStr
+    const endDate = parseISO(finalEndDateStr)
 
-    if (endDate && endDate < startDate) {
+    if (endDateStr && endDateStr < startDateStr) {
       toast({
         title: "Invalid Range",
         description: "End date cannot be before start date.",
@@ -115,9 +114,7 @@ export function ApplyLeaveDialog({
 
     const hasOverlap = existingLeaves.some(leave => {
       if (leave.status === 'Cancelled' || leave.status === 'Rejected') return false
-      const exStart = parseISO(leave.start_date)
-      const exEnd = parseISO(leave.end_date)
-      return (startDate <= exEnd) && (finalEndDate >= exStart)
+      return (startDateStr <= leave.end_date) && (finalEndDateStr >= leave.start_date)
     })
 
     if (hasOverlap) {
@@ -131,9 +128,9 @@ export function ApplyLeaveDialog({
 
     const formData = new FormData(e.currentTarget)
     formData.set('leave_type', leaveType)
-    formData.set('start_date', format(startDate, 'yyyy-MM-dd'))
-    if (endDate) {
-      formData.set('end_date', format(endDate, 'yyyy-MM-dd'))
+    formData.set('start_date', startDateStr)
+    if (endDateStr) {
+      formData.set('end_date', endDateStr)
     }
     formData.set('day_type', dayType)
     formData.set('reason', reason.trim())
@@ -143,18 +140,18 @@ export function ApplyLeaveDialog({
       if (result.error) {
         toast({ title: 'Error', description: result.error, variant: 'destructive' })
       } else {
-        toast({ title: 'Success', description: 'Leave request submitted successfully.' })
+        toast({ title: 'Success', description: 'Leave request submitted successfully.', variant: 'success' })
         onSuccess()
         setIsOpen(false)
       }
     })
   }
 
-  const totalDays = startDate 
-    ? (endDate 
-        ? differenceInCalendarDays(endDate, startDate) + 1 
-        : (dayType === 'Half Day' ? 0.5 : 1)) 
-    : 0;
+  const totalDays = useMemo(() => {
+    if (!startDateStr) return 0;
+    if (!endDateStr) return dayType === 'Half Day' ? 0.5 : 1;
+    return differenceInCalendarDays(parseISO(endDateStr), parseISO(startDateStr)) + 1;
+  }, [startDateStr, endDateStr, dayType]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -164,25 +161,25 @@ export function ApplyLeaveDialog({
             Apply for Leave
           </DialogTitle>
           <DialogDescription className="text-zinc-500 font-medium">
-            First select the type, then choose your dates.
+            Select the leave type and your intended dates below.
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 px-8 py-6">
-          <form id="apply-leave-form" onSubmit={handleSubmit} className="space-y-6 pb-4">
-            <div className="space-y-2">
+          <form id="apply-leave-form" onSubmit={handleSubmit} className="space-y-8 pb-4">
+            <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Leave Type <span className="text-rose-500">*</span></Label>
               <Select 
                 name="leave_type" 
                 value={leaveType} 
                 onValueChange={(val: LeaveType) => {
                   setLeaveType(val);
-                  setStartDate(undefined);
-                  setEndDate(undefined);
+                  setStartDateStr('');
+                  setEndDateStr('');
                   setDayType('Full Day');
                 }}
               >
-                <SelectTrigger className="rounded-2xl h-12 bg-white/5 border-white/10 text-white font-bold transition-all focus:ring-sky-500/50">
+                <SelectTrigger className="rounded-2xl h-14 bg-white/5 border-white/10 text-white font-bold transition-all focus:ring-sky-500/50">
                   <SelectValue placeholder="Choose leave type" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl bg-zinc-900 border-white/10 text-white shadow-2xl">
@@ -194,96 +191,43 @@ export function ApplyLeaveDialog({
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">From <span className="text-rose-500">*</span></Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      disabled={!leaveType}
-                      className={cn(
-                        'w-full justify-start rounded-2xl h-12 text-left font-bold transition-all duration-300 bg-white/5 border-white/10 hover:bg-white/10',
-                        !startDate && 'text-zinc-500',
-                        showError && !startDate && 'ring-2 ring-rose-400 animate-shake',
-                        !leaveType && 'opacity-50'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 text-sky-400" />
-                      {startDate ? format(startDate, 'PPP') : 'Pick start date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto p-0 rounded-2xl bg-zinc-950 border-white/10 shadow-2xl z-[9999]"
-                    align="center"
-                    side="bottom"
-                    sideOffset={8}
-                    avoidCollisions={true}
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={(d) => {
-                        setStartDate(d)
-                      }}
-                      disabled={disabledDates}
-                      initialFocus
-                      className="rounded-2xl"
-                    />
-                  </PopoverContent>
-                </Popover>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">From Date <span className="text-rose-500">*</span></Label>
+                <Input 
+                  type="date"
+                  value={startDateStr}
+                  min={minDate}
+                  disabled={!leaveType}
+                  onChange={(e) => setStartDateStr(e.target.value)}
+                  className={cn(
+                    "h-14 rounded-2xl bg-white/5 border-white/10 text-white font-bold px-4 focus-visible:ring-sky-500/50 [color-scheme:dark]",
+                    showError && !startDateStr && "ring-2 ring-rose-400 animate-shake"
+                  )}
+                />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">
-                  To {leaveType === 'Maternity leave' ? <span className="text-rose-500">*</span> : '(Optional)'}
+                  To Date {leaveType === 'Maternity leave' ? <span className="text-rose-500">*</span> : '(Optional)'}
                 </Label>
                 <div className="relative group">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        type="button"
-                        disabled={!startDate}
-                        className={cn(
-                          'w-full justify-start rounded-2xl h-12 text-left font-bold transition-all duration-300 bg-white/5 border-white/10 hover:bg-white/10',
-                          !endDate && 'text-zinc-500',
-                          !startDate && 'opacity-50',
-                          showError && leaveType === 'Maternity leave' && !endDate && 'ring-2 ring-rose-400 animate-shake'
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-sky-400" />
-                        {endDate ? format(endDate, 'PPP') : leaveType === 'Maternity leave' ? 'Pick end date' : 'Add end date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto p-0 rounded-2xl bg-zinc-950 border-white/10 shadow-2xl z-[9999]"
-                      align="center"
-                      side="bottom"
-                      sideOffset={8}
-                      avoidCollisions={true}
-                    >
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={(d) => {
-                          setEndDate(d)
-                        }}
-                        disabled={[
-                          disabledDates,
-                          { before: startDate || new Date() }
-                        ]}
-                        initialFocus
-                        className="rounded-2xl"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {endDate && (
+                  <Input 
+                    type="date"
+                    value={endDateStr}
+                    min={startDateStr || minDate}
+                    disabled={!startDateStr}
+                    onChange={(e) => setEndDateStr(e.target.value)}
+                    className={cn(
+                      "h-14 rounded-2xl bg-white/5 border-white/10 text-white font-bold px-4 focus-visible:ring-sky-500/50 [color-scheme:dark]",
+                      showError && leaveType === 'Maternity leave' && !endDateStr && "ring-2 ring-rose-400 animate-shake"
+                    )}
+                  />
+                  {endDateStr && (
                     <button 
                       type="button"
-                      onClick={() => setEndDate(undefined)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setEndDateStr('')}
+                      className="absolute right-10 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -292,38 +236,38 @@ export function ApplyLeaveDialog({
               </div>
             </div>
 
-            {startDate && !endDate && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Day Type</Label>
+            {startDateStr && !endDateStr && (
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Day Session</Label>
                 <Select value={dayType} onValueChange={(val: DayType) => setDayType(val)}>
-                  <SelectTrigger className="rounded-2xl h-12 bg-sky-500/10 border-sky-500/20 text-sky-400 font-bold">
+                  <SelectTrigger className="rounded-2xl h-14 bg-sky-500/10 border-sky-500/20 text-sky-400 font-bold">
                     <SelectValue placeholder="Full or Half Day?" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl bg-zinc-900 border-white/10 text-white shadow-2xl">
-                    <SelectItem value="Full Day">Full Day</SelectItem>
-                    <SelectItem value="Half Day">Half Day</SelectItem>
+                    <SelectItem value="Full Day">Full Day Session</SelectItem>
+                    <SelectItem value="Half Day">Half Day Session</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
 
-            {startDate && (
-              <div className="inline-flex items-center px-5 py-2 rounded-full bg-sky-500/10 text-sky-400 text-xs font-black uppercase tracking-widest w-fit border border-sky-500/20 shadow-[0_0_15px_rgba(56,189,248,0.1)]">
-                {format(startDate, 'MMM dd')} {endDate ? `→ ${format(endDate, 'MMM dd')}` : `(${dayType === 'Half Day' ? 'Half Day' : 'One Day'})`} • {totalDays} day{totalDays !== 1 ? 's' : ''}
+            {startDateStr && (
+              <div className="inline-flex items-center px-6 py-3 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] w-fit border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                Duration: {totalDays} {totalDays === 1 || totalDays === 0.5 ? 'Day' : 'Days'} Statement
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className={cn("text-[10px] font-black uppercase tracking-[0.2em] ml-1", showError && !reason.trim() ? "text-rose-500" : "text-zinc-500")}>
-                Reason <span className="text-rose-500">*</span>
+                Official Reason <span className="text-rose-500">*</span>
               </Label>
               <Textarea
                 name="reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Why are you taking leave?"
+                placeholder="Please state the precise reason for this leave request..."
                 className={cn(
-                  "rounded-2xl min-h-[110px] bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-sky-500/50 transition-all duration-300",
+                  "rounded-2xl min-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-sky-500/50 transition-all duration-300 font-medium leading-relaxed",
                   showError && !reason.trim() && "ring-2 ring-rose-400 animate-shake"
                 )}
                 required
@@ -333,17 +277,17 @@ export function ApplyLeaveDialog({
         </ScrollArea>
 
         <DialogFooter className="p-8 border-t border-white/5 flex justify-end gap-4 bg-black/20 shrink-0">
-          <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-12 px-8 text-zinc-400 hover:text-white hover:bg-white/5 font-bold uppercase tracking-widest text-[10px]">
-            Cancel
+          <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-14 px-8 text-zinc-400 hover:text-white hover:bg-white/5 font-bold uppercase tracking-widest text-[10px]">
+            Discard
           </Button>
           <Button
             type="submit"
             form="apply-leave-form"
             disabled={isPending}
-            className="rounded-full h-12 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-black uppercase tracking-widest text-xs px-10 shadow-2xl shadow-sky-900/40"
+            className="flex-1 rounded-2xl h-14 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-black uppercase tracking-widest text-xs px-10 shadow-2xl shadow-sky-900/40"
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Apply Now
+            Commit Request
           </Button>
         </DialogFooter>
       </DialogContent>
