@@ -148,12 +148,11 @@ export function LocationPicker({
   };
 
   if (!mounted) {
-    return <Skeleton className="w-full h-[160px] rounded-2xl bg-white/5" />;
+    return <Skeleton className="w-full h-[180px] rounded-2xl bg-white/5" />;
   }
 
   return (
     <div className="space-y-4">
-      {/* Search Bar - No form to prevent nesting errors */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -175,9 +174,8 @@ export function LocationPicker({
         </Button>
       </div>
 
-      {/* Map Container */}
       <div className="relative group overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl bg-black/20">
-        <div ref={previewRef} className="w-full h-[160px] z-0" />
+        <div ref={previewRef} className="w-full h-[180px] z-0" />
         
         <div className="absolute top-3 left-3 z-30 pointer-events-none">
           <div className="bg-black/70 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
