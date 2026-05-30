@@ -290,7 +290,6 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         ) : renderTimeline()}
       </div>
 
-      {/* FIXED ACTION BUTTON - MOBILE FAB STYLE */}
       <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[9999]">
         <Button
           size="lg"

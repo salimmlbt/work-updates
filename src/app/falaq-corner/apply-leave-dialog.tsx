@@ -164,7 +164,7 @@ export function ApplyLeaveDialog({
             Apply for Leave
           </DialogTitle>
           <DialogDescription className="text-zinc-500 font-medium">
-            First select the type, then choose your dates.
+            First select the type, then choose your dates using the native selectors.
           </DialogDescription>
         </DialogHeader>
 
@@ -208,7 +208,7 @@ export function ApplyLeaveDialog({
                   min={minDateString}
                   disabled={!leaveType}
                   className={cn(
-                    "rounded-2xl h-12 bg-white/5 border-white/10 text-white font-bold focus:ring-sky-500/50 [color-scheme:dark]",
+                    "rounded-2xl h-12 bg-white/5 border-white/10 text-white font-bold focus:ring-sky-500/50 [color-scheme:dark] appearance-none",
                     showError && !startDate && "ring-2 ring-rose-400 animate-shake"
                   )}
                   required
@@ -227,7 +227,7 @@ export function ApplyLeaveDialog({
                     min={startDate || minDateString}
                     disabled={!startDate}
                     className={cn(
-                      "rounded-2xl h-12 bg-white/5 border-white/10 text-white font-bold focus:ring-sky-500/50 [color-scheme:dark]",
+                      "rounded-2xl h-12 bg-white/5 border-white/10 text-white font-bold focus:ring-sky-500/50 [color-scheme:dark] appearance-none",
                       showError && leaveType === 'Maternity leave' && !endDate && "ring-2 ring-rose-400 animate-shake"
                     )}
                     required={leaveType === 'Maternity leave'}
