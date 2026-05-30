@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useTransition, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, Loader2, Plus, FileText } from 'lucide-react';
+import { ChevronDown, Loader2, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import type { Leave, Profile, RoleWithPermissions } from '@/lib/types';
 import { cancelLeave, updateLeaveStatus, reopenLeave, deleteLeavePermanently, applyLeave } from './actions';
@@ -112,9 +112,9 @@ export function LeaveSection({ profile, isApplyDialogOpen, setIsApplyDialogOpen 
         <DashboardStats leaves={leaves} currentProfile={profile} />
       </header>
 
-      {/* 🔮 SCROLLABLE TIMELINE */}
+      {/* 🔮 FULL-WIDTH SCROLLABLE TIMELINE */}
       <div className="flex-1 overflow-y-auto px-6 md:px-10 py-10 custom-scrollbar relative">
-        <div className="space-y-12 pb-40 max-w-5xl mx-auto w-full">
+        <div className="space-y-12 pb-40 w-full">
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-48 gap-4 opacity-40">
                     <Loader2 className="h-10 w-10 animate-spin text-sky-500" />
@@ -122,7 +122,9 @@ export function LeaveSection({ profile, isApplyDialogOpen, setIsApplyDialogOpen 
                 </div>
             ) : leaves.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 text-center bg-white/[0.01] rounded-[3.5rem] border-2 border-dashed border-white/5">
-                    <div className="bg-white/5 p-12 rounded-full mb-10 border border-white/5 shadow-2xl"><Plus className="h-16 w-16 text-zinc-800" /></div>
+                    <div className="bg-white/5 p-12 rounded-full mb-10 border border-white/5 shadow-2xl">
+                      <Plus className="h-16 w-16 text-zinc-800" />
+                    </div>
                     <p className="font-black uppercase tracking-[0.5em] text-[10px] text-zinc-700">No active statements found</p>
                 </div>
             ) : (

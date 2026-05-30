@@ -23,7 +23,7 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
         return <LeaveSection profile={profile} isApplyDialogOpen={isApplyDialogOpen} setIsApplyDialogOpen={setIsApplyDialogOpen} />;
       default:
         return (
-          <div className="flex flex-col items-center justify-center h-full text-center py-20 px-10 bg-[#05050a]/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10">
+          <div className="flex flex-col items-center justify-center h-full text-center py-20 px-10 bg-[#05050a]/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 mx-1">
             <div className="bg-white/5 p-12 rounded-[3rem] mb-8 border border-white/5 shadow-2xl">
                 {activeSection === 'request-center' ? <Send className="h-16 w-16 text-zinc-800" /> : <Inbox className="h-16 w-16 text-zinc-800" />}
             </div>
@@ -35,9 +35,11 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
   };
 
   return (
-    <div className="relative h-[calc(100vh-140px)] flex flex-col md:flex-row gap-10 bg-[#05050a] items-start overflow-hidden pr-2">
-      {/* 🌌 FIXED BACKGROUND */}
-      <GlowBackground />
+    <div className="relative h-[calc(100vh-140px)] flex flex-col md:flex-row gap-10 bg-[#05050a] items-start overflow-hidden">
+      {/* 🌌 FIXED BACKGROUND - Truly locked to viewport */}
+      <div className="fixed inset-0 z-0">
+        <GlowBackground />
+      </div>
 
       {/* 🚀 INDEPENDENT FIXED SIDEBAR */}
       <aside className="relative w-full md:w-72 shrink-0 z-20 transition-all duration-300">
@@ -65,11 +67,11 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
       </aside>
       
       {/* 🔮 MAIN DYNAMIC CONTENT AREA */}
-      <main className="flex-1 h-full relative z-10">
+      <main className="flex-1 h-full relative z-10 min-w-0">
           {renderContent()}
       </main>
 
-      {/* 🛠️ VIEWPORT-FIXED FAB (Only for Leave Center) */}
+      {/* 🛠️ VIEWPORT-FIXED FAB - Locked to Bottom-Right */}
       {activeSection === 'leave-center' && (
         <div className="fixed bottom-10 right-10 z-[100]">
           <button
