@@ -54,7 +54,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
 
       if (r?.error) toast({ title: 'Error', description: r.error, variant: 'destructive' });
       else {
-        toast({ title: 'System Updated', variant: 'success' });
+        toast({ title: 'System Updated' });
         fetchLeaves(false);
       }
     });
@@ -66,7 +66,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         if (result.error) {
             toast({ title: 'Error', description: result.error, variant: 'destructive' });
         } else {
-            toast({ title: 'Success', description: 'Statement submitted to ledger.', variant: 'success' });
+            toast({ title: 'Success', description: 'Statement submitted to ledger.' });
             setIsApplyDialogOpen(false);
             fetchLeaves(false);
         }
@@ -75,6 +75,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
 
   const grouped = useMemo(() => {
     return leaves.reduce((acc, l) => {
+      if (!l.start_date) return acc;
       const m = format(parseISO(l.start_date), 'MMMM yyyy');
       acc[m] = acc[m] || [];
       acc[m].push(l);
@@ -151,28 +152,13 @@ export function LeaveSection({ profile }: { profile: Profile }) {
       <div className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[9999]">
         <button
           onClick={() => setIsApplyDialogOpen(true)}
-          className="
-            h-16 md:h-20
-            rounded-full
-            px-8 md:px-12
-            bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-600
-            hover:scale-105
-            active:scale-95
-            transition-all
-            duration-300
-            shadow-[0_20px_60px_rgba(59,130,246,0.5)]
-            border border-white/20
-            backdrop-blur-xl
-            text-white
-            font-black
-            uppercase
-            tracking-[0.2em]
-            text-xs
-            flex
-            items-center
-            gap-4
-            cursor-pointer
-          "
+          className={cn(
+            "h-16 md:h-20 rounded-full px-8 md:px-12",
+            "bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-600",
+            "hover:scale-105 active:scale-95 transition-all duration-300",
+            "shadow-[0_20px_60px_rgba(59,130,246,0.5)] border border-white/20",
+            "backdrop-blur-xl text-white font-black uppercase tracking-[0.2em] text-xs flex items-center gap-4 cursor-pointer"
+          )}
         >
           <Plus className="h-6 w-6" />
           <span className="hidden sm:inline">Apply for Leave</span>

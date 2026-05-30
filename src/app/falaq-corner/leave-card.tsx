@@ -1,11 +1,7 @@
 'use client';
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
 
 import { motion } from 'framer-motion';
-import { Calendar, Ban, XCircle, RefreshCcw, Trash2, CheckCircle2, Clock, Check } from 'lucide-react';
+import { Calendar, Ban, XCircle, RefreshCcw, Trash2, CheckCircle2, Clock } from 'lucide-react';
 import type { Leave, Profile } from '@/lib/types';
 import { cn, differenceInDays, formatDate, getInitials } from './utils';
 
@@ -148,7 +144,7 @@ export default function LeaveCard({
                 onClick={() => onApproveClick(leave)}
                 className="flex-1 sm:flex-initial rounded-xl h-10 px-5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-[0_4px_20px_rgba(16,185,129,0.25)] hover:scale-[1.02] active:scale-[0.98] duration-300"
               >
-                <Check className="h-3.5 w-3.5" />
+                <CheckCircle2 className="h-3.5 w-3.5" />
                 Authorize
               </button>
             </div>
