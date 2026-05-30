@@ -21,7 +21,7 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
         return <LeaveSection profile={profile} />;
       default:
         return (
-          <div className="flex flex-col items-center justify-center h-full text-center py-20 px-10">
+          <div className="flex flex-col items-center justify-center h-full text-center py-20 px-10 bg-[#05050a]">
             <div className="bg-white/5 p-12 rounded-[3rem] mb-8 border border-white/5 shadow-2xl">
                 {activeSection === 'request-center' ? <Send className="h-16 w-16 text-zinc-800" /> : <Inbox className="h-16 w-16 text-zinc-800" />}
             </div>
@@ -33,8 +33,8 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-10 min-h-screen">
-      <aside className="w-full md:w-72 shrink-0">
+    <div className="flex flex-col md:flex-row gap-10 min-h-screen bg-[#05050a]">
+      <aside className="w-full md:w-72 shrink-0 z-20">
         <h2 className="text-3xl font-black mb-10 px-2 text-white tracking-tighter uppercase">Falaq Corner</h2>
         <nav className="space-y-3">
           {nav.map((item) => (

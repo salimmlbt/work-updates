@@ -1,200 +1,230 @@
-'use client'
+'use client';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { useState, useTransition, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Loader2, Send } from 'lucide-react'
-import { format, differenceInCalendarDays, parseISO } from 'date-fns'
-import { useToast } from '@/hooks/use-toast'
-import { applyLeave } from './actions'
-import { cn } from '@/lib/utils'
-import type { Leave } from '@/lib/types'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { useState, FormEvent } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Calendar, FileText, Send, Sparkles, AlertCircle } from 'lucide-react';
+import type { Leave, Profile } from '@/lib/types';
+import { cn, differenceInDays } from './utils';
 
-type LeaveType = 'Casual Leave' | 'Sick Leave' | 'Emergency Leave' | 'Maternity leave'
-type DayType = 'Full Day' | 'Half Day'
-
-interface ApplyLeaveDialogProps {
-  isOpen: boolean
-  setIsOpen: (open: boolean) => void
-  onSuccess: () => void
-  existingLeaves: Leave[]
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: FormData) => void;
+  currentProfile: Profile;
 }
 
-export function ApplyLeaveDialog({
-  isOpen,
-  setIsOpen,
-  onSuccess,
-  existingLeaves,
-}: ApplyLeaveDialogProps) {
-  const [isPending, startTransition] = useTransition()
-  const { toast } = useToast()
+const LEAVE_TYPES = [
+  { value: 'Annual Leave', label: 'Annual Vacation', color: 'from-purple-500 to-indigo-500', glow: 'text-purple-400 border-purple-500/20' },
+  { value: 'Casual Leave', label: 'Casual Day-Off', color: 'from-blue-500 to-cyan-500', glow: 'text-blue-400 border-blue-500/20' },
+  { value: 'Sick Leave', label: 'Medical & Recovery', color: 'from-emerald-500 to-teal-500', glow: 'text-emerald-400 border-emerald-500/20' },
+  { value: 'Special WFH Leave', label: 'Special WFH / Training', color: 'from-amber-500 to-orange-500', glow: 'text-amber-400 border-amber-500/20' }
+];
 
-  const [leaveType, setLeaveType] = useState<LeaveType | ''>('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [dayType, setDayType] = useState<DayType>('Full Day')
-  const [reason, setReason] = useState('')
-  const [showError, setShowError] = useState(false)
+export function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentProfile }: Props) {
+  const [leaveType, setLeaveType] = useState('Annual Leave');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [reason, setReason] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  useEffect(() => {
-    if (isOpen) {
-      setLeaveType('')
-      setStartDate('')
-      setEndDate('')
-      setDayType('Full Day')
-      setReason('')
-      setShowError(false)
-    }
-  }, [isOpen])
+  const applyPreset = (daysOffset: number) => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate() + 1);
+    
+    const end = new Date(start);
+    end.setDate(start.getDate() + (daysOffset - 1));
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+    setErrorMsg('');
+  };
 
-    if (!leaveType || !startDate || !reason.trim()) {
-      setShowError(true)
-      setTimeout(() => setShowError(false), 400)
-      toast({ title: 'Validation Error', description: 'Mandatory fields missing.', variant: 'destructive' })
-      return
-    }
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
 
-    const finalEndDate = endDate || startDate
-
-    const hasOverlap = existingLeaves.some((leave) => {
-      if (leave.status === 'Cancelled' || leave.status === 'Rejected') return false
-      return startDate <= leave.end_date && finalEndDate >= leave.start_date
-    })
-
-    if (hasOverlap) {
-      toast({ title: 'Date Conflict', description: 'Request overlaps with an existing record.', variant: 'destructive' })
-      return
+    if (!startDate || !endDate) {
+      setErrorMsg('Please specify active start and end dates.');
+      return;
     }
 
-    const formData = new FormData()
-    formData.set('leave_type', leaveType)
-    formData.set('start_date', startDate)
-    formData.set('end_date', finalEndDate)
-    formData.set('day_type', dayType)
-    formData.set('reason', reason.trim())
+    if (new Date(startDate) > new Date(endDate)) {
+      setErrorMsg('Start date cannot fall after the end date.');
+      return;
+    }
 
-    startTransition(async () => {
-      const result = await applyLeave(formData)
-      if (result.error) {
-        toast({ title: 'Error', description: result.error, variant: 'destructive' })
-      } else {
-        toast({ title: 'Success', description: 'Leave statement submitted successfully.' })
-        onSuccess()
-        setIsOpen(false)
-      }
-    })
-  }
+    if (!reason.trim()) {
+      setErrorMsg('Please specify a brief justification or reason for audit purposes.');
+      return;
+    }
 
-  const duration = startDate ? (endDate ? (differenceInCalendarDays(parseISO(endDate), parseISO(startDate)) + 1) : (dayType === 'Half Day' ? 0.5 : 1)) : 0
+    const formData = new FormData();
+    formData.set('leave_type', leaveType);
+    formData.set('start_date', startDate);
+    formData.set('end_date', endDate);
+    formData.set('reason', reason.trim());
+    formData.set('day_type', 'Full Day');
+
+    onSubmit(formData);
+
+    setStartDate('');
+    setEndDate('');
+    setReason('');
+  };
+
+  const calculatedDays = startDate && endDate && new Date(startDate) <= new Date(endDate)
+    ? differenceInDays(startDate, endDate)
+    : 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md rounded-[2.5rem] bg-zinc-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-3xl text-zinc-100 flex flex-col p-0 overflow-visible">
-        <DialogHeader className="p-8 pb-5 border-b border-white/5 shrink-0">
-          <DialogTitle className="text-2xl font-black tracking-tight text-white uppercase">New Statement</DialogTitle>
-          <DialogDescription className="text-zinc-500 font-medium">Log a new absence request in the studio ledger.</DialogDescription>
-        </DialogHeader>
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/60 backdrop-blur-md pointer-events-auto"
+          />
 
-        <ScrollArea className="flex-1 px-8 py-6">
-          <form id="apply-leave-form" onSubmit={handleSubmit} className="space-y-6 pb-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Type *</Label>
-              <Select name="leave_type" value={leaveType} onValueChange={(val: LeaveType) => setLeaveType(val)}>
-                <SelectTrigger className="rounded-2xl h-12 bg-white/5 border-white/10 text-white font-bold transition-all focus:ring-sky-500/50">
-                  <SelectValue placeholder="Choose leave type" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl bg-zinc-900 border-white/10 text-white shadow-2xl">
-                  <SelectItem value="Casual Leave">Casual Leave</SelectItem>
-                  <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                  <SelectItem value="Emergency Leave">Emergency Leave</SelectItem>
-                  <SelectItem value="Maternity leave">Maternity leave</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">From *</Label>
-                <input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={e => setStartDate(e.target.value)}
-                  className={cn(
-                    "w-full h-12 rounded-2xl bg-white/5 border border-white/10 px-4 font-bold text-white [color-scheme:dark] transition-all",
-                    showError && !startDate && "border-rose-500 animate-shake"
-                  )}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">To</Label>
-                <input 
-                  type="date" 
-                  value={endDate} 
-                  onChange={e => setEndDate(e.target.value)}
-                  min={startDate}
-                  className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 px-4 font-bold text-white [color-scheme:dark]"
-                />
-              </div>
-            </div>
-
-            {startDate && !endDate && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Session</Label>
-                <Select value={dayType} onValueChange={(val: DayType) => setDayType(val)}>
-                  <SelectTrigger className="rounded-2xl h-12 bg-sky-500/10 border-sky-500/20 text-sky-400 font-bold"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-2xl bg-zinc-900 border-white/10 text-white shadow-2xl">
-                    <SelectItem value="Full Day">Full Day</SelectItem>
-                    <SelectItem value="Half Day">Half Day</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label className={cn("text-[10px] font-black uppercase tracking-[0.2em] ml-1", showError && !reason.trim() ? "text-rose-500" : "text-zinc-500")}>Audit Reason *</Label>
-              <Textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Briefly state the reason..."
-                className={cn("rounded-2xl min-h-[110px] bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-sky-500/50 transition-all", showError && !reason.trim() && "border-rose-500 animate-shake")}
-              />
-            </div>
-
-            {duration > 0 && (
-                <div className="inline-flex items-center px-4 py-2 rounded-full bg-sky-500/10 text-sky-400 text-[10px] font-black uppercase tracking-widest border border-sky-500/20">
-                    Total: {duration} Day{duration !== 1 ? 's' : ''} Statement
+          <motion.div
+            initial={{ scale: 0.9, y: 30, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 30, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className={`relative w-full max-w-lg overflow-hidden rounded-[2.5rem] bg-[#0c0c14] border border-white/10 shadow-[0_0_50px_rgba(139,92,246,0.15)] z-10`}
+          >
+            <div className="px-8 pt-8 pb-4 flex justify-between items-center bg-gradient-to-b from-white/[0.02] to-transparent">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-indigo-400 animate-pulse" />
+                  <h3 className="text-xl font-extrabold text-white uppercase tracking-tight">
+                    New Leave Statement
+                  </h3>
                 </div>
-            )}
-          </form>
-        </ScrollArea>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.25em] mt-1">
+                  Submitting to directory audit node
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all cursor-pointer hover:rotate-90 duration-300"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-        <DialogFooter className="p-8 border-t border-white/5 flex justify-end gap-4 bg-black/20 shrink-0">
-          <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-12 px-8 text-zinc-400 hover:text-white font-bold uppercase tracking-widest text-[10px]">Discard</Button>
-          <Button onClick={handleSubmit} form="apply-leave-form" disabled={isPending} className="rounded-full h-12 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-xs px-10 shadow-2xl shadow-sky-900/40">
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />} Submit Statement
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              {errorMsg && (
+                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2 animate-bounce">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">
+                  Select Leave Category
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {LEAVE_TYPES.map((t) => {
+                    const isSelected = leaveType === t.value;
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => setLeaveType(t.value)}
+                        className={cn(
+                          "px-4 py-3.5 rounded-2xl border text-left transition-all duration-300 relative overflow-hidden group cursor-pointer",
+                          isSelected
+                            ? "bg-white/[0.04] border-indigo-500/40 text-white shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+                            : "bg-white/[0.01] border-white/5 text-zinc-400 hover:border-white/15 hover:bg-white/[0.02]"
+                        )}
+                      >
+                        <p className="text-xs font-black tracking-wide uppercase group-hover:text-white transition-colors">{t.label}</p>
+                        <p className="text-[9px] text-zinc-500 font-bold tracking-widest uppercase mt-0.5">{t.value}</p>
+                        {isSelected && (
+                          <div className={`absolute right-3 top-3.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]`} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">
+                  Quick Date Range Presets
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => applyPreset(1)} className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer">1 Day</button>
+                  <button type="button" onClick={() => applyPreset(3)} className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer">3 Days</button>
+                  <button type="button" onClick={() => applyPreset(5)} className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer">5 Days</button>
+                  <button type="button" onClick={() => applyPreset(10)} className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer">10 Days</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">Start Date</span>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => { setStartDate(e.target.value); setErrorMsg(''); }}
+                      className="w-full bg-[#141420] border border-white/5 focus:border-indigo-500/40 text-white rounded-2xl h-12 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">End Date</span>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => { setEndDate(e.target.value); setErrorMsg(''); }}
+                      className="w-full bg-[#141420] border border-white/5 focus:border-indigo-500/40 text-white rounded-2xl h-12 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">Justification Statement</span>
+                <div className="relative">
+                  <FileText className="absolute left-4 top-4 h-4 w-4 text-zinc-500 pointer-events-none" />
+                  <textarea
+                    value={reason}
+                    onChange={(e) => { setReason(e.target.value); setErrorMsg(''); }}
+                    rows={3}
+                    placeholder="Provide a professional note explaining your absence context..."
+                    className="w-full bg-[#141420] border border-white/5 focus:border-indigo-500/40 text-white rounded-2xl p-4 pl-12 text-xs font-medium outline-none transition-all resize-none leading-relaxed placeholder:text-zinc-600"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                <div>
+                  <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Calculated duration</span>
+                  <p className="text-white font-extrabold text-sm tracking-tight">{calculatedDays} {calculatedDays === 1 ? 'Day Off' : 'Days Off'}</p>
+                </div>
+                <button type="submit" className="rounded-2xl h-12 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-black text-[10px] uppercase tracking-[0.15em] flex items-center gap-2.5 shadow-2xl hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 cursor-pointer">
+                  <Send className="h-3.5 w-3.5" />
+                  Submit Request
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
 }
