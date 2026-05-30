@@ -2,19 +2,38 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Inbox, Send } from 'lucide-react';
+import { Inbox, Send, Calendar as CalendarIcon } from 'lucide-react';
 import type { Profile } from '@/lib/types';
+import { LeaveSection } from './leave-section';
 
 export default function FalaqCornerClient({ profile }: { profile: Profile }) {
-  const [activeSection, setActiveSection] = useState<'request-center' | 'inbox'>('request-center');
+  const [activeSection, setActiveSection] = useState<'leave-center' | 'request-center' | 'inbox'>('leave-center');
 
   const nav = [
+    { id: 'leave-center', label: 'Leave Center', icon: CalendarIcon },
     { id: 'request-center', label: 'Request Hub', icon: Send },
     { id: 'inbox', label: 'Studio Inbox', icon: Inbox },
   ];
 
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'leave-center':
+        return <LeaveSection profile={profile} />;
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-full text-center py-20 px-10">
+            <div className="bg-white/5 p-12 rounded-[3rem] mb-8 border border-white/5 shadow-2xl">
+                {activeSection === 'request-center' ? <Send className="h-16 w-16 text-zinc-800" /> : <Inbox className="h-16 w-16 text-zinc-800" />}
+            </div>
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Section Under Maintenance</h3>
+            <p className="text-zinc-500 mt-2 font-medium">This module will be online in the next studio update.</p>
+          </div>
+        );
+    }
+  };
+
   return (
-    <div className="flex flex-col md:flex-row gap-10">
+    <div className="flex flex-col md:flex-row gap-10 min-h-screen">
       <aside className="w-full md:w-72 shrink-0">
         <h2 className="text-3xl font-black mb-10 px-2 text-white tracking-tighter uppercase">Falaq Corner</h2>
         <nav className="space-y-3">
@@ -30,22 +49,19 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
               )}
             >
               <item.icon className={cn('h-5 w-5', activeSection === item.id ? 'text-sky-400' : 'text-zinc-600')} />
-              <span className="text-xs uppercase tracking-widest">{item.label}</span>
+              <span className="text-xs font-black uppercase tracking-widest">{item.label}</span>
+              {activeSection === item.id && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sky-400 rounded-r-full shadow-[0_0_10px_#0ea5e9]" />
+              )}
             </button>
           ))}
         </nav>
       </aside>
       
-      <main className="flex-1 min-h-[750px] bg-zinc-950/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.7)] relative overflow-hidden">
+      <main className="flex-1 bg-zinc-950/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.7)] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.05),transparent)] pointer-events-none" />
         <div className="relative z-10 h-full flex flex-col">
-            <div className="flex flex-col items-center justify-center h-full text-center py-20">
-              <div className="bg-white/5 p-12 rounded-[3rem] mb-8 border border-white/5 shadow-2xl">
-                  {activeSection === 'request-center' ? <Send className="h-16 w-16 text-zinc-800" /> : <Inbox className="h-16 w-16 text-zinc-800" />}
-              </div>
-              <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Section Under Maintenance</h3>
-              <p className="text-zinc-500 mt-2 font-medium">This module will be online in the next studio update.</p>
-            </div>
+            {renderContent()}
         </div>
       </main>
     </div>
