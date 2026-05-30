@@ -13,7 +13,7 @@ import { cn, differenceInDays } from './utils';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: any) => void;
   currentProfile: Profile;
 }
 
@@ -24,7 +24,7 @@ const LEAVE_TYPES = [
   { value: 'Special WFH Leave', label: 'Special WFH / Training', color: 'from-amber-500 to-orange-500', glow: 'text-amber-400 border-amber-500/20' }
 ];
 
-export function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentProfile }: Props) {
+export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentProfile }: Props) {
   const [leaveType, setLeaveType] = useState('Annual Leave');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -63,14 +63,14 @@ export function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentProfile }: 
       return;
     }
 
-    const formData = new FormData();
-    formData.set('leave_type', leaveType);
-    formData.set('start_date', startDate);
-    formData.set('end_date', endDate);
-    formData.set('reason', reason.trim());
-    formData.set('day_type', 'Full Day');
-
-    onSubmit(formData);
+    onSubmit({
+      user_id: currentProfile.id,
+      leave_type: leaveType,
+      start_date: startDate,
+      end_date: endDate,
+      reason: reason.trim(),
+      day_type: 'Full Day'
+    });
 
     setStartDate('');
     setEndDate('');

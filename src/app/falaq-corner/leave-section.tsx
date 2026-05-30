@@ -6,8 +6,8 @@ import { format, parseISO } from 'date-fns';
 import type { Leave, Profile, RoleWithPermissions } from '@/lib/types';
 import { cancelLeave, updateLeaveStatus, reopenLeave, deleteLeavePermanently, applyLeave } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { ApproveLeaveDialog } from './approve-leave-dialog';
-import { ApplyLeaveDialog } from './apply-leave-dialog';
+import ApproveLeaveDialog from './approve-leave-dialog';
+import ApplyLeaveDialog from './apply-leave-dialog';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from './utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,8 +60,11 @@ export function LeaveSection({ profile }: { profile: Profile }) {
     });
   };
 
-  const handleApplySubmit = (formData: FormData) => {
+  const handleApplySubmit = (data: any) => {
     startTransition(async () => {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => formData.append(key, value as string));
+        
         const result = await applyLeave(formData);
         if (result.error) {
             toast({ title: 'Error', description: result.error, variant: 'destructive' });
@@ -153,11 +156,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         <button
           onClick={() => setIsApplyDialogOpen(true)}
           className={cn(
-            "h-16 md:h-20 rounded-full px-8 md:px-12",
-            "bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-600",
-            "hover:scale-105 active:scale-95 transition-all duration-300",
-            "shadow-[0_20px_60px_rgba(59,130,246,0.5)] border border-white/20",
-            "backdrop-blur-xl text-white font-black uppercase tracking-[0.2em] text-xs flex items-center gap-4 cursor-pointer"
+            "h-16 md:h-20 rounded-full px-8 md:px-12 bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-600 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_20px_60px_rgba(59,130,246,0.5)] border border-white/20 backdrop-blur-xl text-white font-black uppercase tracking-[0.2em] text-xs flex items-center gap-4 cursor-pointer"
           )}
         >
           <Plus className="h-6 w-6" />

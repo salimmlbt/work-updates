@@ -17,7 +17,7 @@ interface Props {
   onReject: (id: string) => void;
 }
 
-export function ApproveLeaveDialog({ isOpen, onClose, leave, onApprove, onReject }: Props) {
+export default function ApproveLeaveDialog({ isOpen, onClose, leave, onApprove, onReject }: Props) {
   const duration = differenceInDays(leave.start_date, leave.end_date);
   const applicantName = leave.profiles?.full_name || 'Anonymous User';
 
@@ -122,7 +122,7 @@ export function ApproveLeaveDialog({ isOpen, onClose, leave, onApprove, onReject
                     onApprove(leave.id);
                     onClose();
                   }}
-                  className="rounded-2xl h-12 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[10px] uppercase tracking-[0.15em] flex items-center justify-center gap-2 shadow-[0_4px_25px_rgba(16,185,129,0.3)] transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                  className="rounded-2xl h-12 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-[10px] uppercase tracking-[0.15em] flex items-center justify-center gap-2 shadow-[0_4px_25px_rgba(16,185,129,0.3)] transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Authorize Leave
