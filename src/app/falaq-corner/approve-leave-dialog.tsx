@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { Loader2, CheckCircle2, Calendar as CalendarIcon, ShieldCheck } from 'lucide-react'
+import { Loader2, CheckCircle2, ShieldCheck } from 'lucide-react'
 import { format, parseISO, eachDayOfInterval, isSameDay } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { updateLeaveStatus } from './actions'
@@ -20,63 +20,39 @@ import type { Leave, Profile } from '@/lib/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
-interface ApproveLeaveDialogProps {
-  isOpen: boolean
-  setIsOpen: (open: boolean) => void
-  leave: Leave & { profiles?: Profile }
-  onSuccess: () => void
-}
-
 export function ApproveLeaveDialog({
   isOpen,
   setIsOpen,
   leave,
   onSuccess,
-}: ApproveLeaveDialogProps) {
+}: {
+  isOpen: boolean
+  setIsOpen: (open: boolean) => void
+  leave: Leave & { profiles?: Profile }
+  onSuccess: () => void
+}) {
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
   const allRequestedDates = useMemo(() => {
     try {
       if (!leave.start_date || !leave.end_date) return []
-      return eachDayOfInterval({
-        start: parseISO(leave.start_date),
-        end: parseISO(leave.end_date),
-      })
-    } catch (e) {
-      return []
-    }
+      return eachDayOfInterval({ start: parseISO(leave.start_date), end: parseISO(leave.end_date) })
+    } catch (e) { return [] }
   }, [leave.start_date, leave.end_date])
 
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
 
   useEffect(() => {
-    if (isOpen) {
-      setSelectedDates(allRequestedDates)
-    }
+    if (isOpen) setSelectedDates(allRequestedDates)
   }, [isOpen, allRequestedDates])
 
   const toggleDate = (date: Date) => {
-    setSelectedDates(prev => 
-      prev.some(d => isSameDay(d, date))
-        ? prev.filter(d => !isSameDay(d, date))
-        : [...prev, date].sort((a, b) => a.getTime() - b.getTime())
-    )
-  }
-
-  const isAllSelected = selectedDates.length === allRequestedDates.length && allRequestedDates.length > 0;
-
-  const handleToggleAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedDates(allRequestedDates);
-    } else {
-      setSelectedDates([]);
-    }
+    setSelectedDates(prev => prev.some(d => isSameDay(d, date)) ? prev.filter(d => !isSameDay(d, date)) : [...prev, date])
   }
 
   const handleApprove = () => {
     if (selectedDates.length === 0) return
-
     const sorted = [...selectedDates].sort((a, b) => a.getTime() - b.getTime())
     const approvedRange = {
       start: format(sorted[0], 'yyyy-MM-dd'),
@@ -86,10 +62,9 @@ export function ApproveLeaveDialog({
 
     startTransition(async () => {
       const result = await updateLeaveStatus(leave.id, 'Approved', approvedRange)
-      if (result.error) {
-        toast({ title: 'Error', description: result.error, variant: 'destructive' })
-      } else {
-        toast({ title: 'Statement Approved', description: 'The leave request has been verified and committed.', variant: 'success' })
+      if (result.error) toast({ title: 'Error', description: result.error, variant: 'destructive' })
+      else {
+        toast({ title: 'Statement Approved', variant: 'success' })
         onSuccess()
         setIsOpen(false)
       }
@@ -99,22 +74,16 @@ export function ApproveLeaveDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-2xl rounded-[3.5rem] bg-zinc-950 border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.85)] backdrop-blur-3xl text-zinc-100 overflow-hidden p-0">
-        
         <div className="h-2 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 shadow-[0_0_40px_rgba(16,185,129,0.4)]" />
-
         <div className="p-10 space-y-10">
           <DialogHeader>
             <DialogTitle className="text-3xl font-black tracking-tighter flex items-center gap-4 text-white uppercase">
-              <ShieldCheck className="h-10 w-10 text-emerald-400" />
-              Audit & Commit
+              <ShieldCheck className="h-10 w-10 text-emerald-400" /> Audit & Commit
             </DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-sm mt-1">
-              Verify the requested period and authorize the studio absence statement.
-            </DialogDescription>
+            <DialogDescription className="text-zinc-500 font-medium text-sm mt-1">Verify requested period and authorize the absence statement.</DialogDescription>
           </DialogHeader>
 
-          {/* Employee Info Card */}
-          <div className="flex items-center gap-6 p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/10 shadow-2xl ring-1 ring-white/5">
+          <div className="flex items-center gap-6 p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/10 shadow-2xl">
             <Avatar className="h-16 w-16 border-2 border-white/10 shadow-2xl">
               <AvatarImage src={leave.profiles?.avatar_url ?? undefined} />
               <AvatarFallback className="bg-emerald-500/10 text-emerald-400 font-black text-lg">{getInitials(leave.profiles?.full_name)}</AvatarFallback>
@@ -123,88 +92,31 @@ export function ApproveLeaveDialog({
               <p className="font-black text-white text-xl tracking-tight uppercase">{leave.profiles?.full_name}</p>
               <p className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-bold mt-1">{leave.leave_type}</p>
             </div>
-            <div className="ml-auto bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full">
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Active Request</span>
-            </div>
           </div>
 
-          {/* Date Selector */}
-          <div className="space-y-5">
-            <div className="flex items-center justify-between px-3">
-              <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">Period Validation</label>
-              <div 
-                  role="button"
-                  onClick={() => handleToggleAll(!isAllSelected)}
-                  className="flex items-center gap-3 cursor-pointer group"
-                >
-                  <Checkbox 
-                    checked={isAllSelected}
-                    onCheckedChange={handleToggleAll}
-                    className="h-4 w-4 border-white/20 data-[state=checked]:bg-sky-500 data-[state=checked]:border-sky-500 transition-all"
-                  />
-                  <span className="text-[10px] font-black text-zinc-400 group-hover:text-white transition-colors uppercase tracking-widest">Authorize All</span>
-                </div>
-            </div>
-            
-            <div className="rounded-[2.5rem] border border-white/10 bg-black/40 overflow-hidden shadow-inner">
-              <ScrollArea className="h-[300px] w-full p-4">
-                <div className="space-y-2 pr-4">
-                  {allRequestedDates.map((date) => {
-                    const isSelected = selectedDates.some(d => isSameDay(d, date))
-                    return (
-                      <div 
-                        key={date.toISOString()}
-                        onClick={() => toggleDate(date)}
-                        className={cn(
-                          "flex items-center justify-between p-5 rounded-2xl cursor-pointer transition-all duration-500 border border-transparent",
-                          isSelected 
-                            ? "bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.05)]" 
-                            : "bg-white/[0.01] hover:bg-white/[0.04] opacity-50"
-                        )}
-                      >
-                        <div className="flex items-center gap-5">
-                          <Checkbox 
-                            checked={isSelected}
-                            onCheckedChange={() => toggleDate(date)}
-                            className="h-4 w-4 border-white/10 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
-                          />
-                          <span className={cn(
-                            "text-sm font-black uppercase tracking-widest",
-                            isSelected ? "text-emerald-400" : "text-zinc-500"
-                          )}>
-                            {format(date, 'EEEE, dd MMMM yyyy')}
-                          </span>
-                        </div>
-                        {isSelected && <CheckCircle2 className="h-5 w-5 text-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.4)]" />}
+          <div className="rounded-[2.5rem] border border-white/10 bg-black/40 overflow-hidden shadow-inner">
+            <ScrollArea className="h-[280px] w-full p-4">
+              <div className="space-y-2">
+                {allRequestedDates.map((date) => {
+                  const isSelected = selectedDates.some(d => isSameDay(d, date))
+                  return (
+                    <div key={date.toISOString()} onClick={() => toggleDate(date)} className={cn("flex items-center justify-between p-5 rounded-2xl cursor-pointer transition-all duration-300 border border-transparent", isSelected ? "bg-emerald-500/10 border-emerald-500/20" : "bg-white/[0.01] opacity-50")}>
+                      <div className="flex items-center gap-5">
+                        <Checkbox checked={isSelected} className="h-4 w-4 border-white/10 data-[state=checked]:bg-emerald-500" />
+                        <span className={cn("text-sm font-black uppercase tracking-widest", isSelected ? "text-emerald-400" : "text-zinc-500")}>{format(date, 'EEEE, dd MMMM yyyy')}</span>
                       </div>
-                    )
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-
-            <div className="flex items-center justify-between p-6 rounded-[2.5rem] bg-emerald-500/[0.03] border-2 border-emerald-500/10 border-dashed">
-              <div className="flex items-center gap-4 text-emerald-400 font-black uppercase tracking-[0.2em] text-[10px]">
-                <CalendarIcon className="h-5 w-5 opacity-40" />
-                <span>Authorized Presence</span>
+                    </div>
+                  )
+                })}
               </div>
-              <span className="text-3xl font-black text-emerald-400 tracking-tighter drop-shadow-[0_0_20px_rgba(52,211,153,0.3)]">
-                {selectedDates.length} Day{selectedDates.length !== 1 ? 's' : ''}
-              </span>
-            </div>
+            </ScrollArea>
           </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-5 pt-8 border-t border-white/5 bg-black/20 mt-4 rounded-b-[3.5rem] -mx-10 px-10 pb-10">
-            <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-14 px-10 text-zinc-500 hover:text-white font-black uppercase tracking-widest text-[10px]">
-              Dismiss
-            </Button>
-            <Button
-              onClick={handleApprove}
-              disabled={isPending || selectedDates.length === 0}
-              className="flex-1 rounded-2xl h-14 bg-emerald-600 hover:bg-emerald-500 shadow-[0_20px_50px_rgba(16,185,129,0.3)] text-white font-black uppercase tracking-[0.2em] text-[10px] px-12 border border-white/10 active:scale-95 transition-all"
-            >
+          <DialogFooter className="flex flex-col sm:flex-row gap-5 pt-8 border-t border-white/5 bg-black/20 mt-4 -mx-10 px-10 pb-10">
+            <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-2xl h-14 px-10 text-zinc-500 hover:text-white font-black uppercase tracking-widest text-[10px]">Dismiss</Button>
+            <Button onClick={handleApprove} disabled={isPending || selectedDates.length === 0} className="flex-1 rounded-2xl h-14 bg-emerald-600 hover:bg-emerald-500 shadow-2xl text-white font-black uppercase tracking-[0.2em] text-[10px]">
               {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5 mr-3" />}
-              Authorize {selectedDates.length} {selectedDates.length === 1 ? 'Day' : 'Days'}
+              Authorize {selectedDates.length} Days
             </Button>
           </DialogFooter>
         </div>

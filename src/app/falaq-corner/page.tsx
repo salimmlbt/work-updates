@@ -1,8 +1,11 @@
-
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import type { Profile, RoleWithPermissions } from '@/lib/types';
 import FalaqCornerClient from './falaq-corner-client';
+
+/**
+ * FALAQ CORNER - MAIN HUB (SERVER COMPONENT)
+ */
 
 export const dynamic = 'force-dynamic';
 
@@ -23,9 +26,12 @@ export default async function FalaqCornerPage() {
 
   if (!isFalaqAdmin && permissions.falaq_corner === 'Restricted') {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
-        <p className="text-slate-500">You do not have permission to view Falaq Corner.</p>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4 bg-[#0f0f0f]">
+        <div className="h-20 w-20 rounded-[2rem] bg-rose-500/10 flex items-center justify-center mb-6 shadow-2xl">
+            <span className="text-3xl">🚫</span>
+        </div>
+        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Access Forbidden</h2>
+        <p className="text-zinc-500 mt-2 font-medium">Your role does not have authorization to enter the Falaq Corner.</p>
       </div>
     );
   }
