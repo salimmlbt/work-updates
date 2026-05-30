@@ -116,7 +116,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
   }, [leaves])
 
   const renderTimeline = () => (
-    <div className="space-y-16 pb-32">
+    <div className="space-y-16 pb-40">
       {Object.entries(groupedLeaves).map(([month, items]) => {
         const isCollapsed = collapsedMonths[month]
         return (
@@ -257,6 +257,8 @@ export function LeaveSection({ profile }: { profile: Profile }) {
 
   return (
     <div className="relative flex flex-col h-full bg-transparent overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
+      
       <div className="p-8 md:p-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/5 shrink-0">
         <div>
           <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Leave Center</h2>
@@ -272,7 +274,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 md:p-10 custom-scrollbar relative">
+      <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 custom-scrollbar relative">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-48 gap-4">
               <Loader2 className="h-10 w-10 animate-spin text-sky-500" />
@@ -288,18 +290,38 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         ) : renderTimeline()}
       </div>
 
-      {/* FIXED ACTION BUTTON - DARK GLOW STYLE */}
-      <div className="absolute bottom-10 right-10 z-[150]">
-          <Button 
-              size="lg" 
-              onClick={() => setIsApplyDialogOpen(true)}
-              className="rounded-full h-20 px-12 gap-5 shadow-[0_25px_60px_rgba(56,189,248,0.4)] bg-gradient-to-br from-sky-600 to-blue-800 hover:from-sky-500 hover:to-blue-600 transition-all active:scale-95 text-white font-black uppercase tracking-[0.2em] text-xs border-2 border-white/20 ring-4 ring-sky-500/10 group"
-          >
-              <div className="h-8 w-8 rounded-xl bg-white/10 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
-                  <Plus className="h-6 w-6" />
-              </div>
-              Apply for Leave
-          </Button>
+      {/* FIXED ACTION BUTTON - MOBILE FAB STYLE */}
+      <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[9999]">
+        <Button
+          size="lg"
+          onClick={() => setIsApplyDialogOpen(true)}
+          className="
+            h-16 md:h-18
+            rounded-full
+            px-6 md:px-8
+            bg-gradient-to-r
+            from-sky-500
+            via-blue-500
+            to-indigo-600
+            hover:scale-105
+            active:scale-95
+            transition-all
+            duration-300
+            shadow-[0_20px_50px_rgba(59,130,246,0.45)]
+            border
+            border-white/20
+            backdrop-blur-xl
+            text-white
+            font-bold
+            tracking-wide
+            gap-3
+          "
+        >
+          <Plus className="h-5 w-5" />
+          <span className="hidden sm:inline">
+            Apply for Leave
+          </span>
+        </Button>
       </div>
 
       <ApplyLeaveDialog isOpen={isApplyDialogOpen} setIsOpen={setIsApplyDialogOpen} onSuccess={() => fetchLeaves(false)} existingLeaves={leaves} />
