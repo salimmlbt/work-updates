@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Inbox, Send, Calendar as CalendarIcon } from 'lucide-react';
+import { Inbox, Send, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 import { LeaveSection } from './leave-section';
+import GlowBackground from './glow-background';
 
 export default function FalaqCornerClient({ profile }: { profile: Profile }) {
   const [activeSection, setActiveSection] = useState<'leave-center' | 'request-center' | 'inbox'>('leave-center');
+  const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
 
   const nav = [
     { id: 'leave-center', label: 'Leave Center', icon: CalendarIcon },
@@ -18,10 +20,10 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
   const renderContent = () => {
     switch (activeSection) {
       case 'leave-center':
-        return <LeaveSection profile={profile} />;
+        return <LeaveSection profile={profile} isApplyDialogOpen={isApplyDialogOpen} setIsApplyDialogOpen={setIsApplyDialogOpen} />;
       default:
         return (
-          <div className="flex flex-col items-center justify-center h-full text-center py-20 px-10 bg-[#05050a]">
+          <div className="flex flex-col items-center justify-center h-full text-center py-20 px-10 bg-[#05050a]/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10">
             <div className="bg-white/5 p-12 rounded-[3rem] mb-8 border border-white/5 shadow-2xl">
                 {activeSection === 'request-center' ? <Send className="h-16 w-16 text-zinc-800" /> : <Inbox className="h-16 w-16 text-zinc-800" />}
             </div>
@@ -33,9 +35,12 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-10 h-[calc(100vh-140px)] bg-[#05050a] items-start overflow-hidden pr-2">
+    <div className="relative h-[calc(100vh-140px)] flex flex-col md:flex-row gap-10 bg-[#05050a] items-start overflow-hidden pr-2">
+      {/* 🌌 FIXED BACKGROUND */}
+      <GlowBackground />
+
       {/* 🚀 INDEPENDENT FIXED SIDEBAR */}
-      <aside className="w-full md:w-72 shrink-0 z-20 transition-all duration-300">
+      <aside className="relative w-full md:w-72 shrink-0 z-20 transition-all duration-300">
         <h2 className="text-3xl font-black mb-10 px-2 text-white tracking-tighter uppercase">Falaq Corner</h2>
         <nav className="space-y-3">
           {nav.map((item) => (
@@ -59,20 +64,23 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
         </nav>
       </aside>
       
-      {/* 🔮 MAIN SCROLLABLE CONTENT */}
-      <main className="flex-1 h-full bg-zinc-950/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.7)] relative overflow-y-auto custom-scrollbar">
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.05),transparent)] pointer-events-none" />
-        <div className="relative z-10 h-full flex flex-col">
-            {renderContent()}
-        </div>
+      {/* 🔮 MAIN DYNAMIC CONTENT AREA */}
+      <main className="flex-1 h-full relative z-10">
+          {renderContent()}
       </main>
 
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
-      `}</style>
+      {/* 🛠️ VIEWPORT-FIXED FAB (Only for Leave Center) */}
+      {activeSection === 'leave-center' && (
+        <div className="fixed bottom-10 right-10 z-[100]">
+          <button
+            onClick={() => setIsApplyDialogOpen(true)}
+            className="group h-16 md:h-20 rounded-full px-8 md:px-12 bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-600 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_20px_60px_rgba(59,130,246,0.5)] border border-white/20 backdrop-blur-xl text-white font-black uppercase tracking-[0.2em] text-xs flex items-center gap-4 cursor-pointer"
+          >
+            <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" />
+            <span className="hidden sm:inline">Apply for Leave</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

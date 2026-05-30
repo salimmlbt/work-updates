@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useTransition, useEffect, useMemo, useCallback } from 'react';
-import { Plus, ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2, Plus, FileText } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import type { Leave, Profile, RoleWithPermissions } from '@/lib/types';
 import { cancelLeave, updateLeaveStatus, reopenLeave, deleteLeavePermanently, applyLeave } from './actions';
@@ -11,14 +11,18 @@ import ApplyLeaveDialog from './apply-leave-dialog';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from './utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import GlowBackground from './glow-background';
 import DashboardStats from './dashboard-stats';
 import LeaveCard from './leave-card';
 
-export function LeaveSection({ profile }: { profile: Profile }) {
+interface LeaveSectionProps {
+  profile: Profile;
+  isApplyDialogOpen: boolean;
+  setIsApplyDialogOpen: (open: boolean) => void;
+}
+
+export function LeaveSection({ profile, isApplyDialogOpen, setIsApplyDialogOpen }: LeaveSectionProps) {
   const [leaves, setLeaves] = useState<(Leave & { profiles?: Profile })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
   const [leaveToApprove, setLeaveToApprove] = useState<Leave & { profiles?: Profile } | null>(null);
   const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState('my-leaves');
@@ -87,29 +91,30 @@ export function LeaveSection({ profile }: { profile: Profile }) {
   }, [leaves]);
 
   return (
-    <div className="relative flex flex-col h-full min-h-screen">
-      <GlowBackground />
-      
-      <div className="relative z-10 p-6 md:p-10 space-y-10 max-w-7xl mx-auto w-full">
-        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+    <div className="relative flex flex-col h-full overflow-hidden">
+      {/* 🔮 HEADER - REMAINS FIXED AT TOP OF MAIN AREA */}
+      <header className="shrink-0 p-6 md:p-8 space-y-8 border-b border-white/5 bg-zinc-950/20 backdrop-blur-3xl rounded-t-[3.5rem] border border-white/10 mx-1">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div className="space-y-1">
-                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">Leave Center</h2>
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.5em] mt-2 ml-1">Audit and manage studio presence statements.</p>
+                <h2 className="text-4xl font-black text-white tracking-tighter uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">Leave Center</h2>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.5em] mt-1">Audit studio presence statements.</p>
             </div>
             
             {isEditor && (
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-3xl shadow-2xl">
-                    <TabsList className="bg-transparent border-0 h-10 gap-2">
-                        <TabsTrigger value="my-leaves" className="rounded-full px-8 h-8 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-zinc-950 transition-all duration-500">Personal</TabsTrigger>
-                        <TabsTrigger value="team-requests" className="rounded-full px-8 h-8 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-zinc-950 transition-all duration-500">Review Hub</TabsTrigger>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-3xl">
+                    <TabsList className="bg-transparent border-0 h-9 gap-1">
+                        <TabsTrigger value="my-leaves" className="rounded-full px-6 h-7 text-[9px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-zinc-950 transition-all duration-500">Personal</TabsTrigger>
+                        <TabsTrigger value="team-requests" className="rounded-full px-6 h-7 text-[9px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-zinc-950 transition-all duration-500">Review</TabsTrigger>
                     </TabsList>
                 </Tabs>
             )}
-        </header>
-
+        </div>
         <DashboardStats leaves={leaves} currentProfile={profile} />
+      </header>
 
-        <div className="space-y-12 pb-40">
+      {/* 🔮 SCROLLABLE TIMELINE */}
+      <div className="flex-1 overflow-y-auto px-6 md:px-10 py-10 custom-scrollbar relative">
+        <div className="space-y-12 pb-40 max-w-5xl mx-auto w-full">
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-48 gap-4 opacity-40">
                     <Loader2 className="h-10 w-10 animate-spin text-sky-500" />
@@ -150,18 +155,6 @@ export function LeaveSection({ profile }: { profile: Profile }) {
                 })
             )}
         </div>
-      </div>
-
-      <div className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[9999]">
-        <button
-          onClick={() => setIsApplyDialogOpen(true)}
-          className={cn(
-            "h-16 md:h-20 rounded-full px-8 md:px-12 bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-600 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_20px_60px_rgba(59,130,246,0.5)] border border-white/20 backdrop-blur-xl text-white font-black uppercase tracking-[0.2em] text-xs flex items-center gap-4 cursor-pointer"
-          )}
-        >
-          <Plus className="h-6 w-6" />
-          <span className="hidden sm:inline">Apply for Leave</span>
-        </button>
       </div>
 
       <ApplyLeaveDialog 
