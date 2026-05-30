@@ -259,7 +259,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
     <div className="relative flex flex-col h-full bg-transparent overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-sky-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
       
-      <div className="p-8 md:p-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/5 shrink-0">
+      <div className="p-8 md:p-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/5 shrink-0 relative z-10">
         <div>
           <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Leave Center</h2>
           <p className="text-xs text-zinc-500 font-bold uppercase tracking-[0.3em] mt-2">Audit and manage studio presence statements.</p>
@@ -274,7 +274,7 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 custom-scrollbar relative">
+      <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 custom-scrollbar relative z-10">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-48 gap-4">
               <Loader2 className="h-10 w-10 animate-spin text-sky-500" />
@@ -290,33 +290,23 @@ export function LeaveSection({ profile }: { profile: Profile }) {
         ) : renderTimeline()}
       </div>
 
+      {/* FLOATING ACTION BUTTON (FAB) - Strictly fixed to viewport/container */}
       <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[9999]">
         <Button
           size="lg"
           onClick={() => setIsApplyDialogOpen(true)}
           className="
-            h-16 md:h-18
-            rounded-full
-            px-6 md:px-8
-            bg-gradient-to-r
-            from-sky-500
-            via-blue-500
-            to-indigo-600
-            hover:scale-105
-            active:scale-95
-            transition-all
-            duration-300
-            shadow-[0_20px_50px_rgba(59,130,246,0.45)]
-            border
-            border-white/20
-            backdrop-blur-xl
-            text-white
-            font-bold
-            tracking-wide
-            gap-3
+            flex items-center gap-3
+            h-16 md:h-18 
+            rounded-full 
+            px-6 md:px-8 
+            bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 
+            hover:scale-105 active:scale-95 transition-all duration-300 
+            shadow-[0_20px_50px_rgba(59,130,246,0.45)] border border-white/20 
+            backdrop-blur-xl text-white font-black uppercase tracking-widest text-xs
           "
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-6 w-6 shrink-0" />
           <span className="hidden sm:inline">
             Apply for Leave
           </span>
