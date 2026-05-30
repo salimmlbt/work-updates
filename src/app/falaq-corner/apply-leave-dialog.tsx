@@ -1,8 +1,4 @@
 'use client';
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
 
 import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -98,7 +94,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 30, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className={`relative w-full max-w-lg overflow-hidden rounded-[2.5rem] bg-[#0c0c14] border border-white/10 shadow-[0_0_50px_rgba(139,92,246,0.15)] z-10`}
+            className={`relative w-full max-w-lg overflow-visible rounded-[2.5rem] bg-[#0c0c14] border border-white/10 shadow-[0_0_50px_rgba(139,92,246,0.15)] z-10`}
           >
             <div className="px-8 pt-8 pb-4 flex justify-between items-center bg-gradient-to-b from-white/[0.02] to-transparent">
               <div>

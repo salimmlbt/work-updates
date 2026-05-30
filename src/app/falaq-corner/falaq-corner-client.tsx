@@ -33,9 +33,9 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-10 min-h-screen bg-[#05050a] items-start">
-      {/* 🚀 INDEPENDENT STICKY SIDEBAR */}
-      <aside className="w-full md:w-72 shrink-0 z-20 md:sticky md:top-8 transition-all duration-300">
+    <div className="flex flex-col md:flex-row gap-10 h-[calc(100vh-140px)] bg-[#05050a] items-start overflow-hidden pr-2">
+      {/* 🚀 INDEPENDENT FIXED SIDEBAR */}
+      <aside className="w-full md:w-72 shrink-0 z-20 transition-all duration-300">
         <h2 className="text-3xl font-black mb-10 px-2 text-white tracking-tighter uppercase">Falaq Corner</h2>
         <nav className="space-y-3">
           {nav.map((item) => (
@@ -60,12 +60,19 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
       </aside>
       
       {/* 🔮 MAIN SCROLLABLE CONTENT */}
-      <main className="flex-1 bg-zinc-950/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.7)] relative overflow-hidden">
+      <main className="flex-1 h-full bg-zinc-950/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.7)] relative overflow-y-auto custom-scrollbar">
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.05),transparent)] pointer-events-none" />
         <div className="relative z-10 h-full flex flex-col">
             {renderContent()}
         </div>
       </main>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+      `}</style>
     </div>
   );
 }
