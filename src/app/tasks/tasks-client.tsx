@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -303,7 +302,7 @@ const AddTaskRow = ({
 
   const filteredProjects = useMemo(() => {
     const list = clientId ? projects.filter(p => String(p.client_id) === String(clientId)) : [];
-    return list.sort((a, b) => a.localeCompare(b));
+    return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [clientId, projects]);
 
   const sortedClients = useMemo(() => {
@@ -1678,7 +1677,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     const tabs = [
       { value: 'active', label: 'Active', count: activeTasks.length, content: renderTaskTable(activeTasks, 'todo', isReviewer, 'active') },
       { value: 'under-review', label: 'Under review', count: underReviewTasks.length, content: renderTaskTable(underReviewTasks, 'review', isReviewer, 'under-review') },
-      { value: 'completed', label: 'Completed', count: completedTasks.length, content: renderTaskTable(completedTasks, 'done', isReviewer, 'completed') },
+      { value: 'completed', label: 'Completed', count: completedTasks.length, count_label: completedTasks.length, content: renderTaskTable(completedTasks, 'done', isReviewer, 'completed') },
     ];
     return (
       <div className="w-full">
