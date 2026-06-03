@@ -145,11 +145,11 @@ export function AttendanceWarning({ profile }: Props) {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ x: -100, opacity: 0, scale: 0.8 }}
+        initial={{ x: 100, opacity: 0, scale: 0.8 }}
         animate={{ x: 0, opacity: 1, scale: 1 }}
-        exit={{ x: -100, opacity: 0, scale: 0.8 }}
+        exit={{ x: 100, opacity: 0, scale: 0.8 }}
         transition={{ type: 'spring', damping: 20, stiffness: 150 }}
-        className="fixed bottom-6 left-6 z-[100] w-full max-w-[320px]"
+        className="fixed top-24 right-6 z-[100] w-full max-w-[320px]"
       >
         <div className={cn(
           "relative overflow-hidden rounded-[2.5rem] bg-zinc-950/80 backdrop-blur-3xl p-6 border border-white/10 flex items-center gap-5 shadow-[0_20px_50px_rgba(0,0,0,0.7)]",

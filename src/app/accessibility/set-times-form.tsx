@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { updateSetting } from "@/app/actions";
-import { Loader2, Calendar } from "lucide-react";
+import { Loader2, Calendar, Clock } from "lucide-react";
 
 const setSettingsSchema = z.object({
   lunchTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format. Use HH:MM"),
   fridayLunchTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format. Use HH:MM"),
   allowance: z.number().min(0, "Allowance must be at least 0").max(365, "Too many days"),
+  gracePeriod: z.number().min(0, "Grace period must be at least 0").max(120, "Max 120 minutes"),
 });
 
 type SetSettingsFormData = z.infer<typeof setSettingsSchema>;
@@ -22,9 +23,10 @@ type SetSettingsFormData = z.infer<typeof setSettingsSchema>;
 interface SetTimesFormProps {
     currentLunchTime: string;
     initialAllowance: number;
+    initialGracePeriod: number;
 }
 
-export function SetTimesForm({ currentLunchTime, initialAllowance }: SetTimesFormProps) {
+export function SetTimesForm({ currentLunchTime, initialAllowance, initialGracePeriod }: SetTimesFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   
@@ -59,6 +61,7 @@ export function SetTimesForm({ currentLunchTime, initialAllowance }: SetTimesFor
       lunchTime: initialDefault,
       fridayLunchTime: initialFriday,
       allowance: initialAllowance,
+      gracePeriod: initialGracePeriod,
     },
   });
 
@@ -69,15 +72,16 @@ export function SetTimesForm({ currentLunchTime, initialAllowance }: SetTimesFor
           friday: data.fridayLunchTime,
       });
 
-      const [lunchRes, allowanceRes] = await Promise.all([
+      const [lunchRes, allowanceRes, graceRes] = await Promise.all([
         updateSetting('lunch_start_time', lunchConfig),
         updateSetting('annual_leave_allowance', data.allowance),
+        updateSetting('late_check_in_grace_period', data.gracePeriod),
       ]);
 
-      if (lunchRes.error || allowanceRes.error) {
+      if (lunchRes.error || allowanceRes.error || graceRes.error) {
         toast({
           title: "Error updating settings",
-          description: lunchRes.error || allowanceRes.error,
+          description: lunchRes.error || allowanceRes.error || graceRes.error,
           variant: "destructive",
         });
       } else {
@@ -99,7 +103,7 @@ export function SetTimesForm({ currentLunchTime, initialAllowance }: SetTimesFor
             <Input
             id="lunchTime"
             type="time"
-            className="h-12 bg-white/5 border-white/10 rounded-xl font-bold"
+            className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4"
             {...register("lunchTime")}
             />
             {errors.lunchTime && <p className="text-xs text-rose-500 font-bold">{errors.lunchTime.message}</p>}
@@ -110,10 +114,25 @@ export function SetTimesForm({ currentLunchTime, initialAllowance }: SetTimesFor
             <Input
             id="fridayLunchTime"
             type="time"
-            className="h-12 bg-white/5 border-white/10 rounded-xl font-bold"
+            className="h-12 bg-white/5 border-white/10 rounded-xl font-bold px-4"
             {...register("fridayLunchTime")}
             />
             {errors.fridayLunchTime && <p className="text-xs text-rose-500 font-bold">{errors.fridayLunchTime.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+            <Label htmlFor="gracePeriod" className="text-zinc-400 font-bold">Late Reason Grace Period (Mins)</Label>
+            <div className="relative">
+                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <Input
+                    id="gracePeriod"
+                    type="number"
+                    className="h-12 bg-white/5 border-white/10 rounded-xl font-black pl-12 text-amber-400"
+                    {...register("gracePeriod", { valueAsNumber: true })}
+                />
+            </div>
+            <p className="text-[10px] text-zinc-500 font-medium px-1">Minutes allowed after "Work Start Time" before a reason is required.</p>
+            {errors.gracePeriod && <p className="text-xs text-rose-500 font-bold">{errors.gracePeriod.message}</p>}
         </div>
       </div>
 

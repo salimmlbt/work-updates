@@ -22,6 +22,7 @@ export default async function AccessibilityPage() {
     const [
         { data: lunchSetting },
         { data: allowanceSetting },
+        { data: graceSetting },
         { data: statusConfigSetting },
         { data: geofencingSetting },
         { data: industriesData, error: industriesError },
@@ -30,6 +31,7 @@ export default async function AccessibilityPage() {
     ] = await Promise.all([
         supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
         supabase.from('app_settings').select('value').eq('key', 'annual_leave_allowance').single(),
+        supabase.from('app_settings').select('value').eq('key', 'late_check_in_grace_period').single(),
         supabase.from('app_settings').select('value').eq('key', 'work_type_status_config').single(),
         supabase.from('app_settings').select('value').eq('key', 'global_geofencing_enabled').single(),
         supabase.from('industries').select('*'),
@@ -43,6 +45,7 @@ export default async function AccessibilityPage() {
 
     const lunchStartTime = (lunchSetting?.value as string | undefined) || '13:00';
     const annualLeaveAllowance = (allowanceSetting?.value as number | undefined) || 28;
+    const lateGracePeriod = (graceSetting?.value as number | undefined) || 0;
     const workTypeStatusConfig = (statusConfigSetting?.value as WorkTypeStatusConfig | undefined) || {};
     const globalGeofencingEnabled = geofencingSetting?.value === true;
 
@@ -87,6 +90,7 @@ export default async function AccessibilityPage() {
                     <SetTimesForm 
                         currentLunchTime={lunchStartTime} 
                         initialAllowance={annualLeaveAllowance}
+                        initialGracePeriod={lateGracePeriod}
                     />
                 </CardContent>
             </Card>

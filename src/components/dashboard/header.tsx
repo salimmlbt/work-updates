@@ -19,7 +19,7 @@ import {
 import { Skeleton } from '../ui/skeleton';
 import { cn, calculateDistance } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { differenceInSeconds, parse, isAfter } from 'date-fns';
+import { differenceInSeconds, parse, isAfter, addMinutes } from 'date-fns';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Loader2, MapPinOff } from 'lucide-react';
@@ -52,6 +52,7 @@ export default function Header() {
 
   const [showLunchButton, setShowLunchButton] = useState(false);
   const [lunchTimeSetting, setLunchTimeSetting] = useState<any>({ default: '13:00', friday: '13:00' });
+  const [lateGracePeriodSetting, setLateGracePeriodSetting] = useState<number>(0);
   const [globalGeofencingEnabled, setGlobalGeofencingEnabled] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
@@ -93,13 +94,16 @@ export default function Header() {
         return;
       }
 
-      const [attendanceRes, settingsRes, geofenceRes, profileRes] = await Promise.all([
+      const [attendanceRes, settingsRes, graceRes, geofenceRes, profileRes] = await Promise.all([
         supabase.from('attendance').select('*')
           .eq('user_id', user.id)
           .eq('date', new Date().toISOString().split('T')[0])
           .maybeSingle(),
         supabase.from('app_settings').select('value')
           .eq('key', 'lunch_start_time')
+          .single(),
+        supabase.from('app_settings').select('value')
+          .eq('key', 'late_check_in_grace_period')
           .single(),
         supabase.from('app_settings').select('value')
           .eq('key', 'global_geofencing_enabled')
@@ -111,25 +115,16 @@ export default function Header() {
         setUserProfile(profileRes.data as Profile);
       }
 
-      // --- REAL-TIME PROFILE SYNC ---
-      // Listens for location/geofencing updates and applies them immediately
+      // Sync Profile
       profileChannel = supabase
         .channel(`header-profile-sync-${user.id}`)
-        .on(
-          'postgres_changes',
-          { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'profiles', 
-            filter: `id=eq.${user.id}` 
-          },
-          (payload) => {
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, (payload) => {
             setUserProfile(prev => ({ ...prev, ...payload.new } as Profile));
-          }
-        )
+        })
         .subscribe();
 
       setGlobalGeofencingEnabled(geofenceRes.data?.value === true);
+      setLateGracePeriodSetting((graceRes.data?.value as number) || 0);
 
       const attendanceData = attendanceRes.data;
       if (attendanceData) {
@@ -149,8 +144,7 @@ export default function Header() {
         }
       }
 
-      const { data: settingsData } = settingsRes;
-      const rawValue = settingsData?.value;
+      const rawValue = settingsRes.data?.value;
       if (rawValue && typeof rawValue === 'string' && rawValue.trim().startsWith('{')) {
           try {
               setLunchTimeSetting(JSON.parse(rawValue));
@@ -159,8 +153,6 @@ export default function Header() {
           }
       } else if (rawValue && typeof rawValue === 'string' && rawValue.trim() !== '') {
           setLunchTimeSetting({ default: rawValue, friday: rawValue });
-      } else if (rawValue && typeof rawValue === 'object') {
-          setLunchTimeSetting(rawValue);
       }
       
       setIsLoading(false);
@@ -201,7 +193,6 @@ export default function Header() {
 
     const permittedZones: PermittedLocation[] = [...(userProfile?.permitted_locations || [])];
     
-    // Support legacy single custom location if defined
     if (userProfile?.latitude && userProfile?.longitude) {
         permittedZones.push({
             name: 'Assigned Site',
@@ -223,7 +214,6 @@ export default function Header() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude: userLat, longitude: userLng } = position.coords;
-          
           let isWithinAnyZone = false;
           let minDistance = Infinity;
 
@@ -236,18 +226,13 @@ export default function Header() {
               minDistance = Math.min(minDistance, distance);
           }
 
-          if (isWithinAnyZone) {
-            resolve(true);
-          } else {
-            toast({ 
-              title: "Access Denied", 
-              description: `You are currently outside your permitted attendance zones (Nearest: ${Math.round(minDistance)}m).`,
-              variant: "destructive" 
-            });
+          if (isWithinAnyZone) resolve(true);
+          else {
+            toast({ title: "Access Denied", description: `You are outside your permitted zones (Nearest: ${Math.round(minDistance)}m).`, variant: "destructive" });
             resolve(false);
           }
         },
-        (error) => {
+        () => {
           toast({ title: "Location Error", description: "Proximity validation failed. Please enable location access.", variant: "destructive" });
           resolve(false);
         },
@@ -261,7 +246,6 @@ export default function Header() {
     setIsLateReasonOpen(false);
     setIsActionPending(true);
 
-    // Mandatory Proximity Check for ALL actions
     const isLocationValid = await verifyLocation();
     if (!isLocationValid) {
         setIsActionPending(false);
@@ -280,11 +264,8 @@ export default function Header() {
       } catch (e) {}
     }
 
-    if (action === 'checkIn') {
-      triggerGreeting(firstName, audioUri);
-    } else if (action === 'checkOut') {
-      triggerCheckoutGreeting(firstName, audioUri);
-    }
+    if (action === 'checkIn') triggerGreeting(firstName, audioUri);
+    else if (action === 'checkOut') triggerCheckoutGreeting(firstName, audioUri);
 
     const optimisticStateMap = {
       checkIn: 'checked-in',
@@ -298,24 +279,17 @@ export default function Header() {
     setStatus(optimisticStateMap[action]);
 
     let result;
-    if (action === 'checkIn') {
-        result = await checkIn(reason);
-    } else if (action === 'checkOut') {
-        result = await checkOut();
-    } else if (action === 'lunchOut') {
-        result = await lunchOut();
-    } else {
-        result = await lunchIn();
-    }
+    if (action === 'checkIn') result = await checkIn(reason);
+    else if (action === 'checkOut') result = await checkOut();
+    else if (action === 'lunchOut') result = await lunchOut();
+    else result = await lunchIn();
 
-    const { error, data } = result;
-
-    if (error) {
+    if (result.error) {
       setStatus(originalStatus);
       setIsTimerRunning(originalStatus === 'checked-in' || originalStatus === 'lunch-complete');
-      toast({ title: 'System Error', description: error, variant: 'destructive' });
-    } else if (data) {
-      setAttendanceRecord((prev: any) => ({ ...prev, ...data }));
+      toast({ title: 'System Error', description: result.error, variant: 'destructive' });
+    } else if (result.data) {
+      setAttendanceRecord((prev: any) => ({ ...prev, ...result.data }));
     }
     
     setIsActionPending(false);
@@ -328,26 +302,12 @@ export default function Header() {
     return 'Good Evening';
   };
 
-  const playTone = (type: 'in' | 'out') => {
-    if (typeof window === 'undefined') return;
-    const audio = new Audio(type === 'in' ? '/checkin-tone.mp3' : '/checkout-tone.mp3');
-    audio.play().catch(() => {});
-  };
-
   const triggerGreeting = (name: string, audioUri?: string | null) => {
     const greeting = getGreeting();
     setGreetingText(greeting);
     setGreetingType('in');
     setShowGreeting(true);
-    playTone('in');
-    if (audioUri) {
-      const audio = new Audio(audioUri);
-      audio.play().catch(() => {});
-    } else {
-      const utterance = new SpeechSynthesisUtterance(`${greeting}, ${name}`);
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+    if (audioUri) new Audio(audioUri).play().catch(() => {});
     setTimeout(() => setShowGreeting(false), 4500);
   };
 
@@ -355,15 +315,7 @@ export default function Header() {
     setGreetingText('See you Next Day');
     setGreetingType('out');
     setShowGreeting(true);
-    playTone('out');
-    if (audioUri) {
-      const audio = new Audio(audioUri);
-      audio.play().catch(() => {});
-    } else {
-      const utterance = new SpeechSynthesisUtterance(`See you next day, ${name}`);
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+    if (audioUri) new Audio(audioUri).play().catch(() => {});
     setTimeout(() => setShowGreeting(false), 4500);
   };
 
@@ -378,7 +330,10 @@ export default function Header() {
       if (userProfile?.work_start_time) {
           const now = new Date();
           const scheduledStart = parse(userProfile.work_start_time, 'HH:mm:ss', now);
-          if (isAfter(now, scheduledStart)) {
+          // Apply Grace Period
+          const lateThreshold = addMinutes(scheduledStart, lateGracePeriodSetting);
+          
+          if (isAfter(now, lateThreshold)) {
               setIsLateReasonOpen(true);
               return;
           }
@@ -418,54 +373,17 @@ export default function Header() {
 
   if (status === 'session-complete' && !showGreeting) return null;
 
-  const headerHeight = isExpanded ? '5rem' : '10px';
-
   return (
     <>
       <AnimatePresence>
         {showGreeting && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-2xl"
-          >
-            <motion.div
-              initial={{ scale: 0.8, y: 40, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 1.1, y: -20, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="text-center p-12"
-            >
-              <motion.div
-                initial={{ rotate: -10 }}
-                animate={{ rotate: 0 }}
-                className="inline-flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10 border border-white/20 shadow-2xl mb-8"
-              >
-                {greetingMode === 'out' ? (
-                  <span className="text-5xl">👋</span>
-                ) : greetingText === 'Good Morning' ? (
-                  <span className="text-5xl">☀️</span>
-                ) : greetingText === 'Good Afternoon' ? (
-                  <span className="text-5xl">⛅</span>
-                ) : (
-                  <span className="text-5xl">🌙</span>
-                )}
-              </motion.div>
-              <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter mb-4">
-                {greetingText}
-              </h1>
-              <p className="text-3xl md:text-4xl font-semibold text-white/80 tracking-tight">
-                {userProfile?.full_name}
-              </p>
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 4.5 }}
-                className="h-1 bg-white/20 rounded-full mt-12 mx-auto max-w-[200px] overflow-hidden"
-              >
-                <motion.div className="h-full bg-white w-full" />
-              </motion.div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-2xl">
+            <motion.div initial={{ scale: 0.8, y: 40, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 1.1, y: -20, opacity: 0 }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="text-center p-12">
+              <div className="inline-flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10 border border-white/20 shadow-2xl mb-8">
+                {greetingMode === 'out' ? <span className="text-5xl">👋</span> : greetingText === 'Good Morning' ? <span className="text-5xl">☀️</span> : <span className="text-5xl">⛅</span>}
+              </div>
+              <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter mb-4">{greetingText}</h1>
+              <p className="text-3xl md:text-4xl font-semibold text-white/80 tracking-tight">{userProfile?.full_name}</p>
             </motion.div>
           </motion.div>
         )}
@@ -474,85 +392,40 @@ export default function Header() {
       <motion.header
         onMouseEnter={() => setIsExpanded(true)}
         onMouseLeave={() => setIsExpanded(false)}
-        animate={{ height: headerHeight }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-        className={cn(
-          "w-full flex items-center overflow-hidden transition-all duration-500 ease-in-out",
-          isExpanded && "backdrop-blur-md"
-        )}
-        style={{
-          backgroundColor: buttonContent?.color || 'var(--background)',
-          boxShadow: isExpanded ? '0 4px 20px rgba(0,0,0,0.15)' : 'none',
-        }}
+        animate={{ height: isExpanded ? '5rem' : '10px' }}
+        className="w-full flex items-center overflow-hidden transition-all"
+        style={{ backgroundColor: buttonContent?.color || 'var(--background)' }}
       >
-        <AnimatePresence mode="wait">
-          {isExpanded && buttonContent && (
-            <motion.div
-              key="header-content"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              className="px-4 md:px-6 flex justify-center items-center w-full"
-            >
+        {isExpanded && buttonContent && (
+            <div className="px-4 md:px-6 flex justify-center items-center w-full">
               <div className="flex-1 flex justify-start">
-                <div className="bg-white/20 rounded-full px-4 py-1 text-white font-mono text-lg tracking-wider">
-                  {formatTime(elapsedSeconds)}
-                </div>
+                <div className="bg-white/20 rounded-full px-4 py-1 text-white font-mono text-lg tracking-wider">{formatTime(elapsedSeconds)}</div>
               </div>
-
               <div className="flex-1 flex justify-center">
-                <Button
-                  onClick={handleMainButtonClick}
-                  disabled={isActionPending}
-                  className="relative overflow-hidden rounded-full px-6 py-2 font-medium transition-all duration-500 bg-white hover:bg-gray-100 w-36 shadow-lg"
-                >
-                  {isActionPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" style={{ color: buttonContent.color }} />
-                  ) : (
-                    <span
-                      className="flex items-center justify-center gap-2"
-                      style={{ color: buttonContent.color }}
-                    >
-                      {buttonContent.text}
-                      {buttonContent.icon}
-                    </span>
-                  )}
+                <Button onClick={handleMainButtonClick} disabled={isActionPending} className="rounded-full px-6 py-2 font-medium transition-all bg-white hover:bg-gray-100 w-36 shadow-lg">
+                  {isActionPending ? <Loader2 className="h-4 w-4 animate-spin" style={{ color: buttonContent.color }} /> : <span className="flex items-center gap-2" style={{ color: buttonContent.color }}>{buttonContent.text}{buttonContent.icon}</span>}
                 </Button>
               </div>
               <div className="flex-1" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+        )}
       </motion.header>
 
       <AlertDialog open={isLateReasonOpen} onOpenChange={setIsLateReasonOpen}>
         <AlertDialogContent className="rounded-3xl border shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold">Late Check-In Detected</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl font-bold">Late Check-In Alert</AlertDialogTitle>
             <AlertDialogDescription>
-              Scheduled start time: {userProfile?.work_start_time?.slice(0, 5)}. Please provide a valid reason for the late entry.
+              A reason is required after the allowed {lateGracePeriodSetting} min grace period.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4 space-y-2">
             <Label htmlFor="late-reason" className="text-sm font-semibold text-slate-700">Reason Statement</Label>
-            <Textarea 
-                id="late-reason" 
-                placeholder="Traffic, emergency, or other cause..." 
-                className="rounded-xl min-h-[100px]"
-                value={lateReason}
-                onChange={(e) => setLateReason(e.target.value)}
-            />
+            <Textarea id="late-reason" placeholder="Traffic, emergency, or other cause..." className="rounded-xl min-h-[100px]" value={lateReason} onChange={(e) => setLateReason(e.target.value)} />
           </div>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="rounded-xl" onClick={() => { setIsLateReasonOpen(false); setLateReason(''); }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-                className="rounded-xl bg-primary shadow-lg"
-                onClick={() => handleAction('checkIn', lateReason)}
-                disabled={!lateReason.trim()}
-            >
-              Submit & Check In
-            </AlertDialogAction>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl" onClick={() => setIsLateReasonOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="rounded-xl bg-primary" onClick={() => handleAction('checkIn', lateReason)} disabled={!lateReason.trim()}>Submit & Check In</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -560,28 +433,13 @@ export default function Header() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent className="rounded-3xl border shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold">
-              {alertType === 'checkout' ? 'Commit your work day?' : 'Initiate break period?'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {alertType === 'checkout'
-                ? 'Finalizing your attendance. Proximity check will be performed immediately.'
-                : 'Proximity check will be performed to start your lunch break.'}
-            </AlertDialogDescription>
+            <AlertDialogTitle className="text-xl font-bold">{alertType === 'checkout' ? 'Commit your work day?' : 'Initiate break period?'}</AlertDialogTitle>
+            <AlertDialogDescription>{alertType === 'checkout' ? 'Finalizing your attendance. Proximity check will be performed immediately.' : 'Proximity check will be performed to start your lunch break.'}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel className="rounded-xl">Wait, go back</AlertDialogCancel>
-            {alertType === 'lunch' && (
-              <AlertDialogAction onClick={() => handleAction('lunchOut')} className="bg-yellow-500 hover:bg-yellow-600 rounded-xl text-white shadow-lg">
-                Start Lunch Out
-              </AlertDialogAction>
-            )}
-            <AlertDialogAction
-              onClick={() => handleAction('checkOut')}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl shadow-lg"
-            >
-              Check Out Now
-            </AlertDialogAction>
+            {alertType === 'lunch' && <AlertDialogAction onClick={() => handleAction('lunchOut')} className="bg-yellow-500 hover:bg-yellow-600 rounded-xl text-white shadow-lg">Start Lunch Out</AlertDialogAction>}
+            <AlertDialogAction onClick={() => handleAction('checkOut')} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl shadow-lg">Check Out Now</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
