@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useTransition, useMemo, useRef } from 'react';
@@ -302,7 +303,7 @@ const AddTaskRow = ({
 
   const filteredProjects = useMemo(() => {
     const list = clientId ? projects.filter(p => String(p.client_id) === String(clientId)) : [];
-    return list.sort((a, b) => a.name.localeCompare(b.name));
+    return list.sort((a, b) => a.localeCompare(b));
   }, [clientId, projects]);
 
   const sortedClients = useMemo(() => {
@@ -1032,6 +1033,7 @@ const TaskTableBody = ({
     <tbody>
       {isAddingTask && onSaveTask && onCancelAddTask && projects && clients && profiles && (
         <AddTaskRow 
+            key={duplicationData ? `duplicate-${clickedTaskId || highlightedTaskId}` : 'new-task'}
             onSave={onSaveTask} 
             onCancel={onCancelAddTask} 
             projects={projects} 
@@ -1173,9 +1175,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       }
       
       if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
-        if (canEditTasks && !showBin && clickedTaskId) {
+        const targetId = clickedTaskId || selectedTaskIds[0] || highlightedTaskId;
+        if (canEditTasks && !showBin && targetId) {
           e.preventDefault();
-          const taskToDuplicate = tasks.find(t => t.id === clickedTaskId);
+          const taskToDuplicate = tasks.find(t => t.id === targetId);
           if (taskToDuplicate) {
             setDuplicationData({
               description: taskToDuplicate.description,
@@ -1187,7 +1190,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             });
             setActiveTab('active');
             setIsAddingTask(true);
-            toast({ title: 'Duplicating Task', description: 'Auto-filled task details for duplication.' });
+            toast({ title: 'Duplicating Task', description: `Auto-filled: "${taskToDuplicate.description}"` });
           }
         }
       }
@@ -1195,7 +1198,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.addEventListener('keydown', handleGlobalKeyDown);
-  }, [canEditTasks, showBin, clickedTaskId, tasks, toast]);
+  }, [canEditTasks, showBin, clickedTaskId, selectedTaskIds, highlightedTaskId, tasks, toast]);
 
   useEffect(() => {
     const channel = supabase
@@ -1507,6 +1510,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     setSelectedTaskIds(prev =>
       isSelected ? [...prev, taskId] : prev.filter(id => id !== taskId)
     );
+    if (isSelected) setClickedTaskId(taskId);
   };
   
   const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => {
