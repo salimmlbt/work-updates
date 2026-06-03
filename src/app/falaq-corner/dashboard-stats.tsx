@@ -12,15 +12,16 @@ import { differenceInDays } from './utils';
 interface Props {
   leaves: Leave[];
   currentProfile: Profile;
+  annualAllowance: number;
 }
 
-export default function DashboardStats({ leaves, currentProfile }: Props) {
+export default function DashboardStats({ leaves, currentProfile, annualAllowance }: Props) {
   const personalLeaves = useMemo(() => {
     return leaves.filter(l => l.user_id === currentProfile.id);
   }, [leaves, currentProfile]);
 
   const stats = useMemo(() => {
-    const totalAllowance = 28;
+    const totalAllowance = annualAllowance;
     
     let approvedDaysCount = 0;
     let pendingDaysCount = 0;
@@ -42,13 +43,13 @@ export default function DashboardStats({ leaves, currentProfile }: Props) {
       pending: pendingDaysCount,
       remaining: remaining >= 0 ? remaining : 0,
     };
-  }, [personalLeaves]);
+  }, [personalLeaves, annualAllowance]);
 
   const cardItems = [
     {
       title: 'Annual Allowance',
       value: `${stats.total} Days`,
-      desc: 'Base studio policy allowance',
+      desc: 'System-wide studio allowance',
       icon: Calendar,
       color: 'from-blue-500 to-cyan-400',
       glow: 'shadow-blue-500/10 border-blue-500/20 text-blue-400',

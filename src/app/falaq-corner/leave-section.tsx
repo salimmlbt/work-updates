@@ -16,11 +16,12 @@ import LeaveCard from './leave-card';
 
 interface LeaveSectionProps {
   profile: Profile;
+  annualAllowance: number;
   isApplyDialogOpen: boolean;
   setIsApplyDialogOpen: (open: boolean) => void;
 }
 
-export function LeaveSection({ profile, isApplyDialogOpen, setIsApplyDialogOpen }: LeaveSectionProps) {
+export function LeaveSection({ profile, annualAllowance, isApplyDialogOpen, setIsApplyDialogOpen }: LeaveSectionProps) {
   const [leaves, setLeaves] = useState<(Leave & { profiles?: Profile })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [leaveToApprove, setLeaveToApprove] = useState<Leave & { profiles?: Profile } | null>(null);
@@ -109,7 +110,11 @@ export function LeaveSection({ profile, isApplyDialogOpen, setIsApplyDialogOpen 
                 </Tabs>
             )}
         </div>
-        <DashboardStats leaves={leaves} currentProfile={profile} />
+        <DashboardStats 
+          leaves={leaves} 
+          currentProfile={profile} 
+          annualAllowance={annualAllowance}
+        />
       </header>
 
       {/* 🔮 FULL-WIDTH SCROLLABLE TIMELINE */}

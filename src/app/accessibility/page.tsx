@@ -21,6 +21,7 @@ export default async function AccessibilityPage() {
     
     const [
         { data: lunchSetting },
+        { data: allowanceSetting },
         { data: statusConfigSetting },
         { data: geofencingSetting },
         { data: industriesData, error: industriesError },
@@ -28,6 +29,7 @@ export default async function AccessibilityPage() {
         { data: locationsData, error: locationsError },
     ] = await Promise.all([
         supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
+        supabase.from('app_settings').select('value').eq('key', 'annual_leave_allowance').single(),
         supabase.from('app_settings').select('value').eq('key', 'work_type_status_config').single(),
         supabase.from('app_settings').select('value').eq('key', 'global_geofencing_enabled').single(),
         supabase.from('industries').select('*'),
@@ -40,6 +42,7 @@ export default async function AccessibilityPage() {
     if (locationsError) console.error('Error fetching locations', locationsError);
 
     const lunchStartTime = (lunchSetting?.value as string | undefined) || '13:00';
+    const annualLeaveAllowance = (allowanceSetting?.value as number | undefined) || 28;
     const workTypeStatusConfig = (statusConfigSetting?.value as WorkTypeStatusConfig | undefined) || {};
     const globalGeofencingEnabled = geofencingSetting?.value === true;
 
@@ -75,13 +78,16 @@ export default async function AccessibilityPage() {
         <TabsContent value="set-times" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <Card className="border border-white/10 bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-10">
                 <CardHeader className="p-0 mb-10">
-                    <CardTitle className="text-2xl font-black text-white tracking-tight">Clock Settings</CardTitle>
+                    <CardTitle className="text-2xl font-black text-white tracking-tight">System Settings</CardTitle>
                     <CardDescription className="text-zinc-500 font-medium">
-                        Configure global shift windows and break parameters for the entire organization.
+                        Configure global shift windows, break parameters, and leave allowances for the organization.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <SetTimesForm currentLunchTime={lunchStartTime} />
+                    <SetTimesForm 
+                        currentLunchTime={lunchStartTime} 
+                        initialAllowance={annualLeaveAllowance}
+                    />
                 </CardContent>
             </Card>
         </TabsContent>

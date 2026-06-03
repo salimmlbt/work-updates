@@ -15,11 +15,13 @@ export default async function FalaqCornerPage() {
 
   if (!authUser) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*, roles(*)')
-    .eq('id', authUser.id)
-    .single();
+  const [
+    { data: profile },
+    { data: allowanceSetting }
+  ] = await Promise.all([
+    supabase.from('profiles').select('*, roles(*)').eq('id', authUser.id).single(),
+    supabase.from('app_settings').select('value').eq('key', 'annual_leave_allowance').single()
+  ]);
 
   const permissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
   const isFalaqAdmin = profile?.roles?.name === 'Falaq Admin';
@@ -36,9 +38,14 @@ export default async function FalaqCornerPage() {
     );
   }
 
+  const annualAllowance = (allowanceSetting?.value as number | undefined) || 28;
+
   return (
     <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f]">
-      <FalaqCornerClient profile={profile as Profile} />
+      <FalaqCornerClient 
+        profile={profile as Profile} 
+        annualAllowance={annualAllowance}
+      />
     </div>
   );
 }

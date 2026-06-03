@@ -7,7 +7,7 @@ import type { Profile } from '@/lib/types';
 import { LeaveSection } from './leave-section';
 import GlowBackground from './glow-background';
 
-export default function FalaqCornerClient({ profile }: { profile: Profile }) {
+export default function FalaqCornerClient({ profile, annualAllowance }: { profile: Profile, annualAllowance: number }) {
   const [activeSection, setActiveSection] = useState<'leave-center' | 'request-center' | 'inbox'>('leave-center');
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
 
@@ -20,7 +20,14 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
   const renderContent = () => {
     switch (activeSection) {
       case 'leave-center':
-        return <LeaveSection profile={profile} isApplyDialogOpen={isApplyDialogOpen} setIsApplyDialogOpen={setIsApplyDialogOpen} />;
+        return (
+          <LeaveSection 
+            profile={profile} 
+            annualAllowance={annualAllowance}
+            isApplyDialogOpen={isApplyDialogOpen} 
+            setIsApplyDialogOpen={setIsApplyDialogOpen} 
+          />
+        );
       default:
         return (
           <div className="flex flex-col items-center justify-center h-full text-center py-20 px-10 bg-[#05050a]/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 mx-1">
@@ -76,7 +83,9 @@ export default function FalaqCornerClient({ profile }: { profile: Profile }) {
         <div className="fixed bottom-10 right-10 z-[100]">
           <button
             onClick={() => setIsApplyDialogOpen(true)}
-            className="group h-16 md:h-20 rounded-full px-8 md:px-12 bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-600 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_20px_60px_rgba(59,130,246,0.5)] border border-white/20 backdrop-blur-xl text-white font-black uppercase tracking-[0.2em] text-xs flex items-center gap-4 cursor-pointer"
+            className={cn(
+              "group h-16 md:h-20 rounded-full px-8 md:px-12 bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-600 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_20px_60px_rgba(59,130,246,0.5)] border border-white/20 backdrop-blur-xl text-white font-black uppercase tracking-[0.2em] text-xs flex items-center gap-4 cursor-pointer"
+            )}
           >
             <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" />
             <span className="hidden sm:inline">Apply for Leave</span>

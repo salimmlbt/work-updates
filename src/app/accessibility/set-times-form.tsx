@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useTransition, useEffect } from "react";
@@ -10,20 +9,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { updateSetting } from "@/app/actions";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react";
 
-const setTimesSchema = z.object({
+const setSettingsSchema = z.object({
   lunchTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format. Use HH:MM"),
   fridayLunchTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format. Use HH:MM"),
+  allowance: z.number().min(0, "Allowance must be at least 0").max(365, "Too many days"),
 });
 
-type SetTimesFormData = z.infer<typeof setTimesSchema>;
+type SetSettingsFormData = z.infer<typeof setSettingsSchema>;
 
 interface SetTimesFormProps {
     currentLunchTime: string;
+    initialAllowance: number;
 }
 
-export function SetTimesForm({ currentLunchTime }: SetTimesFormProps) {
+export function SetTimesForm({ currentLunchTime, initialAllowance }: SetTimesFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   
@@ -33,13 +34,11 @@ export function SetTimesForm({ currentLunchTime }: SetTimesFormProps) {
   
   if (currentLunchTime && typeof currentLunchTime === 'string' && currentLunchTime.trim().length > 0) {
     try {
-      // Check if it's a JSON string
       if (currentLunchTime.trim().startsWith('{')) {
         const config = JSON.parse(currentLunchTime);
         initialDefault = config.default || '13:00';
         initialFriday = config.friday || '13:00';
       } else {
-        // It's a plain time string
         initialDefault = currentLunchTime;
         initialFriday = currentLunchTime;
       }
@@ -54,67 +53,91 @@ export function SetTimesForm({ currentLunchTime }: SetTimesFormProps) {
     register,
     handleSubmit,
     formState: { errors, isDirty },
-  } = useForm<SetTimesFormData>({
-    resolver: zodResolver(setTimesSchema),
+  } = useForm<SetSettingsFormData>({
+    resolver: zodResolver(setSettingsSchema),
     defaultValues: {
       lunchTime: initialDefault,
       fridayLunchTime: initialFriday,
+      allowance: initialAllowance,
     },
   });
 
-  const onSubmit = (data: SetTimesFormData) => {
-    const config = JSON.stringify({
-        default: data.lunchTime,
-        friday: data.fridayLunchTime,
-    });
-
+  const onSubmit = (data: SetSettingsFormData) => {
     startTransition(async () => {
-      const result = await updateSetting('lunch_start_time', config);
-      if (result.error) {
+      const lunchConfig = JSON.stringify({
+          default: data.lunchTime,
+          friday: data.fridayLunchTime,
+      });
+
+      const [lunchRes, allowanceRes] = await Promise.all([
+        updateSetting('lunch_start_time', lunchConfig),
+        updateSetting('annual_leave_allowance', data.allowance),
+      ]);
+
+      if (lunchRes.error || allowanceRes.error) {
         toast({
-          title: "Error updating setting",
-          description: result.error,
+          title: "Error updating settings",
+          description: lunchRes.error || allowanceRes.error,
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Setting Updated",
-          description: "Lunch start times have been updated successfully.",
+          title: "Settings Updated",
+          description: "Studio rules have been updated successfully.",
         });
       }
     });
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-sm">
-      <div className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-10 max-w-sm">
+      <div className="space-y-6">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 border-b border-white/5 pb-2">Shift Parameters</h3>
+        
         <div className="space-y-2">
-            <Label htmlFor="lunchTime">Regular Lunch Out (Mon-Thu, Sat-Sun)</Label>
+            <Label htmlFor="lunchTime" className="text-zinc-400 font-bold">Regular Lunch Out (Mon-Thu, Sat-Sun)</Label>
             <Input
             id="lunchTime"
             type="time"
+            className="h-12 bg-white/5 border-white/10 rounded-xl font-bold"
             {...register("lunchTime")}
             />
-            {errors.lunchTime && <p className="text-sm text-destructive">{errors.lunchTime.message}</p>}
+            {errors.lunchTime && <p className="text-xs text-rose-500 font-bold">{errors.lunchTime.message}</p>}
         </div>
 
         <div className="space-y-2">
-            <Label htmlFor="fridayLunchTime">Friday Lunch Out</Label>
+            <Label htmlFor="fridayLunchTime" className="text-zinc-400 font-bold">Friday Lunch Out</Label>
             <Input
             id="fridayLunchTime"
             type="time"
+            className="h-12 bg-white/5 border-white/10 rounded-xl font-bold"
             {...register("fridayLunchTime")}
             />
-            {errors.fridayLunchTime && <p className="text-sm text-destructive">{errors.fridayLunchTime.message}</p>}
+            {errors.fridayLunchTime && <p className="text-xs text-rose-500 font-bold">{errors.fridayLunchTime.message}</p>}
         </div>
-
-        <p className="text-sm text-muted-foreground">
-          Set the time when the "Lunch Out" button should appear for users based on the day.
-        </p>
       </div>
-      <Button type="submit" disabled={isPending || !isDirty}>
+
+      <div className="space-y-6">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 border-b border-white/5 pb-2">Leave Parameters</h3>
+        
+        <div className="space-y-2">
+            <Label htmlFor="allowance" className="text-zinc-400 font-bold">Base Annual Allowance (Days)</Label>
+            <div className="relative">
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <Input
+                    id="allowance"
+                    type="number"
+                    className="h-12 bg-white/5 border-white/10 rounded-xl font-black pl-12 text-sky-400"
+                    {...register("allowance", { valueAsNumber: true })}
+                />
+            </div>
+            {errors.allowance && <p className="text-xs text-rose-500 font-bold">{errors.allowance.message}</p>}
+        </div>
+      </div>
+
+      <Button type="submit" disabled={isPending || !isDirty} className="rounded-full h-12 px-8 bg-sky-600 hover:bg-sky-500 font-bold shadow-2xl">
         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Save Changes
+        Save System Changes
       </Button>
     </form>
   );
