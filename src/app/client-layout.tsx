@@ -18,6 +18,7 @@ import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import dynamic from 'next/dynamic';
+import { AttendanceWarning } from '@/components/dashboard/attendance-warning';
 
 const PageLoader = dynamic(() => import('@/components/page-loader').then(mod => mod.PageLoader), { 
   ssr: false 
@@ -297,6 +298,9 @@ export default function ClientLayout({
             {isLoading ? <PageSkeleton /> : children}
           </main>
         </div>
+
+        {/* 🚨 Attendance Guard Component */}
+        {isAuthenticated && <AttendanceWarning profile={profile} />}
 
         {/* Leave Status Sticky Popup (For Applicant) */}
         <AnimatePresence>
