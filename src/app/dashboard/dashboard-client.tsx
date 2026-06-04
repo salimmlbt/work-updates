@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials, cn } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Rocket, Activity } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Rocket, Activity, Send, Sparkles, BrainCircuit } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 import { format, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, startOfToday, parseISO, addDays, getDay } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,11 @@ import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '@/components/dashboard/animated-background';
 import { GlassCard } from '@/components/dashboard/glass-card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { askAIHelp } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
 interface DashboardClientProps {
   profile: Profile | null;
@@ -86,10 +91,16 @@ export default function DashboardClient({
   const [isTasksLoading, setIsTasksLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const { toast } = useToast();
 
   const [tasks, setTasks] = useState<any[]>(initialTasks);
   const [attendance, setAttendance] = useState<any[]>(initialAttendance);
   const [holidays, setHolidays] = useState<any[]>(initialHolidays);
+
+  const [aiSelectedTaskId, setAiSelectedTaskId] = useState<string>("");
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -162,7 +173,8 @@ export default function DashboardClient({
         return t.posting_status === 'Planned' || ['todo', 'inprogress', 'corrections', 'recreate'].includes(t.status);
     };
 
-    const pending = tasks.filter(isTaskPending).length;
+    const pendingTasks = tasks.filter(isTaskPending);
+    const pending = pendingTasks.length;
     const review = tasks.filter(isTaskReview).length;
     const completed = tasks.filter(isTaskCompleted).length;
 
@@ -225,6 +237,7 @@ export default function DashboardClient({
 
     return {
       pending,
+      pendingTasks,
       review,
       completed,
       deadlines,
@@ -243,6 +256,27 @@ export default function DashboardClient({
     setTimeout(() => {
         router.push(`/tasks?tab=${tab}`);
     }, 1000);
+  };
+
+  const handleAskAI = async () => {
+    if (!aiSelectedTaskId || !aiQuestion.trim()) return;
+    
+    setIsAiLoading(true);
+    setAiAnswer("");
+    
+    const selectedTask = tasks.find(t => t.id === aiSelectedTaskId);
+    const taskDescription = selectedTask?.description || "";
+    const projectTitle = selectedTask?.projects?.name || "";
+    const clientName = selectedTask?.clients?.name || "";
+
+    const result = await askAIHelp(taskDescription, projectTitle, clientName, aiQuestion.trim());
+    
+    setIsAiLoading(false);
+    if (result.error) {
+        toast({ title: "AI Assistant Error", description: result.error, variant: "destructive" });
+    } else if (result.data) {
+        setAiAnswer(result.data);
+    }
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -292,7 +326,7 @@ export default function DashboardClient({
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto p-4 md:p-8 lg:p-10 text-white">
+      <div className="relative z-10 w-full p-4 md:p-8 lg:p-10 text-white">
         <motion.header 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -404,6 +438,90 @@ export default function DashboardClient({
                         </Bar>
                     </BarChart>
                     </ResponsiveContainer>
+                </div>
+            </GlassCard>
+
+            <GlassCard delay={450} className="p-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                    <BrainCircuit className="h-32 w-32 text-indigo-400" />
+                </div>
+                <div className="mb-8">
+                    <h3 className="flex items-center gap-3 text-2xl text-white font-black tracking-tight uppercase">
+                    <div className="p-2.5 rounded-2xl bg-white/[0.05] border border-white/10 shadow-inner">
+                        <Sparkles className="h-5 w-5 text-indigo-400 animate-pulse" />
+                    </div>
+                    AI Oracle Help
+                    </h3>
+                    <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.2em] mt-3">Synthesize actionable insights from your active tasks.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-1 space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Context Target</Label>
+                            <Select onValueChange={setAiSelectedTaskId} value={aiSelectedTaskId}>
+                                <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold text-white shadow-inner">
+                                    <SelectValue placeholder="Select active task" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
+                                    {stats.pendingTasks.map(t => (
+                                        <SelectItem key={t.id} value={t.id} className="text-xs truncate">{t.description}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Ask Question</Label>
+                            <div className="relative group">
+                                <Input 
+                                    placeholder="How should I start?"
+                                    value={aiQuestion}
+                                    onChange={(e) => setAiQuestion(e.target.value)}
+                                    className="h-12 bg-white/5 border-white/10 rounded-xl pr-12 focus-visible:ring-indigo-500/50"
+                                />
+                                <Button 
+                                    size="icon"
+                                    onClick={handleAskAI}
+                                    disabled={isAiLoading || !aiSelectedTaskId || !aiQuestion.trim()}
+                                    className="absolute right-1 top-1 h-10 w-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all active:scale-95 shadow-lg"
+                                >
+                                    {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <div className="h-full min-h-[160px] bg-white/[0.01] border border-white/5 rounded-2xl p-6 relative group">
+                            {isAiLoading ? (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px] rounded-2xl">
+                                    <div className="flex flex-col items-center gap-3">
+                                        <div className="relative flex items-center justify-center">
+                                            <motion.div 
+                                                className="absolute h-10 w-10 bg-indigo-500/20 rounded-full"
+                                                animate={{ scale: [1, 2], opacity: [1, 0] }}
+                                                transition={{ duration: 1, repeat: Infinity }}
+                                            />
+                                            <Sparkles className="h-6 w-6 text-indigo-400" />
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase tracking-[0.4em] text-indigo-400/80">Synthesizing...</span>
+                                    </div>
+                                </div>
+                            ) : aiAnswer ? (
+                                <div className="space-y-4 animate-in fade-in duration-700">
+                                    <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[9px] font-black uppercase tracking-widest px-2 h-5">Oracle Response</Badge>
+                                    <p className="text-sm text-zinc-300 leading-relaxed font-medium">
+                                        {aiAnswer}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
+                                    <BrainCircuit className="h-10 w-10 text-zinc-600 mb-3" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Awaiting Interaction</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </GlassCard>
           </div>

@@ -1,4 +1,3 @@
-
 import { createServerClient } from '@/lib/supabase/server';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import DashboardClient from './dashboard-client';
@@ -30,7 +29,11 @@ export default async function DashboardPage() {
         .gte('date', format(monthStart, 'yyyy-MM-dd'))
         .lte('date', format(monthEnd, 'yyyy-MM-dd')),
     supabase.from('tasks')
-      .select('id, description, deadline, status, posting_status, project_id, assignee_id, is_deleted, created_at, projects(name)')
+      .select(`
+        id, description, deadline, status, posting_status, project_id, assignee_id, is_deleted, created_at, 
+        projects(name, client_id, clients(name)), 
+        clients(name)
+      `)
       .eq('assignee_id', user.id)
       .eq('is_deleted', false),
     supabase.from('projects')
@@ -40,10 +43,16 @@ export default async function DashboardPage() {
     supabase.from('official_holidays').select('*').eq('is_deleted', false)
   ]);
 
+  // Clean up task results for easier consumption
+  const tasks = (tasksRes.data || []).map(task => ({
+    ...task,
+    clients: task.clients || task.projects?.clients || null,
+  }));
+
   return (
     <DashboardClient
       profile={profile}
-      initialTasks={tasksRes.data || []}
+      initialTasks={tasks}
       initialProjects={projectsRes.data || []}
       initialAttendance={attendanceRes.data || []}
       initialHolidays={holidaysRes.data || []}

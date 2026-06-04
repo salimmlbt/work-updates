@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prioritizeTasksByDeadline, type PrioritizeTasksInput } from '@/ai/flows/prioritize-tasks-by-deadline'
 import { generateVoiceGreeting } from '@/ai/flows/generate-voice-greeting'
+import { getAITaskHelp } from '@/ai/flows/ai-task-assistant'
 import type { TaskWithAssignee, Attachment, OfficialHoliday, Industry, WorkType, ContentSchedule, Task, Correction, Revisions, SubmissionHistoryEntry, SubmissionType, OfficeLocation } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -89,6 +90,16 @@ async function handleReportLogging(supabase: any, taskId: string, userId: string
                 final_status: toStatus 
             }).eq('id', latestEntry.id);
         }
+    }
+}
+
+export async function askAIHelp(taskDescription: string, projectTitle: string, clientName: string, question: string) {
+    try {
+        const result = await getAITaskHelp({ taskDescription, projectTitle, clientName, question });
+        return { data: result.answer };
+    } catch (error) {
+        console.error('AI Help failed:', error);
+        return { error: 'AI Assistant is currently offline.' };
     }
 }
 
@@ -522,13 +533,13 @@ export async function updateTaskStatus(
         revisions.corrections = (revisions.corrections || 0) + 1;
         updates.revisions = revisions;
         
-        const newCorrection: Correction = {
+        const newCorrectionEntry: Correction = {
             note: correction?.note || 'No note provided.',
             author_id: correction?.authorId || '',
             created_at: new Date().toISOString(),
         };
         const corrections = (currentTask.corrections as Correction[] | null) || [];
-        updates.corrections = [...corrections, newCorrection];
+        updates.corrections = [...corrections, newCorrectionEntry];
     } else if (status === 'recreate') {
         revisions.recreations = (revisions.recreations || 0) + 1;
         updates.revisions = revisions;
@@ -963,10 +974,8 @@ export async function updateUserRole(userId: string, roleId: string) {
 
 export async function updateUserTeam(userId: string, teamId: string) {
   const supabase = await createServerClient()
-  const { error = null } = await supabase
-    .from('profiles')
-    .update({ team_id: teamId })
-    .eq('id', userId)
+  const { error = null } = await supabase.from('profiles').update({ team_id: teamId })
+  .eq('id', userId)
 
   if (error) {
     return { error: error.message }
@@ -1412,7 +1421,7 @@ export async function addOfficeLocation(name: string, lat: number, lng: number, 
 
 export async function deleteOfficeLocation(id: string): Promise<{ error: string | null }> {
     const supabase = await createServerClient();
-    const { error } = await supabase.from('office_locations').delete().eq('id', id);
+    const { error = null } = await supabase.from('office_locations').delete().eq('id', id);
     if (error) return { error: error.message };
     revalidatePath('/accessibility');
     return { error: null };
@@ -1527,10 +1536,10 @@ export async function createTaskFromSchedule(schedule: ContentSchedule): Promise
     }
 
     const { data: teamMembers, error: teamMembersError } = await supabase
-        .from('profile_teams')
-        .select('profile_id')
-        .eq('team_id', schedule.team_id)
-        .limit(1);
+      .from('profile_teams')
+      .select('profile_id')
+      .eq('team_id', schedule.team_id)
+      .limit(1);
 
     if (teamMembersError || !teamMembers || teamMembers.length === 0) {
         return { error: `No members found for team to assign the task. Error: ${teamMembersError?.message}` };
