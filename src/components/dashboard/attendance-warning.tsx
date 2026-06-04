@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -28,6 +29,12 @@ export function AttendanceWarning({ profile }: Props) {
     const graceTimer = setTimeout(() => {
       setIsAudioGracePeriodOver(true);
     }, 30000);
+
+    // PERSISTENCE: Check if previously muted in this session
+    const savedMute = sessionStorage.getItem('attendance-guard-muted');
+    if (savedMute === 'true') {
+      setIsMuted(true);
+    }
 
     // Initialize audio object
     audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -161,6 +168,12 @@ export function AttendanceWarning({ profile }: Props) {
     return () => clearInterval(soundInterval);
   }, [warning, isMuted, isAudioGracePeriodOver]);
 
+  const handleMuteToggle = () => {
+    const nextMuteState = !isMuted;
+    setIsMuted(nextMuteState);
+    sessionStorage.setItem('attendance-guard-muted', String(nextMuteState));
+  };
+
   if (!warning) return null;
 
   const warningConfig = {
@@ -225,7 +238,7 @@ export function AttendanceWarning({ profile }: Props) {
             <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-30 pointer-events-none" />
 
             <div className={cn(
-              "absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none",
+              "absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none",
               warningConfig.color
             )} />
             
@@ -253,7 +266,7 @@ export function AttendanceWarning({ profile }: Props) {
                 size="icon"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsMuted(!isMuted);
+                  handleMuteToggle();
                 }}
                 className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
               >

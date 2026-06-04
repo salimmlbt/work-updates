@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -306,8 +307,12 @@ export default function ClientLayout({
           </main>
         </div>
 
-        {/* 🚨 Attendance Guard - Only render when app is fully initialized */}
-        {isAuthenticated && !isInitialMount && !isLoading && <AttendanceWarning profile={profile} />}
+        {/* 🚨 Attendance Guard - Kept mounted to preserve state, hidden during loading */}
+        {isAuthenticated && !isInitialMount && (
+          <div className={cn(isLoading && "pointer-events-none opacity-0 transition-opacity duration-300")}>
+            <AttendanceWarning profile={profile} />
+          </div>
+        )}
 
         {/* Leave Status Sticky Popup (For Applicant) */}
         <AnimatePresence>
