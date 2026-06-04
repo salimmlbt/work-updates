@@ -262,7 +262,8 @@ export default function AttendanceDetailClient({
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Status</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-right">Audit Statement</th>
                 </tr>
               </thead>
               <tbody>
@@ -292,17 +293,6 @@ export default function AttendanceDetailClient({
                       <div className="text-sm font-bold text-zinc-400 font-mono tracking-tight">
                         <TimeDisplay time={item.check_in} />
                       </div>
-                      {item.check_in_reason && (
-                        <div className="mt-4 p-6 rounded-[2rem] bg-amber-500/5 border border-amber-500/10 text-left max-w-[420px] mx-auto group-hover:bg-amber-500/10 transition-colors shadow-2xl">
-                            <div className="flex items-center gap-2 mb-3">
-                                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
-                                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-amber-600/80">Audit Context Statement</span>
-                            </div>
-                            <p className="text-sm italic font-medium text-amber-100 leading-relaxed tracking-tight">
-                              "{item.check_in_reason}"
-                            </p>
-                        </div>
-                      )}
                     </td>
                     <td className="px-6 py-6 text-center text-sm font-medium text-zinc-500 font-mono tracking-tight">
                       <TimeDisplay time={item.lunch_out} />
@@ -323,13 +313,28 @@ export default function AttendanceDetailClient({
                         <span className="text-zinc-800">—</span>
                       )}
                     </td>
-                    <td className="px-8 py-6 text-right">
+                    <td className="px-6 py-6 text-center">
                        <Badge variant="outline" className={cn(
                            "text-[9px] font-bold uppercase tracking-widest border-0 px-3 h-6",
                            item.check_in ? "text-emerald-500 bg-emerald-500/5" : "text-rose-500 bg-rose-500/5"
                        )}>
                            {item.check_in ? "Verified" : "Missing"}
                        </Badge>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                       {item.check_in_reason ? (
+                         <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-left min-w-[240px] max-w-[360px] ml-auto group-hover:bg-amber-500/10 transition-colors shadow-2xl">
+                            <div className="flex items-center gap-2 mb-2">
+                                <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
+                                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-amber-600/80">Audit Statement</span>
+                            </div>
+                            <p className="text-sm italic font-medium text-amber-100 leading-relaxed tracking-tight">
+                              "{item.check_in_reason}"
+                            </p>
+                        </div>
+                       ) : (
+                         <span className="text-zinc-800">—</span>
+                       )}
                     </td>
                   </tr>
                 ))}
