@@ -89,7 +89,8 @@ export default function DashboardClient({
   initialAttendance,
   initialHolidays,
 }: DashboardClientProps) {
-  const [isTasksLoading, setIsTasksLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const { toast } = useToast();
@@ -102,6 +103,10 @@ export default function DashboardClient({
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -160,6 +165,9 @@ export default function DashboardClient({
   }, [profile, supabase]);
 
   const stats = useMemo(() => {
+    // Hydration fix: Don't compute date-dependent stats until mounted on client
+    if (!mounted) return null;
+
     const isTaskCompleted = (t: any) => {
         return ['Posted', 'Scheduled'].includes(t.posting_status) || ['done', 'approved'].includes(t.status);
     };
@@ -251,13 +259,13 @@ export default function DashboardClient({
       averageDailyHours,
       efficiencyScore
     };
-  }, [tasks, attendance, holidays]);
+  }, [tasks, attendance, holidays, mounted]);
 
-  const handleTaskCardClick = (tab: string) => {
-    setIsTasksLoading(true);
+  const handleCardNavigation = (path: string) => {
+    setIsNavigating(true);
     setTimeout(() => {
-        router.push(`/tasks?tab=${tab}`);
-    }, 1000);
+        router.push(path);
+    }, 800);
   };
 
   const handleAskAI = async () => {
@@ -293,12 +301,15 @@ export default function DashboardClient({
     return null;
   };
 
+  // Content rendering based on mounting status to fix hydration mismatch
+  if (!mounted) return null;
+
   return (
     <div className="relative min-h-screen font-sans selection:bg-sky-500/30">
       <AnimatedBackground />
 
       <AnimatePresence>
-        {isTasksLoading && (
+        {isNavigating && (
           <motion.div 
             initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
             animate={{ opacity: 1, backdropFilter: "blur(16px)" }}
@@ -368,39 +379,39 @@ export default function DashboardClient({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <TaskStatCard 
                   title="Pending Tasks"
-                  value={stats.pending}
+                  value={stats?.pending ?? 0}
                   desc="Awaiting Action"
                   icon={AlertCircle}
                   colorClass="text-sky-400"
                   gradient="bg-sky-400 shadow-[0_0_8px_#38bdf8]"
                   delay={100}
-                  onClick={() => handleTaskCardClick('active')}
+                  onClick={() => handleCardNavigation('/tasks?tab=active')}
                 />
 
                 <TaskStatCard 
                   title="Review Tasks"
-                  value={stats.review}
+                  value={stats?.review ?? 0}
                   desc="Audit Required"
                   icon={Eye}
                   colorClass="text-indigo-400"
                   gradient="bg-indigo-400 shadow-[0_0_8px_#818cf8]"
                   delay={200}
-                  onClick={() => handleTaskCardClick('under-review')}
+                  onClick={() => handleCardNavigation('/tasks?tab=under-review')}
                 />
 
                 <TaskStatCard 
                   title="Completed"
-                  value={stats.completed}
+                  value={stats?.completed ?? 0}
                   desc="History Statement"
                   icon={CheckCircle2}
                   colorClass="text-emerald-400"
                   gradient="bg-emerald-400 shadow-[0_0_8px_#34d399]"
                   delay={300}
-                  onClick={() => handleTaskCardClick('completed')}
+                  onClick={() => handleCardNavigation('/tasks?tab=completed')}
                 />
             </div>
 
-            <GlassCard delay={400} className="p-8" onClick={() => profile?.id && router.push(`/attendance/${profile.id}`)}>
+            <GlassCard delay={400} className="p-8" onClick={() => profile?.id && handleCardNavigation(`/attendance/${profile.id}`)}>
                 <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-10 gap-6">
                     <div>
                     <h3 className="flex items-center gap-3 text-2xl text-white font-black tracking-tight uppercase">
@@ -414,15 +425,15 @@ export default function DashboardClient({
                     <div className="text-left md:text-right">
                     <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-600 mb-1">Total Aggregate</p>
                     <p className="text-5xl font-black text-white tracking-tighter drop-shadow-lg">
-                        {stats.totalMonthlyHours.toFixed(1)}<span className="text-2xl text-zinc-700 font-bold ml-1">h</span>
+                        {stats?.totalMonthlyHours.toFixed(1) ?? '0.0'}<span className="text-2xl text-zinc-700 font-bold ml-1">h</span>
                     </p>
-                    <p className="text-[10px] text-sky-400 font-black uppercase tracking-widest mt-2">Avg: {stats.averageDailyHours.toFixed(1)}h/day</p>
+                    <p className="text-[10px] text-sky-400 font-black uppercase tracking-widest mt-2">Avg: {stats?.averageDailyHours.toFixed(1) ?? '0.0'}h/day</p>
                     </div>
                 </div>
                 
                 <div className="h-[280px] w-full mt-4">
                     <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.attendanceChartData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
+                    <BarChart data={stats?.attendanceChartData ?? []} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
                         <defs>
                         <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.9} />
@@ -434,7 +445,7 @@ export default function DashboardClient({
                         <YAxis stroke="#334155" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}h`} fontWeight="bold" />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
                         <Bar dataKey="hours" fill="url(#barGrad)" radius={[4, 4, 0, 0]} barSize={12}>
-                           {stats.attendanceChartData.map((entry, index) => (
+                           {stats?.attendanceChartData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fillOpacity={entry.hours > 0 ? 1 : 0.2} />
                            ))}
                         </Bar>
@@ -466,7 +477,7 @@ export default function DashboardClient({
                                     <SelectValue placeholder="Select active task" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
-                                    {stats.pendingTasks.map(t => (
+                                    {stats?.pendingTasks.map(t => (
                                         <SelectItem key={t.id} value={t.id} className="text-xs truncate">{t.description}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -541,12 +552,12 @@ export default function DashboardClient({
                 </div>
                 
                 <div className="space-y-3">
-                    {stats.deadlines.length > 0 ? (
+                    {stats?.deadlines && stats.deadlines.length > 0 ? (
                     stats.deadlines.map((task) => (
                         <motion.div 
                         key={task.id} 
                         whileHover={{ scale: 1.02, x: 5 }}
-                        onClick={() => router.push('/tasks?tab=active')}
+                        onClick={() => handleCardNavigation('/tasks?tab=active')}
                         className={cn(
                             'flex items-start gap-4 p-4 rounded-2xl transition-all cursor-pointer bg-white/[0.02] border border-white/5 hover:border-white/15 group shadow-lg', 
                             task.isOverdue ? 'border-rose-500/20 bg-rose-500/5' : ''
@@ -578,7 +589,7 @@ export default function DashboardClient({
                 </div>
             </GlassCard>
 
-            <GlassCard delay={600} className="p-8" onClick={() => router.push('/attendance')}>
+            <GlassCard delay={600} className="p-8" onClick={() => handleCardNavigation('/attendance')}>
                 <div className="flex items-start justify-between mb-8">
                     <div>
                     <h3 className="text-xl text-white font-black tracking-tight uppercase">Attendance</h3>
@@ -592,27 +603,27 @@ export default function DashboardClient({
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">Total Period</span>
-                    <span className="text-lg font-black text-white">{stats.totalWorkingDays} <span className="text-[10px] text-zinc-700 uppercase ml-1">Days</span></span>
+                    <span className="text-lg font-black text-white">{stats?.totalWorkingDays ?? 0} <span className="text-[10px] text-zinc-700 uppercase ml-1">Days</span></span>
                     </div>
                     
                     <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-500/[0.05] border border-emerald-500/20">
                     <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em]">Present</span>
-                    <span className="text-lg font-black text-emerald-300">{stats.presentDaysSoFar} <span className="text-[9px] uppercase ml-1 opacity-60">Days</span></span>
+                    <span className="text-lg font-black text-emerald-300">{stats?.presentDaysSoFar ?? 0} <span className="text-[9px] uppercase ml-1 opacity-60">Days</span></span>
                     </div>
                     
                     <div className="flex items-center justify-between p-4 rounded-2xl bg-rose-500/[0.05] border border-rose-500/20">
                     <span className="text-[9px] font-black text-rose-400 uppercase tracking-[0.3em]">Absent</span>
-                    <span className="text-lg font-black text-rose-300">{stats.absentDays} <span className="text-[9px] uppercase ml-1 opacity-60">Days</span></span>
+                    <span className="text-lg font-black text-rose-300">{stats?.absentDays ?? 0} <span className="text-[9px] uppercase ml-1 opacity-60">Days</span></span>
                     </div>
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-white/5">
                     <div className="flex justify-between items-end mb-3">
                         <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">Efficiency Index</p>
-                        <p className="text-3xl font-black text-sky-400 drop-shadow-[0_0_10px_rgba(14,165,233,0.3)]">{stats.efficiencyScore.toFixed(1)}%</p>
+                        <p className="text-3xl font-black text-sky-400 drop-shadow-[0_0_10px_rgba(14,165,233,0.3)]">{stats?.efficiencyScore.toFixed(1) ?? '0.0'}%</p>
                     </div>
                     <div className="h-2.5 w-full bg-black/50 rounded-full overflow-hidden border border-white/5 shadow-inner">
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${stats.efficiencyScore}%` }} transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }} className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(14,165,233,0.6)]" />
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${stats?.efficiencyScore ?? 0}%` }} transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }} className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(14,165,233,0.6)]" />
                     </div>
                 </div>
             </GlassCard>

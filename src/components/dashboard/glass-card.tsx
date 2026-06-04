@@ -7,12 +7,14 @@ import React, { useRef, useState } from "react";
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   delay?: number;
+  gradientFrom?: string; // Explicitly handle custom prop
 }
 
 export function GlassCard({
   children,
   className,
   delay = 0,
+  gradientFrom, // Destructure to avoid passing to DOM
   ...props
 }: GlassCardProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -57,6 +59,14 @@ export function GlassCard({
           background: spotlightBackground,
         }}
       />
+      
+      {/* Decorative gradient overlay if provided */}
+      {gradientFrom && (
+        <div 
+          className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" 
+          style={{ background: `linear-gradient(to bottom right, ${gradientFrom}, transparent)` }} 
+        />
+      )}
       
       <div className="absolute inset-0 rounded-[2.5rem] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] pointer-events-none z-0" />
       
