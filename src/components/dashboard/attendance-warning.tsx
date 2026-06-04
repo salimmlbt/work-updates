@@ -146,15 +146,11 @@ export function AttendanceWarning({ profile }: Props) {
     <AnimatePresence>
       <div className="fixed top-28 left-0 right-0 z-[150] flex justify-center pointer-events-none px-4 isolation-auto">
         <motion.div
-          drag
-          dragMomentum={false}
-          dragElastic={0.1}
           initial={{ y: -50, opacity: 0, scale: 0.95 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: -50, opacity: 0, scale: 0.95 }}
-          whileDrag={{ scale: 0.98, opacity: 0.9 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="w-full max-w-3xl pointer-events-auto cursor-grab active:cursor-grabbing isolate"
+          className="w-full max-w-3xl pointer-events-auto isolate"
         >
           <div className={cn(
             "group relative overflow-hidden rounded-[2.5rem] bg-black/20 backdrop-blur-[40px] p-8 border border-white/10 flex items-center justify-between gap-8 shadow-[0_20px_60px_rgba(0,0,0,0.6)] transition-all duration-700",
