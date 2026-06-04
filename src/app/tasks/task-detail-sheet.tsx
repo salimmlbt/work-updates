@@ -22,6 +22,7 @@ import {
   Globe,
   Trash2,
   X as XIcon,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -368,7 +369,7 @@ export function TaskDetailSheet({
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-5 w-5 text-orange-400" />
-                      <h3 className="font-bold text-xl text-white">Corrections</h3>
+                      <h3 className="font-bold text-xl text-white">Submission Context / Late Reason</h3>
                     </div>
                      {corrections.length > 1 && (
                       <div className="flex items-center gap-2">
@@ -385,9 +386,12 @@ export function TaskDetailSheet({
                     )}
                 </div>
                 <div className="bg-orange-950/20 border border-orange-900/40 rounded-xl p-5 shadow-sm">
-                  <p className="text-sm text-orange-200 leading-relaxed italic">"{corrections[currentCorrectionIndex].note}"</p>
-                   <p className="text-xs text-orange-500/70 mt-3 font-medium">
-                      {format(parseISO(corrections[currentCorrectionIndex].created_at), 'd MMM yyyy, h:mm a')}
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-orange-200 leading-relaxed italic">"{corrections[currentCorrectionIndex].note}"</p>
+                  </div>
+                   <p className="text-[10px] text-orange-500/70 mt-3 font-black uppercase tracking-widest text-right">
+                      Logged: {format(parseISO(corrections[currentCorrectionIndex].created_at), 'd MMM yyyy, h:mm a')}
                   </p>
                 </div>
               </section>

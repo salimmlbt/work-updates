@@ -13,6 +13,7 @@ import {
   Building2,
   Users,
   MessageSquare,
+  AlertCircle,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -54,17 +55,16 @@ interface Props {
 }
 
 function TimeDisplay({ time }: { time: string | null }) {
-  const [formatted, setFormatted] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (time) {
-      setFormatted(format(parseISO(time), 'h:mm a'));
-    }
-  }, [time]);
+    setMounted(true);
+  }, []);
 
   if (!time) return <span className="text-zinc-800">—</span>;
-  if (!formatted) return <span className="text-zinc-800 animate-pulse">...</span>;
-  return <span>{formatted}</span>;
+  if (!mounted) return <span className="text-zinc-800 animate-pulse">...</span>;
+  
+  return <span>{format(parseISO(time), 'h:mm a')}</span>;
 }
 
 export default function AttendanceDetailClient({
@@ -183,7 +183,7 @@ export default function AttendanceDetailClient({
                   </h1>
                 )}
                 <div className="flex items-center gap-4 mt-2">
-                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">
+                   <p className="text-xs font-black uppercase tracking-[0.4em] text-zinc-500">
                     Monthly Performance Statement
                    </p>
                    <Badge variant="outline" className="bg-sky-500/10 text-sky-400 border-sky-500/20 text-[10px] font-black uppercase tracking-widest h-6 px-3">
@@ -291,8 +291,18 @@ export default function AttendanceDetailClient({
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-black text-zinc-400 font-mono tracking-tighter">
-                      <TimeDisplay time={item.check_in} />
+                    <td className="px-6 py-6 text-center">
+                      <div className="text-base font-black text-zinc-400 font-mono tracking-tighter">
+                        <TimeDisplay time={item.check_in} />
+                      </div>
+                      {item.check_in_reason && (
+                        <div className="mt-2 flex items-start gap-2 max-w-[200px] mx-auto text-left">
+                            <AlertCircle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+                            <p className="text-[10px] italic font-medium text-amber-500/80 leading-tight">
+                              {item.check_in_reason}
+                            </p>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-6 text-center text-sm font-bold text-zinc-500 font-mono tracking-tighter">
                       <TimeDisplay time={item.lunch_out} />
@@ -300,35 +310,26 @@ export default function AttendanceDetailClient({
                     <td className="px-6 py-6 text-center text-sm font-bold text-zinc-500 font-mono tracking-tighter">
                       <TimeDisplay time={item.lunch_in} />
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-black text-zinc-400 font-mono tracking-tighter">
+                    <td className="px-6 py-6 text-center text-base font-black text-zinc-400 font-mono tracking-tighter">
                       <TimeDisplay time={item.check_out} />
                     </td>
-                    <td className="px-6 py-6 text-center text-base font-black text-white tracking-tighter">
+                    <td className="px-6 py-6 text-center text-lg font-black text-white tracking-tighter">
                       {item.total_hours?.toFixed(2) || '0.00'}
                     </td>
                     <td className="px-6 py-6 text-center">
                       {item.extra_hours > 0 ? (
-                        <span className="text-base font-black text-sky-400 tracking-tighter">+{item.extra_hours.toFixed(2)}</span>
+                        <span className="text-lg font-black text-sky-400 tracking-tighter">+{item.extra_hours.toFixed(2)}</span>
                       ) : (
                         <span className="text-zinc-800">—</span>
                       )}
                     </td>
                     <td className="px-8 py-6 text-right">
-                       {item.check_in_reason ? (
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="inline-flex h-9 w-9 rounded-full bg-amber-500/10 border border-amber-500/20 items-center justify-center text-amber-500 hover:scale-110 transition-transform cursor-help">
-                                <MessageSquare className="h-5 w-5" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-zinc-900 border-zinc-800 text-white p-4 rounded-2xl max-w-[280px] shadow-2xl">
-                              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Manual Reason Entry</p>
-                              <p className="text-sm italic font-medium leading-relaxed">"{item.check_in_reason}"</p>
-                            </TooltipContent>
-                         </Tooltip>
-                       ) : (
-                         <div className="h-2 w-2 rounded-full bg-zinc-900 mx-auto" />
-                       )}
+                       <Badge variant="outline" className={cn(
+                           "text-[9px] font-black uppercase tracking-widest border-0",
+                           item.check_in ? "text-emerald-500 bg-emerald-500/5" : "text-rose-500 bg-rose-500/5"
+                       )}>
+                           {item.check_in ? "Verified" : "Missing"}
+                       </Badge>
                     </td>
                   </tr>
                 ))}
