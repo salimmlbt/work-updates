@@ -144,61 +144,67 @@ export function AttendanceWarning({ profile }: Props) {
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ y: -50, opacity: 0, x: '-50%', scale: 0.95 }}
-        animate={{ y: 0, opacity: 1, x: '-50%', scale: 1 }}
-        exit={{ y: -50, opacity: 0, x: '-50%', scale: 0.95 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed top-28 left-1/2 z-[150] w-[92vw] max-w-3xl pointer-events-none"
-      >
-        <div className={cn(
-          "pointer-events-auto group relative overflow-hidden rounded-[2.5rem] bg-white/[0.02] backdrop-blur-[40px] p-8 border border-white/10 flex items-center justify-between gap-8 shadow-[0_30px_100px_rgba(0,0,0,0.5)] transition-all duration-700",
-          "hover:scale-[1.01] hover:bg-white/[0.05] hover:border-white/20"
-        )}>
-          {/* 💎 Glass Inner Glare */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-30 pointer-events-none" />
-
-          {/* Animated Background Glow on Hover */}
+      <div className="fixed top-28 left-0 right-0 z-[150] flex justify-center pointer-events-none px-4">
+        <motion.div
+          drag
+          dragMomentum={false}
+          dragElastic={0.1}
+          initial={{ y: -50, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: -50, opacity: 0, scale: 0.95 }}
+          whileDrag={{ scale: 0.98, opacity: 0.9 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="w-full max-w-3xl pointer-events-auto cursor-grab active:cursor-grabbing"
+        >
           <div className={cn(
-            "absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none",
-            warningConfig.color
-          )} />
-          
-          <div className="flex items-center gap-8 relative z-10">
-            {/* Dynamic Pulsing Icon */}
+            "group relative overflow-hidden rounded-[2.5rem] bg-white/[0.02] backdrop-blur-[40px] p-8 border border-white/10 flex items-center justify-between gap-8 shadow-[0_30px_100px_rgba(0,0,0,0.5)] transition-all duration-700",
+            "hover:bg-white/[0.05] hover:border-white/20"
+          )}>
+            {/* 💎 Glass Inner Glare */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-30 pointer-events-none" />
+
+            {/* Animated Background Glow on Hover */}
             <div className={cn(
-              "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-2xl transition-all duration-700 ring-2 group-hover:scale-110 group-hover:rotate-3",
-              "bg-gradient-to-br", warningConfig.color, warningConfig.glow
-            )}>
-              <Icon className="h-8 w-8 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]" />
-            </div>
+              "absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none",
+              warningConfig.color
+            )} />
             
-            <div className="space-y-1">
-              <h4 className="text-2xl font-black uppercase tracking-tight text-white group-hover:text-sky-300 transition-colors duration-500">
-                {warningConfig.title}
-              </h4>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.4em] leading-tight opacity-80">
-                {warningConfig.desc}
-              </p>
-            </div>
-          </div>
-
-          {/* Live Status Guard Badge */}
-          <div className="hidden sm:flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 border border-white/5 relative z-10 group-hover:bg-white/10 transition-all duration-500">
-              <div className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_10px_#10b981]"></span>
+            <div className="flex items-center gap-8 relative z-10">
+              {/* Dynamic Pulsing Icon */}
+              <div className={cn(
+                "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-2xl transition-all duration-700 ring-2 group-hover:scale-110 group-hover:rotate-3",
+                "bg-gradient-to-br", warningConfig.color, warningConfig.glow
+              )}>
+                <Icon className="h-8 w-8 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-white transition-colors">
-                System Guard Active
-              </span>
-          </div>
+              
+              <div className="space-y-1">
+                <h4 className="text-2xl font-black uppercase tracking-tight text-white group-hover:text-sky-300 transition-colors duration-500">
+                  {warningConfig.title}
+                </h4>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.4em] leading-tight opacity-80">
+                  {warningConfig.desc}
+                </p>
+              </div>
+            </div>
 
-          {/* Cyber decoration lines */}
-          <div className="absolute top-0 right-1/4 w-[1px] h-full bg-gradient-to-b from-white/10 to-transparent opacity-10" />
-          <div className="absolute bottom-0 left-1/4 w-[1px] h-full bg-gradient-to-t from-white/10 to-transparent opacity-10" />
-        </div>
-      </motion.div>
+            {/* Live Status Guard Badge */}
+            <div className="hidden sm:flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 border border-white/5 relative z-10 group-hover:bg-white/10 transition-all duration-500">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_10px_#10b981]"></span>
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-white transition-colors">
+                  System Guard Active
+                </span>
+            </div>
+
+            {/* Cyber decoration lines */}
+            <div className="absolute top-0 right-1/4 w-[1px] h-full bg-gradient-to-b from-white/10 to-transparent opacity-10" />
+            <div className="absolute bottom-0 left-1/4 w-[1px] h-full bg-gradient-to-t from-white/10 to-transparent opacity-10" />
+          </div>
+        </motion.div>
+      </div>
     </AnimatePresence>
   );
 }
