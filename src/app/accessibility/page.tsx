@@ -30,6 +30,9 @@ export default async function AccessibilityPage() {
         { data: industriesData, error: industriesError },
         { data: workTypesData, error: workTypesError },
         { data: locationsData, error: locationsError },
+        { data: checkInDelaySetting },
+        { data: lunchOutDelaySetting },
+        { data: lunchInDelaySetting },
     ] = await Promise.all([
         supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
         supabase.from('app_settings').select('value').eq('key', 'annual_leave_allowance').single(),
@@ -40,6 +43,9 @@ export default async function AccessibilityPage() {
         supabase.from('industries').select('*'),
         supabase.from('work_types').select('*'),
         supabase.from('office_locations').select('*'),
+        supabase.from('app_settings').select('value').eq('key', 'check_in_warning_delay').maybeSingle(),
+        supabase.from('app_settings').select('value').eq('key', 'lunch_out_warning_delay').maybeSingle(),
+        supabase.from('app_settings').select('value').eq('key', 'lunch_in_warning_delay').maybeSingle(),
     ]);
     
     if (industriesError) console.error('Error fetching industries', industriesError);
@@ -57,6 +63,10 @@ export default async function AccessibilityPage() {
       { id: '3', label: 'Sick Leave', leadTime: 0, maxNotice: 7, color: 'emerald' },
       { id: '4', label: 'Special WFH', leadTime: 0, maxNotice: 30, color: 'amber' }
     ];
+
+    const checkInWarningDelay = (checkInDelaySetting?.value as number | undefined) ?? 15;
+    const lunchOutWarningDelay = (lunchOutDelaySetting?.value as number | undefined) ?? 15;
+    const lunchInWarningDelay = (lunchInDelaySetting?.value as number | undefined) ?? 15;
 
   return (
     <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f] text-zinc-100">
@@ -100,6 +110,9 @@ export default async function AccessibilityPage() {
                         currentLunchTime={lunchStartTime} 
                         initialAllowance={annualLeaveAllowance}
                         initialGracePeriod={lateGracePeriod}
+                        initialCheckInDelay={checkInWarningDelay}
+                        initialLunchOutDelay={lunchOutWarningDelay}
+                        initialLunchInDelay={lunchInWarningDelay}
                     />
                 </CardContent>
             </Card>

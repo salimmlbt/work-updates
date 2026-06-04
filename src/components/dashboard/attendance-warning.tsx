@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,6 +17,7 @@ export function AttendanceWarning({ profile }: Props) {
   const [warning, setWarning] = useState<'MISSING_CHECK_IN' | 'MISSING_LUNCH_OUT' | 'LATE_LUNCH_RETURN' | null>(null);
   const [attendance, setAttendance] = useState<Attendance | null>(null);
   const [lunchTime, setLunchTime] = useState<{ default: string; friday: string } | null>(null);
+  const [delays, setDelays] = useState({ checkIn: 15, lunchOut: 15, lunchIn: 15 });
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const supabase = createClient();
@@ -31,15 +31,18 @@ export function AttendanceWarning({ profile }: Props) {
 
     const fetchData = async () => {
       const today = format(new Date(), 'yyyy-MM-dd');
-      const [attRes, settingsRes] = await Promise.all([
+      const [attRes, lunchRes, delayInRes, delayLOutRes, delayLInRes] = await Promise.all([
         supabase.from('attendance').select('*').eq('user_id', profile.id).eq('date', today).maybeSingle(),
-        supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single()
+        supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
+        supabase.from('app_settings').select('value').eq('key', 'check_in_warning_delay').maybeSingle(),
+        supabase.from('app_settings').select('value').eq('key', 'lunch_out_warning_delay').maybeSingle(),
+        supabase.from('app_settings').select('value').eq('key', 'lunch_in_warning_delay').maybeSingle(),
       ]);
 
       if (attRes.data) setAttendance(attRes.data as Attendance);
       
-      if (settingsRes.data?.value) {
-        const val = settingsRes.data.value;
+      if (lunchRes.data?.value) {
+        const val = lunchRes.data.value;
         if (typeof val === 'string' && val.trim().startsWith('{')) {
           try {
             setLunchTime(JSON.parse(val));
@@ -51,6 +54,12 @@ export function AttendanceWarning({ profile }: Props) {
           setLunchTime({ default: time, friday: time });
         }
       }
+
+      setDelays({
+        checkIn: (delayInRes.data?.value as number) ?? 15,
+        lunchOut: (delayLOutRes.data?.value as number) ?? 15,
+        lunchIn: (delayLInRes.data?.value as number) ?? 15,
+      });
     };
 
     fetchData();
@@ -78,23 +87,25 @@ export function AttendanceWarning({ profile }: Props) {
     const checkMilestones = () => {
       const now = new Date();
       
+      // 1. Missing Check-In (relative to work_start_time + delay)
       if (!attendance?.check_in && profile.work_start_time) {
         try {
           const startTime = parse(profile.work_start_time, 'HH:mm:ss', now);
-          if (isAfter(now, addMinutes(startTime, 1))) {
+          if (isAfter(now, addMinutes(startTime, delays.checkIn))) {
             setWarning('MISSING_CHECK_IN');
             return;
           }
         } catch (e) {}
       }
 
+      // 2. Missing Lunch Out (relative to lunch_start_time + delay)
       if (attendance?.check_in && !attendance.lunch_out && !attendance.check_out && lunchTime) {
         const isFriday = now.getDay() === 5;
         const lTimeStr = isFriday ? lunchTime.friday : lunchTime.default;
         if (lTimeStr) {
           try {
             const lStartTime = parse(lTimeStr, 'HH:mm', now);
-            if (isAfter(now, addMinutes(lStartTime, 15))) {
+            if (isAfter(now, addMinutes(lStartTime, delays.lunchOut))) {
               setWarning('MISSING_LUNCH_OUT');
               return;
             }
@@ -102,9 +113,11 @@ export function AttendanceWarning({ profile }: Props) {
         }
       }
 
+      // 3. Late Lunch Return (relative to lunch_out + 60 mins + delay)
       if (attendance?.lunch_out && !attendance.lunch_in && !attendance.check_out) {
         const lunchOutTime = new Date(attendance.lunch_out);
-        if (isAfter(now, addMinutes(lunchOutTime, 61))) {
+        // Assuming standard 1 hour break + user defined delay
+        if (isAfter(now, addMinutes(lunchOutTime, 60 + delays.lunchIn))) {
           setWarning('LATE_LUNCH_RETURN');
           return;
         }
@@ -116,7 +129,7 @@ export function AttendanceWarning({ profile }: Props) {
     checkMilestones();
     const interval = setInterval(checkMilestones, 30000);
     return () => clearInterval(interval);
-  }, [profile, attendance, lunchTime]);
+  }, [profile, attendance, lunchTime, delays]);
 
   // Audio Logic
   useEffect(() => {
@@ -143,7 +156,7 @@ export function AttendanceWarning({ profile }: Props) {
   const warningConfig = {
     MISSING_CHECK_IN: {
       title: "Missing Check-In",
-      desc: "Your scheduled shift has started.",
+      desc: `Overdue by ${delays.checkIn}m+ from schedule.`,
       icon: LogIn,
       color: "from-rose-600 to-orange-600",
       glow: "shadow-rose-500/20 ring-rose-500/30",
@@ -151,15 +164,15 @@ export function AttendanceWarning({ profile }: Props) {
     },
     MISSING_LUNCH_OUT: {
       title: "Lunch Milestone",
-      desc: "It is past the studio break window.",
+      desc: `Lunch window passed ${delays.lunchOut}m ago.`,
       icon: Coffee,
       color: "from-amber-600 to-yellow-600",
       glow: "shadow-amber-500/20 ring-amber-500/30",
       edgeLight: "rgba(245, 158, 11, 0.4)",
     },
     LATE_LUNCH_RETURN: {
-      title: "Break Time Concluded",
-      desc: "Return statement is now overdue.",
+      title: "Break Overdue",
+      desc: `Overstayed break window by ${delays.lunchIn}m+.`,
       icon: Clock,
       color: "from-sky-600 to-indigo-600",
       glow: "shadow-sky-500/20 ring-sky-500/30",
