@@ -1,3 +1,4 @@
+
 'use client'
 
 import {
@@ -11,7 +12,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials, cn } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Check, X as XIcon, Rocket } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Check, X as XIcon, Rocket, ChevronDown, Plus } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 import { format, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, startOfToday, parseISO, addDays, getDay } from 'date-fns';
 import { useState, useEffect, useMemo } from 'react';
@@ -20,6 +21,7 @@ import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '@/components/dashboard/animated-background';
 import { GlassCard } from '@/components/dashboard/glass-card';
+import { Button } from '@/components/ui/button';
 
 interface DashboardClientProps {
   profile: Profile | null;
@@ -282,7 +284,7 @@ export default function DashboardClient({
                 transition={{ delay: 0.1 }}
                 className="flex items-center gap-1"
               >
-                <span className="text-[10px] text-slate-300 font-black tracking-[0.4em] uppercase">
+                <span className="text-[10px] text-slate-300 text-slate-300 font-black tracking-[0.4em] uppercase">
                   Processing
                 </span>
                 <span className="flex gap-0.5 ml-1 text-xs text-slate-300 font-bold">
@@ -296,7 +298,7 @@ export default function DashboardClient({
         )}
       </AnimatePresence>
 
-      <div className="relative min-h-screen p-6 md:p-10 lg:p-12 text-white z-10 max-w-[1600px] mx-auto">
+      <div className="relative min-h-screen p-4 md:p-8 lg:p-10 text-white z-10 w-full">
         <motion.header 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
