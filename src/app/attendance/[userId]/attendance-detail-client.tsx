@@ -255,14 +255,14 @@ export default function AttendanceDetailClient({
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-white/5 bg-white/[0.01]">
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">Timestamp Date</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
+                  <th className="px-6 py-5 text-sm font-bold uppercase tracking-[0.3em] text-zinc-600">Timestamp Date</th>
+                  <th className="px-6 py-5 text-sm font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
+                  <th className="px-6 py-5 text-sm font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
+                  <th className="px-6 py-5 text-sm font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
+                  <th className="px-6 py-5 text-sm font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
+                  <th className="px-6 py-5 text-sm font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
+                  <th className="px-6 py-5 text-sm font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
+                  <th className="px-6 py-5 text-sm font-bold uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
                 </tr>
               </thead>
               <tbody>
@@ -274,58 +274,58 @@ export default function AttendanceDetailClient({
                       !item.check_in && "opacity-40 grayscale"
                     )}
                   >
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
+                    <td className="px-6 py-6">
+                      <div className="flex items-center gap-4">
                         <div className={cn(
-                          "h-10 w-10 rounded-xl flex flex-col items-center justify-center font-bold transition-all group-hover:scale-105",
+                          "h-14 w-14 rounded-2xl flex flex-col items-center justify-center font-bold transition-all group-hover:scale-105",
                           item.check_in ? "bg-white/5 text-zinc-200 border border-white/10" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
                         )}>
-                          <span className="text-[8px] uppercase tracking-tighter opacity-60">{format(parseISO(item.date), 'MMM')}</span>
-                          <span className="text-sm leading-none mt-0.5">{format(parseISO(item.date), 'dd')}</span>
+                          <span className="text-[10px] uppercase font-black tracking-widest opacity-60">{format(parseISO(item.date), 'MMM')}</span>
+                          <span className="text-lg leading-none mt-1">{format(parseISO(item.date), 'dd')}</span>
                         </div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400 transition-colors">
+                        <div className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 group-hover:text-zinc-400 transition-colors">
                           {format(parseISO(item.date), 'EEEE')}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-center">
-                      <div className="text-sm font-bold text-zinc-400 font-mono tracking-tight">
+                    <td className="px-6 py-6 text-center">
+                      <div className="text-base font-bold text-zinc-400 font-mono tracking-tight">
                         <TimeDisplay time={item.check_in} />
                       </div>
                       {item.check_in_reason && (
-                        <div className="mt-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-left max-w-[320px] mx-auto group-hover:bg-amber-500/10 transition-colors shadow-xl">
-                            <div className="flex items-center gap-2 mb-2">
-                                <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-600/80">Audit Context Statement</span>
+                        <div className="mt-4 p-6 rounded-[2rem] bg-amber-500/5 border border-amber-500/10 text-left max-w-[420px] mx-auto group-hover:bg-amber-500/10 transition-colors shadow-2xl">
+                            <div className="flex items-center gap-2 mb-3">
+                                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600/80">Audit Context Statement</span>
                             </div>
-                            <p className="text-base italic font-bold text-amber-100 leading-relaxed tracking-tight">
+                            <p className="text-2xl italic font-bold text-amber-100 leading-relaxed tracking-tight">
                               "{item.check_in_reason}"
                             </p>
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-5 text-center text-xs font-medium text-zinc-500 font-mono tracking-tight">
+                    <td className="px-6 py-6 text-center text-sm font-medium text-zinc-500 font-mono tracking-tight">
                       <TimeDisplay time={item.lunch_out} />
                     </td>
-                    <td className="px-6 py-5 text-center text-xs font-medium text-zinc-500 font-mono tracking-tight">
+                    <td className="px-6 py-6 text-center text-sm font-medium text-zinc-500 font-mono tracking-tight">
                       <TimeDisplay time={item.lunch_in} />
                     </td>
-                    <td className="px-6 py-5 text-center text-sm font-bold text-zinc-400 font-mono tracking-tight">
+                    <td className="px-6 py-6 text-center text-base font-bold text-zinc-400 font-mono tracking-tight">
                       <TimeDisplay time={item.check_out} />
                     </td>
-                    <td className="px-6 py-5 text-center text-sm font-bold text-white tracking-tight">
+                    <td className="px-6 py-6 text-center text-base font-bold text-white tracking-tight">
                       {item.total_hours?.toFixed(2) || '0.00'}
                     </td>
-                    <td className="px-6 py-5 text-center">
+                    <td className="px-6 py-6 text-center">
                       {item.extra_hours > 0 ? (
-                        <span className="text-sm font-bold text-sky-400 tracking-tight">+{item.extra_hours.toFixed(2)}</span>
+                        <span className="text-base font-bold text-sky-400 tracking-tight">+{item.extra_hours.toFixed(2)}</span>
                       ) : (
                         <span className="text-zinc-800">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-5 text-right">
+                    <td className="px-6 py-6 text-right">
                        <Badge variant="outline" className={cn(
-                           "text-[8px] font-bold uppercase tracking-widest border-0 px-2 h-5",
+                           "text-[9px] font-black uppercase tracking-widest border-0 px-3 h-6",
                            item.check_in ? "text-emerald-500 bg-emerald-500/5" : "text-rose-500 bg-rose-500/5"
                        )}>
                            {item.check_in ? "Verified" : "Missing"}

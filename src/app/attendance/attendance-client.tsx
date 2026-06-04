@@ -135,7 +135,6 @@ export default function AttendanceClient({
     <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-8 lg:p-10 overflow-hidden">
       <AnimatedBackground />
 
-      {/* 🚀 Processing Portal */}
       <AnimatePresence>
         {isPending && (
           <motion.div 
@@ -239,12 +238,12 @@ export default function AttendanceClient({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.01]">
-                <th className="px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600">Studio Member</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Break</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Status</th>
-                <th className="px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-right"></th>
+                <th className="px-8 py-5 text-sm font-black uppercase tracking-[0.3em] text-zinc-600">Studio Member</th>
+                <th className="px-6 py-5 text-sm font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
+                <th className="px-6 py-5 text-sm font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Break</th>
+                <th className="px-6 py-5 text-sm font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
+                <th className="px-6 py-5 text-sm font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Status</th>
+                <th className="px-8 py-5 text-sm font-black uppercase tracking-[0.3em] text-zinc-600 text-right"></th>
               </tr>
             </thead>
             <tbody>
@@ -259,53 +258,53 @@ export default function AttendanceClient({
                       canView ? "cursor-pointer hover:bg-white/[0.04]" : "opacity-40 grayscale-[0.5]"
                     )}
                   >
-                    <td className="px-8 py-5">
+                    <td className="px-8 py-6">
                       <div className="flex items-center gap-5">
                         <div className="relative">
-                          <Avatar className="h-12 w-12 border border-white/10 group-hover:scale-105 transition-transform duration-500 shadow-2xl">
+                          <Avatar className="h-14 w-14 border border-white/10 group-hover:scale-105 transition-transform duration-500 shadow-2xl">
                             <AvatarImage src={item.profiles.avatar_url ?? undefined} alt={item.profiles.full_name ?? ''} />
-                            <AvatarFallback className="bg-zinc-900 text-zinc-600 font-bold text-sm">{getInitials(item.profiles.full_name)}</AvatarFallback>
+                            <AvatarFallback className="bg-zinc-900 text-zinc-600 font-bold text-lg">{getInitials(item.profiles.full_name)}</AvatarFallback>
                           </Avatar>
-                          {!item.check_in && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-rose-500 border-2 border-[#05050a]" />}
-                          {item.check_in && !item.check_out && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-[#05050a] animate-pulse" />}
+                          {!item.check_in && <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-rose-500 border-2 border-[#05050a]" />}
+                          {item.check_in && !item.check_out && <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-[#05050a] animate-pulse" />}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-white text-lg tracking-tight truncate group-hover:text-sky-300 transition-colors">{item.profiles.full_name}</p>
-                          <p className="text-xs text-zinc-600 font-medium uppercase tracking-widest mt-0.5">{item.profiles.email?.split('@')[0]}</p>
+                          <p className="font-bold text-white text-xl tracking-tight truncate group-hover:text-sky-300 transition-colors">{item.profiles.full_name}</p>
+                          <p className="text-sm text-zinc-600 font-medium uppercase tracking-widest mt-0.5">{item.profiles.email?.split('@')[0]}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-center">
-                      <div className="text-sm font-bold text-zinc-400 font-mono tracking-tighter">
+                    <td className="px-6 py-6 text-center">
+                      <div className="text-base font-bold text-zinc-400 font-mono tracking-tighter">
                         <TimeDisplay time={item.check_in} />
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-center">
-                       <div className="text-sm font-bold text-zinc-500 font-mono tracking-tighter">
+                    <td className="px-6 py-6 text-center">
+                       <div className="text-base font-bold text-zinc-500 font-mono tracking-tighter">
                         <TimeDisplay time={item.lunch_out} />
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-center">
-                       <div className="text-sm font-bold text-zinc-400 font-mono tracking-tighter">
+                    <td className="px-6 py-6 text-center">
+                       <div className="text-base font-bold text-zinc-400 font-mono tracking-tighter">
                         <TimeDisplay time={item.check_out} />
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-center">
+                    <td className="px-6 py-6 text-center">
                       {item.check_in ? (
                         item.check_out ? (
-                          <Badge variant="outline" className="bg-zinc-900 text-zinc-500 border-zinc-800 text-[10px] font-black uppercase tracking-widest px-3 h-6">Done</Badge>
+                          <Badge variant="outline" className="bg-zinc-900 text-zinc-500 border-zinc-800 text-[10px] font-black uppercase tracking-widest px-4 h-7">Done</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-black uppercase tracking-widest px-3 h-6">Live</Badge>
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-black uppercase tracking-widest px-4 h-7">Live</Badge>
                         )
                       ) : (
-                        <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/20 text-[10px] font-black uppercase tracking-widest px-3 h-6">Absent</Badge>
+                        <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/20 text-[10px] font-black uppercase tracking-widest px-4 h-7">Absent</Badge>
                       )}
                     </td>
-                    <td className="px-8 py-5 text-right">
+                    <td className="px-8 py-6 text-right">
                       {canView ? (
-                        <ChevronRight className="h-6 w-6 text-zinc-700 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                        <ChevronRight className="h-7 w-7 text-zinc-700 group-hover:text-white group-hover:translate-x-1 transition-all" />
                       ) : (
-                        <Lock className="h-4 w-4 text-zinc-800 mx-auto" />
+                        <Lock className="h-5 w-5 text-zinc-800 mx-auto" />
                       )}
                     </td>
                   </tr>
