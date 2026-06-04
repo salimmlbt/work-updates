@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useTransition } from 'react';
@@ -14,15 +15,14 @@ import {
   ArrowLeft,
   CheckCircle2,
   XCircle,
+  ChevronDown
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, getDay } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getInitials, cn } from '@/lib/utils';
 import type { Profile } from '@/lib/types';
-import { AnimatedBackground } from '@/components/dashboard/animated-background';
-import { GlassCard } from '@/components/dashboard/glass-card';
 import {
   Select,
   SelectContent,
@@ -30,8 +30,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatedBackground } from '@/components/dashboard/animated-background';
+import { GlassCard } from '@/components/dashboard/glass-card';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface MonthlyAttendance {
   date: string;
@@ -66,6 +71,13 @@ function TimeDisplay({ time }: { time: string | null }) {
   
   return <span className="font-medium text-zinc-200">{format(parseISO(time), 'h:mm a')}</span>;
 }
+
+const months = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
 export default function AttendanceDetailClient({
   user,
@@ -103,7 +115,60 @@ export default function AttendanceDetailClient({
     });
   };
 
+  const handleMonthYearSelect = (month: string, year: string) => {
+    const newMonth = `${year}-${month.padStart(2, '0')}`;
+    startTransition(() => {
+      router.push(`/attendance/${user.id}?month=${newMonth}`);
+    });
+  };
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const monthLabel = format(parseISO(selectedDate), 'MMMM yyyy');
+    
+    // Header
+    doc.setFontSize(20);
+    doc.text('Attendance Statement', 14, 20);
+    doc.setFontSize(12);
+    doc.text(`Employee: ${user.full_name}`, 14, 30);
+    doc.text(`Period: ${monthLabel}`, 14, 37);
+
+    const tableData = monthlyData.map(item => [
+      format(parseISO(item.date), 'dd MMM (EEE)'),
+      item.check_in ? format(parseISO(item.check_in), 'hh:mm a') : '—',
+      item.lunch_out ? format(parseISO(item.lunch_out), 'hh:mm a') : '—',
+      item.lunch_in ? format(parseISO(item.lunch_in), 'hh:mm a') : '—',
+      item.check_out ? format(parseISO(item.check_out), 'hh:mm a') : '—',
+      item.total_hours ? item.total_hours.toFixed(2) : '0.00'
+    ]);
+
+    autoTable(doc, {
+      startY: 45,
+      head: [['Date', 'Check In', 'Lunch Out', 'Lunch In', 'Check Out', 'Hours']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillGray: 20 },
+      didParseCell: (data) => {
+        if (data.section === 'body') {
+          const dateStr = monthlyData[data.row.index].date;
+          const checkIn = monthlyData[data.row.index].check_in;
+          const isSunday = getDay(parseISO(dateStr)) === 0;
+          
+          if (isSunday) {
+            data.cell.styles.fillColor = [254, 226, 226]; // Light Red
+          } else if (!checkIn) {
+            data.cell.styles.fillColor = [254, 249, 195]; // Light Yellow
+          }
+        }
+      }
+    });
+
+    doc.save(`Attendance_${user.full_name.replace(/\s+/g, '_')}_${monthLabel}.pdf`);
+  };
+
   const currentMonthLabel = format(parseISO(selectedDate), 'MMMM yyyy');
+  const currentMonth = format(parseISO(selectedDate), 'MM');
+  const currentYear = format(parseISO(selectedDate), 'yyyy');
 
   return (
     <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-6 font-sans selection:bg-sky-500/30 overflow-x-hidden">
@@ -155,10 +220,13 @@ export default function AttendanceDetailClient({
                 
                 <div className="flex flex-col gap-1">
                   {isEditor ? (
-                     <div className="-ml-3">
+                     <div className="-ml-3 flex items-center">
                        <Select value={user.id} onValueChange={handleUserChange}>
                           <SelectTrigger className="h-auto py-1 px-3 bg-transparent border-0 text-2xl font-bold tracking-tight text-white uppercase focus:ring-0 shadow-none hover:bg-white/5 rounded-xl transition-colors">
-                            <SelectValue />
+                            <div className="flex items-center gap-2">
+                              <SelectValue />
+                              <ChevronDown className="h-4 w-4 text-zinc-500" />
+                            </div>
                           </SelectTrigger>
                           <SelectContent className="bg-zinc-950 border-white/10 text-white backdrop-blur-3xl shadow-2xl rounded-2xl">
                             <div className="p-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Select Employee</div>
@@ -190,15 +258,50 @@ export default function AttendanceDetailClient({
                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(prevMonth)}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <div className="flex items-center justify-center min-w-[150px] gap-2">
-                    <CalendarIcon className="h-3.5 w-3.5 text-sky-400" />
-                    <span className="text-sm font-bold text-zinc-200 uppercase tracking-widest">{currentMonthLabel}</span>
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="flex items-center justify-center min-w-[150px] gap-2 cursor-pointer hover:bg-white/5 rounded-lg h-9 transition-colors">
+                        <CalendarIcon className="h-3.5 w-3.5 text-sky-400" />
+                        <span className="text-sm font-bold text-zinc-200 uppercase tracking-widest">{currentMonthLabel}</span>
+                        <ChevronDown className="h-3 w-3 text-zinc-500" />
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-4 bg-zinc-950 border-white/10 text-white rounded-2xl shadow-2xl backdrop-blur-3xl" align="center">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase text-zinc-500">Month</p>
+                          <Select value={currentMonth} onValueChange={(m) => handleMonthYearSelect(m, currentYear)}>
+                            <SelectTrigger className="h-9 w-32 bg-white/5 border-white/10 rounded-xl text-xs font-bold">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-900 border-white/5 text-white">
+                              {months.map((m, i) => (
+                                <SelectItem key={m} value={String(i + 1).padStart(2, '0')}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase text-zinc-500">Year</p>
+                          <Select value={currentYear} onValueChange={(y) => handleMonthYearSelect(currentMonth, y)}>
+                            <SelectTrigger className="h-9 w-24 bg-white/5 border-white/10 rounded-xl text-xs font-bold">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-900 border-white/5 text-white">
+                              {years.map(y => (
+                                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(nextMonth)}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
               </div>
-              <Button variant="outline" className="h-11 px-6 bg-white border-0 hover:bg-zinc-200 text-zinc-950 font-bold uppercase tracking-widest text-[10px] shadow-2xl transition-all active:scale-95 rounded-xl">
+              <Button onClick={generatePDF} variant="outline" className="h-11 px-6 bg-white border-0 hover:bg-zinc-200 text-zinc-950 font-bold uppercase tracking-widest text-[10px] shadow-2xl transition-all active:scale-95 rounded-xl">
                 <Download className="mr-2 h-4 w-4" />
                 Export Statement
               </Button>
