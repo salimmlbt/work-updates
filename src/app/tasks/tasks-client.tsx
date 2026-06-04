@@ -997,6 +997,7 @@ const TaskTableBody = ({
   highlightedTaskId,
   clickedTaskId,
   duplicationData,
+  duplicationTimestamp,
   workTypeStatusConfig,
 }: {
   tasks: TaskWithDetails[];
@@ -1024,6 +1025,7 @@ const TaskTableBody = ({
   highlightedTaskId: string | null;
   clickedTaskId: string | null;
   duplicationData?: Partial<TaskWithDetails> | null;
+  duplicationTimestamp: number;
   workTypeStatusConfig: WorkTypeStatusConfig;
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -1032,7 +1034,7 @@ const TaskTableBody = ({
     <tbody>
       {isAddingTask && onSaveTask && onCancelAddTask && projects && clients && profiles && (
         <AddTaskRow 
-            key={duplicationData ? `duplicate-${clickedTaskId || highlightedTaskId}` : 'new-task'}
+            key={duplicationData ? `duplicate-${duplicationTimestamp}` : 'new-task'}
             onSave={onSaveTask} 
             onCancel={onCancelAddTask} 
             projects={projects} 
@@ -1140,6 +1142,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(initialHighlightedTaskId);
   const [clickedTaskId, setClickedTaskId] = useState<string | null>(null);
   const [duplicationData, setDuplicationData] = useState<Partial<TaskWithDetails> | null>(null);
+  const [duplicationTimestamp, setDuplicationTimestamp] = useState<number>(0);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
   const supabase = createClient();
@@ -1162,6 +1165,27 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
     setTasks(initialTasks);
   }, [initialTasks]);
 
+  const currentTabTasks = useMemo(() => {
+    if (showBin) return tasks.filter(t => t.is_deleted);
+    
+    const sorted = [...tasks]; // Assume filteredTasks already handles tab logic? No, let's be explicit
+    const visible = sorted.filter(t => !t.is_deleted).filter(t => {
+        if (activeTab === 'active') {
+            if (t.posting_status === 'Posted' || t.posting_status === 'Scheduled') return false;
+            return t.posting_status === 'Planned' || ['todo', 'inprogress', 'corrections', 'recreate'].includes(t.status);
+        }
+        if (activeTab === 'under-review') {
+            if (t.posting_status === 'Posted' || t.posting_status === 'Scheduled') return false;
+            return t.status === 'review' || t.status === 'under-review';
+        }
+        if (activeTab === 'completed') {
+            return t.posting_status === 'Posted' || t.posting_status === 'Scheduled' || ['approved', 'done'].includes(t.status);
+        }
+        return true;
+    });
+    return visible;
+  }, [tasks, activeTab, showBin]);
+
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -1174,7 +1198,21 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
       }
       
       if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
-        const targetId = clickedTaskId || selectedTaskIds[0] || highlightedTaskId;
+        // IMPROVED TARGET LOGIC: Prioritize visual highlighted task within the current tab
+        let targetId: string | null = null;
+        
+        const isClickedTaskInTab = clickedTaskId && currentTabTasks.some(t => t.id === clickedTaskId);
+        const isHighlightedTaskInTab = highlightedTaskId && currentTabTasks.some(t => t.id === highlightedTaskId);
+        
+        if (isClickedTaskInTab) {
+          targetId = clickedTaskId;
+        } else if (selectedTaskIds.length > 0) {
+          // If multiple selected but none "clicked", use the last one added to selection that exists in current tab
+          targetId = [...selectedTaskIds].reverse().find(id => currentTabTasks.some(t => t.id === id)) || null;
+        } else if (isHighlightedTaskInTab) {
+          targetId = highlightedTaskId;
+        }
+
         if (canEditTasks && !showBin && targetId) {
           e.preventDefault();
           const taskToDuplicate = tasks.find(t => t.id === targetId);
@@ -1187,9 +1225,10 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
               type: taskToDuplicate.type,
               deadline: taskToDuplicate.deadline,
             });
+            setDuplicationTimestamp(Date.now());
             setActiveTab('active');
             setIsAddingTask(true);
-            toast({ title: 'Duplicating Task', description: `Auto-filled: "${taskToDuplicate.description}"` });
+            toast({ title: 'Duplicating Task', description: `Auto-filled from "${taskToDuplicate.description}"` });
           }
         }
       }
@@ -1197,7 +1236,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.addEventListener('keydown', handleGlobalKeyDown);
-  }, [canEditTasks, showBin, clickedTaskId, selectedTaskIds, highlightedTaskId, tasks, toast]);
+  }, [canEditTasks, showBin, clickedTaskId, selectedTaskIds, highlightedTaskId, tasks, toast, currentTabTasks]);
 
   useEffect(() => {
     const channel = supabase
@@ -1506,10 +1545,19 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
   };
 
   const handleSelectTask = (taskId: string, isSelected: boolean) => {
-    setSelectedTaskIds(prev =>
-      isSelected ? [...prev, taskId] : prev.filter(id => id !== taskId)
-    );
-    if (isSelected) setClickedTaskId(taskId);
+    const newSelected = isSelected 
+      ? [...selectedTaskIds, taskId] 
+      : selectedTaskIds.filter(id => id !== taskId);
+    
+    setSelectedTaskIds(newSelected);
+    
+    // SYNC: Update clicked context for duplication and highlighting
+    if (isSelected) {
+      setClickedTaskId(taskId);
+    } else if (clickedTaskId === taskId) {
+      // If we unchecked the highlighted one, move focus to the last available selection
+      setClickedTaskId(newSelected.length > 0 ? newSelected[newSelected.length - 1] : null);
+    }
   };
   
   const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => {
@@ -1596,6 +1644,7 @@ export default function TasksClient({ initialTasks, projects: allProjects, clien
             highlightedTaskId={highlightedTaskId}
             clickedTaskId={clickedTaskId}
             duplicationData={duplicationData}
+            duplicationTimestamp={duplicationTimestamp}
             workTypeStatusConfig={workTypeStatusConfig}
           />
         </table>
