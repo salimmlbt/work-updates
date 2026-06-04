@@ -11,6 +11,8 @@ import {
   ArrowUpRight,
   Building2,
   AlertCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -58,10 +60,10 @@ function TimeDisplay({ time }: { time: string | null }) {
     setMounted(true);
   }, []);
 
-  if (!time) return <span className="text-zinc-800">—</span>;
-  if (!mounted) return <span className="text-zinc-800 animate-pulse">...</span>;
+  if (!time) return <span className="text-zinc-700">—</span>;
+  if (!mounted) return <span className="text-zinc-700 animate-pulse">...</span>;
   
-  return <span>{format(parseISO(time), 'h:mm a')}</span>;
+  return <span className="font-medium text-zinc-200">{format(parseISO(time), 'h:mm a')}</span>;
 }
 
 export default function AttendanceDetailClient({
@@ -161,7 +163,7 @@ export default function AttendanceDetailClient({
                 {isEditor ? (
                    <div className="mb-2">
                      <Select value={user.id} onValueChange={handleUserChange}>
-                        <SelectTrigger className="h-auto p-0 bg-transparent border-0 text-xl font-bold tracking-tight text-white uppercase focus:ring-0 shadow-none hover:text-sky-400 transition-colors">
+                        <SelectTrigger className="h-auto p-0 bg-transparent border-0 text-2xl font-bold tracking-tight text-white uppercase focus:ring-0 shadow-none hover:text-sky-400 transition-colors">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-950 border-white/10 text-white backdrop-blur-3xl shadow-2xl">
@@ -175,7 +177,7 @@ export default function AttendanceDetailClient({
                       </Select>
                    </div>
                 ) : (
-                  <h1 className="text-xl font-bold tracking-tight text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                  <h1 className="text-2xl font-bold tracking-tight text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                     {user.full_name}
                   </h1>
                 )}
@@ -215,7 +217,7 @@ export default function AttendanceDetailClient({
                     <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Aggregate Hours</span>
                     <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400"><Clock className="h-4 w-4" /></div>
                  </div>
-                 <p className="text-2xl font-bold text-white tracking-tight">{stats.totalHours.toFixed(2)}<span className="text-xs text-zinc-700 ml-1">h</span></p>
+                 <p className="text-2xl font-bold text-white tracking-tight">{stats.totalHours.toFixed(1)}<span className="text-xs text-zinc-700 ml-1">h</span></p>
               </div>
             </GlassCard>
 
@@ -225,7 +227,7 @@ export default function AttendanceDetailClient({
                     <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-sky-400/70">Overtime Yield</span>
                     <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400"><ArrowUpRight className="h-4 w-4" /></div>
                  </div>
-                 <p className="text-2xl font-bold text-sky-300 tracking-tight">{stats.totalExtra.toFixed(2)}<span className="text-xs text-sky-900 ml-1">h</span></p>
+                 <p className="text-2xl font-bold text-sky-300 tracking-tight">{stats.totalExtra.toFixed(1)}<span className="text-xs text-sky-900 ml-1">h</span></p>
               </div>
             </GlassCard>
 
@@ -252,27 +254,27 @@ export default function AttendanceDetailClient({
 
         <GlassCard className="relative z-10 overflow-hidden" gradientFrom="rgba(255,255,255,0.01)">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-white/5 bg-white/[0.01]">
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Statement Date</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Status</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-right">Audit Statement</th>
+                  <th className="px-8 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider text-center">Check In</th>
+                  <th className="px-4 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider text-center">Lunch Out</th>
+                  <th className="px-4 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider text-center">Lunch In</th>
+                  <th className="px-4 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider text-center">Exit</th>
+                  <th className="px-4 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider text-center">Total (H)</th>
+                  <th className="px-4 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider text-center">Extra</th>
+                  <th className="px-4 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider text-center">Status</th>
+                  <th className="px-8 py-5 text-xs font-medium text-zinc-400 uppercase tracking-wider text-right">Audit Statement</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-white/[0.03]">
                 {monthlyData.map((item) => (
                   <tr 
                     key={item.date} 
                     className={cn(
-                      "group border-b border-white/[0.03] transition-all duration-500 hover:bg-white/[0.04]",
-                      !item.check_in && "opacity-40 grayscale"
+                      "group transition-all duration-500 hover:bg-white/[0.04]",
+                      !item.check_in && "bg-white/[0.01] opacity-60 grayscale-[0.4]"
                     )}
                   >
                     <td className="px-8 py-6">
@@ -281,56 +283,58 @@ export default function AttendanceDetailClient({
                           "h-16 w-16 rounded-2xl flex flex-col items-center justify-center font-bold transition-all group-hover:scale-105",
                           item.check_in ? "bg-white/5 text-zinc-200 border border-white/10" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
                         )}>
-                          <span className="text-[10px] uppercase font-black tracking-widest opacity-60">{format(parseISO(item.date), 'MMM')}</span>
+                          <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">{format(parseISO(item.date), 'MMM')}</span>
                           <span className="text-3xl leading-none mt-1">{format(parseISO(item.date), 'dd')}</span>
                         </div>
-                        <div className="text-sm font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-200 transition-colors">
+                        <div className="text-sm font-bold text-zinc-200 tracking-tight group-hover:text-sky-300 transition-colors">
                           {format(parseISO(item.date), 'EEEE')}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-6 text-center">
-                      <div className="text-sm font-bold text-zinc-400 font-mono tracking-tight">
-                        <TimeDisplay time={item.check_in} />
-                      </div>
+                    <td className="px-4 py-6 text-center">
+                      <TimeDisplay time={item.check_in} />
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-medium text-zinc-500 font-mono tracking-tight">
+                    <td className="px-4 py-6 text-center">
                       <TimeDisplay time={item.lunch_out} />
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-medium text-zinc-500 font-mono tracking-tight">
+                    <td className="px-4 py-6 text-center">
                       <TimeDisplay time={item.lunch_in} />
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-bold text-zinc-400 font-mono tracking-tight">
+                    <td className="px-4 py-6 text-center">
                       <TimeDisplay time={item.check_out} />
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-bold text-white tracking-tight">
-                      {item.total_hours?.toFixed(2) || '0.00'}
+                    <td className="px-4 py-6 text-center">
+                      <span className={cn("text-sm font-medium", item.total_hours ? "text-zinc-200" : "text-zinc-600")}>
+                        {item.total_hours?.toFixed(2) || '0.00'}
+                      </span>
                     </td>
-                    <td className="px-6 py-6 text-center">
+                    <td className="px-4 py-6 text-center">
                       {item.extra_hours > 0 ? (
-                        <span className="text-sm font-bold text-sky-400 tracking-tight">+{item.extra_hours.toFixed(2)}</span>
+                        <span className="text-sm font-medium text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-md">
+                          +{item.extra_hours.toFixed(1)}
+                        </span>
                       ) : (
                         <span className="text-zinc-800">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-6 text-center">
-                       <Badge variant="outline" className={cn(
-                           "text-[9px] font-bold uppercase tracking-widest border-0 px-3 h-6",
-                           item.check_in ? "text-emerald-500 bg-emerald-500/5" : "text-rose-500 bg-rose-500/5"
-                       )}>
-                           {item.check_in ? "Verified" : "Missing"}
-                       </Badge>
+                    <td className="px-4 py-6 text-center">
+                       <div className="flex justify-center">
+                         <Badge variant="outline" className={cn(
+                             "text-[9px] font-medium uppercase tracking-widest border-0 px-3 h-6 gap-1.5",
+                             item.check_in ? "text-emerald-400 bg-emerald-500/5" : "text-rose-400 bg-rose-500/5"
+                         )}>
+                             {item.check_in ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                             {item.check_in ? "Present" : "Absent"}
+                         </Badge>
+                       </div>
                     </td>
                     <td className="px-8 py-6 text-right">
                        {item.check_in_reason ? (
-                         <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-left min-w-[240px] max-w-[360px] ml-auto group-hover:bg-amber-500/10 transition-colors shadow-2xl">
-                            <div className="flex items-center gap-2 mb-2">
-                                <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
-                                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-amber-600/80">Audit Statement</span>
-                            </div>
-                            <p className="text-sm italic font-medium text-amber-100 leading-relaxed tracking-tight">
-                              "{item.check_in_reason}"
-                            </p>
+                         <div className="inline-flex items-start gap-1.5 max-w-[280px] text-left">
+                            <AlertCircle className="h-3.5 w-3.5 text-amber-500/70 shrink-0 mt-0.5" />
+                            <span className="text-xs text-zinc-400 italic leading-snug">
+                              {item.check_in_reason}
+                            </span>
                         </div>
                        ) : (
                          <span className="text-zinc-800">—</span>
@@ -346,7 +350,7 @@ export default function AttendanceDetailClient({
       </TooltipProvider>
 
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
