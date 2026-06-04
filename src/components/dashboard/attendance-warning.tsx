@@ -19,10 +19,16 @@ export function AttendanceWarning({ profile }: Props) {
   const [lunchTime, setLunchTime] = useState<{ default: string; friday: string } | null>(null);
   const [delays, setDelays] = useState({ checkIn: 15, lunchOut: 15, lunchIn: 15 });
   const [isMuted, setIsMuted] = useState(false);
+  const [isAudioGracePeriodOver, setIsAudioGracePeriodOver] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
+    // 30 second grace period after "page load" (component mount)
+    const graceTimer = setTimeout(() => {
+      setIsAudioGracePeriodOver(true);
+    }, 30000);
+
     // Initialize audio object
     audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audioRef.current.loop = false;
@@ -78,7 +84,10 @@ export function AttendanceWarning({ profile }: Props) {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { 
+      supabase.removeChannel(channel); 
+      clearTimeout(graceTimer);
+    };
   }, [profile, supabase]);
 
   useEffect(() => {
@@ -135,7 +144,8 @@ export function AttendanceWarning({ profile }: Props) {
   useEffect(() => {
     let soundInterval: NodeJS.Timeout;
 
-    if (warning && !isMuted) {
+    // Only play sound if warning exists, not muted, AND 30s grace period is over
+    if (warning && !isMuted && isAudioGracePeriodOver) {
       const playSound = () => {
         if (audioRef.current) {
           audioRef.current.play().catch(() => {
@@ -149,7 +159,7 @@ export function AttendanceWarning({ profile }: Props) {
     }
 
     return () => clearInterval(soundInterval);
-  }, [warning, isMuted]);
+  }, [warning, isMuted, isAudioGracePeriodOver]);
 
   if (!warning) return null;
 
