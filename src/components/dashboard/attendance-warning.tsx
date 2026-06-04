@@ -122,21 +122,21 @@ export function AttendanceWarning({ profile }: Props) {
       desc: "Your scheduled shift has started.",
       icon: LogIn,
       color: "from-rose-600 to-orange-600",
-      glow: "shadow-rose-500/40 ring-rose-500/30",
+      glow: "shadow-rose-500/20 ring-rose-500/30",
     },
     MISSING_LUNCH_OUT: {
       title: "Lunch Milestone",
       desc: "It is past the studio break window.",
       icon: Coffee,
       color: "from-amber-600 to-yellow-600",
-      glow: "shadow-amber-500/40 ring-amber-500/30",
+      glow: "shadow-amber-500/20 ring-amber-500/30",
     },
     LATE_LUNCH_RETURN: {
       title: "Break Time Concluded",
       desc: "Return statement is now overdue.",
       icon: Clock,
       color: "from-purple-600 to-indigo-600",
-      glow: "shadow-purple-500/40 ring-purple-500/30",
+      glow: "shadow-purple-500/20 ring-purple-500/30",
     }
   }[warning];
 
@@ -144,7 +144,7 @@ export function AttendanceWarning({ profile }: Props) {
 
   return (
     <AnimatePresence>
-      <div className="fixed top-28 left-0 right-0 z-[150] flex justify-center pointer-events-none px-4">
+      <div className="fixed top-28 left-0 right-0 z-[150] flex justify-center pointer-events-none px-4 isolation-auto">
         <motion.div
           drag
           dragMomentum={false}
@@ -154,14 +154,19 @@ export function AttendanceWarning({ profile }: Props) {
           exit={{ y: -50, opacity: 0, scale: 0.95 }}
           whileDrag={{ scale: 0.98, opacity: 0.9 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="w-full max-w-3xl pointer-events-auto cursor-grab active:cursor-grabbing"
+          className="w-full max-w-3xl pointer-events-auto cursor-grab active:cursor-grabbing isolate"
         >
           <div className={cn(
-            "group relative overflow-hidden rounded-[2.5rem] bg-white/[0.02] backdrop-blur-[40px] p-8 border border-white/10 flex items-center justify-between gap-8 shadow-[0_30px_100px_rgba(0,0,0,0.5)] transition-all duration-700",
-            "hover:bg-white/[0.05] hover:border-white/20"
-          )}>
+            "group relative overflow-hidden rounded-[2.5rem] bg-black/20 backdrop-blur-[40px] p-8 border border-white/10 flex items-center justify-between gap-8 shadow-[0_20px_60px_rgba(0,0,0,0.6)] transition-all duration-700",
+            "hover:bg-black/30 hover:border-white/20"
+          )}
+          style={{
+            // Force hardware acceleration and clip the backdrop filter bleed
+            WebkitBackdropFilter: 'blur(40px)',
+            maskImage: 'linear-gradient(white, white)', // Standard trick to fix radius bleed in some browsers
+          }}>
             {/* 💎 Glass Inner Glare */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-30 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-30 pointer-events-none" />
 
             {/* Animated Background Glow on Hover */}
             <div className={cn(
@@ -172,10 +177,10 @@ export function AttendanceWarning({ profile }: Props) {
             <div className="flex items-center gap-8 relative z-10">
               {/* Dynamic Pulsing Icon */}
               <div className={cn(
-                "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-2xl transition-all duration-700 ring-2 group-hover:scale-110 group-hover:rotate-3",
+                "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-2xl transition-all duration-700 ring-1 group-hover:scale-110 group-hover:rotate-3",
                 "bg-gradient-to-br", warningConfig.color, warningConfig.glow
               )}>
-                <Icon className="h-8 w-8 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]" />
+                <Icon className="h-8 w-8 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
               </div>
               
               <div className="space-y-1">
