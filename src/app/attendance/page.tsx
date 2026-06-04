@@ -1,4 +1,3 @@
-
 import { createServerClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import AttendanceClient from './attendance-client';
@@ -18,15 +17,17 @@ export default async function AttendancePage() {
 
   if (!isFalaqAdmin && permissions.attendance === 'Restricted') {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
-        <p className="text-slate-500">You do not have permission to view the team attendance list.</p>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4 bg-[#05050a]">
+        <div className="h-20 w-20 rounded-[2rem] bg-rose-500/10 flex items-center justify-center mb-6 shadow-2xl border border-rose-500/20">
+          <span className="text-3xl">🚫</span>
+        </div>
+        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Access Forbidden</h2>
+        <p className="text-zinc-500 mt-2 font-medium">Your role does not have authorization to view team attendance.</p>
       </div>
     );
   }
 
   const isEditor = isFalaqAdmin || permissions.attendance === 'Editor';
-
   const today = new Date().toISOString().split('T')[0];
 
   const { data: profiles, error: profilesError } = await supabase
@@ -41,53 +42,45 @@ export default async function AttendancePage() {
     .eq('date', today);
 
   if (profilesError || attendanceError) {
-    return (
-      <p>
-        Error fetching data:{' '}
-        {profilesError?.message || attendanceError?.message}
-      </p>
-    );
+    return <p className="p-10 text-rose-500 font-bold">Error syncing with studio infrastructure: {profilesError?.message || attendanceError?.message}</p>;
   }
 
   const attendanceMap = new Map(attendanceData.map((a) => [a.user_id, a]));
 
-  const attendanceList = profiles.map((profile) => {
-    const attendanceRecord = attendanceMap.get(profile.id);
+  const attendanceList = profiles.map((p) => {
+    const attendanceRecord = attendanceMap.get(p.id);
 
     let extraMinutes = 0;
-    if (attendanceRecord) {
-      if (profile.work_end_time && attendanceRecord.check_out) {
+    if (attendanceRecord && p.work_end_time && attendanceRecord.check_out) {
+      try {
         const checkOutTime = new Date(attendanceRecord.check_out);
-        const expectedCheckOutDateTime = parse(
-          profile.work_end_time,
-          'HH:mm:ss',
-          new Date(checkOutTime),
-        );
-
+        const expectedCheckOutDateTime = parse(p.work_end_time, 'HH:mm:ss', new Date(checkOutTime));
         if (checkOutTime > expectedCheckOutDateTime) {
-          const overtimeMinutes = differenceInMinutes(
-            checkOutTime,
-            expectedCheckOutDateTime,
-          );
-          extraMinutes += overtimeMinutes;
+          extraMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
         }
-      }
+      } catch (e) {}
     }
 
     return {
       ...(attendanceRecord || {
-        id: `${profile.id}-${today}`,
+        id: `${p.id}-${today}`,
         check_in: null,
         check_out: null,
         total_hours: null,
         check_in_reason: null,
       }),
-      user_id: profile.id,
+      user_id: p.id,
       date: today,
-      profiles: profile as Profile,
+      profiles: p as Profile,
       extra_hours: extraMinutes / 60,
     };
   });
 
-  return <AttendanceClient initialData={attendanceList as any[]} isEditor={isEditor} />;
+  return (
+    <AttendanceClient 
+      initialData={attendanceList as any[]} 
+      isEditor={isEditor} 
+      currentUserId={currentUser.id}
+    />
+  );
 }

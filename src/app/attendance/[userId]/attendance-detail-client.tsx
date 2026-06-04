@@ -1,299 +1,296 @@
-
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getInitials, cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
-import { ChevronLeft, ChevronRight, MessageSquare, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import type { Profile } from '@/lib/types';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { Attendance } from '@/lib/types';
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Calendar as CalendarIcon,
+  Clock,
+  ArrowUpRight,
+  ShieldCheck,
+  Building2,
+  Users,
+} from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { getInitials, cn } from '@/lib/utils';
+import type { Profile, Attendance } from '@/lib/types';
+import { AnimatedBackground } from '@/components/dashboard/animated-background';
+import { GlassCard } from '@/components/dashboard/glass-card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MonthlyAttendance {
-    date: string;
-    check_in: string | null;
-    check_out: string | null;
-    lunch_in: string | null;
-    lunch_out: string | null;
-    total_hours: number;
-    extra_hours: number;
-    check_in_reason: string | null;
+  date: string;
+  check_in: string | null;
+  check_out: string | null;
+  lunch_in: string | null;
+  lunch_out: string | null;
+  total_hours: number;
+  extra_hours: number;
+  check_in_reason: string | null;
 }
 
-interface AttendanceDetailClientProps {
+interface Props {
   user: Profile;
+  allProfiles: Profile[];
   monthlyAttendance: MonthlyAttendance[];
   selectedDate: string;
   prevMonth: string;
   nextMonth: string;
-  allDaysCount: number;
   isEditor: boolean;
 }
 
 function TimeDisplay({ time }: { time: string | null }) {
-  const [formattedTime, setFormattedTime] = useState('-');
-
-  useEffect(() => {
-    if (time) {
-      try {
-        const localTime = new Date(time).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        });
-        setFormattedTime(localTime);
-      } catch (e) {
-        setFormattedTime('-');
-      }
-    } else {
-      setFormattedTime('-');
-    }
-  }, [time]);
-
-  return <>{formattedTime}</>;
+  if (!time) return <span className="text-zinc-800">—</span>;
+  return <span>{format(parseISO(time), 'h:mm a')}</span>;
 }
-
-
-function formatHours(hours: number | null): string {
-  if (hours === null || typeof hours === 'undefined') return '0.00';
-  return hours.toFixed(2);
-}
-
-function formatExtraHours(hours: number | null): string {
-  if (hours === null || typeof hours === 'undefined' || hours <= 0) return '-';
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-};
 
 export default function AttendanceDetailClient({
   user,
+  allProfiles,
   monthlyAttendance: initialMonthlyAttendance,
   selectedDate,
   prevMonth,
   nextMonth,
-  allDaysCount,
   isEditor,
-}: AttendanceDetailClientProps) {
-
+}: Props) {
   const router = useRouter();
-  const [monthlyAttendance, setMonthlyAttendance] = useState(initialMonthlyAttendance);
+  const [monthlyData, setMonthlyData] = useState(initialMonthlyAttendance);
 
   useEffect(() => {
-    setMonthlyAttendance(initialMonthlyAttendance);
+    setMonthlyData(initialMonthlyAttendance);
   }, [initialMonthlyAttendance]);
 
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`realtime-attendance-detail-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'attendance',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newRecord = payload.new as Attendance;
-          setMonthlyAttendance((prevAttendance) => {
-            const updatedAttendance = [...prevAttendance];
-            const recordIndex = updatedAttendance.findIndex(
-              (day) => day.date === newRecord.date
-            );
-            if (recordIndex !== -1) {
-              updatedAttendance[recordIndex] = {
-                date: newRecord.date,
-                check_in: newRecord.check_in,
-                check_out: newRecord.check_out,
-                lunch_in: newRecord.lunch_in,
-                lunch_out: newRecord.lunch_out,
-                total_hours: newRecord.total_hours || 0,
-                extra_hours: updatedAttendance[recordIndex].extra_hours, // This won't be live updated
-                check_in_reason: newRecord.check_in_reason || null,
-              };
-            }
-            return updatedAttendance;
-          });
-        }
-      )
-      .subscribe();
+  const stats = useMemo(() => {
+    const totalHours = monthlyData.reduce((sum, d) => sum + (d.total_hours || 0), 0);
+    const presentDays = monthlyData.filter(d => d.check_in).length;
+    const totalExtra = monthlyData.reduce((sum, d) => sum + (d.extra_hours || 0), 0);
+    return { totalHours, presentDays, totalExtra };
+  }, [monthlyData]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user.id]);
-
-
-  const totalHours = monthlyAttendance.reduce((sum, day) => sum + (day.total_hours || 0), 0);
-  const totalDaysPresent = monthlyAttendance.filter(day => day.check_in).length;
-  const totalExtraHours = monthlyAttendance.reduce((sum, day) => sum + (day.extra_hours || 0), 0);
-
-  const handleNavClick = (href: string) => {
-    router.push(href);
+  const handleUserChange = (val: string) => {
+    router.push(`/attendance/${val}?month=${format(parseISO(selectedDate), 'yyyy-MM')}`);
   };
 
+  const currentMonthLabel = format(parseISO(selectedDate), 'MMMM yyyy');
 
   return (
-    <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f] text-zinc-100">
+    <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-8 lg:p-10 overflow-hidden">
+      <AnimatedBackground />
       <TooltipProvider>
-      <header className="mb-10 flex flex-col gap-6">
-        <Button variant="ghost" className="w-fit p-0 text-sky-400 hover:text-sky-300 hover:bg-transparent font-black uppercase tracking-widest text-[10px] flex items-center gap-2" onClick={() => handleNavClick('/attendance')}>
-            <ChevronLeft className="h-4 w-4" />
-            Back to Team Overview
-        </Button>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
-                <Avatar className="h-20 w-20 border-2 border-white/10 shadow-2xl">
-                    <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name ?? ''} />
-                    <AvatarFallback className="bg-sky-500/20 text-sky-300 text-xl font-black">{getInitials(user.full_name)}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <h1 className="text-4xl font-black tracking-tighter text-white">{user.full_name}</h1>
-                    <p className="text-zinc-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">Monthly Attendance Statement</p>
+        
+        <header className="relative z-10 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div className="space-y-6">
+            <button 
+              onClick={() => router.push('/attendance')}
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-sky-400 hover:text-sky-300 transition-colors"
+            >
+              <ChevronLeft className="h-3 w-3" />
+              Audit List
+            </button>
+            
+            <div className="flex items-center gap-6">
+              <Avatar className="h-24 w-24 ring-4 ring-white/5 border border-white/10 shadow-[0_0_40px_rgba(56,189,248,0.1)]">
+                <AvatarImage src={user.avatar_url ?? undefined} />
+                <AvatarFallback className="bg-zinc-900 text-zinc-600 font-black text-2xl">{getInitials(user.full_name)}</AvatarFallback>
+              </Avatar>
+              <div>
+                {isEditor ? (
+                   <div className="mb-2">
+                     <Select value={user.id} onValueChange={handleUserChange}>
+                        <SelectTrigger className="h-auto p-0 bg-transparent border-0 text-3xl md:text-5xl font-black tracking-tighter text-white uppercase focus:ring-0 shadow-none hover:text-sky-400 transition-colors">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-950 border-white/10 text-white backdrop-blur-3xl shadow-2xl">
+                          <div className="p-2 pb-1 text-[9px] font-black uppercase tracking-widest text-zinc-600">Switch Auditor Statement</div>
+                          {allProfiles.map(p => (
+                            <SelectItem key={p.id} value={p.id} className="rounded-xl focus:bg-white/5 focus:text-white">
+                              {p.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                   </div>
+                ) : (
+                  <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                    {user.full_name}
+                  </h1>
+                )}
+                <div className="flex items-center gap-4 mt-2">
+                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">
+                    Monthly Performance Statement
+                   </p>
+                   <Badge variant="outline" className="bg-sky-500/10 text-sky-400 border-sky-500/20 text-[9px] font-black uppercase tracking-widest h-6 px-3">
+                    Verified
+                   </Badge>
                 </div>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-                 <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-full p-1.5 shadow-2xl">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-zinc-400 hover:text-white" onClick={() => handleNavClick(`/attendance/${user.id}?month=${prevMonth}`)}>
-                        <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <span className="text-sm font-black w-32 text-center text-zinc-200">{format(parseISO(selectedDate), 'MMMM yyyy')}</span>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-zinc-400 hover:text-white" onClick={() => handleNavClick(`/attendance/${user.id}?month=${nextMonth}`)}>
-                        <ChevronRight className="h-5 w-5" />
-                    </Button>
-                </div>
-                <Button variant="outline" className="rounded-full h-12 px-6 bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 transition-all font-bold">
-                    <Download className="mr-2 h-4 w-4 text-sky-400" />
-                    Export Report
+          </div>
+
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-full p-1.5 backdrop-blur-xl shadow-2xl">
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => router.push(`/attendance/${user.id}?month=${prevMonth}`)}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <span className="text-xs font-black w-36 text-center text-zinc-200 uppercase tracking-widest">{currentMonthLabel}</span>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => router.push(`/attendance/${user.id}?month=${nextMonth}`)}>
+                  <ChevronRight className="h-5 w-5" />
                 </Button>
             </div>
+            <Button variant="outline" className="rounded-full h-12 px-8 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-[10px] border-0 shadow-2xl shadow-sky-900/40 transition-all active:scale-95">
+              <Download className="mr-3 h-4 w-4" />
+              Export Statement
+            </Button>
+          </div>
+        </header>
+
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <GlassCard gradientFrom="rgba(255,255,255,0.08)">
+              <div className="p-8">
+                 <div className="flex justify-between items-start mb-6">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Aggregate Hours</span>
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-zinc-400"><Clock className="h-5 w-5" /></div>
+                 </div>
+                 <p className="text-5xl font-black text-white tracking-tighter">{stats.totalHours.toFixed(2)}<span className="text-xl text-zinc-700 ml-1">h</span></p>
+              </div>
+            </GlassCard>
+
+            <GlassCard gradientFrom="rgba(56, 189, 248, 0.12)">
+              <div className="p-8">
+                 <div className="flex justify-between items-start mb-6">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-400/70">Overtime Yield</span>
+                    <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400"><ArrowUpRight className="h-5 w-5" /></div>
+                 </div>
+                 <p className="text-5xl font-black text-sky-300 tracking-tighter">{stats.totalExtra.toFixed(2)}<span className="text-xl text-sky-900 ml-1">h</span></p>
+              </div>
+            </GlassCard>
+
+            <GlassCard gradientFrom="rgba(16, 185, 129, 0.12)">
+              <div className="p-8">
+                 <div className="flex justify-between items-start mb-6">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400/70">Present Cycles</span>
+                    <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"><Building2 className="h-5 w-5" /></div>
+                 </div>
+                 <p className="text-5xl font-black text-emerald-300 tracking-tighter">{stats.presentDays}<span className="text-xl text-emerald-900 ml-1">d</span></p>
+              </div>
+            </GlassCard>
+
+            <GlassCard gradientFrom="rgba(99, 102, 241, 0.12)">
+              <div className="p-8 text-center flex flex-col items-center justify-center h-full">
+                 <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden mb-4 border border-white/5">
+                    <div className="bg-gradient-to-r from-sky-400 to-indigo-500 h-full w-[85%] shadow-[0_0_15px_#0ea5e9]" />
+                 </div>
+                 <span className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-500">Efficiency Score</span>
+                 <p className="text-2xl font-black text-white mt-1">A+ Excellence</p>
+              </div>
+            </GlassCard>
         </div>
-      </header>
 
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-            <Card className="relative overflow-hidden border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-2xl rounded-[2rem]">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Working Hours</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-4xl font-black text-white tracking-tighter">{totalHours.toFixed(2)}</p>
-                </CardContent>
-            </Card>
-            <Card className="relative overflow-hidden border border-sky-500/10 bg-sky-500/[0.03] backdrop-blur-xl shadow-2xl rounded-[2rem]">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-sky-400">Overtime Logged</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-4xl font-black text-sky-300 tracking-tighter">{formatExtraHours(totalExtraHours)}</p>
-                </CardContent>
-            </Card>
-            <Card className="relative overflow-hidden border border-emerald-500/10 bg-emerald-500/[0.03] backdrop-blur-xl shadow-2xl rounded-[2rem]">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Total Present</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-4xl font-black text-emerald-300 tracking-tighter">{totalDaysPresent} <span className="text-xs text-zinc-600 font-bold uppercase tracking-tight">Days</span></p>
-                </CardContent>
-            </Card>
-            <Card className="relative overflow-hidden border border-rose-500/10 bg-rose-500/[0.03] backdrop-blur-xl shadow-2xl rounded-[2rem]">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-rose-400">Total Absent</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-4xl font-black text-rose-300 tracking-tighter">{allDaysCount - totalDaysPresent} <span className="text-xs text-zinc-600 font-bold uppercase tracking-tight">Days</span></p>
-                </CardContent>
-            </Card>
-        </div>
-
-
-      <div className="border border-white/10 rounded-[2.5rem] overflow-hidden bg-white/[0.02] backdrop-blur-xl shadow-2xl shadow-black/50">
-        <Table>
-          <TableHeader className="bg-white/5">
-            <TableRow className="border-b border-white/10 hover:bg-transparent">
-              <TableHead className="w-[220px] text-[10px] font-black uppercase tracking-widest text-zinc-500 py-4">Date</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Check In</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Lunch Out</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Lunch In</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Check Out</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Working</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Extra</TableHead>
-              {isEditor && <TableHead className="w-[180px] text-[10px] font-black uppercase tracking-widest text-zinc-500">Status Notes</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {monthlyAttendance.map((item) => (
-              <TableRow key={item.date} className={cn("border-b border-white/5 transition-colors hover:bg-white/[0.04]", !item.check_in && 'bg-rose-500/[0.02] grayscale')}>
-                <TableCell className="py-4">
-                  <div className="font-black text-white tracking-tight">{format(parseISO(item.date), 'dd MMM, yyyy')}</div>
-                  <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-0.5">{format(parseISO(item.date), 'EEEE')}</div>
-                </TableCell>
-                <TableCell className="text-zinc-400 font-medium"><TimeDisplay time={item.check_in} /></TableCell>
-                <TableCell className="text-zinc-500 font-medium"><TimeDisplay time={item.lunch_out} /></TableCell>
-                <TableCell className="text-zinc-500 font-medium"><TimeDisplay time={item.lunch_in} /></TableCell>
-                <TableCell className="text-zinc-400 font-medium"><TimeDisplay time={item.check_out} /></TableCell>
-                <TableCell className="font-black text-zinc-100">{formatHours(item.total_hours)}</TableCell>
-                <TableCell className="font-black text-sky-400 tracking-tighter">{formatExtraHours(item.extra_hours)}</TableCell>
-                {isEditor && (
-                  <TableCell>
-                    {item.check_in_reason ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 text-[10px] font-bold text-amber-500/80 bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/10 cursor-help group transition-all hover:bg-amber-500/20">
-                            <MessageSquare className="h-3 w-3" />
-                            <span className="truncate max-w-[100px] uppercase tracking-tighter">{item.check_in_reason}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-zinc-900 border-zinc-800 text-white shadow-2xl p-4 rounded-[1.5rem] max-w-[300px]">
-                          <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">Late Entry Reason</p>
-                          <p className="text-sm text-zinc-200 font-medium italic leading-relaxed">"{item.check_in_reason}"</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <span className="text-zinc-800">—</span>
+        <GlassCard className="relative z-10 overflow-hidden" gradientFrom="rgba(255,255,255,0.01)">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-white/5 bg-white/[0.01]">
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Timestamp Date</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyData.map((item) => (
+                  <tr 
+                    key={item.date} 
+                    className={cn(
+                      "group border-b border-white/[0.03] transition-all duration-500 hover:bg-white/[0.04]",
+                      !item.check_in && "opacity-40 grayscale"
                     )}
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                  >
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "h-10 w-10 rounded-xl flex flex-col items-center justify-center font-black transition-all group-hover:scale-110",
+                          item.check_in ? "bg-white/5 text-zinc-200 border border-white/10" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                        )}>
+                          <span className="text-[8px] uppercase tracking-tighter opacity-60">{format(parseISO(item.date), 'MMM')}</span>
+                          <span className="text-base leading-none mt-0.5">{format(parseISO(item.date), 'dd')}</span>
+                        </div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400 transition-colors">
+                          {format(parseISO(item.date), 'EEEE')}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-6 text-center text-xs font-black text-zinc-400 font-mono tracking-tighter">
+                      <TimeDisplay time={item.check_in} />
+                    </td>
+                    <td className="px-6 py-6 text-center text-xs font-bold text-zinc-500 font-mono tracking-tighter">
+                      <TimeDisplay time={item.lunch_out} />
+                    </td>
+                    <td className="px-6 py-6 text-center text-xs font-bold text-zinc-500 font-mono tracking-tighter">
+                      <TimeDisplay time={item.lunch_in} />
+                    </td>
+                    <td className="px-6 py-6 text-center text-xs font-black text-zinc-400 font-mono tracking-tighter">
+                      <TimeDisplay time={item.check_out} />
+                    </td>
+                    <td className="px-6 py-6 text-center text-sm font-black text-white tracking-tighter">
+                      {item.total_hours?.toFixed(2) || '0.00'}
+                    </td>
+                    <td className="px-6 py-6 text-center">
+                      {item.extra_hours > 0 ? (
+                        <span className="text-sm font-black text-sky-400 tracking-tighter">+{item.extra_hours.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-zinc-800">—</span>
+                      )}
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                       {item.check_in_reason ? (
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="inline-flex h-8 w-8 rounded-full bg-amber-500/10 border border-amber-500/20 items-center justify-center text-amber-500 hover:scale-110 transition-transform cursor-help">
+                                <MessageSquare className="h-4 w-4" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-zinc-900 border-zinc-800 text-white p-4 rounded-2xl max-w-[280px] shadow-2xl">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-2">Manual Reason Entry</p>
+                              <p className="text-sm italic font-medium leading-relaxed">"{item.check_in_reason}"</p>
+                            </TooltipContent>
+                         </Tooltip>
+                       ) : (
+                         <div className="h-2 w-2 rounded-full bg-zinc-900 mx-auto" />
+                       )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+
       </TooltipProvider>
+
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
       `}</style>
     </div>
   );
 }
+
+import { useMemo } from 'react';

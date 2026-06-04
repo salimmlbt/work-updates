@@ -1,27 +1,27 @@
-
 'use client';
 
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  Activity,
+  CheckCircle2,
+  UserX,
+  Clock3,
+  UserCheck,
+  MessageSquare,
+  ChevronRight,
+  Lock,
+  Search,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { getInitials, cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { Attendance, Profile } from '@/lib/types';
-import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { CheckCircle2, Clock3, UserCheck, UserX, Activity, MessageSquare, Info, Filter } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { AnimatedBackground } from '@/components/dashboard/animated-background';
+import { GlassCard } from '@/components/dashboard/glass-card';
+import { Input } from '@/components/ui/input';
 
 type AttendanceWithProfile = Attendance & {
   profiles: Profile;
@@ -51,59 +51,23 @@ function TimeDisplay({ time }: { time: string | null }) {
   return <span>{formattedTime}</span>;
 }
 
-function formatHours(hours: number | null): string {
-  if (hours === null || typeof hours === 'undefined') return '-';
-  return `${hours.toFixed(2)} hrs`;
-}
-
-function formatExtraHours(hours: number | null): string {
-  if (hours === null || typeof hours === 'undefined' || hours <= 0) return '-';
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
-function getStatusBadge(attendance: AttendanceWithProfile) {
-  if (attendance.check_in && !attendance.check_out) {
-    return (
-      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-black uppercase tracking-widest text-[9px]">
-        <span className="flex items-center gap-1.5">
-          <Activity className="h-3 w-3" />
-          Present
-        </span>
-      </Badge>
-    );
-  }
-  if (attendance.check_in && attendance.check_out) {
-    return (
-      <Badge className="bg-zinc-800 text-zinc-400 border border-white/5 font-black uppercase tracking-widest text-[9px]">
-        <span className="flex items-center gap-1.5">
-          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-          Shift Done
-        </span>
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="destructive" className="bg-rose-500/10 text-rose-400 border border-rose-500/20 font-black uppercase tracking-widest text-[9px]">
-      <span className="flex items-center gap-1.5">
-        <UserX className="h-3 w-3" />
-        Absent
-      </span>
-    </Badge>
-  );
-}
-
-export default function AttendanceClient({ initialData, isEditor }: { initialData: AttendanceWithProfile[], isEditor: boolean }) {
+export default function AttendanceClient({ 
+  initialData, 
+  isEditor, 
+  currentUserId 
+}: { 
+  initialData: AttendanceWithProfile[], 
+  isEditor: boolean,
+  currentUserId: string
+}) {
   const router = useRouter();
   const [attendanceList, setAttendanceList] = useState(initialData);
-  const [showReasons, setShowReasons] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     setAttendanceList(initialData);
   }, [initialData]);
 
-  // Realtime updates
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -121,7 +85,6 @@ export default function AttendanceClient({ initialData, isEditor }: { initialDat
               newList[index] = {
                 ...record,
                 profiles: profile,
-                // extra_hours not recalculated here; kept as is
                 extra_hours: newList[index].extra_hours,
               } as AttendanceWithProfile;
             }
@@ -136,14 +99,14 @@ export default function AttendanceClient({ initialData, isEditor }: { initialDat
     };
   }, []);
 
-  const handleRowClick = (userId: string) => {
-    router.push(`/attendance/${userId}`);
-  };
+  const filteredList = useMemo(() => {
+    return attendanceList.filter(item => 
+      item.profiles.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.profiles.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [attendanceList, searchQuery]);
 
-  const todayLabel = useMemo(() => format(new Date(), 'dd MMM yyyy (EEEE)'), []);
-
-  // Summary stats
-  const { presentCount, completedCount, absentCount } = useMemo(() => {
+  const stats = useMemo(() => {
     let present = 0;
     let completed = 0;
     let absent = 0;
@@ -154,216 +117,185 @@ export default function AttendanceClient({ initialData, isEditor }: { initialDat
       else if (!a.check_in && !a.check_out) absent += 1;
     });
 
-    return {
-      presentCount: present,
-      completedCount: completed,
-      absentCount: absent,
-    };
+    return { present, completed, absent };
   }, [attendanceList]);
 
+  const handleRowClick = (userId: string) => {
+    const canView = isEditor || userId === currentUserId;
+    if (canView) {
+      router.push(`/attendance/${userId}`);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#0f0f0f] p-4 md:p-8 lg:p-10 text-zinc-100">
-      <TooltipProvider>
-      {/* Header */}
-      <header className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+    <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-8 lg:p-10 overflow-hidden">
+      <AnimatedBackground />
+
+      <header className="relative z-10 mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
-          <h1 className="text-4xl font-black tracking-tighter text-white">
-            Live Attendance
+          <h1 className="text-4xl font-black tracking-tighter text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            Attendance Center
           </h1>
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-[0.25em] mt-1">
-            Real-time studio presence monitoring
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.4em] mt-2">
+            Atmospheric Presence Monitoring Engine
           </p>
         </div>
+
         <div className="flex items-center gap-4">
-          {isEditor && (
-            <div className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-full px-5 py-2 shadow-2xl">
-              <Switch 
-                id="show-reasons" 
-                checked={showReasons} 
-                onCheckedChange={setShowReasons}
-                className="data-[state=checked]:bg-sky-500"
-              />
-              <Label htmlFor="show-reasons" className="text-[10px] font-black uppercase tracking-widest text-zinc-400 cursor-pointer">
-                Late Reasons
-              </Label>
-            </div>
-          )}
-          <div className="flex items-center gap-3 text-xs font-bold text-zinc-300 bg-white/5 border border-white/10 rounded-full px-5 py-2 shadow-2xl">
+          <div className="relative group w-full md:w-80">
+            <div className="absolute inset-0 bg-sky-500/10 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600 group-focus-within:text-sky-400 transition-colors" />
+            <Input 
+              placeholder="Search studio members..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-12 w-full bg-white/[0.03] border-white/10 rounded-2xl pl-12 text-zinc-200 placeholder:text-zinc-700 focus-visible:ring-sky-500/40 focus-visible:border-sky-500/40 transition-all backdrop-blur-md"
+            />
+          </div>
+          <div className="hidden lg:flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 text-xs font-black uppercase tracking-widest text-zinc-400 backdrop-blur-md">
             <Clock3 className="h-4 w-4 text-sky-400" />
-            <span>{todayLabel}</span>
+            {format(new Date(), 'dd MMM yyyy')}
           </div>
         </div>
       </header>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-        <Card className="relative overflow-hidden border border-emerald-500/10 bg-emerald-500/[0.03] backdrop-blur-xl shadow-2xl rounded-[2rem] group">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-transparent opacity-60" />
-          <CardHeader className="pb-1">
-            <CardTitle className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
-              <UserCheck className="h-4 w-4" />
-              In Studio Now
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-5xl font-black text-white tracking-tighter group-hover:scale-105 transition-transform origin-left">{presentCount}</p>
-            <p className="text-[10px] text-emerald-500/60 font-bold uppercase mt-1">Active team members</p>
-          </CardContent>
-        </Card>
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <GlassCard gradientFrom="rgba(16, 185, 129, 0.12)">
+          <div className="p-8">
+            <div className="flex justify-between items-start mb-6">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400/70">Studio Active</span>
+              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-inner">
+                <UserCheck className="h-5 w-5" />
+              </div>
+            </div>
+            <p className="text-6xl font-black text-white tracking-tighter drop-shadow-lg">{stats.present}</p>
+            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">Currently on site</p>
+          </div>
+        </GlassCard>
 
-        <Card className="relative overflow-hidden border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-2xl rounded-[2rem]">
-          <CardHeader className="pb-1">
-            <CardTitle className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-              <CheckCircle2 className="h-4 w-4 text-sky-400" />
-              Shifts Finished
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-5xl font-black text-white tracking-tighter">{completedCount}</p>
-            <p className="text-[10px] text-zinc-600 font-bold uppercase mt-1">Successfully logged out</p>
-          </CardContent>
-        </Card>
+        <GlassCard gradientFrom="rgba(56, 189, 248, 0.12)">
+          <div className="p-8">
+            <div className="flex justify-between items-start mb-6">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-400/70">Statements Closed</span>
+              <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 shadow-inner">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+            </div>
+            <p className="text-6xl font-black text-white tracking-tighter drop-shadow-lg">{stats.completed}</p>
+            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">Shifts finalized today</p>
+          </div>
+        </GlassCard>
 
-        <Card className="relative overflow-hidden border border-rose-500/10 bg-rose-500/[0.03] backdrop-blur-xl shadow-2xl rounded-[2rem]">
-          <CardHeader className="pb-1">
-            <CardTitle className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-400">
-              <UserX className="h-4 w-4" />
-              Unaccounted
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-5xl font-black text-white tracking-tighter">{absentCount}</p>
-            <p className="text-[10px] text-rose-500/60 font-bold uppercase mt-1">No activity reported</p>
-          </CardContent>
-        </Card>
+        <GlassCard gradientFrom="rgba(244, 63, 94, 0.12)">
+          <div className="p-8">
+            <div className="flex justify-between items-start mb-6">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400/70">Unaccounted</span>
+              <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-inner">
+                <UserX className="h-5 w-5" />
+              </div>
+            </div>
+            <p className="text-6xl font-black text-white tracking-tighter drop-shadow-lg">{stats.absent}</p>
+            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">Pending check-in</p>
+          </div>
+        </GlassCard>
       </div>
 
-      {/* Main Table Card */}
-      <Card className="border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl rounded-[2rem] overflow-hidden">
-        <CardHeader className="px-6 py-5 border-b border-white/5 bg-white/[0.01]">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-xl font-bold text-white tracking-tight">
-                Live Overview
-              </CardTitle>
-              <CardDescription className="text-xs text-zinc-500 font-medium mt-1">
-                Select a member to view their detailed attendance history.
-              </CardDescription>
-            </div>
-            <Badge className="bg-sky-500/10 text-sky-400 border border-sky-500/20 font-black uppercase tracking-widest text-[10px] flex items-center gap-2 h-7 px-4">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              Sync Active
-            </Badge>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-white/5 border-b border-white/10 hover:bg-transparent">
-                  <TableHead className="w-[300px] text-[10px] font-black uppercase tracking-widest text-zinc-500 py-4">User</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">In</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Out</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Total</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Overtime</TableHead>
-                  {isEditor && showReasons && (
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Late Note</TableHead>
-                  )}
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-right pr-6">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {attendanceList.map((item) => (
-                  <TableRow
+      <GlassCard className="relative z-10 overflow-hidden" gradientFrom="rgba(255,255,255,0.02)">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/5 bg-white/[0.01]">
+                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Studio Member</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Break</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Status</th>
+                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredList.map((item) => {
+                const canView = isEditor || item.user_id === currentUserId;
+                return (
+                  <tr 
                     key={item.user_id}
                     onClick={() => handleRowClick(item.user_id)}
-                    className="group cursor-pointer border-b border-white/5 hover:bg-white/[0.04] transition-all duration-300"
+                    className={cn(
+                      "group border-b border-white/[0.03] transition-all duration-500",
+                      canView ? "cursor-pointer hover:bg-white/[0.04]" : "opacity-40 grayscale-[0.5]"
+                    )}
                   >
-                    <TableCell className="py-4">
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-10 w-10 border border-white/10 group-hover:scale-105 transition-transform">
-                          <AvatarImage
-                            src={item.profiles.avatar_url ?? undefined}
-                            alt={item.profiles.full_name ?? ''}
-                          />
-                          <AvatarFallback className="bg-zinc-800 text-zinc-400 text-xs font-bold">
-                            {getInitials(item.profiles.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-white">
-                            {item.profiles.full_name}
-                          </span>
-                          {item.profiles.designation && (
-                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
-                              {item.profiles.designation}
-                            </span>
-                          )}
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-5">
+                        <div className="relative">
+                          <Avatar className="h-12 w-12 border border-white/10 group-hover:scale-105 transition-transform duration-500 shadow-2xl">
+                            <AvatarImage src={item.profiles.avatar_url ?? undefined} alt={item.profiles.full_name ?? ''} />
+                            <AvatarFallback className="bg-zinc-900 text-zinc-600 font-black text-sm">{getInitials(item.profiles.full_name)}</AvatarFallback>
+                          </Avatar>
+                          {!item.check_in && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-rose-500 border-2 border-[#05050a]" />}
+                          {item.check_in && !item.check_out && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-[#05050a] animate-pulse" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-black text-white text-base tracking-tight truncate group-hover:text-sky-300 transition-colors">{item.profiles.full_name}</p>
+                          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">{item.profiles.email?.split('@')[0]}</p>
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm font-medium text-zinc-300">
-                      <TimeDisplay time={item.check_in} />
-                    </TableCell>
-                    <TableCell className="text-sm font-medium text-zinc-300">
-                      <TimeDisplay time={item.check_out} />
-                    </TableCell>
-                    <TableCell className="text-sm font-black text-zinc-100">
-                      {formatHours(item.total_hours)}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <span
-                        className={cn(
-                          "font-black tracking-tighter",
-                          item.extra_hours && item.extra_hours > 0
-                            ? 'text-sky-400'
-                            : 'text-zinc-700'
-                        )}
-                      >
-                        {formatExtraHours(item.extra_hours)}
-                      </span>
-                    </TableCell>
-                    {isEditor && showReasons && (
-                      <TableCell className="text-sm">
-                        {item.check_in_reason ? (
-                          <div className="flex items-center gap-2 text-amber-400/80 font-medium bg-amber-500/5 px-3 py-1.5 rounded-xl border border-amber-500/10 max-w-[200px]">
-                            <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate text-xs" title={item.check_in_reason}>
-                              {item.check_in_reason}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-zinc-800">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    <TableCell className="text-right pr-6">{getStatusBadge(item)}</TableCell>
-                  </TableRow>
-                ))}
-
-                {attendanceList.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={isEditor && showReasons ? 7 : 6}
-                      className="py-32 text-center"
-                    >
-                      <div className="flex flex-col items-center gap-2 opacity-20">
-                          <Activity className="h-12 w-12 text-zinc-400" />
-                          <p className="text-sm font-bold uppercase tracking-widest">No activity reported yet</p>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <div className="text-sm font-black text-zinc-400 font-mono tracking-tighter">
+                        <TimeDisplay time={item.check_in} />
                       </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-      </TooltipProvider>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                       <div className="text-sm font-black text-zinc-500 font-mono tracking-tighter">
+                        <TimeDisplay time={item.lunch_out} />
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                       <div className="text-sm font-black text-zinc-400 font-mono tracking-tighter">
+                        <TimeDisplay time={item.check_out} />
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      {item.check_in ? (
+                        item.check_out ? (
+                          <Badge variant="outline" className="bg-zinc-900 text-zinc-500 border-zinc-800 text-[9px] font-black uppercase tracking-widest px-3">Done</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-black uppercase tracking-widest px-3">Live</Badge>
+                        )
+                      ) : (
+                        <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/20 text-[9px] font-black uppercase tracking-widest px-3">Absent</Badge>
+                      )}
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      {canView ? (
+                        <ChevronRight className="h-5 w-5 text-zinc-700 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                      ) : (
+                        <Lock className="h-4 w-4 text-zinc-800 mx-auto" />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filteredList.length === 0 && (
+            <div className="py-32 text-center">
+              <div className="bg-white/5 h-20 w-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-white/5">
+                <Search className="h-10 w-10 text-zinc-800" />
+              </div>
+              <p className="text-zinc-600 font-black uppercase tracking-[0.4em] text-[10px]">No members found</p>
+            </div>
+          )}
+        </div>
+      </GlassCard>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+      `}</style>
     </div>
   );
 }

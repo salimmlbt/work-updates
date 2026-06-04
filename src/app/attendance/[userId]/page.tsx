@@ -1,8 +1,8 @@
-
 import { createServerClient } from '@/lib/supabase/server';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parse, differenceInMinutes, parseISO } from 'date-fns';
 import AttendanceDetailClient from './attendance-detail-client';
 import { redirect } from 'next/navigation';
+import type { Profile } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,23 +20,28 @@ export default async function UserAttendancePage({ params, searchParams }: { par
 
   if (!isOwnRecord && !isFalaqAdmin && permissions.attendance === 'Restricted') {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
-        <p className="text-slate-500">You do not have permission to view this user's attendance records.</p>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4 bg-[#05050a]">
+        <div className="h-20 w-20 rounded-[2rem] bg-rose-500/10 flex items-center justify-center mb-6 shadow-2xl border border-rose-500/20">
+          <span className="text-3xl">🚫</span>
+        </div>
+        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Access Denied</h2>
+        <p className="text-zinc-500 mt-2 font-medium">You do not have authorization to view this user's attendance statement.</p>
       </div>
     );
   }
 
   const isEditor = isFalaqAdmin || permissions.attendance === 'Editor';
 
-  const { data: user, error: userError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+  const [
+    { data: targetUser, error: userError },
+    { data: allProfiles }
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', userId).single(),
+    isEditor ? supabase.from('profiles').select('*').eq('is_archived', false).order('full_name') : Promise.resolve({ data: [] })
+  ]);
 
-  if (userError || !user) {
-    return <p className="p-8">Error fetching user data: {userError?.message || 'User not found'}</p>;
+  if (userError || !targetUser) {
+    return <p className="p-10 text-rose-500 font-bold uppercase tracking-widest">Auditor Record Fault: {userError?.message || 'Member not found'}</p>;
   }
 
   const selectedDate = searchParams.month ? new Date(`${searchParams.month}-01T00:00:00Z`) : new Date();
@@ -53,11 +58,10 @@ export default async function UserAttendancePage({ params, searchParams }: { par
     .lte('date', format(lastDayOfMonth, 'yyyy-MM-dd'));
 
   if (attendanceError) {
-    return <p className="p-8">Error fetching attendance data: {attendanceError.message}</p>;
+    return <p className="p-10 text-rose-500 font-bold">Ledger Sync Error: {attendanceError.message}</p>;
   }
 
   const allDaysInMonth = eachDayOfInterval({ start: firstDayOfMonth, end: lastDayOfMonth });
-  
   const attendanceMap = new Map(attendanceData.map(a => [a.date, a]));
   
   const monthlyAttendance = allDaysInMonth.map(day => {
@@ -65,19 +69,15 @@ export default async function UserAttendancePage({ params, searchParams }: { par
     const record = attendanceMap.get(dayString);
 
     let extraMinutes = 0;
-    if (record && user.work_end_time && record.check_out) {
+    if (record && targetUser.work_end_time && record.check_out) {
         try {
             const checkOutTime = new Date(record.check_out);
-            // Use the date part from the record itself to build the expected checkout time
             const attendanceDate = parseISO(record.date);
-            const expectedCheckOutDateTime = parse(user.work_end_time, 'HH:mm:ss', attendanceDate);
-            
+            const expectedCheckOutDateTime = parse(targetUser.work_end_time, 'HH:mm:ss', attendanceDate);
             if (checkOutTime > expectedCheckOutDateTime) {
                 extraMinutes = differenceInMinutes(checkOutTime, expectedCheckOutDateTime);
             }
-        } catch (e) {
-            console.error(`Could not parse work_end_time '${user.work_end_time}' for user ${user.id}`);
-        }
+        } catch (e) {}
     }
 
     return {
@@ -94,12 +94,12 @@ export default async function UserAttendancePage({ params, searchParams }: { par
 
   return (
     <AttendanceDetailClient
-      user={user}
+      user={targetUser as Profile}
+      allProfiles={allProfiles as Profile[] || []}
       monthlyAttendance={monthlyAttendance as any[]}
       selectedDate={selectedDate.toISOString()}
       prevMonth={prevMonth}
       nextMonth={nextMonth}
-      allDaysCount={allDaysInMonth.length}
       isEditor={isEditor}
     />
   );
