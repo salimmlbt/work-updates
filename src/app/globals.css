@@ -13,13 +13,13 @@
     --card-foreground: 240 6% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 6% 10%;
-    --primary: 217 91% 60%; /* #3498db */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 98%;
     --secondary-foreground: 240 6% 10%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 240 4% 46%;
-    --accent: 210 40% 96.1%; /* #2980b9 */
+    --accent: 210 40% 96.1%;
     --accent-foreground: 240 6% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -30,31 +30,25 @@
     --border: 240 6% 90%;
     --input: 240 6% 90%;
     --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
     --radius: 0.5rem;
     --sidebar-background: 228 66% 16%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-icon-muted: 213 9% 58%; /* #8c939f */
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 223 44% 27%; /* #263765 */
+    --sidebar-accent: 223 44% 27%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 223 47% 21%;
     --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
-    --background: 240 10% 3.9%; /* #09090b */
+    --background: 240 10% 2%; /* #05050a */
     --foreground: 0 0% 98%;
-    --card: 240 4% 7%; /* #0f0f12 */
+    --card: 240 4% 7%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 6%; /* #0f0f0f */
+    --popover: 240 10% 4%;
     --popover-foreground: 0 0% 98%;
-    --primary: 231 93% 66%; /* Indigo #6366f1 */
+    --primary: 231 93% 66%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 4% 12%;
     --secondary-foreground: 0 0% 98%;
@@ -71,21 +65,15 @@
     --border: 240 4% 15%;
     --input: 240 4% 15%;
     --ring: 231 93% 66%;
-    --chart-1: 231 93% 66%;
-    --chart-2: 199 89% 48%;
-    --chart-3: 262 83% 58%;
-    --chart-4: 142 71% 45%;
-    --chart-5: 38 92% 50%;
-    --sidebar-background: 240 10% 4.5%;
+    --sidebar-background: 240 10% 4%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-icon-muted: 213 9% 58%;
     --sidebar-primary: 231 93% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 231 40% 15%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 240 4% 12%;
     --sidebar-ring: 231 93% 66%;
-    --radius: 1.5rem;
+    --radius: 1.25rem;
   }
 }
 
@@ -95,58 +83,31 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-outfit), sans-serif;
   }
 }
 
 @layer components {
-  .rdp-day_sunday {
-    @apply text-red-500;
-  }
-  
   .glass {
-    @apply bg-[#09090b]/40 backdrop-blur-3xl border border-white/10 shadow-2xl;
+    @apply bg-white/[0.03] backdrop-blur-3xl border border-white/10 shadow-2xl;
   }
 }
 
-/* Custom styles for Leaflet to fit the dark theme */
-.leaflet-container {
-    background-color: #0f0f0f !important;
-    border-radius: 2rem;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
-
-.leaflet-bar a {
-    background-color: #171717 !important;
-    color: #fff !important;
-    border-bottom: 1px solid #333 !important;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-.leaflet-control-attribution {
-    background-color: rgba(0,0,0,0.5) !important;
-    color: #555 !important;
-    font-size: 8px !important;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
 }
-
-.cropper-controls {
-  @apply p-4 flex flex-col gap-4;
-}
-
-.cropper-controls .slider-container {
-  @apply flex items-center gap-4;
-}
-
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  50% { transform: translateX(4px); }
-  75% { transform: translateX(-4px); }
-  100% { transform: translateX(0); }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 @keyframes toast-progress {
   from { width: 100%; }
   to { width: 0%; }
-}
-
-.animate-shake {
-  animation: shake 0.35s ease-in-out;
 }

@@ -14,7 +14,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
 export function GlassCard({
   children,
   className,
-  gradientFrom = "rgba(99, 102, 241, 0.1)", // Default to indigo highlight
+  gradientFrom = "rgba(14, 165, 233, 0.15)", // Default to a cyan/sky glow
   gradientVia = "transparent",
   gradientTo = "rgba(255, 255, 255, 0)",
   ...props
@@ -46,7 +46,7 @@ export function GlassCard({
         style={{
           background: useMotionTemplate`
             radial-gradient(
-              650px circle at ${mouseX}px ${mouseY}px,
+              600px circle at ${mouseX}px ${mouseY}px,
               ${gradientFrom},
               ${gradientVia},
               ${gradientTo}
@@ -55,7 +55,6 @@ export function GlassCard({
         }}
       />
       
-      {/* Subtle top inner shadow */}
       <div className="absolute inset-0 rounded-[2rem] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] pointer-events-none z-0" />
       
       <div className="relative z-10 h-full">{children}</div>

@@ -5,7 +5,13 @@ import ClientLayout from './client-layout';
 import type { Profile } from '@/lib/types';
 import { type Metadata } from 'next';
 import { ClientCacheProvider } from './client-cache';
-import { Inter } from 'next/font/google';
+import { Outfit, Inter } from 'next/font/google';
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+});
 
 const inter = Inter({
   subsets: ['latin'],
@@ -48,12 +54,12 @@ export default async function RootLayout({
   const isAuthenticated = !!user;
 
   return (
-    <html lang="en" className={cn("dark", inter.variable)} suppressHydrationWarning>
+    <html lang="en" className={cn("dark", outfit.variable, inter.variable)} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/icon.svg" sizes="any" />
       </head>
       <body 
-        className={cn("min-h-screen bg-background font-body font-sans antialiased text-foreground")} 
+        className={cn("min-h-screen bg-background font-sans antialiased text-foreground")} 
         suppressHydrationWarning
       >
         <ClientCacheProvider>

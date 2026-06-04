@@ -269,15 +269,15 @@ export function TaskDetailSheet({
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
-        className="w-full sm:max-w-4xl p-0 flex flex-col bg-[#0f0f0f] text-zinc-100 border-l border-white/10 shadow-2xl"
+        className="w-full sm:max-w-4xl p-0 flex flex-col bg-[#05050a] text-zinc-100 border-l border-white/10 shadow-2xl"
       >
         {/* HEADER */}
         <div className="p-8 border-b border-white/10 bg-white/[0.02]">
           <SheetHeader className="text-left">
-            <SheetTitle className="text-3xl font-bold leading-tight text-white">
+            <SheetTitle className="text-2xl font-bold leading-tight text-white">
               {task.description}
             </SheetTitle>
-            <SheetDescription className="text-sm text-zinc-500">
+            <SheetDescription className="text-xs text-zinc-500 uppercase tracking-widest font-bold">
               {task.clients?.name || 'No Client'} &nbsp;•&nbsp;
               {task.projects?.name || 'No Project'}
             </SheetDescription>
@@ -285,48 +285,48 @@ export function TaskDetailSheet({
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-8 text-sm">
             <div>
-              <p className="text-zinc-500 text-xs mb-1 uppercase tracking-widest font-bold">Responsible</p>
+              <p className="text-zinc-500 text-[9px] mb-1.5 uppercase tracking-[0.2em] font-black">Responsible</p>
               {task.profiles ? (
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-7 w-7 border border-white/10">
+                  <Avatar className="h-7 w-7 border border-white/10 shadow-lg">
                     <AvatarImage src={task.profiles.avatar_url ?? undefined} />
-                    <AvatarFallback className="bg-zinc-800 text-zinc-400">{getInitials(task.profiles.full_name)}</AvatarFallback>
+                    <AvatarFallback className="bg-zinc-900 text-zinc-400 font-bold text-[10px]">{getInitials(task.profiles.full_name)}</AvatarFallback>
                   </Avatar>
-                  <span className="font-medium text-zinc-200">{task.profiles.full_name}</span>
+                  <span className="font-semibold text-zinc-200 text-sm tracking-tight">{task.profiles.full_name}</span>
                 </div>
               ) : (
-                <span className="text-zinc-600">-</span>
+                <span className="text-zinc-700">-</span>
               )}
             </div>
 
             <div>
-              <p className="text-zinc-500 text-xs mb-1 uppercase tracking-widest font-bold">Type</p>
+              <p className="text-zinc-500 text-[9px] mb-1.5 uppercase tracking-[0.2em] font-black">Type</p>
               {task.type ? (
                 <Badge
                   variant="outline"
                   className={cn(
-                    'border-0 font-medium text-xs px-2 py-0.5 rounded-md shadow-sm',
+                    'border-0 font-bold text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm',
                     typeColors[task.type] || 'bg-zinc-800 text-zinc-300'
                   )}
                 >
                   {task.type}
                 </Badge>
               ) : (
-                <span className="text-zinc-600">-</span>
+                <span className="text-zinc-700">-</span>
               )}
             </div>
 
             <div>
-              <p className="text-zinc-500 text-xs mb-1 uppercase tracking-widest font-bold">Due Date</p>
-              <div className="flex items-center gap-2 text-zinc-200">
-                <Calendar className="h-4 w-4 text-zinc-500" />
+              <p className="text-zinc-500 text-[9px] mb-1.5 uppercase tracking-[0.2em] font-black">Due Date</p>
+              <div className="flex items-center gap-2 text-zinc-200 font-bold text-sm tracking-tight">
+                <Calendar className="h-3.5 w-3.5 text-sky-400" />
                 <span>{formatDate(task.deadline)}</span>
               </div>
             </div>
 
             <div>
-              <p className="text-zinc-500 text-xs mb-1 uppercase tracking-widest font-bold">Priority</p>
-              <span className="text-zinc-400 font-medium">Medium</span>
+              <p className="text-zinc-500 text-[9px] mb-1.5 uppercase tracking-[0.2em] font-black">Priority</p>
+              <span className="text-zinc-400 font-bold text-sm">Medium</span>
             </div>
           </div>
         </div>
@@ -335,24 +335,24 @@ export function TaskDetailSheet({
         <div className="flex-1 overflow-y-auto px-8 py-10 space-y-10 custom-scrollbar">
           
           {task.post_date && (
-            <div className="bg-sky-950/20 border border-sky-900/30 rounded-xl p-4 flex items-center gap-4 shadow-sm">
-              <div className="h-10 w-10 rounded-full bg-sky-500/10 flex items-center justify-center">
+            <div className="bg-sky-950/20 border border-sky-900/30 rounded-2xl p-5 flex items-center gap-4 shadow-[0_10px_30px_rgba(14,165,233,0.1)] transition-transform hover:scale-[1.01]">
+              <div className="h-11 w-11 rounded-2xl bg-sky-500/10 flex items-center justify-center border border-sky-500/20 shadow-inner">
                 <Send className="h-5 w-5 text-sky-400" />
               </div>
               <div>
-                <h4 className="font-semibold text-sky-300">Scheduled Post Time</h4>
-                <p className="text-sky-400/80 text-sm">{formatDate(task.post_date, true)}</p>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-500/70 mb-0.5">Scheduled Post Window</h4>
+                <p className="text-sky-300 font-bold text-base tracking-tight">{formatDate(task.post_date, true)}</p>
               </div>
             </div>
           )}
 
           {/* Description */}
           <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <AlignLeft className="h-5 w-5 text-sky-400" />
-              <h3 className="font-bold text-xl text-white">Description</h3>
+            <div className="flex items-center gap-3">
+              <AlignLeft className="h-4 w-4 text-sky-400" />
+              <h3 className="font-bold text-lg text-white uppercase tracking-tight">Requirement Statement</h3>
             </div>
-            <div className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden">
+            <div className="rounded-2xl border border-white/5 bg-white/[0.01] overflow-hidden shadow-2xl">
                 <RichTextEditor
                 initialContent={task.rich_description}
                 userProfile={userProfile}
@@ -365,34 +365,43 @@ export function TaskDetailSheet({
           {corrections.length > 0 && (
             <>
               <Separator className="bg-white/5" />
-              <section className="space-y-4">
+              <section className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5 text-orange-400" />
-                      <h3 className="font-bold text-xl text-white">Submission Context / Late Reason</h3>
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className="h-4 w-4 text-orange-400" />
+                      <h3 className="font-bold text-lg text-white uppercase tracking-tight">Audit Context / Late Justification</h3>
                     </div>
                      {corrections.length > 1 && (
                       <div className="flex items-center gap-2">
-                         <span className="text-xs text-zinc-500 font-medium mr-2">
+                         <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mr-2">
                             {currentCorrectionIndex + 1} / {corrections.length}
                         </span>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/5 text-zinc-400" onClick={handlePrevCorrection}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/5 text-zinc-400 rounded-full" onClick={handlePrevCorrection}>
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/5 text-zinc-400" onClick={handleNextCorrection}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/5 text-zinc-400 rounded-full" onClick={handleNextCorrection}>
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
                     )}
                 </div>
-                <div className="bg-orange-950/20 border border-orange-900/40 rounded-xl p-5 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
-                    <p className="text-sm text-orange-200 leading-relaxed italic">"{corrections[currentCorrectionIndex].note}"</p>
+                <div className="bg-orange-950/20 border border-orange-900/40 rounded-[2rem] p-8 shadow-[0_15px_40px_rgba(249,115,22,0.1)] relative overflow-hidden group">
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-500/50" />
+                  <div className="flex items-start gap-4">
+                    <AlertCircle className="h-6 w-6 text-orange-400 shrink-0 mt-1" />
+                    <div className="space-y-4">
+                        {/* BIG SIZE LATE REASON */}
+                        <p className="text-xl md:text-2xl font-semibold text-orange-100 leading-tight italic tracking-tight">
+                          "{corrections[currentCorrectionIndex].note}"
+                        </p>
+                        <div className="flex items-center justify-between pt-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60">Official Log Entry</span>
+                            <span className="text-[10px] text-orange-400/80 font-bold uppercase tracking-widest">
+                                {format(parseISO(corrections[currentCorrectionIndex].created_at), 'd MMM yyyy, h:mm a')}
+                            </span>
+                        </div>
+                    </div>
                   </div>
-                   <p className="text-[10px] text-orange-500/70 mt-3 font-black uppercase tracking-widest text-right">
-                      Logged: {format(parseISO(corrections[currentCorrectionIndex].created_at), 'd MMM yyyy, h:mm a')}
-                  </p>
                 </div>
               </section>
             </>
@@ -403,31 +412,31 @@ export function TaskDetailSheet({
           {/* Web Links */}
           <section className="space-y-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-sky-400" />
-                <h3 className="font-bold text-xl text-white">Web Links</h3>
-                <Badge variant="secondary" className="ml-2 bg-white/10 text-zinc-300 border-0">
+              <div className="flex items-center gap-3">
+                <Globe className="h-4 w-4 text-sky-400" />
+                <h3 className="font-bold text-lg text-white uppercase tracking-tight">Cloud Assets</h3>
+                <Badge variant="secondary" className="ml-2 bg-white/5 text-zinc-400 border border-white/5 text-[10px] h-5">
                   {links.length}
                 </Badge>
               </div>
               <Popover open={isLinkPopoverOpen} onOpenChange={setIsLinkPopoverOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-full">
-                    <Plus className="h-4 w-4 mr-2" /> Add Link
+                  <Button variant="ghost" size="sm" className="text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-full text-[10px] font-bold uppercase tracking-widest h-8 px-4">
+                    <Plus className="h-3 w-3 mr-2" /> Add Link
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-4 bg-zinc-900 border-zinc-800 text-white shadow-2xl" align="end">
+                <PopoverContent className="w-80 p-5 bg-zinc-950 border-white/10 text-white rounded-[1.5rem] shadow-2xl" align="end">
                   <div className="space-y-4">
-                    <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500">Attach a URL</h4>
+                    <h4 className="font-black uppercase tracking-widest text-[9px] text-zinc-500">Attach Cloud Resource</h4>
                     <div className="space-y-2">
-                      <Label htmlFor="sheet-link-name" className="text-[10px] font-bold uppercase text-zinc-400">Label</Label>
-                      <Input id="sheet-link-name" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="e.g. Reference Folder" className="h-9 bg-zinc-950 border-zinc-800 text-sm" />
+                      <Label htmlFor="sheet-link-name" className="text-[9px] font-bold uppercase text-zinc-400 ml-1">Asset Label</Label>
+                      <Input id="sheet-link-name" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="e.g. Figma Source" className="h-10 bg-white/5 border-white/5 text-sm rounded-xl" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="sheet-link-url" className="text-[10px] font-bold uppercase text-zinc-400">URL</Label>
-                      <Input id="sheet-link-url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." className="h-9 bg-zinc-950 border-zinc-800 text-sm" />
+                      <Label htmlFor="sheet-link-url" className="text-[9px] font-bold uppercase text-zinc-400 ml-1">URL Path</Label>
+                      <Input id="sheet-link-url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." className="h-10 bg-white/5 border-white/5 text-sm rounded-xl" />
                     </div>
-                    <Button size="sm" onClick={handleAddLink} className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold uppercase tracking-widest text-[10px] h-10">Add Link</Button>
+                    <Button size="sm" onClick={handleAddLink} className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-widest text-[10px] h-11 rounded-xl shadow-lg">Commit Link</Button>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -436,26 +445,26 @@ export function TaskDetailSheet({
             {links.length > 0 ? (
               <div className="grid grid-cols-1 gap-3">
                 {links.map((link, i) => (
-                  <div key={i} className="group flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all">
+                  <div key={i} className="group flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] transition-all duration-300 shadow-lg">
                     <a
                       href={link.publicUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-4 flex-1 min-w-0"
                     >
-                      <div className="h-10 w-10 rounded-lg bg-sky-500/10 flex items-center justify-center shrink-0">
+                      <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0 border border-sky-500/10 group-hover:scale-110 transition-transform">
                         <Globe className="h-5 w-5 text-sky-400" />
                       </div>
                       <div className="truncate">
-                        <p className="font-bold text-sm text-zinc-100 truncate">{link.name}</p>
-                        <p className="text-xs text-zinc-500 truncate">{link.publicUrl}</p>
+                        <p className="font-bold text-sm text-zinc-100 truncate group-hover:text-sky-300 transition-colors">{link.name}</p>
+                        <p className="text-[10px] text-zinc-600 truncate font-mono mt-0.5">{link.publicUrl}</p>
                       </div>
                     </a>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       onClick={() => removeAttachment(link)}
-                      className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 h-8 w-8 transition-all"
+                      className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 h-8 w-8 transition-all rounded-full"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -463,8 +472,8 @@ export function TaskDetailSheet({
                 ))}
               </div>
             ) : (
-              <div className="py-10 text-center rounded-xl border-2 border-dashed border-white/5 bg-white/[0.01]">
-                <p className="text-sm text-zinc-600">No web links associated with this task.</p>
+              <div className="py-12 text-center rounded-[2rem] border-2 border-dashed border-white/5 bg-white/[0.01]">
+                <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest">No Cloud Assets Available</p>
               </div>
             )}
           </section>
@@ -474,33 +483,33 @@ export function TaskDetailSheet({
           {/* Attachments (Files) */}
           <section className="space-y-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <LinkIcon className="h-5 w-5 text-sky-400" />
-                <h3 className="font-bold text-xl text-white">Files</h3>
-                <Badge variant="secondary" className="ml-2 bg-white/10 text-zinc-300 border-0">
+              <div className="flex items-center gap-3">
+                <LinkIcon className="h-4 w-4 text-sky-400" />
+                <h3 className="font-bold text-lg text-white uppercase tracking-tight">Studio Artifacts</h3>
+                <Badge variant="secondary" className="ml-2 bg-white/5 text-zinc-400 border border-white/5 text-[10px] h-5">
                   {files.length}
                 </Badge>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-full"
+                className="text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-full text-[10px] font-bold uppercase tracking-widest h-8 px-4"
                 disabled={isUploading}
                 onClick={() => fileInputRef.current?.click()}
               >
                 {isUploading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5 mr-2" />
                 )}
-                Upload File
+                Ingest File
               </Button>
             </div>
 
             {files.length > 0 ? (
-              <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 lg:grid-cols-4 gap-5">
                 {files.map((att, i) => (
-                  <div key={i} className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-sky-500/50 transition-all shadow-lg shadow-black/20">
+                  <div key={i} className="group relative aspect-square rounded-2xl overflow-hidden border border-white/10 bg-zinc-950 hover:border-sky-500/40 transition-all shadow-2xl shadow-black/60">
                     <a
                       href={att.publicUrl}
                       target="_blank"
@@ -512,37 +521,39 @@ export function TaskDetailSheet({
                           src={att.publicUrl}
                           alt={att.name}
                           fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="object-cover transition-transform duration-700 group-hover:scale-110"
                         />
                       ) : (
-                        <div className="h-full flex flex-col items-center justify-center p-3 text-center">
-                          <LinkIcon className="h-6 w-6 text-zinc-600 mb-2" />
+                        <div className="h-full flex flex-col items-center justify-center p-4 text-center">
+                          <div className="h-12 w-12 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                             <LinkIcon className="h-6 w-6 text-zinc-500" />
+                          </div>
                           <p
-                            className="text-[10px] text-zinc-400 line-clamp-2"
+                            className="text-[9px] text-zinc-500 font-bold uppercase tracking-tighter line-clamp-2"
                             title={att.name}
                           >
                             {att.name}
                           </p>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                        <span className="text-white text-[10px] font-bold bg-sky-600/80 px-2 py-1 rounded-full uppercase tracking-wider shadow-lg">View File</span>
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[4px]">
+                        <span className="text-white text-[9px] font-black bg-sky-600 px-3 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-2xl">Analyze</span>
                       </div>
                     </a>
                     <Button 
                       variant="destructive" 
                       size="icon" 
                       onClick={(e) => { e.preventDefault(); removeAttachment(att); }}
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                      className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-2xl bg-rose-600/90 hover:bg-rose-500 scale-90 group-hover:scale-100"
                     >
-                      <XIcon className="h-3 w-3" />
+                      <XIcon className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="py-10 text-center rounded-xl border-2 border-dashed border-white/5 bg-white/[0.01]">
-                <p className="text-sm text-zinc-600">No files attached to this task.</p>
+              <div className="py-12 text-center rounded-[2rem] border-2 border-dashed border-white/5 bg-white/[0.01]">
+                <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest">No Artifacts Ingested</p>
               </div>
             )}
 
@@ -557,20 +568,20 @@ export function TaskDetailSheet({
         </div>
 
         {/* FOOTER */}
-        <div className="p-6 border-t border-white/10 bg-white/[0.02] flex justify-between items-center">
-          <Button variant="secondary" onClick={() => onEdit(task)} className="bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700 rounded-full h-11 px-6">
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Task Details
+        <div className="p-8 border-t border-white/10 bg-black/40 backdrop-blur-3xl flex justify-between items-center shrink-0">
+          <Button variant="secondary" onClick={() => onEdit(task)} className="bg-zinc-900 text-zinc-300 border-white/10 hover:bg-zinc-800 rounded-full h-12 px-8 text-[10px] font-black uppercase tracking-widest shadow-lg">
+            <Pencil className="mr-2 h-3.5 w-3.5" />
+            Modify Statement
           </Button>
 
           {isDescriptionDirty && (
-            <Button onClick={handleSaveDescription} disabled={isPending} className="bg-sky-600 hover:bg-sky-500 text-white rounded-full h-11 px-6 shadow-lg shadow-sky-900/20">
+            <Button onClick={handleSaveDescription} disabled={isPending} className="bg-sky-600 hover:bg-sky-500 text-white rounded-full h-12 px-10 text-[10px] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(14,165,233,0.3)] hover:scale-105 active:scale-95 transition-all">
               {isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              Save Changes
+              Authorize Changes
             </Button>
           )}
         </div>
@@ -583,11 +594,11 @@ export function TaskDetailSheet({
             background: transparent;
           }
           .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 99px;
           }
           .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.18);
           }
         `}</style>
       </SheetContent>
