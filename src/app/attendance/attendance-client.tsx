@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Activity,
@@ -22,6 +22,7 @@ import { createClient } from '@/lib/supabase/client';
 import { AnimatedBackground } from '@/components/dashboard/animated-background';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { Input } from '@/components/ui/input';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type AttendanceWithProfile = Attendance & {
   profiles: Profile;
@@ -63,6 +64,7 @@ export default function AttendanceClient({
   const router = useRouter();
   const [attendanceList, setAttendanceList] = useState(initialData);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setAttendanceList(initialData);
@@ -123,13 +125,45 @@ export default function AttendanceClient({
   const handleRowClick = (userId: string) => {
     const canView = isEditor || userId === currentUserId;
     if (canView) {
-      router.push(`/attendance/${userId}`);
+      startTransition(() => {
+        router.push(`/attendance/${userId}`);
+      });
     }
   };
 
   return (
     <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-8 lg:p-10 overflow-hidden">
       <AnimatedBackground />
+
+      {/* 🚀 Processing Portal */}
+      <AnimatePresence>
+        {isPending && (
+          <motion.div 
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-[#030407]/60"
+          >
+            <div className="flex flex-col items-center gap-8">
+              <div className="relative flex items-center justify-center">
+                <motion.div 
+                  className="absolute w-24 h-24 rounded-full border border-sky-400/20"
+                  animate={{ scale: [1, 1.5], opacity: [0.8, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                />
+                <motion.div 
+                  className="relative w-10 h-10 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-500 shadow-[0_0_40px_rgba(14,165,233,0.8)]"
+                  animate={{ scale: [1, 0.8, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-slate-300 font-black tracking-[0.4em] uppercase">Syncing Statements</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <header className="relative z-10 mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronLeft,
@@ -12,10 +12,12 @@ import {
   ShieldCheck,
   Building2,
   Users,
+  MessageSquare,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { getInitials, cn } from '@/lib/utils';
 import type { Profile, Attendance } from '@/lib/types';
 import { AnimatedBackground } from '@/components/dashboard/animated-background';
@@ -28,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MonthlyAttendance {
   date: string;
@@ -66,6 +69,7 @@ export default function AttendanceDetailClient({
 }: Props) {
   const router = useRouter();
   const [monthlyData, setMonthlyData] = useState(initialMonthlyAttendance);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setMonthlyData(initialMonthlyAttendance);
@@ -79,7 +83,15 @@ export default function AttendanceDetailClient({
   }, [monthlyData]);
 
   const handleUserChange = (val: string) => {
-    router.push(`/attendance/${val}?month=${format(parseISO(selectedDate), 'yyyy-MM')}`);
+    startTransition(() => {
+        router.push(`/attendance/${val}?month=${format(parseISO(selectedDate), 'yyyy-MM')}`);
+    });
+  };
+
+  const handleMonthNav = (month: string) => {
+    startTransition(() => {
+        router.push(`/attendance/${user.id}?month=${month}`);
+    });
   };
 
   const currentMonthLabel = format(parseISO(selectedDate), 'MMMM yyyy');
@@ -87,12 +99,47 @@ export default function AttendanceDetailClient({
   return (
     <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-8 lg:p-10 overflow-hidden">
       <AnimatedBackground />
+
+      {/* 🚀 Processing Portal */}
+      <AnimatePresence>
+        {isPending && (
+          <motion.div 
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-[#030407]/60"
+          >
+            <div className="flex flex-col items-center gap-8">
+              <div className="relative flex items-center justify-center">
+                <motion.div 
+                  className="absolute w-24 h-24 rounded-full border border-sky-400/20"
+                  animate={{ scale: [1, 1.5], opacity: [0.8, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                />
+                <motion.div 
+                  className="relative w-10 h-10 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-500 shadow-[0_0_40px_rgba(14,165,233,0.8)]"
+                  animate={{ scale: [1, 0.8, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-slate-300 font-black tracking-[0.4em] uppercase">Recalculating Ledger</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <TooltipProvider>
         
         <header className="relative z-10 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="space-y-6">
             <button 
-              onClick={() => router.push('/attendance')}
+              onClick={() => {
+                  startTransition(() => {
+                    router.push('/attendance');
+                  });
+              }}
               className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-sky-400 hover:text-sky-300 transition-colors"
             >
               <ChevronLeft className="h-3 w-3" />
@@ -140,11 +187,11 @@ export default function AttendanceDetailClient({
 
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-full p-1.5 backdrop-blur-xl shadow-2xl">
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => router.push(`/attendance/${user.id}?month=${prevMonth}`)}>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(prevMonth)}>
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <span className="text-xs font-black w-36 text-center text-zinc-200 uppercase tracking-widest">{currentMonthLabel}</span>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => router.push(`/attendance/${user.id}?month=${nextMonth}`)}>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(nextMonth)}>
                   <ChevronRight className="h-5 w-5" />
                 </Button>
             </div>
@@ -206,7 +253,7 @@ export default function AttendanceDetailClient({
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
+                  <th className="px-6 py-5 text-[10px) font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
                   <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
@@ -292,5 +339,3 @@ export default function AttendanceDetailClient({
     </div>
   );
 }
-
-import { useMemo } from 'react';
