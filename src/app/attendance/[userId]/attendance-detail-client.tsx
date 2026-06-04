@@ -106,10 +106,9 @@ export default function AttendanceDetailClient({
   const currentMonthLabel = format(parseISO(selectedDate), 'MMMM yyyy');
 
   return (
-    <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-8 lg:p-10 overflow-hidden font-sans selection:bg-sky-500/30">
+    <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-6 font-sans selection:bg-sky-500/30 overflow-x-hidden">
       <AnimatedBackground />
 
-      {/* 🚀 Processing Overlay - Sleek and minimal spinner */}
       <AnimatePresence>
         {isPending && (
           <motion.div 
@@ -131,10 +130,10 @@ export default function AttendanceDetailClient({
       </AnimatePresence>
 
       <TooltipProvider>
-        <div className="max-w-7xl mx-auto space-y-10 relative z-10">
+        <div className="w-full space-y-10 relative z-10">
           
           {/* Header Section */}
-          <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 px-2">
             <div className="space-y-6">
               <button 
                 onClick={() => {
@@ -149,9 +148,9 @@ export default function AttendanceDetailClient({
               </button>
               
               <div className="flex items-center gap-5">
-                <Avatar className="h-16 w-16 border border-white/10 shadow-2xl">
+                <Avatar className="h-14 w-14 border border-white/10 shadow-2xl">
                   <AvatarImage src={user.avatar_url ?? undefined} />
-                  <AvatarFallback className="bg-zinc-900 text-zinc-400 font-bold text-lg">{getInitials(user.full_name)}</AvatarFallback>
+                  <AvatarFallback className="bg-zinc-800 text-zinc-400 font-bold text-lg">{getInitials(user.full_name)}</AvatarFallback>
                 </Avatar>
                 
                 <div className="flex flex-col gap-1">
@@ -269,12 +268,12 @@ export default function AttendanceDetailClient({
                     <th className="px-8 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">Date</th>
                     <th className="px-4 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Entry</th>
                     <th className="px-4 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Break Out</th>
-                    <th className="px-4 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Break In</th>
+                    <th className="px-4 py-4 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Break In</th>
                     <th className="px-4 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Exit</th>
                     <th className="px-4 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Yield (H)</th>
                     <th className="px-4 py-4 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Overtime</th>
                     <th className="px-4 py-4 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Audit</th>
-                    <th className="px-8 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-right">Context Statement</th>
+                    <th className="px-8 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-right">Audit Statement</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.03]">
