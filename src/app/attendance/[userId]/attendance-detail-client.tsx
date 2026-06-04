@@ -103,7 +103,7 @@ export default function AttendanceDetailClient({
   const currentMonthLabel = format(parseISO(selectedDate), 'MMMM yyyy');
 
   return (
-    <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-8 lg:p-10 overflow-hidden">
+    <div className="relative min-h-screen bg-[#05050a] text-zinc-100 p-4 md:p-8 lg:p-10 overflow-hidden font-sans">
       <AnimatedBackground />
 
       {/* 🚀 Processing Portal */}
@@ -129,7 +129,7 @@ export default function AttendanceDetailClient({
                 />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-xs text-slate-300 font-bold tracking-[0.4em] uppercase">Recalculating Ledger</span>
+                <span className="text-[10px] text-slate-300 font-bold tracking-[0.4em] uppercase">Recalculating Ledger</span>
               </div>
             </div>
           </motion.div>
@@ -146,28 +146,28 @@ export default function AttendanceDetailClient({
                     router.push('/attendance');
                   });
               }}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-sky-400 hover:text-sky-300 transition-colors"
+              className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-sky-400 hover:text-sky-300 transition-colors"
             >
               <ChevronLeft className="h-3 w-3" />
               Audit List
             </button>
             
             <div className="flex items-center gap-6">
-              <Avatar className="h-20 w-20 ring-4 ring-white/5 border border-white/10 shadow-[0_0_40px_rgba(56,189,248,0.1)]">
+              <Avatar className="h-16 w-16 ring-4 ring-white/5 border border-white/10 shadow-[0_0_40px_rgba(56,189,248,0.1)]">
                 <AvatarImage src={user.avatar_url ?? undefined} />
-                <AvatarFallback className="bg-zinc-900 text-zinc-600 font-bold text-xl">{getInitials(user.full_name)}</AvatarFallback>
+                <AvatarFallback className="bg-zinc-900 text-zinc-600 font-bold text-lg">{getInitials(user.full_name)}</AvatarFallback>
               </Avatar>
               <div>
                 {isEditor ? (
                    <div className="mb-2">
                      <Select value={user.id} onValueChange={handleUserChange}>
-                        <SelectTrigger className="h-auto p-0 bg-transparent border-0 text-2xl md:text-4xl font-bold tracking-tighter text-white uppercase focus:ring-0 shadow-none hover:text-sky-400 transition-colors">
+                        <SelectTrigger className="h-auto p-0 bg-transparent border-0 text-2xl font-bold tracking-tight text-white uppercase focus:ring-0 shadow-none hover:text-sky-400 transition-colors">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-950 border-white/10 text-white backdrop-blur-3xl shadow-2xl">
-                          <div className="p-2 pb-1 text-[10px] font-black uppercase tracking-widest text-zinc-600">Switch Auditor Statement</div>
+                          <div className="p-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-zinc-600">Switch Auditor Statement</div>
                           {allProfiles.map(p => (
-                            <SelectItem key={p.id} value={p.id} className="rounded-xl focus:bg-white/5 focus:text-white">
+                            <SelectItem key={p.id} value={p.id} className="rounded-xl focus:bg-white/5 focus:text-white text-xs">
                               {p.full_name}
                             </SelectItem>
                           ))}
@@ -175,15 +175,15 @@ export default function AttendanceDetailClient({
                       </Select>
                    </div>
                 ) : (
-                  <h1 className="text-2xl md:text-4xl font-bold tracking-tighter text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                  <h1 className="text-2xl font-bold tracking-tight text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                     {user.full_name}
                   </h1>
                 )}
                 <div className="flex items-center gap-4 mt-2">
-                   <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500">
+                   <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-zinc-500">
                     Monthly Performance Statement
                    </p>
-                   <Badge variant="outline" className="bg-sky-500/10 text-sky-400 border-sky-500/20 text-[9px] font-black uppercase tracking-widest h-5 px-2">
+                   <Badge variant="outline" className="bg-sky-500/10 text-sky-400 border-sky-500/20 text-[8px] font-bold uppercase tracking-widest h-5 px-2">
                     Verified
                    </Badge>
                 </div>
@@ -192,60 +192,60 @@ export default function AttendanceDetailClient({
           </div>
 
           <div className="flex items-center gap-4">
-             <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-full p-1 backdrop-blur-xl shadow-2xl">
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(prevMonth)}>
-                  <ChevronLeft className="h-5 w-5" />
+             <div className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-full p-1 backdrop-blur-xl shadow-2xl">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(prevMonth)}>
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-xs font-bold w-36 text-center text-zinc-200 uppercase tracking-widest">{currentMonthLabel}</span>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(nextMonth)}>
-                  <ChevronRight className="h-5 w-5" />
+                <span className="text-[10px] font-bold w-32 text-center text-zinc-200 uppercase tracking-widest">{currentMonthLabel}</span>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(nextMonth)}>
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
-            <Button variant="outline" className="rounded-full h-11 px-6 bg-sky-600 hover:bg-sky-500 text-white font-bold uppercase tracking-widest text-[9px] border-0 shadow-2xl shadow-sky-900/40 transition-all active:scale-95">
+            <Button variant="outline" className="rounded-full h-10 px-6 bg-sky-600 hover:bg-sky-500 text-white font-bold uppercase tracking-widest text-[9px] border-0 shadow-2xl shadow-sky-900/40 transition-all active:scale-95">
               <Download className="mr-2 h-4 w-4" />
-              Export Statement
+              Export
             </Button>
           </div>
         </header>
 
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
             <GlassCard gradientFrom="rgba(255,255,255,0.08)">
-              <div className="p-8">
-                 <div className="flex justify-between items-start mb-6">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Aggregate Hours</span>
-                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-zinc-400"><Clock className="h-5 w-5" /></div>
+              <div className="p-6">
+                 <div className="flex justify-between items-start mb-4">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Aggregate Hours</span>
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400"><Clock className="h-4 w-4" /></div>
                  </div>
-                 <p className="text-4xl font-black text-white tracking-tighter">{stats.totalHours.toFixed(2)}<span className="text-lg text-zinc-700 ml-1">h</span></p>
+                 <p className="text-3xl font-bold text-white tracking-tight">{stats.totalHours.toFixed(2)}<span className="text-sm text-zinc-700 ml-1">h</span></p>
               </div>
             </GlassCard>
 
             <GlassCard gradientFrom="rgba(56, 189, 248, 0.12)">
-              <div className="p-8">
-                 <div className="flex justify-between items-start mb-6">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-400/70">Overtime Yield</span>
-                    <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400"><ArrowUpRight className="h-5 w-5" /></div>
+              <div className="p-6">
+                 <div className="flex justify-between items-start mb-4">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-sky-400/70">Overtime Yield</span>
+                    <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400"><ArrowUpRight className="h-4 w-4" /></div>
                  </div>
-                 <p className="text-4xl font-black text-sky-300 tracking-tighter">{stats.totalExtra.toFixed(2)}<span className="text-lg text-sky-900 ml-1">h</span></p>
+                 <p className="text-3xl font-bold text-sky-300 tracking-tight">{stats.totalExtra.toFixed(2)}<span className="text-sm text-sky-900 ml-1">h</span></p>
               </div>
             </GlassCard>
 
             <GlassCard gradientFrom="rgba(16, 185, 129, 0.12)">
-              <div className="p-8">
-                 <div className="flex justify-between items-start mb-6">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400/70">Present Cycles</span>
-                    <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"><Building2 className="h-5 w-5" /></div>
+              <div className="p-6">
+                 <div className="flex justify-between items-start mb-4">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">Present Cycles</span>
+                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"><Building2 className="h-4 w-4" /></div>
                  </div>
-                 <p className="text-4xl font-black text-emerald-300 tracking-tighter">{stats.presentDays}<span className="text-lg text-emerald-900 ml-1">d</span></p>
+                 <p className="text-3xl font-bold text-emerald-300 tracking-tight">{stats.presentDays}<span className="text-sm text-emerald-900 ml-1">d</span></p>
               </div>
             </GlassCard>
 
             <GlassCard gradientFrom="rgba(99, 102, 241, 0.12)">
-              <div className="p-8 text-center flex flex-col items-center justify-center h-full">
-                 <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mb-4 border border-white/5">
-                    <div className="bg-gradient-to-r from-sky-400 to-indigo-500 h-full w-[85%] shadow-[0_0_15px_#0ea5e9]" />
+              <div className="p-6 text-center flex flex-col items-center justify-center h-full">
+                 <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden mb-3 border border-white/5">
+                    <div className="bg-gradient-to-r from-sky-400 to-indigo-500 h-full w-[85%] shadow-[0_0_10px_#0ea5e9]" />
                  </div>
-                 <span className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-500">Efficiency Index</span>
-                 <p className="text-xl font-black text-white mt-1">A+ Excellence</p>
+                 <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-zinc-500">Efficiency Index</span>
+                 <p className="text-lg font-bold text-white mt-1">A+ Excellence</p>
               </div>
             </GlassCard>
         </div>
@@ -255,14 +255,14 @@ export default function AttendanceDetailClient({
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-white/5 bg-white/[0.01]">
-                  <th className="px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600">Timestamp Date</th>
-                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
-                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
-                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
-                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
-                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
-                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
-                  <th className="px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">Timestamp Date</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
                 </tr>
               </thead>
               <tbody>
@@ -274,58 +274,58 @@ export default function AttendanceDetailClient({
                       !item.check_in && "opacity-40 grayscale"
                     )}
                   >
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
                         <div className={cn(
-                          "h-12 w-12 rounded-xl flex flex-col items-center justify-center font-black transition-all group-hover:scale-110",
+                          "h-10 w-10 rounded-xl flex flex-col items-center justify-center font-bold transition-all group-hover:scale-105",
                           item.check_in ? "bg-white/5 text-zinc-200 border border-white/10" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
                         )}>
-                          <span className="text-[9px] uppercase tracking-tighter opacity-60">{format(parseISO(item.date), 'MMM')}</span>
-                          <span className="text-base leading-none mt-0.5">{format(parseISO(item.date), 'dd')}</span>
+                          <span className="text-[8px] uppercase tracking-tighter opacity-60">{format(parseISO(item.date), 'MMM')}</span>
+                          <span className="text-sm leading-none mt-0.5">{format(parseISO(item.date), 'dd')}</span>
                         </div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400 transition-colors">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400 transition-colors">
                           {format(parseISO(item.date), 'EEEE')}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-6 text-center">
-                      <div className="text-sm font-bold text-zinc-400 font-mono tracking-tighter">
+                    <td className="px-6 py-5 text-center">
+                      <div className="text-sm font-bold text-zinc-400 font-mono tracking-tight">
                         <TimeDisplay time={item.check_in} />
                       </div>
                       {item.check_in_reason && (
-                        <div className="mt-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-left max-w-[240px] mx-auto group-hover:bg-amber-500/10 transition-colors">
-                            <div className="flex items-center gap-2 mb-1">
-                                <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
-                                <span className="text-[8px] font-black uppercase tracking-widest text-amber-600/80">Late Reason Statement</span>
+                        <div className="mt-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-left max-w-[320px] mx-auto group-hover:bg-amber-500/10 transition-colors shadow-xl">
+                            <div className="flex items-center gap-2 mb-2">
+                                <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-600/80">Audit Context Statement</span>
                             </div>
-                            <p className="text-xs italic font-medium text-amber-200 leading-relaxed">
-                              {item.check_in_reason}
+                            <p className="text-base italic font-bold text-amber-100 leading-relaxed tracking-tight">
+                              "{item.check_in_reason}"
                             </p>
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-medium text-zinc-500 font-mono tracking-tighter">
+                    <td className="px-6 py-5 text-center text-xs font-medium text-zinc-500 font-mono tracking-tight">
                       <TimeDisplay time={item.lunch_out} />
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-medium text-zinc-500 font-mono tracking-tighter">
+                    <td className="px-6 py-5 text-center text-xs font-medium text-zinc-500 font-mono tracking-tight">
                       <TimeDisplay time={item.lunch_in} />
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-bold text-zinc-400 font-mono tracking-tighter">
+                    <td className="px-6 py-5 text-center text-sm font-bold text-zinc-400 font-mono tracking-tight">
                       <TimeDisplay time={item.check_out} />
                     </td>
-                    <td className="px-6 py-6 text-center text-base font-black text-white tracking-tighter">
+                    <td className="px-6 py-5 text-center text-sm font-bold text-white tracking-tight">
                       {item.total_hours?.toFixed(2) || '0.00'}
                     </td>
-                    <td className="px-6 py-6 text-center">
+                    <td className="px-6 py-5 text-center">
                       {item.extra_hours > 0 ? (
-                        <span className="text-base font-black text-sky-400 tracking-tighter">+{item.extra_hours.toFixed(2)}</span>
+                        <span className="text-sm font-bold text-sky-400 tracking-tight">+{item.extra_hours.toFixed(2)}</span>
                       ) : (
                         <span className="text-zinc-800">—</span>
                       )}
                     </td>
-                    <td className="px-8 py-6 text-right">
+                    <td className="px-6 py-5 text-right">
                        <Badge variant="outline" className={cn(
-                           "text-[9px] font-black uppercase tracking-widest border-0",
+                           "text-[8px] font-bold uppercase tracking-widest border-0 px-2 h-5",
                            item.check_in ? "text-emerald-500 bg-emerald-500/5" : "text-rose-500 bg-rose-500/5"
                        )}>
                            {item.check_in ? "Verified" : "Missing"}
