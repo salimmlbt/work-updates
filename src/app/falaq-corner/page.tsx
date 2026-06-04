@@ -42,10 +42,10 @@ export default async function FalaqCornerPage() {
 
   const annualAllowance = (allowanceSetting?.value as number | undefined) || 28;
   const leaveTypesConfig = (leaveConfigSetting?.value as LeaveTypeConfig[] | undefined) || [
-    { id: '1', label: 'Annual Leave', leadTime: 0, color: 'purple' },
-    { id: '2', label: 'Casual Leave', leadTime: 2, color: 'blue' },
-    { id: '3', label: 'Sick Leave', leadTime: 0, color: 'emerald' },
-    { id: '4', label: 'Special WFH', leadTime: 0, color: 'amber' }
+    { id: '1', label: 'Annual Leave', leadTime: 0, maxNotice: 365, color: 'purple' },
+    { id: '2', label: 'Casual Leave', leadTime: 2, maxNotice: 90, color: 'blue' },
+    { id: '3', label: 'Sick Leave', leadTime: 0, maxNotice: 7, color: 'emerald' },
+    { id: '4', label: 'Special WFH', leadTime: 0, maxNotice: 30, color: 'amber' }
   ];
 
   return (

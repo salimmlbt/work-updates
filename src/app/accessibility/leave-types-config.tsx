@@ -28,7 +28,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Trash2, Loader2, CalendarClock, Pencil, Save } from 'lucide-react'
+import { Plus, Trash2, Loader2, CalendarClock, Pencil, Save, Clock } from 'lucide-react'
 import type { LeaveTypeConfig } from '@/lib/types'
 import { updateSetting } from '@/app/actions'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -45,6 +45,7 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
 
   const [newLabel, setNewLabel] = useState('')
   const [newLeadTime, setNewLeadTime] = useState('0')
+  const [newMaxNotice, setNewMaxNotice] = useState('365')
   const [newColor, setNewColor] = useState<LeaveTypeConfig['color']>('blue')
 
   const handleSaveAll = async (newConfigs: LeaveTypeConfig[]) => {
@@ -63,6 +64,7 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
       id: crypto.randomUUID(),
       label: newLabel.trim(),
       leadTime: parseInt(newLeadTime) || 0,
+      maxNotice: parseInt(newMaxNotice) || 365,
       color: newColor
     };
     const updated = [...configs, newConfig];
@@ -77,6 +79,7 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
     setEditingConfig(config);
     setNewLabel(config.label);
     setNewLeadTime(config.leadTime.toString());
+    setNewMaxNotice((config.maxNotice || 365).toString());
     setNewColor(config.color);
     setEditOpen(true);
   }
@@ -85,7 +88,7 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
     if (!newLabel.trim() || !editingConfig) return;
     const updatedConfigs = configs.map(c => 
       c.id === editingConfig.id 
-        ? { ...c, label: newLabel.trim(), leadTime: parseInt(newLeadTime) || 0, color: newColor }
+        ? { ...c, label: newLabel.trim(), leadTime: parseInt(newLeadTime) || 0, maxNotice: parseInt(newMaxNotice) || 365, color: newColor }
         : c
     );
     startTransition(async () => {
@@ -105,6 +108,7 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
   const resetForm = () => {
     setNewLabel('');
     setNewLeadTime('0');
+    setNewMaxNotice('365');
     setNewColor('blue');
     setEditingConfig(null);
   }
@@ -119,7 +123,7 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
             <div>
               <CardTitle className="text-2xl font-black text-white tracking-tight uppercase">Leave Categories</CardTitle>
               <CardDescription className="text-zinc-500 font-medium">
-                Define available leave types and enforce "Lead Time" validation rules for submissions.
+                Define available leave types and enforce notice window validation rules.
               </CardDescription>
             </div>
             <Button onClick={() => { resetForm(); setAddOpen(true); }} className="rounded-full bg-sky-600 hover:bg-sky-500 font-bold">
@@ -133,7 +137,7 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
               <TableHeader className="bg-white/5">
                 <TableRow className="hover:bg-transparent border-white/10">
                   <TableHead className="text-[10px] font-black uppercase text-zinc-500 pl-8">Category Name</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-zinc-500">Lead Time (Days)</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-zinc-500">Notice Window</TableHead>
                   <TableHead className="text-[10px] font-black uppercase text-zinc-500">Theme</TableHead>
                   <TableHead className="w-32 text-right pr-8">Actions</TableHead>
                 </TableRow>
@@ -143,9 +147,15 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
                   <TableRow key={config.id} className="border-white/5 hover:bg-white/[0.02] group transition-colors">
                     <TableCell className="font-bold text-white pl-8">{config.label}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2 text-sky-400 font-mono font-bold">
-                        <CalendarClock className="h-3.5 w-3.5" />
-                        {config.leadTime} Days
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-sky-400 font-mono font-bold text-xs">
+                          <CalendarClock className="h-3.5 w-3.5" />
+                          Min: {config.leadTime} Days
+                        </div>
+                        <div className="flex items-center gap-2 text-zinc-500 font-mono font-bold text-[10px]">
+                          <Clock className="h-3 w-3" />
+                          Max: {config.maxNotice || 365} Days
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -197,13 +207,17 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
               <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Category Label</Label>
               <Input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="e.g. Casual Leave" className="h-12 bg-white/5 border-white/10 rounded-xl font-bold text-white" />
             </div>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Lead Time (Minimum Notice)</Label>
+                  <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Min Notice (Days)</Label>
                   <Input type="number" min="0" value={newLeadTime} onChange={e => setNewLeadTime(e.target.value)} className="h-12 bg-white/5 border-white/10 rounded-xl font-black text-sky-400" />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Visual Theme</Label>
+                  <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Max Notice (Days)</Label>
+                  <Input type="number" min="1" value={newMaxNotice} onChange={e => setNewMaxNotice(e.target.value)} className="h-12 bg-white/5 border-white/10 rounded-xl font-black text-amber-400" />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Theme</Label>
                     <Select onValueChange={(val: any) => setNewColor(val)} value={newColor}>
                         <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white font-bold">
                             <SelectValue />
@@ -238,13 +252,17 @@ export default function LeaveTypesConfig({ initialConfigs }: { initialConfigs: L
               <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Category Label</Label>
               <Input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="e.g. Casual Leave" className="h-12 bg-white/5 border-white/10 rounded-xl font-bold text-white" />
             </div>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Lead Time (Minimum Notice)</Label>
+                  <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Min Notice (Days)</Label>
                   <Input type="number" min="0" value={newLeadTime} onChange={e => setNewLeadTime(e.target.value)} className="h-12 bg-white/5 border-white/10 rounded-xl font-black text-sky-400" />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Visual Theme</Label>
+                  <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Max Notice (Days)</Label>
+                  <Input type="number" min="1" value={newMaxNotice} onChange={e => setNewMaxNotice(e.target.value)} className="h-12 bg-white/5 border-white/10 rounded-xl font-black text-amber-400" />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Theme</Label>
                     <Select onValueChange={(val: any) => setNewColor(val)} value={newColor}>
                         <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white font-bold">
                             <SelectValue />

@@ -32,13 +32,25 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
     return format(addDays(today, leadTime), 'yyyy-MM-dd');
   }, [selectedConfig]);
 
+  const maxStartDate = useMemo(() => {
+    const today = startOfToday();
+    const maxNotice = selectedConfig?.maxNotice || 365;
+    return format(addDays(today, maxNotice), 'yyyy-MM-dd');
+  }, [selectedConfig]);
+
   const applyPreset = (daysOffset: number) => {
     const minDateObj = new Date(minStartDate);
     const end = new Date(minDateObj);
     end.setDate(minDateObj.getDate() + (daysOffset - 1));
 
-    setStartDate(minStartDate);
-    setEndDate(end.toISOString().split('T')[0]);
+    // Ensure preset stays within max limit
+    if (end > new Date(maxStartDate)) {
+        setStartDate(minStartDate);
+        setEndDate(maxStartDate);
+    } else {
+        setStartDate(minStartDate);
+        setEndDate(end.toISOString().split('T')[0]);
+    }
     setErrorMsg('');
   };
 
@@ -139,7 +151,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                         type="button"
                         onClick={() => {
                           setLeaveTypeId(t.id);
-                          setStartDate(''); // Reset date on type change due to new rules
+                          setStartDate(''); 
                           setEndDate('');
                         }}
                         className={cn(
@@ -151,7 +163,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                       >
                         <p className="text-xs font-black tracking-wide uppercase group-hover:text-white transition-colors">{t.label}</p>
                         <p className="text-[9px] text-zinc-500 font-bold tracking-widest uppercase mt-0.5">
-                           {t.leadTime > 0 ? `${t.leadTime} Day Notice` : 'Instant Application'}
+                           {t.leadTime > 0 ? `${t.leadTime}D Notice` : 'Instant'} • Max {t.maxNotice || 365}D
                         </p>
                         {isSelected && (
                           <div className={`absolute right-3 top-3.5 w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_8px_#0ea5e9]`} />
@@ -159,18 +171,6 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                       </button>
                     );
                   })}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">
-                  Quick Date Range Presets
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => applyPreset(1)} className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer">1 Day</button>
-                  <button type="button" onClick={() => applyPreset(3)} className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer">3 Days</button>
-                  <button type="button" onClick={() => applyPreset(5)} className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer">5 Days</button>
-                  <button type="button" onClick={() => applyPreset(10)} className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer">10 Days</button>
                 </div>
               </div>
 
@@ -183,6 +183,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                       type="date"
                       value={startDate}
                       min={minStartDate}
+                      max={maxStartDate}
                       onChange={(e) => { setStartDate(e.target.value); setErrorMsg(''); }}
                       className="w-full bg-[#141420] border border-white/5 focus:border-sky-500/40 text-white rounded-2xl h-12 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all [color-scheme:dark]"
                     />
@@ -196,6 +197,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                       type="date"
                       value={endDate}
                       min={startDate || minStartDate}
+                      max={maxStartDate}
                       onChange={(e) => { setEndDate(e.target.value); setErrorMsg(''); }}
                       className="w-full bg-[#141420] border border-white/5 focus:border-sky-500/40 text-white rounded-2xl h-12 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all [color-scheme:dark]"
                     />

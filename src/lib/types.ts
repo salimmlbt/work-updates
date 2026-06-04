@@ -63,6 +63,7 @@ export interface LeaveTypeConfig {
   id: string;
   label: string;
   leadTime: number; // minimum days from today
+  maxNotice: number; // maximum days from today
   color: 'purple' | 'blue' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'cyan' | 'teal';
 }
 
