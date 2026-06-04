@@ -1,4 +1,3 @@
-
 'use client'
 
 import {
@@ -12,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials, cn } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Check, X as XIcon, Rocket, ChevronDown, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Rocket, ChevronDown, Plus } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 import { format, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, startOfToday, parseISO, addDays, getDay } from 'date-fns';
 import { useState, useEffect, useMemo } from 'react';
@@ -284,7 +283,7 @@ export default function DashboardClient({
                 transition={{ delay: 0.1 }}
                 className="flex items-center gap-1"
               >
-                <span className="text-[10px] text-slate-300 text-slate-300 font-black tracking-[0.4em] uppercase">
+                <span className="text-[10px] text-slate-300 font-black tracking-[0.4em] uppercase">
                   Processing
                 </span>
                 <span className="flex gap-0.5 ml-1 text-xs text-slate-300 font-bold">

@@ -14,7 +14,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
 export function GlassCard({
   children,
   className,
-  gradientFrom = "rgba(255, 255, 255, 0.03)",
+  gradientFrom = "rgba(99, 102, 241, 0.1)", // Default to indigo highlight
   gradientVia = "transparent",
   gradientTo = "rgba(255, 255, 255, 0)",
   ...props

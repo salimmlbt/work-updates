@@ -123,9 +123,9 @@ export function AnimatedBackground() {
         className="absolute inset-0 z-10 mix-blend-screen" 
       />
 
-      <div className="absolute -top-40 -left-40 w-96 h-96 glow-cyan blur-[100px] pointer-events-none opacity-60 z-0" />
-      <div className="absolute top-1/2 -right-40 w-96 h-96 glow-purple blur-[100px] pointer-events-none opacity-60 z-0" />
-      <div className="absolute -bottom-40 left-1/3 w-96 h-96 glow-amber blur-[100px] pointer-events-none opacity-60 z-0" />
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500 blur-[100px] pointer-events-none opacity-10 z-0" />
+      <div className="absolute top-1/2 -right-40 w-96 h-96 bg-purple-500 blur-[100px] pointer-events-none opacity-10 z-0" />
+      <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-amber-500 blur-[100px] pointer-events-none opacity-5 z-0" />
     </div>
   );
 }
