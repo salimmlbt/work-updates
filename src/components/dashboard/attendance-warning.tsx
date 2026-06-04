@@ -152,9 +152,12 @@ export function AttendanceWarning({ profile }: Props) {
         className="fixed top-28 left-1/2 z-[150] w-[92vw] max-w-3xl pointer-events-none"
       >
         <div className={cn(
-          "pointer-events-auto group relative overflow-hidden rounded-[2.5rem] bg-zinc-950/40 backdrop-blur-3xl p-8 border border-white/10 flex items-center justify-between gap-8 shadow-[0_30px_70px_rgba(0,0,0,0.6)] transition-all duration-700",
-          "hover:scale-[1.01] hover:border-white/20"
+          "pointer-events-auto group relative overflow-hidden rounded-[2.5rem] bg-white/[0.02] backdrop-blur-[40px] p-8 border border-white/10 flex items-center justify-between gap-8 shadow-[0_30px_100px_rgba(0,0,0,0.5)] transition-all duration-700",
+          "hover:scale-[1.01] hover:bg-white/[0.05] hover:border-white/20"
         )}>
+          {/* 💎 Glass Inner Glare */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-30 pointer-events-none" />
+
           {/* Animated Background Glow on Hover */}
           <div className={cn(
             "absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none",
@@ -192,8 +195,8 @@ export function AttendanceWarning({ profile }: Props) {
           </div>
 
           {/* Cyber decoration lines */}
-          <div className="absolute top-0 right-1/4 w-[1px] h-full bg-gradient-to-b from-white/10 to-transparent opacity-20" />
-          <div className="absolute bottom-0 left-1/4 w-[1px] h-full bg-gradient-to-t from-white/10 to-transparent opacity-20" />
+          <div className="absolute top-0 right-1/4 w-[1px] h-full bg-gradient-to-b from-white/10 to-transparent opacity-10" />
+          <div className="absolute bottom-0 left-1/4 w-[1px] h-full bg-gradient-to-t from-white/10 to-transparent opacity-10" />
         </div>
       </motion.div>
     </AnimatePresence>
