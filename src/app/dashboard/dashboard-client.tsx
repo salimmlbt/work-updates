@@ -182,13 +182,14 @@ export default function DashboardClient({
     const todayStart = startOfToday();
     const threeDaysFromNow = addDays(todayStart, 3);
     
-    const activeTasksList = tasks.filter(t => !isTaskCompleted(t));
+    // Only show 'todo' (New Task) and 'inprogress' as requested
+    const criticalTasksList = tasks.filter(t => !t.is_deleted && ['todo', 'inprogress'].includes(t.status));
 
-    const overdue = activeTasksList
+    const overdue = criticalTasksList
       .filter(t => t.deadline && isBefore(parseISO(t.deadline), todayStart))
       .map(t => ({ ...t, isOverdue: true }));
 
-    const upcoming = activeTasksList
+    const upcoming = criticalTasksList
       .filter(t => t.deadline && !isBefore(parseISO(t.deadline), todayStart) && isBefore(parseISO(t.deadline), threeDaysFromNow))
       .map(t => ({ ...t, isOverdue: false }));
 
@@ -399,7 +400,7 @@ export default function DashboardClient({
                 />
             </div>
 
-            <GlassCard delay={400} className="p-8">
+            <GlassCard delay={400} className="p-8" onClick={() => profile?.id && router.push(`/attendance/${profile.id}`)}>
                 <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-10 gap-6">
                     <div>
                     <h3 className="flex items-center gap-3 text-2xl text-white font-black tracking-tight uppercase">
@@ -534,7 +535,7 @@ export default function DashboardClient({
                     <div className="p-2.5 rounded-2xl bg-white/[0.05] border border-white/10 shadow-inner">
                         <Calendar className="h-5 w-5 text-amber-400" />
                     </div>
-                    Critical Path
+                    Critical Tasks
                     </h3>
                     <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.2em] mt-3">Active deliverables for this window.</p>
                 </div>
@@ -545,6 +546,7 @@ export default function DashboardClient({
                         <motion.div 
                         key={task.id} 
                         whileHover={{ scale: 1.02, x: 5 }}
+                        onClick={() => router.push('/tasks?tab=active')}
                         className={cn(
                             'flex items-start gap-4 p-4 rounded-2xl transition-all cursor-pointer bg-white/[0.02] border border-white/5 hover:border-white/15 group shadow-lg', 
                             task.isOverdue ? 'border-rose-500/20 bg-rose-500/5' : ''
@@ -576,7 +578,7 @@ export default function DashboardClient({
                 </div>
             </GlassCard>
 
-            <GlassCard delay={600} className="p-8">
+            <GlassCard delay={600} className="p-8" onClick={() => router.push('/attendance')}>
                 <div className="flex items-start justify-between mb-8">
                     <div>
                     <h3 className="text-xl text-white font-black tracking-tight uppercase">Attendance</h3>
