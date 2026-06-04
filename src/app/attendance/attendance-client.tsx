@@ -30,7 +30,7 @@ type AttendanceWithProfile = Attendance & {
 };
 
 function TimeDisplay({ time }: { time: string | null }) {
-  const [formattedTime, setFormattedTime] = useState('-');
+  const [formattedTime, setFormattedTime] = useState<string | null>(null);
 
   useEffect(() => {
     if (time) {
@@ -49,6 +49,7 @@ function TimeDisplay({ time }: { time: string | null }) {
     }
   }, [time]);
 
+  if (!formattedTime) return <span className="text-zinc-800 animate-pulse">...</span>;
   return <span>{formattedTime}</span>;
 }
 
@@ -158,7 +159,7 @@ export default function AttendanceClient({
                 />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[10px] text-slate-300 font-black tracking-[0.4em] uppercase">Syncing Statements</span>
+                <span className="text-xs text-slate-300 font-black tracking-[0.4em] uppercase">Syncing Statements</span>
               </div>
             </div>
           </motion.div>
@@ -170,7 +171,7 @@ export default function AttendanceClient({
           <h1 className="text-4xl font-black tracking-tighter text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
             Attendance Center
           </h1>
-          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.4em] mt-2">
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-[0.4em] mt-2">
             Atmospheric Presence Monitoring Engine
           </p>
         </div>
@@ -186,7 +187,7 @@ export default function AttendanceClient({
               className="h-12 w-full bg-white/[0.03] border-white/10 rounded-2xl pl-12 text-zinc-200 placeholder:text-zinc-700 focus-visible:ring-sky-500/40 focus-visible:border-sky-500/40 transition-all backdrop-blur-md"
             />
           </div>
-          <div className="hidden lg:flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 text-xs font-black uppercase tracking-widest text-zinc-400 backdrop-blur-md">
+          <div className="hidden lg:flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 text-sm font-black uppercase tracking-widest text-zinc-400 backdrop-blur-md">
             <Clock3 className="h-4 w-4 text-sky-400" />
             {format(new Date(), 'dd MMM yyyy')}
           </div>
@@ -197,39 +198,39 @@ export default function AttendanceClient({
         <GlassCard gradientFrom="rgba(16, 185, 129, 0.12)">
           <div className="p-8">
             <div className="flex justify-between items-start mb-6">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400/70">Studio Active</span>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400/70">Studio Active</span>
               <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-inner">
                 <UserCheck className="h-5 w-5" />
               </div>
             </div>
             <p className="text-6xl font-black text-white tracking-tighter drop-shadow-lg">{stats.present}</p>
-            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">Currently on site</p>
+            <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest mt-2">Currently on site</p>
           </div>
         </GlassCard>
 
         <GlassCard gradientFrom="rgba(56, 189, 248, 0.12)">
           <div className="p-8">
             <div className="flex justify-between items-start mb-6">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-400/70">Statements Closed</span>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-sky-400/70">Statements Closed</span>
               <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 shadow-inner">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
             </div>
             <p className="text-6xl font-black text-white tracking-tighter drop-shadow-lg">{stats.completed}</p>
-            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">Shifts finalized today</p>
+            <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest mt-2">Shifts finalized today</p>
           </div>
         </GlassCard>
 
         <GlassCard gradientFrom="rgba(244, 63, 94, 0.12)">
           <div className="p-8">
             <div className="flex justify-between items-start mb-6">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400/70">Unaccounted</span>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-rose-400/70">Unaccounted</span>
               <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-inner">
                 <UserX className="h-5 w-5" />
               </div>
             </div>
             <p className="text-6xl font-black text-white tracking-tighter drop-shadow-lg">{stats.absent}</p>
-            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">Pending check-in</p>
+            <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest mt-2">Pending check-in</p>
           </div>
         </GlassCard>
       </div>
@@ -239,12 +240,12 @@ export default function AttendanceClient({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.01]">
-                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Studio Member</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Break</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Status</th>
-                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-right"></th>
+                <th className="px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600">Studio Member</th>
+                <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
+                <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Break</th>
+                <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
+                <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Status</th>
+                <th className="px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-right"></th>
               </tr>
             </thead>
             <tbody>
@@ -262,7 +263,7 @@ export default function AttendanceClient({
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-5">
                         <div className="relative">
-                          <Avatar className="h-12 w-12 border border-white/10 group-hover:scale-105 transition-transform duration-500 shadow-2xl">
+                          <Avatar className="h-14 w-14 border border-white/10 group-hover:scale-105 transition-transform duration-500 shadow-2xl">
                             <AvatarImage src={item.profiles.avatar_url ?? undefined} alt={item.profiles.full_name ?? ''} />
                             <AvatarFallback className="bg-zinc-900 text-zinc-600 font-black text-sm">{getInitials(item.profiles.full_name)}</AvatarFallback>
                           </Avatar>
@@ -270,8 +271,8 @@ export default function AttendanceClient({
                           {item.check_in && !item.check_out && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-[#05050a] animate-pulse" />}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-black text-white text-base tracking-tight truncate group-hover:text-sky-300 transition-colors">{item.profiles.full_name}</p>
-                          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">{item.profiles.email?.split('@')[0]}</p>
+                          <p className="font-black text-white text-lg tracking-tight truncate group-hover:text-sky-300 transition-colors">{item.profiles.full_name}</p>
+                          <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest mt-0.5">{item.profiles.email?.split('@')[0]}</p>
                         </div>
                       </div>
                     </td>
@@ -293,17 +294,17 @@ export default function AttendanceClient({
                     <td className="px-6 py-5 text-center">
                       {item.check_in ? (
                         item.check_out ? (
-                          <Badge variant="outline" className="bg-zinc-900 text-zinc-500 border-zinc-800 text-[9px] font-black uppercase tracking-widest px-3">Done</Badge>
+                          <Badge variant="outline" className="bg-zinc-900 text-zinc-500 border-zinc-800 text-[10px] font-black uppercase tracking-widest px-3 h-6">Done</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-black uppercase tracking-widest px-3">Live</Badge>
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-black uppercase tracking-widest px-3 h-6">Live</Badge>
                         )
                       ) : (
-                        <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/20 text-[9px] font-black uppercase tracking-widest px-3">Absent</Badge>
+                        <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/20 text-[10px] font-black uppercase tracking-widest px-3 h-6">Absent</Badge>
                       )}
                     </td>
                     <td className="px-8 py-5 text-right">
                       {canView ? (
-                        <ChevronRight className="h-5 w-5 text-zinc-700 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                        <ChevronRight className="h-6 w-6 text-zinc-700 group-hover:text-white group-hover:translate-x-1 transition-all" />
                       ) : (
                         <Lock className="h-4 w-4 text-zinc-800 mx-auto" />
                       )}
@@ -318,7 +319,7 @@ export default function AttendanceClient({
               <div className="bg-white/5 h-20 w-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-white/5">
                 <Search className="h-10 w-10 text-zinc-800" />
               </div>
-              <p className="text-zinc-600 font-black uppercase tracking-[0.4em] text-[10px]">No members found</p>
+              <p className="text-zinc-600 font-black uppercase tracking-[0.4em] text-xs">No members found</p>
             </div>
           )}
         </div>

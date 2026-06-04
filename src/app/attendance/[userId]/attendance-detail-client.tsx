@@ -54,8 +54,17 @@ interface Props {
 }
 
 function TimeDisplay({ time }: { time: string | null }) {
+  const [formatted, setFormatted] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (time) {
+      setFormatted(format(parseISO(time), 'h:mm a'));
+    }
+  }, [time]);
+
   if (!time) return <span className="text-zinc-800">—</span>;
-  return <span>{format(parseISO(time), 'h:mm a')}</span>;
+  if (!formatted) return <span className="text-zinc-800 animate-pulse">...</span>;
+  return <span>{formatted}</span>;
 }
 
 export default function AttendanceDetailClient({
@@ -123,7 +132,7 @@ export default function AttendanceDetailClient({
                 />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[10px] text-slate-300 font-black tracking-[0.4em] uppercase">Recalculating Ledger</span>
+                <span className="text-xs text-slate-300 font-black tracking-[0.4em] uppercase">Recalculating Ledger</span>
               </div>
             </div>
           </motion.div>
@@ -140,7 +149,7 @@ export default function AttendanceDetailClient({
                     router.push('/attendance');
                   });
               }}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-sky-400 hover:text-sky-300 transition-colors"
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-sky-400 hover:text-sky-300 transition-colors"
             >
               <ChevronLeft className="h-3 w-3" />
               Audit List
@@ -159,7 +168,7 @@ export default function AttendanceDetailClient({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-950 border-white/10 text-white backdrop-blur-3xl shadow-2xl">
-                          <div className="p-2 pb-1 text-[9px] font-black uppercase tracking-widest text-zinc-600">Switch Auditor Statement</div>
+                          <div className="p-2 pb-1 text-[10px] font-black uppercase tracking-widest text-zinc-600">Switch Auditor Statement</div>
                           {allProfiles.map(p => (
                             <SelectItem key={p.id} value={p.id} className="rounded-xl focus:bg-white/5 focus:text-white">
                               {p.full_name}
@@ -177,7 +186,7 @@ export default function AttendanceDetailClient({
                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">
                     Monthly Performance Statement
                    </p>
-                   <Badge variant="outline" className="bg-sky-500/10 text-sky-400 border-sky-500/20 text-[9px] font-black uppercase tracking-widest h-6 px-3">
+                   <Badge variant="outline" className="bg-sky-500/10 text-sky-400 border-sky-500/20 text-[10px] font-black uppercase tracking-widest h-6 px-3">
                     Verified
                    </Badge>
                 </div>
@@ -190,7 +199,7 @@ export default function AttendanceDetailClient({
                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(prevMonth)}>
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
-                <span className="text-xs font-black w-36 text-center text-zinc-200 uppercase tracking-widest">{currentMonthLabel}</span>
+                <span className="text-sm font-black w-40 text-center text-zinc-200 uppercase tracking-widest">{currentMonthLabel}</span>
                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-500 hover:text-white hover:bg-white/5" onClick={() => handleMonthNav(nextMonth)}>
                   <ChevronRight className="h-5 w-5" />
                 </Button>
@@ -206,7 +215,7 @@ export default function AttendanceDetailClient({
             <GlassCard gradientFrom="rgba(255,255,255,0.08)">
               <div className="p-8">
                  <div className="flex justify-between items-start mb-6">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Aggregate Hours</span>
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Aggregate Hours</span>
                     <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-zinc-400"><Clock className="h-5 w-5" /></div>
                  </div>
                  <p className="text-5xl font-black text-white tracking-tighter">{stats.totalHours.toFixed(2)}<span className="text-xl text-zinc-700 ml-1">h</span></p>
@@ -216,7 +225,7 @@ export default function AttendanceDetailClient({
             <GlassCard gradientFrom="rgba(56, 189, 248, 0.12)">
               <div className="p-8">
                  <div className="flex justify-between items-start mb-6">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-400/70">Overtime Yield</span>
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-sky-400/70">Overtime Yield</span>
                     <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400"><ArrowUpRight className="h-5 w-5" /></div>
                  </div>
                  <p className="text-5xl font-black text-sky-300 tracking-tighter">{stats.totalExtra.toFixed(2)}<span className="text-xl text-sky-900 ml-1">h</span></p>
@@ -226,7 +235,7 @@ export default function AttendanceDetailClient({
             <GlassCard gradientFrom="rgba(16, 185, 129, 0.12)">
               <div className="p-8">
                  <div className="flex justify-between items-start mb-6">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400/70">Present Cycles</span>
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400/70">Present Cycles</span>
                     <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"><Building2 className="h-5 w-5" /></div>
                  </div>
                  <p className="text-5xl font-black text-emerald-300 tracking-tighter">{stats.presentDays}<span className="text-xl text-emerald-900 ml-1">d</span></p>
@@ -238,7 +247,7 @@ export default function AttendanceDetailClient({
                  <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden mb-4 border border-white/5">
                     <div className="bg-gradient-to-r from-sky-400 to-indigo-500 h-full w-[85%] shadow-[0_0_15px_#0ea5e9]" />
                  </div>
-                 <span className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-500">Efficiency Score</span>
+                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">Efficiency Score</span>
                  <p className="text-2xl font-black text-white mt-1">A+ Excellence</p>
               </div>
             </GlassCard>
@@ -249,14 +258,14 @@ export default function AttendanceDetailClient({
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-white/5 bg-white/[0.01]">
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Timestamp Date</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
-                  <th className="px-6 py-5 text-[10px) font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
+                  <th className="px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600">Timestamp Date</th>
+                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Entry</th>
+                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch Out</th>
+                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Lunch In</th>
+                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Exit</th>
+                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Yield (H)</th>
+                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-center">Extra</th>
+                  <th className="px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-600 text-right">Audit</th>
                 </tr>
               </thead>
               <tbody>
@@ -271,35 +280,35 @@ export default function AttendanceDetailClient({
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         <div className={cn(
-                          "h-10 w-10 rounded-xl flex flex-col items-center justify-center font-black transition-all group-hover:scale-110",
+                          "h-12 w-12 rounded-xl flex flex-col items-center justify-center font-black transition-all group-hover:scale-110",
                           item.check_in ? "bg-white/5 text-zinc-200 border border-white/10" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
                         )}>
-                          <span className="text-[8px] uppercase tracking-tighter opacity-60">{format(parseISO(item.date), 'MMM')}</span>
-                          <span className="text-base leading-none mt-0.5">{format(parseISO(item.date), 'dd')}</span>
+                          <span className="text-[9px] uppercase tracking-tighter opacity-60">{format(parseISO(item.date), 'MMM')}</span>
+                          <span className="text-lg leading-none mt-0.5">{format(parseISO(item.date), 'dd')}</span>
                         </div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400 transition-colors">
+                        <div className="text-xs font-black uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400 transition-colors">
                           {format(parseISO(item.date), 'EEEE')}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-6 text-center text-xs font-black text-zinc-400 font-mono tracking-tighter">
+                    <td className="px-6 py-6 text-center text-sm font-black text-zinc-400 font-mono tracking-tighter">
                       <TimeDisplay time={item.check_in} />
                     </td>
-                    <td className="px-6 py-6 text-center text-xs font-bold text-zinc-500 font-mono tracking-tighter">
+                    <td className="px-6 py-6 text-center text-sm font-bold text-zinc-500 font-mono tracking-tighter">
                       <TimeDisplay time={item.lunch_out} />
                     </td>
-                    <td className="px-6 py-6 text-center text-xs font-bold text-zinc-500 font-mono tracking-tighter">
+                    <td className="px-6 py-6 text-center text-sm font-bold text-zinc-500 font-mono tracking-tighter">
                       <TimeDisplay time={item.lunch_in} />
                     </td>
-                    <td className="px-6 py-6 text-center text-xs font-black text-zinc-400 font-mono tracking-tighter">
+                    <td className="px-6 py-6 text-center text-sm font-black text-zinc-400 font-mono tracking-tighter">
                       <TimeDisplay time={item.check_out} />
                     </td>
-                    <td className="px-6 py-6 text-center text-sm font-black text-white tracking-tighter">
+                    <td className="px-6 py-6 text-center text-base font-black text-white tracking-tighter">
                       {item.total_hours?.toFixed(2) || '0.00'}
                     </td>
                     <td className="px-6 py-6 text-center">
                       {item.extra_hours > 0 ? (
-                        <span className="text-sm font-black text-sky-400 tracking-tighter">+{item.extra_hours.toFixed(2)}</span>
+                        <span className="text-base font-black text-sky-400 tracking-tighter">+{item.extra_hours.toFixed(2)}</span>
                       ) : (
                         <span className="text-zinc-800">—</span>
                       )}
@@ -308,12 +317,12 @@ export default function AttendanceDetailClient({
                        {item.check_in_reason ? (
                          <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="inline-flex h-8 w-8 rounded-full bg-amber-500/10 border border-amber-500/20 items-center justify-center text-amber-500 hover:scale-110 transition-transform cursor-help">
-                                <MessageSquare className="h-4 w-4" />
+                              <div className="inline-flex h-9 w-9 rounded-full bg-amber-500/10 border border-amber-500/20 items-center justify-center text-amber-500 hover:scale-110 transition-transform cursor-help">
+                                <MessageSquare className="h-5 w-5" />
                               </div>
                             </TooltipTrigger>
                             <TooltipContent className="bg-zinc-900 border-zinc-800 text-white p-4 rounded-2xl max-w-[280px] shadow-2xl">
-                              <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-2">Manual Reason Entry</p>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Manual Reason Entry</p>
                               <p className="text-sm italic font-medium leading-relaxed">"{item.check_in_reason}"</p>
                             </TooltipContent>
                          </Tooltip>
