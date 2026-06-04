@@ -7,62 +7,73 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
 } from 'recharts';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials, cn } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Folder, Calendar, Eye, Briefcase, Check, X as XIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Check, X as XIcon, Rocket } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 import { format, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, startOfToday, parseISO, addDays, getDay } from 'date-fns';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-
-const STATUS_COLORS: { [key: string]: string } = {
-  'New': '#3b82f6',
-  'In Progress': '#a855f7',
-  'On Hold': '#f97316',
-  'Done': '#22c55e',
-};
+import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatedBackground } from '@/components/dashboard/animated-background';
+import { GlassCard } from '@/components/dashboard/glass-card';
 
 interface DashboardClientProps {
   profile: Profile | null;
   initialTasks: any[];
-  initialProjects: any[];
   initialAttendance: any[];
   initialHolidays: any[];
 }
 
-const cardClass =
-  'relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.45)] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-b before:from-white/[0.03] before:to-transparent before:pointer-events-none';
-
-const CustomLegend = (props: any) => {
-  const { payload } = props;
+function TaskStatCard({ 
+  title, 
+  value, 
+  desc, 
+  icon: Icon, 
+  themeColor,
+  gradientFrom,
+  delay
+}: { 
+  title: string; 
+  value: number; 
+  desc: string; 
+  icon: any; 
+  themeColor: string;
+  gradientFrom: string;
+  delay: number;
+}) {
   return (
-    <ul className="flex flex-col space-y-2 text-sm">
-      {payload?.map((entry: any, index: number) => (
-        <li key={`item-${index}`} className="flex items-center">
-          <div
-            className="w-2.5 h-2.5 rounded-full mr-2"
-            style={{ backgroundColor: entry.color }}
-          />
-          <span className="text-slate-400 mr-2">{entry.value}:</span>
-          <span className="font-semibold text-white">{entry.payload.value} items</span>
-        </li>
-      ))}
-    </ul>
+    <GlassCard 
+      className="stat-card cursor-pointer h-full"
+      gradientFrom={gradientFrom}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      <div className="p-6">
+        <div className="flex flex-row items-center justify-between pb-2">
+            <h3 className={cn("text-[10px] font-black uppercase tracking-[0.2em]", themeColor)}>
+            {title}
+            </h3>
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-inner">
+            <Icon className={cn("h-5 w-5", themeColor)} />
+            </span>
+        </div>
+        <div className="mt-4">
+            <div className="text-6xl font-black text-white tracking-tighter drop-shadow-md">
+            {value}
+            </div>
+            <p className="mt-2 text-xs text-slate-400 font-medium uppercase tracking-wide opacity-60">{desc}</p>
+        </div>
+      </div>
+    </GlassCard>
   );
-};
+}
 
 export default function DashboardClient({
   profile,
   initialTasks,
-  initialProjects,
   initialAttendance,
   initialHolidays,
 }: DashboardClientProps) {
@@ -72,7 +83,6 @@ export default function DashboardClient({
   const supabase = createClient();
 
   const [tasks, setTasks] = useState<any[]>(initialTasks);
-  const [projects, setProjects] = useState<any[]>(initialProjects);
   const [attendance, setAttendance] = useState<any[]>(initialAttendance);
   const [holidays, setHolidays] = useState<any[]>(initialHolidays);
 
@@ -98,31 +108,6 @@ export default function DashboardClient({
           }
         } else if (payload.eventType === 'DELETE') {
           setTasks(prev => prev.filter(t => t.id !== payload.old.id));
-        }
-      })
-      .subscribe();
-
-    const projectsChannel = supabase
-      .channel('dashboard-projects')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          if (payload.new.members?.includes(profile.id) && !payload.new.is_deleted) {
-            setProjects(prev => [...prev, payload.new]);
-          }
-        } else if (payload.eventType === 'UPDATE') {
-          const isMember = payload.new.members?.includes(profile.id);
-          const isDeleted = payload.new.is_deleted;
-          if (!isMember || isDeleted) {
-            setProjects(prev => prev.filter(p => p.id !== payload.new.id));
-          } else {
-            setProjects(prev => {
-              const exists = prev.some(p => p.id === payload.new.id);
-              if (exists) return prev.map(p => p.id === payload.new.id ? payload.new : p);
-              return [...prev, payload.new];
-            });
-          }
-        } else if (payload.eventType === 'DELETE') {
-          setProjects(prev => prev.filter(p => p.id !== payload.old.id));
         }
       })
       .subscribe();
@@ -156,7 +141,6 @@ export default function DashboardClient({
 
     return () => {
       supabase.removeChannel(tasksChannel);
-      supabase.removeChannel(projectsChannel);
       supabase.removeChannel(attendanceChannel);
       supabase.removeChannel(holidaysChannel);
     };
@@ -198,14 +182,6 @@ export default function DashboardClient({
       .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
       .slice(0, 5);
 
-    const projectStatusCounts = projects.reduce((acc, p) => {
-      const status = p.status || 'New';
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const projectStatusData = Object.entries(projectStatusCounts).map(([name, value]) => ({ name, value }));
-
     const monthStart = startOfMonth(new Date());
     const monthEnd = endOfMonth(new Date());
     const allMonthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -244,209 +220,374 @@ export default function DashboardClient({
       ? totalMonthlyHours / attendanceChartData.filter(d => d.hours > 0).length 
       : 0;
 
+    const efficiencyScore = totalWorkingDays > 0 ? (presentDaysSoFar / totalWorkingDays) * 100 : 0;
+
     return {
       pending,
       review,
       completed,
       deadlines,
-      projectStatusData,
       attendanceChartData,
       totalWorkingDays,
       presentDaysSoFar,
       absentDays,
       totalMonthlyHours,
-      averageDailyHours
+      averageDailyHours,
+      efficiencyScore
     };
-  }, [tasks, projects, attendance, holidays]);
+  }, [tasks, attendance, holidays]);
 
   const handleTaskCardClick = (tab: string) => {
-    if (isTasksLoading) return;
     setIsTasksLoading(true);
-    router.push(`/tasks?tab=${tab}`);
+    setTimeout(() => {
+        router.push(`/tasks?tab=${tab}`);
+    }, 800);
   };
 
   return (
     <>
-      {isTasksLoading && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 rounded-full border-2 border-sky-400/30 border-t-sky-400 animate-spin" />
-            <p className="text-sm text-slate-200 font-medium">Loading your tasks…</p>
-          </div>
-        </div>
-      )}
+      <AnimatedBackground />
 
-      <div className="min-h-screen p-4 md:p-8 lg:p-10 bg-[#0f0f0f] text-white">
-        <header className="mb-10">
+      <AnimatePresence>
+        {isTasksLoading && (
+          <motion.div 
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-[#030407]/60"
+          >
+            <div className="flex flex-col items-center gap-8">
+              <div className="relative flex items-center justify-center">
+                <motion.div 
+                  className="absolute w-24 h-24 rounded-full border border-sky-400/20"
+                  animate={{ scale: [1, 1.5], opacity: [0.8, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                />
+                <motion.div 
+                  className="absolute w-16 h-16 rounded-full border border-indigo-400/30"
+                  animate={{ scale: [1, 1.3], opacity: [0.8, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.3 }}
+                />
+                <motion.div 
+                  className="relative w-10 h-10 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-500 shadow-[0_0_40px_rgba(14,165,233,0.8)]"
+                  animate={{ scale: [1, 0.8, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse" />
+                </motion.div>
+              </div>
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="flex items-center gap-1"
+              >
+                <span className="text-[10px] text-slate-300 font-black tracking-[0.4em] uppercase">
+                  Processing
+                </span>
+                <span className="flex gap-0.5 ml-1 text-xs text-slate-300 font-bold">
+                  <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}>.</motion.span>
+                  <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}>.</motion.span>
+                  <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}>.</motion.span>
+                </span>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="relative min-h-screen p-6 md:p-10 lg:p-12 text-white z-10 max-w-[1600px] mx-auto">
+        <motion.header 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="mb-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+        >
           <div className="flex items-center gap-5">
-            <Avatar className="h-20 w-20 border-2 border-white/10 shadow-2xl">
-              <AvatarImage src={profile?.avatar_url ?? undefined} />
-              <AvatarFallback className="bg-sky-500/20 text-sky-300 text-xl font-bold">
-                {getInitials(profile?.full_name)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative group">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-700"></div>
+              <Avatar className="h-16 w-16 border-2 border-white/20 ring-4 ring-black/20 shadow-2xl transition-transform duration-700 group-hover:scale-105 group-hover:rotate-3">
+                <AvatarImage src={profile?.avatar_url ?? undefined} />
+                <AvatarFallback className="bg-sky-500/20 text-sky-300 text-xl font-black">
+                  {getInitials(profile?.full_name)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
             <div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-white">
-                Welcome back, {profile?.full_name?.split(' ')[0]}!
+              <h1 className="text-3xl font-black tracking-tighter text-white mb-1">
+                Good morning, {profile?.full_name?.split(' ')[0]}.
               </h1>
-              <p className="text-slate-400 font-medium text-lg mt-1">Here is your live overview for today.</p>
+              <p className="text-zinc-500 text-xs font-black uppercase tracking-[0.25em]">
+                {format(new Date(), 'EEEE, MMMM d, yyyy')}
+              </p>
             </div>
           </div>
-        </header>
+          <div className="flex gap-3 mt-4 md:mt-0">
+             <Badge variant="outline" className="bg-white/5 border-white/10 text-white font-black uppercase tracking-widest text-[9px] h-8 px-4 flex items-center gap-2 rounded-full">
+                <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_10px_#10b981]" />
+                </span>
+                Live Sync Active
+            </Badge>
+          </div>
+        </motion.header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Stat Column */}
           <div className="lg:col-span-2 space-y-8">
+            
+            {/* Top 3 Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <button onClick={() => handleTaskCardClick('active')} className="text-left group">
-                <Card className={cn(cardClass, 'bg-gradient-to-br from-sky-500/10 via-sky-500/5 to-transparent hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(56,189,248,0.2)] transition-all duration-500 cursor-pointer h-full')}>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest text-sky-400">Pending Tasks</CardTitle>
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 group-hover:scale-110 transition-transform"><AlertCircle className="h-4 w-4 text-sky-400" /></span>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-5xl font-black text-white tracking-tighter">{stats.pending}</div>
-                    <p className="mt-2 text-xs text-slate-400 font-medium">Tasks waiting for your action.</p>
-                  </CardContent>
-                </Card>
-              </button>
+              <div onClick={() => handleTaskCardClick('active')} className="h-full">
+                <TaskStatCard 
+                  title="Pending Tasks"
+                  value={stats.pending}
+                  desc="Awaiting Action"
+                  icon={AlertCircle}
+                  themeColor="text-sky-400"
+                  gradientFrom="rgba(14, 165, 233, 0.15)"
+                  delay={100}
+                />
+              </div>
 
-              <button onClick={() => handleTaskCardClick('under-review')} className="text-left group">
-                <Card className={cn(cardClass, 'bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] transition-all duration-500 cursor-pointer h-full')}>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest text-violet-400">Review Tasks</CardTitle>
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 group-hover:scale-110 transition-transform"><Eye className="h-4 w-4 text-violet-400" /></span>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-5xl font-black text-white tracking-tighter">{stats.review}</div>
-                    <p className="mt-2 text-xs text-slate-400 font-medium">Awaiting review or feedback.</p>
-                  </CardContent>
-                </Card>
-              </button>
+              <div onClick={() => handleTaskCardClick('under-review')} className="h-full">
+                <TaskStatCard 
+                  title="Review Tasks"
+                  value={stats.review}
+                  desc="Audit Required"
+                  icon={Eye}
+                  themeColor="text-indigo-400"
+                  gradientFrom="rgba(99, 102, 241, 0.15)"
+                  delay={200}
+                />
+              </div>
 
-              <button onClick={() => handleTaskCardClick('completed')} className="text-left group">
-                <Card className={cn(cardClass, 'bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(34,197,94,0.2)] transition-all duration-500 cursor-pointer h-full')}>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest text-emerald-400">Completed</CardTitle>
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 group-hover:scale-110 transition-transform"><CheckCircle2 className="h-4 w-4 text-emerald-400" /></span>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-5xl font-black text-white tracking-tighter">{stats.completed}</div>
-                    <p className="mt-2 text-xs text-slate-400 font-medium">Tasks successfully closed.</p>
-                  </CardContent>
-                </Card>
-              </button>
+              <div onClick={() => handleTaskCardClick('completed')} className="h-full">
+                <TaskStatCard 
+                  title="Completed"
+                  value={stats.completed}
+                  desc="History Statement"
+                  icon={CheckCircle2}
+                  themeColor="text-emerald-400"
+                  gradientFrom="rgba(16, 185, 129, 0.15)"
+                  delay={300}
+                />
+              </div>
             </div>
 
-            <Card className={cn(cardClass, 'p-1')}>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-white font-bold"><Clock className="h-5 w-5 text-sky-400" />Monthly Work Hours</CardTitle>
-                  <CardDescription className="text-slate-400 font-medium">Live log of your monthly performance.</CardDescription>
+            {/* Monthly Work Hours */}
+            <GlassCard gradientFrom="rgba(14, 165, 233, 0.08)">
+              <div className="p-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-6">
+                    <div>
+                    <h3 className="flex items-center gap-3 text-2xl text-white font-black tracking-tight uppercase">
+                        <div className="p-2.5 rounded-2xl bg-sky-500/10 border border-sky-500/20 shadow-inner">
+                        <Clock className="h-5 w-5 text-sky-400" />
+                        </div>
+                        Monthly Work Hours
+                    </h3>
+                    <p className="text-zinc-500 font-bold text-xs uppercase tracking-[0.2em] mt-2">Live log of organizational performance.</p>
+                    </div>
+                    <div className="text-left md:text-right">
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-600 mb-1">Total Aggregate</p>
+                    <p className="text-5xl font-black text-white tracking-tighter drop-shadow-lg">
+                        {stats.totalMonthlyHours.toFixed(1)}<span className="text-2xl text-zinc-700 font-bold ml-1">h</span>
+                    </p>
+                    <p className="text-xs text-sky-400 font-black uppercase tracking-widest mt-1">Avg: {stats.averageDailyHours.toFixed(1)}h/day</p>
+                    </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total Hours</p>
-                  <p className="text-3xl font-black text-white tracking-tighter">{stats.totalMonthlyHours.toFixed(1)}h</p>
-                  <p className="text-xs text-sky-400 font-bold">Avg: {stats.averageDailyHours.toFixed(1)}h/day</p>
-                </div>
-              </CardHeader>
-              <CardContent className="pl-0 pr-2">
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={stats.attendanceChartData} barSize={14}>
-                    <defs>
-                      <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.8} />
-                        <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.05} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickMargin={10} />
-                    <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}h`} />
-                    <Bar dataKey="hours" fill="url(#barGrad)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className={cn(cardClass)}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white font-bold"><Folder className="h-5 w-5 text-purple-400" />Assigned Projects</CardTitle>
-                <CardDescription className="text-slate-400 font-medium">Status distribution across your active portfolio.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="flex-1 w-full h-[250px]">
+                
+                <div className="h-[300px] w-full mt-4">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={stats.projectStatusData} innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
-                          {stats.projectStatusData.map((entry, index) => <Cell key={index} fill={STATUS_COLORS[entry.name]} />)}
-                        </Pie>
-                        <Legend verticalAlign="middle" align="right" layout="vertical" content={<CustomLegend />} />
-                      </PieChart>
+                    <BarChart data={stats.attendanceChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                        <defs>
+                        <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#0ea5e9" stopOpacity={1} />
+                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0.1} />
+                        </linearGradient>
+                        <linearGradient id="barGradHover" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#38bdf8" stopOpacity={1} />
+                            <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.4} />
+                        </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
+                        <XAxis 
+                            dataKey="name" 
+                            stroke="#475569" 
+                            fontSize={10} 
+                            tickLine={false} 
+                            axisLine={false} 
+                            tickMargin={12} 
+                            fontWeight="bold"
+                        />
+                        <YAxis 
+                            stroke="#475569" 
+                            fontSize={10} 
+                            tickLine={false} 
+                            axisLine={false} 
+                            tickFormatter={(v) => `${v}h`} 
+                            fontWeight="bold"
+                        />
+                        <Bar 
+                            dataKey="hours" 
+                            fill="url(#barGrad)" 
+                            radius={[6, 6, 0, 0]} 
+                            barSize={16}
+                            activeBar={{ fill: 'url(#barGradHover)' }}
+                        />
+                    </BarChart>
                     </ResponsiveContainer>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </GlassCard>
+
           </div>
 
+          {/* Right Column */}
           <div className="lg:col-span-1 space-y-8">
-            <Card className={cn(cardClass)}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white font-bold"><Calendar className="h-5 w-5 text-amber-500" />Upcoming Deadlines</CardTitle>
-                <CardDescription className="text-slate-400 font-medium">Critical deliverables for this week.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {stats.deadlines.length > 0 ? (
-                  stats.deadlines.map((task) => (
-                    <div key={task.id} className={cn('flex items-start gap-4 p-4 rounded-2xl border transition-all duration-300', task.isOverdue ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/10 hover:bg-white/10')}>
-                      <div className={cn('h-12 w-11 rounded-xl flex flex-col items-center justify-center font-bold shadow-lg', task.isOverdue ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-300')}>
-                        {hasMounted && (
-                          <>
-                            <span className="text-[10px] uppercase tracking-tighter opacity-80">{format(parseISO(task.deadline), 'MMM')}</span>
-                            <span className="text-lg leading-none">{format(parseISO(task.deadline), 'dd')}</span>
-                          </>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn('font-bold leading-snug line-clamp-2', task.isOverdue ? 'text-red-200' : 'text-white')}>{task.description}</p>
-                        <p className="text-xs text-slate-400 mt-1 font-medium truncate">{task.projects?.name}</p>
-                      </div>
+            
+            {/* Upcoming Deadlines */}
+            <GlassCard gradientFrom="rgba(245, 158, 11, 0.08)">
+              <div className="p-8">
+                <div className="mb-8">
+                    <h3 className="flex items-center gap-3 text-2xl text-white font-black tracking-tight uppercase">
+                    <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 shadow-inner">
+                        <Calendar className="h-5 w-5 text-amber-400" />
                     </div>
-                  ))
-                ) : (
-                  <div className="py-10 text-center text-slate-500 text-sm font-medium italic">No active deadlines detected.</div>
-                )}
-              </CardContent>
-            </Card>
+                    Critical Path
+                    </h3>
+                    <p className="text-zinc-500 font-bold text-xs uppercase tracking-[0.2em] mt-2">Active deliverables for this window.</p>
+                </div>
+                
+                <div className="space-y-4">
+                    {stats.deadlines.length > 0 ? (
+                    stats.deadlines.map((task) => (
+                        <motion.div 
+                        key={task.id} 
+                        whileHover={{ scale: 1.02 }}
+                        className={cn(
+                            'flex items-start gap-4 p-4 rounded-2xl transition-all cursor-pointer bg-white/[0.02] border border-white/5 hover:border-white/10 shadow-xl group/item', 
+                            task.isOverdue ? 'border-rose-500/20 bg-rose-500/5' : ''
+                        )}
+                        >
+                        <div className={cn(
+                            'h-14 w-12 shrink-0 rounded-2xl flex flex-col items-center justify-center font-black shadow-2xl transition-transform group-hover/item:scale-110', 
+                            task.isOverdue ? 'bg-rose-600 text-white shadow-rose-900/50' : 'bg-zinc-900 border border-white/5 text-zinc-300'
+                        )}>
+                            <span className="text-[9px] uppercase tracking-tighter opacity-80">
+                            {format(parseISO(task.deadline), 'MMM')}
+                            </span>
+                            <span className="text-xl leading-none">
+                            {format(parseISO(task.deadline), 'dd')}
+                            </span>
+                        </div>
+                        <div className="flex-1 min-w-0 py-1">
+                            <p className={cn(
+                            'font-black leading-snug line-clamp-2 text-sm tracking-tight uppercase', 
+                            task.isOverdue ? 'text-rose-200' : 'text-zinc-100'
+                            )}>
+                            {task.description}
+                            </p>
+                            <p className="text-[10px] text-zinc-500 mt-1 font-bold uppercase tracking-widest flex items-center gap-1.5 truncate">
+                            <Briefcase className="h-3 w-3" />
+                            {task.projects?.name}
+                            </p>
+                        </div>
+                        </motion.div>
+                    ))
+                    ) : (
+                    <div className="py-12 text-center text-zinc-600 text-[10px] font-black uppercase tracking-[0.4em] italic bg-white/[0.01] rounded-[2rem] border-2 border-dashed border-white/5">
+                        Statement Clear
+                    </div>
+                    )}
+                </div>
+              </div>
+            </GlassCard>
 
-            <Card className={cn(cardClass)}>
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center justify-between text-sm font-black uppercase tracking-widest text-slate-400">
-                  <span>Monthly Summary</span>
-                  {hasMounted && <Badge className="rounded-full bg-sky-500/20 text-sky-400 border-sky-500/20">{format(new Date(), 'MMMM')}</Badge>}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-3 gap-4">
-                <div className="flex flex-col items-center p-3 rounded-2xl bg-white/5 border border-white/5">
-                  <Briefcase className="h-4 w-4 text-slate-500 mb-2" />
-                  <span className="text-2xl font-black text-white">{stats.totalWorkingDays}</span>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase mt-1">Days</span>
+            {/* Monthly Summary */}
+            <GlassCard gradientFrom="rgba(99, 102, 241, 0.12)">
+              <div className="p-8">
+                <div className="flex items-start justify-between mb-8">
+                    <div>
+                    <h3 className="text-2xl text-white font-black tracking-tight uppercase">
+                        Attendance
+                    </h3>
+                    <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">{format(new Date(), 'MMMM yyyy')} Statement</p>
+                    </div>
+                    <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-inner">
+                    <Rocket className="h-5 w-5 text-indigo-400" />
+                    </div>
                 </div>
-                <div className="flex flex-col items-center p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/10">
-                  <Check className="h-4 w-4 text-emerald-500 mb-2" />
-                  <span className="text-2xl font-black text-emerald-500">{stats.presentDaysSoFar}</span>
-                  <span className="text-[10px] font-bold text-emerald-600/80 uppercase mt-1">Present</span>
+                
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 transition-colors cursor-default">
+                    <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-zinc-600"></div>
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Total Period</span>
+                    </div>
+                    <span className="text-xl font-black text-white">{stats.totalWorkingDays} <span className="text-[10px] text-zinc-600 uppercase ml-1">Days</span></span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-500/[0.02] border border-emerald-500/20 transition-colors cursor-default">
+                    <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                        <span className="text-[9px] font-black text-emerald-500/80 uppercase tracking-[0.2em]">Present</span>
+                    </div>
+                    <span className="text-xl font-black text-emerald-400">{stats.presentDaysSoFar} <span className="text-[10px] uppercase ml-1">Days</span></span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-rose-500/[0.02] border border-rose-500/20 transition-colors cursor-default">
+                    <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.8)]"></div>
+                        <span className="text-[9px] font-black text-rose-500/80 uppercase tracking-[0.2em]">Absent</span>
+                    </div>
+                    <span className="text-xl font-black text-rose-400">{stats.absentDays} <span className="text-[10px] uppercase ml-1">Days</span></span>
+                    </div>
                 </div>
-                <div className="flex flex-col items-center p-3 rounded-2xl bg-rose-500/10 border border-rose-500/10">
-                  <XIcon className="h-4 w-4 text-rose-500 mb-2" />
-                  <span className="text-2xl font-black text-rose-500">{stats.absentDays}</span>
-                  <span className="text-[10px] font-bold text-rose-600/80 uppercase mt-1">Absent</span>
+
+                <div className="mt-8 pt-8 border-t border-white/5">
+                    <div className="flex justify-between items-end mb-4">
+                        <div>
+                            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-1">Efficiency Index</p>
+                            <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">{stats.efficiencyScore.toFixed(1)}%</p>
+                        </div>
+                    </div>
+                    <div className="h-2 w-full bg-black/50 rounded-full overflow-hidden border border-white/5 shadow-inner">
+                        <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${stats.efficiencyScore}%` }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(14,165,233,0.5)]" 
+                        />
+                    </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </GlassCard>
+
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        .chart-bar { transition: transform 0.3s ease; }
+        .glow-cyan { background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%); }
+        .glow-purple { background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%); }
+        .glow-amber { background: radial-gradient(circle, rgba(245, 158, 11, 0.05) 0%, transparent 70%); }
+      `}</style>
     </>
   );
 }

@@ -48,17 +48,17 @@
   }
 
   .dark {
-    --background: 0 0% 6%; /* #0f0f0f */
+    --background: 240 10% 3.9%; /* #09090b */
     --foreground: 0 0% 98%;
-    --card: 240 4% 12%;
+    --card: 240 4% 7%; /* #0f0f12 */
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 9%; /* #171717 */
+    --popover: 0 0% 6%; /* #0f0f0f */
     --popover-foreground: 0 0% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 240 4% 10%;
-    --secondary: 240 4% 15%;
+    --primary: 231 93% 66%; /* Indigo #6366f1 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 12%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 15%;
+    --muted: 240 4% 12%;
     --muted-foreground: 240 5% 65%;
     --accent: 240 4% 15%;
     --accent-foreground: 0 0% 98%;
@@ -68,23 +68,24 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --border: 240 4% 20%;
-    --input: 240 4% 20%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 228 66% 16%;
+    --border: 240 4% 15%;
+    --input: 240 4% 15%;
+    --ring: 231 93% 66%;
+    --chart-1: 231 93% 66%;
+    --chart-2: 199 89% 48%;
+    --chart-3: 262 83% 58%;
+    --chart-4: 142 71% 45%;
+    --chart-5: 38 92% 50%;
+    --sidebar-background: 240 10% 4.5%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-icon-muted: 213 9% 58%; /* #8c939f */
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-icon-muted: 213 9% 58%;
+    --sidebar-primary: 231 93% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 223 44% 27%; /* #263765 */
+    --sidebar-accent: 231 40% 15%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 223 47% 21%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-border: 240 4% 12%;
+    --sidebar-ring: 231 93% 66%;
+    --radius: 1.5rem;
   }
 }
 
@@ -100,6 +101,10 @@
 @layer components {
   .rdp-day_sunday {
     @apply text-red-500;
+  }
+  
+  .glass {
+    @apply bg-[#09090b]/40 backdrop-blur-3xl border border-white/10 shadow-2xl;
   }
 }
 
