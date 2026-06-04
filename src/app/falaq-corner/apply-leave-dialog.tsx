@@ -34,10 +34,12 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
 
   const maxStartDate = useMemo(() => {
     const today = startOfToday();
+    const leadTime = selectedConfig?.leadTime || 0;
     const maxNotice = selectedConfig?.maxNotice || 365;
-    // Fix: If maxNotice is 3, we want Today, Tomorrow, and Day After. 
-    // That is Today + (3 - 1) days.
-    return format(addDays(today, Math.max(0, maxNotice - 1)), 'yyyy-MM-dd');
+    
+    // Calculate max date starting FROM the lead time offset
+    // This provides a window of 'maxNotice' length starting after 'leadTime'
+    return format(addDays(today, leadTime + maxNotice - 1), 'yyyy-MM-dd');
   }, [selectedConfig]);
 
   const handleSubmit = (e: FormEvent) => {
