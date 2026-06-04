@@ -38,6 +38,7 @@ export default function ClientLayout({
   const [isAuthenticated, setIsAuthenticated] = useState(initialIsAuthenticated);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialMount, setIsInitialMount] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeLeaveNotif, setActiveLeaveNotif] = useState<Leave | null>(null);
   const [newLeaveToReview, setNewLeaveToReview] = useState<(Leave & { profiles?: Profile }) | null>(null);
@@ -47,6 +48,12 @@ export default function ClientLayout({
   const recreateAudioRef = useRef<HTMLAudioElement | null>(null);
   const newTaskAudioRef = useRef<HTMLAudioElement | null>(null);
   const reviewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    // 2.5 second delay to clear the initial cinematic PageLoader
+    const timer = setTimeout(() => setIsInitialMount(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     // Initialize audio on the client
@@ -299,12 +306,12 @@ export default function ClientLayout({
           </main>
         </div>
 
-        {/* 🚨 Attendance Guard Component */}
-        {isAuthenticated && <AttendanceWarning profile={profile} />}
+        {/* 🚨 Attendance Guard - Only render when app is fully initialized */}
+        {isAuthenticated && !isInitialMount && !isLoading && <AttendanceWarning profile={profile} />}
 
         {/* Leave Status Sticky Popup (For Applicant) */}
         <AnimatePresence>
-          {activeLeaveNotif && (
+          {activeLeaveNotif && !isInitialMount && (
             <motion.div
               initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
               animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
@@ -374,7 +381,7 @@ export default function ClientLayout({
 
         {/* New Leave Review Popup (For Editors) */}
         <AnimatePresence>
-          {newLeaveToReview && (
+          {newLeaveToReview && !isInitialMount && (
              <motion.div
               initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
               animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
