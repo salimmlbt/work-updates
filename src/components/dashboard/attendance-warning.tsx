@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -123,6 +124,7 @@ export function AttendanceWarning({ profile }: Props) {
       icon: LogIn,
       color: "from-rose-600 to-orange-600",
       glow: "shadow-rose-500/20 ring-rose-500/30",
+      edgeLight: "rgba(244, 63, 94, 0.4)", // Red (Rose-500)
     },
     MISSING_LUNCH_OUT: {
       title: "Lunch Milestone",
@@ -130,13 +132,15 @@ export function AttendanceWarning({ profile }: Props) {
       icon: Coffee,
       color: "from-amber-600 to-yellow-600",
       glow: "shadow-amber-500/20 ring-amber-500/30",
+      edgeLight: "rgba(245, 158, 11, 0.4)", // Yellow (Amber-500)
     },
     LATE_LUNCH_RETURN: {
       title: "Break Time Concluded",
       desc: "Return statement is now overdue.",
       icon: Clock,
-      color: "from-purple-600 to-indigo-600",
-      glow: "shadow-purple-500/20 ring-purple-500/30",
+      color: "from-sky-600 to-indigo-600",
+      glow: "shadow-sky-500/20 ring-sky-500/30",
+      edgeLight: "rgba(14, 165, 233, 0.4)", // Blue (Sky-500)
     }
   }[warning];
 
@@ -144,6 +148,19 @@ export function AttendanceWarning({ profile }: Props) {
 
   return (
     <AnimatePresence>
+      {/* 🌌 Cinematic Edge Light Overlay */}
+      <motion.div
+        key={`edge-light-${warning}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0.4, 1, 0.4] }}
+        exit={{ opacity: 0 }}
+        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+        className="fixed inset-0 z-[140] pointer-events-none isolation-auto"
+        style={{
+          boxShadow: `inset 0 0 100px ${warningConfig.edgeLight}, inset 0 0 40px ${warningConfig.edgeLight}`,
+        }}
+      />
+
       <div className="fixed top-28 left-0 right-0 z-[150] flex justify-center pointer-events-none px-4 isolation-auto">
         <motion.div
           initial={{ y: -50, opacity: 0, scale: 0.95 }}
@@ -157,9 +174,8 @@ export function AttendanceWarning({ profile }: Props) {
             "hover:bg-black/30 hover:border-white/20"
           )}
           style={{
-            // Force hardware acceleration and clip the backdrop filter bleed
             WebkitBackdropFilter: 'blur(40px)',
-            maskImage: 'linear-gradient(white, white)', // Standard trick to fix radius bleed in some browsers
+            maskImage: 'linear-gradient(white, white)',
           }}>
             {/* 💎 Glass Inner Glare */}
             <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-30 pointer-events-none" />
