@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials, cn } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Rocket, Activity, Send, Sparkles, BrainCircuit } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Eye, Briefcase, Rocket, Activity, Send, Sparkles, BrainCircuit, Loader2 } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 import { format, eachDayOfInterval, isBefore, startOfMonth, endOfMonth, startOfToday, parseISO, addDays, getDay } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -25,6 +25,7 @@ import { GlassCard } from '@/components/dashboard/glass-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { askAIHelp } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
