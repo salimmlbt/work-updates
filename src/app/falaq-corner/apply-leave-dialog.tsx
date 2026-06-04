@@ -35,24 +35,10 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
   const maxStartDate = useMemo(() => {
     const today = startOfToday();
     const maxNotice = selectedConfig?.maxNotice || 365;
-    return format(addDays(today, maxNotice), 'yyyy-MM-dd');
+    // Fix: If maxNotice is 3, we want Today, Tomorrow, and Day After. 
+    // That is Today + (3 - 1) days.
+    return format(addDays(today, Math.max(0, maxNotice - 1)), 'yyyy-MM-dd');
   }, [selectedConfig]);
-
-  const applyPreset = (daysOffset: number) => {
-    const minDateObj = new Date(minStartDate);
-    const end = new Date(minDateObj);
-    end.setDate(minDateObj.getDate() + (daysOffset - 1));
-
-    // Ensure preset stays within max limit
-    if (end > new Date(maxStartDate)) {
-        setStartDate(minStartDate);
-        setEndDate(maxStartDate);
-    } else {
-        setStartDate(minStartDate);
-        setEndDate(end.toISOString().split('T')[0]);
-    }
-    setErrorMsg('');
-  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
