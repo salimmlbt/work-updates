@@ -3,7 +3,7 @@
 import React, { useState, useTransition, useEffect, useMemo, useCallback } from 'react';
 import { ChevronDown, Loader2, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import type { Leave, Profile, RoleWithPermissions } from '@/lib/types';
+import type { Leave, Profile, RoleWithPermissions, LeaveTypeConfig } from '@/lib/types';
 import { cancelLeave, updateLeaveStatus, reopenLeave, deleteLeavePermanently, applyLeave } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import ApproveLeaveDialog from './approve-leave-dialog';
@@ -17,11 +17,12 @@ import LeaveCard from './leave-card';
 interface LeaveSectionProps {
   profile: Profile;
   annualAllowance: number;
+  leaveTypesConfig: LeaveTypeConfig[];
   isApplyDialogOpen: boolean;
   setIsApplyDialogOpen: (open: boolean) => void;
 }
 
-export function LeaveSection({ profile, annualAllowance, isApplyDialogOpen, setIsApplyDialogOpen }: LeaveSectionProps) {
+export function LeaveSection({ profile, annualAllowance, leaveTypesConfig, isApplyDialogOpen, setIsApplyDialogOpen }: LeaveSectionProps) {
   const [leaves, setLeaves] = useState<(Leave & { profiles?: Profile })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [leaveToApprove, setLeaveToApprove] = useState<Leave & { profiles?: Profile } | null>(null);
@@ -169,6 +170,7 @@ export function LeaveSection({ profile, annualAllowance, isApplyDialogOpen, setI
         onClose={() => setIsApplyDialogOpen(false)} 
         onSubmit={handleApplySubmit}
         currentProfile={profile}
+        leaveTypesConfig={leaveTypesConfig}
       />
 
       {leaveToApprove && (

@@ -1,41 +1,43 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, FileText, Send, Sparkles, AlertCircle } from 'lucide-react';
-import type { Leave, Profile } from '@/lib/types';
+import type { Profile, LeaveTypeConfig } from '@/lib/types';
 import { cn, differenceInDays } from './utils';
+import { addDays, format, startOfToday } from 'date-fns';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
   currentProfile: Profile;
+  leaveTypesConfig: LeaveTypeConfig[];
 }
 
-const LEAVE_TYPES = [
-  { value: 'Annual Leave', label: 'Annual Vacation', color: 'from-purple-500 to-indigo-500', glow: 'text-purple-400 border-purple-500/20' },
-  { value: 'Casual Leave', label: 'Casual Day-Off', color: 'from-blue-500 to-cyan-500', glow: 'text-blue-400 border-blue-500/20' },
-  { value: 'Sick Leave', label: 'Medical & Recovery', color: 'from-emerald-500 to-teal-500', glow: 'text-emerald-400 border-emerald-500/20' },
-  { value: 'Special WFH Leave', label: 'Special WFH / Training', color: 'from-amber-500 to-orange-500', glow: 'text-amber-400 border-amber-500/20' }
-];
-
-export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentProfile }: Props) {
-  const [leaveType, setLeaveType] = useState('Annual Leave');
+export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentProfile, leaveTypesConfig }: Props) {
+  const [leaveTypeId, setLeaveTypeId] = useState(leaveTypesConfig[0]?.id || '');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const applyPreset = (daysOffset: number) => {
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(today.getDate() + 1);
-    
-    const end = new Date(start);
-    end.setDate(start.getDate() + (daysOffset - 1));
+  const selectedConfig = useMemo(() => 
+    leaveTypesConfig.find(c => c.id === leaveTypeId) || leaveTypesConfig[0]
+  , [leaveTypeId, leaveTypesConfig]);
 
-    setStartDate(start.toISOString().split('T')[0]);
+  const minStartDate = useMemo(() => {
+    const today = startOfToday();
+    const leadTime = selectedConfig?.leadTime || 0;
+    return format(addDays(today, leadTime), 'yyyy-MM-dd');
+  }, [selectedConfig]);
+
+  const applyPreset = (daysOffset: number) => {
+    const minDateObj = new Date(minStartDate);
+    const end = new Date(minDateObj);
+    end.setDate(minDateObj.getDate() + (daysOffset - 1));
+
+    setStartDate(minStartDate);
     setEndDate(end.toISOString().split('T')[0]);
     setErrorMsg('');
   };
@@ -61,7 +63,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
 
     onSubmit({
       user_id: currentProfile.id,
-      leave_type: leaveType,
+      leave_type: selectedConfig.label,
       start_date: startDate,
       end_date: endDate,
       reason: reason.trim(),
@@ -105,7 +107,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                   </h3>
                 </div>
                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.25em] mt-1">
-                  Submitting to directory audit node
+                  Enforcing Category-Specific Policies
                 </p>
               </div>
               <button
@@ -129,24 +131,30 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                   Select Leave Category
                 </span>
                 <div className="grid grid-cols-2 gap-2">
-                  {LEAVE_TYPES.map((t) => {
-                    const isSelected = leaveType === t.value;
+                  {leaveTypesConfig.map((t) => {
+                    const isSelected = leaveTypeId === t.id;
                     return (
                       <button
-                        key={t.value}
+                        key={t.id}
                         type="button"
-                        onClick={() => setLeaveType(t.value)}
+                        onClick={() => {
+                          setLeaveTypeId(t.id);
+                          setStartDate(''); // Reset date on type change due to new rules
+                          setEndDate('');
+                        }}
                         className={cn(
                           "px-4 py-3.5 rounded-2xl border text-left transition-all duration-300 relative overflow-hidden group cursor-pointer",
                           isSelected
-                            ? "bg-white/[0.04] border-indigo-500/40 text-white shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+                            ? "bg-white/[0.04] border-sky-500/40 text-white shadow-[0_0_20px_rgba(14,165,233,0.15)]"
                             : "bg-white/[0.01] border-white/5 text-zinc-400 hover:border-white/15 hover:bg-white/[0.02]"
                         )}
                       >
                         <p className="text-xs font-black tracking-wide uppercase group-hover:text-white transition-colors">{t.label}</p>
-                        <p className="text-[9px] text-zinc-500 font-bold tracking-widest uppercase mt-0.5">{t.value}</p>
+                        <p className="text-[9px] text-zinc-500 font-bold tracking-widest uppercase mt-0.5">
+                           {t.leadTime > 0 ? `${t.leadTime} Day Notice` : 'Instant Application'}
+                        </p>
                         {isSelected && (
-                          <div className={`absolute right-3 top-3.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]`} />
+                          <div className={`absolute right-3 top-3.5 w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_8px_#0ea5e9]`} />
                         )}
                       </button>
                     );
@@ -174,8 +182,9 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                     <input
                       type="date"
                       value={startDate}
+                      min={minStartDate}
                       onChange={(e) => { setStartDate(e.target.value); setErrorMsg(''); }}
-                      className="w-full bg-[#141420] border border-white/5 focus:border-indigo-500/40 text-white rounded-2xl h-12 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all [color-scheme:dark]"
+                      className="w-full bg-[#141420] border border-white/5 focus:border-sky-500/40 text-white rounded-2xl h-12 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all [color-scheme:dark]"
                     />
                   </div>
                 </div>
@@ -186,8 +195,9 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                     <input
                       type="date"
                       value={endDate}
+                      min={startDate || minStartDate}
                       onChange={(e) => { setEndDate(e.target.value); setErrorMsg(''); }}
-                      className="w-full bg-[#141420] border border-white/5 focus:border-indigo-500/40 text-white rounded-2xl h-12 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all [color-scheme:dark]"
+                      className="w-full bg-[#141420] border border-white/5 focus:border-sky-500/40 text-white rounded-2xl h-12 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all [color-scheme:dark]"
                     />
                   </div>
                 </div>
@@ -202,7 +212,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                     onChange={(e) => { setReason(e.target.value); setErrorMsg(''); }}
                     rows={3}
                     placeholder="Provide a professional note explaining your absence context..."
-                    className="w-full bg-[#141420] border border-white/5 focus:border-indigo-500/40 text-white rounded-2xl p-4 pl-12 text-xs font-medium outline-none transition-all resize-none leading-relaxed placeholder:text-zinc-600"
+                    className="w-full bg-[#141420] border border-white/5 focus:border-sky-500/40 text-white rounded-2xl p-4 pl-12 text-xs font-medium outline-none transition-all resize-none leading-relaxed placeholder:text-zinc-600"
                   />
                 </div>
               </div>

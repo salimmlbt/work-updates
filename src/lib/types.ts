@@ -59,6 +59,13 @@ export interface Leave {
   day_type?: string | null;
 }
 
+export interface LeaveTypeConfig {
+  id: string;
+  label: string;
+  leadTime: number; // minimum days from today
+  color: 'purple' | 'blue' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'cyan' | 'teal';
+}
+
 export type SubmissionType = 'original' | 'correction' | 'recreate' | 'scheduled' | 'posted' | 'completed';
 
 export type SubmissionHistoryEntry = {

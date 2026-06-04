@@ -1,6 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import type { Profile, RoleWithPermissions } from '@/lib/types';
+import type { Profile, RoleWithPermissions, LeaveTypeConfig } from '@/lib/types';
 import FalaqCornerClient from './falaq-corner-client';
 
 /**
@@ -17,10 +17,12 @@ export default async function FalaqCornerPage() {
 
   const [
     { data: profile },
-    { data: allowanceSetting }
+    { data: allowanceSetting },
+    { data: leaveConfigSetting }
   ] = await Promise.all([
     supabase.from('profiles').select('*, roles(*)').eq('id', authUser.id).single(),
-    supabase.from('app_settings').select('value').eq('key', 'annual_leave_allowance').single()
+    supabase.from('app_settings').select('value').eq('key', 'annual_leave_allowance').single(),
+    supabase.from('app_settings').select('value').eq('key', 'leave_types_config').single()
   ]);
 
   const permissions = (profile?.roles as RoleWithPermissions)?.permissions || {};
@@ -39,12 +41,19 @@ export default async function FalaqCornerPage() {
   }
 
   const annualAllowance = (allowanceSetting?.value as number | undefined) || 28;
+  const leaveTypesConfig = (leaveConfigSetting?.value as LeaveTypeConfig[] | undefined) || [
+    { id: '1', label: 'Annual Leave', leadTime: 0, color: 'purple' },
+    { id: '2', label: 'Casual Leave', leadTime: 2, color: 'blue' },
+    { id: '3', label: 'Sick Leave', leadTime: 0, color: 'emerald' },
+    { id: '4', label: 'Special WFH', leadTime: 0, color: 'amber' }
+  ];
 
   return (
     <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f]">
       <FalaqCornerClient 
         profile={profile as Profile} 
         annualAllowance={annualAllowance}
+        leaveTypesConfig={leaveTypesConfig}
       />
     </div>
   );

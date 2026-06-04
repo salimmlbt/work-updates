@@ -11,8 +11,9 @@ import { SetTimesForm } from './set-times-form';
 import IndustryTypes from './industry-types';
 import WorkTypes from './work-types';
 import StudioLocations from './studio-locations';
-import type { Industry, WorkType, WorkTypeStatusConfig, OfficeLocation } from '@/lib/types';
+import type { Industry, WorkType, WorkTypeStatusConfig, OfficeLocation, LeaveTypeConfig } from '@/lib/types';
 import { GeofencingToggle } from './geofencing-toggle';
+import LeaveTypesConfig from './leave-types-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default async function AccessibilityPage() {
         { data: graceSetting },
         { data: statusConfigSetting },
         { data: geofencingSetting },
+        { data: leaveConfigSetting },
         { data: industriesData, error: industriesError },
         { data: workTypesData, error: workTypesError },
         { data: locationsData, error: locationsError },
@@ -34,6 +36,7 @@ export default async function AccessibilityPage() {
         supabase.from('app_settings').select('value').eq('key', 'late_check_in_grace_period').single(),
         supabase.from('app_settings').select('value').eq('key', 'work_type_status_config').single(),
         supabase.from('app_settings').select('value').eq('key', 'global_geofencing_enabled').single(),
+        supabase.from('app_settings').select('value').eq('key', 'leave_types_config').single(),
         supabase.from('industries').select('*'),
         supabase.from('work_types').select('*'),
         supabase.from('office_locations').select('*'),
@@ -48,6 +51,12 @@ export default async function AccessibilityPage() {
     const lateGracePeriod = (graceSetting?.value as number | undefined) || 0;
     const workTypeStatusConfig = (statusConfigSetting?.value as WorkTypeStatusConfig | undefined) || {};
     const globalGeofencingEnabled = geofencingSetting?.value === true;
+    const leaveTypesConfig = (leaveConfigSetting?.value as LeaveTypeConfig[] | undefined) || [
+      { id: '1', label: 'Annual Leave', leadTime: 0, color: 'purple' },
+      { id: '2', label: 'Casual Leave', leadTime: 2, color: 'blue' },
+      { id: '3', label: 'Sick Leave', leadTime: 0, color: 'emerald' },
+      { id: '4', label: 'Special WFH', leadTime: 0, color: 'amber' }
+    ];
 
   return (
     <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f] text-zinc-100">
@@ -131,11 +140,15 @@ export default async function AccessibilityPage() {
         </TabsContent>
         
         <TabsContent value="types" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Tabs defaultValue="industry-type" className="space-y-8">
+          <Tabs defaultValue="leave-type" className="space-y-8">
             <TabsList className="bg-transparent p-0 border-b border-white/5 rounded-none gap-8">
+              <TabsTrigger value="leave-type" className="bg-transparent border-0 rounded-none px-0 pb-3 text-zinc-500 font-bold uppercase tracking-widest text-[10px] data-[state=active]:text-sky-400 data-[state=active]:border-b-2 data-[state=active]:border-sky-400 shadow-none">Leave Policies</TabsTrigger>
               <TabsTrigger value="industry-type" className="bg-transparent border-0 rounded-none px-0 pb-3 text-zinc-500 font-bold uppercase tracking-widest text-[10px] data-[state=active]:text-sky-400 data-[state=active]:border-b-2 data-[state=active]:border-sky-400 shadow-none">Client Industries</TabsTrigger>
               <TabsTrigger value="work-type" className="bg-transparent border-0 rounded-none px-0 pb-3 text-zinc-500 font-bold uppercase tracking-widest text-[10px] data-[state=active]:text-sky-400 data-[state=active]:border-b-2 data-[state=active]:border-sky-400 shadow-none">Task Archetypes</TabsTrigger>
             </TabsList>
+            <TabsContent value="leave-type" className="mt-0">
+              <LeaveTypesConfig initialConfigs={leaveTypesConfig} />
+            </TabsContent>
             <TabsContent value="industry-type" className="mt-0">
               <IndustryTypes initialIndustries={industriesData as Industry[] ?? []} />
             </TabsContent>

@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Inbox, Send, Calendar as CalendarIcon, Plus } from 'lucide-react';
-import type { Profile } from '@/lib/types';
+import type { Profile, LeaveTypeConfig } from '@/lib/types';
 import { LeaveSection } from './leave-section';
 import GlowBackground from './glow-background';
 
-export default function FalaqCornerClient({ profile, annualAllowance }: { profile: Profile, annualAllowance: number }) {
+export default function FalaqCornerClient({ profile, annualAllowance, leaveTypesConfig }: { profile: Profile, annualAllowance: number, leaveTypesConfig: LeaveTypeConfig[] }) {
   const [activeSection, setActiveSection] = useState<'leave-center' | 'request-center' | 'inbox'>('leave-center');
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
 
@@ -24,6 +24,7 @@ export default function FalaqCornerClient({ profile, annualAllowance }: { profil
           <LeaveSection 
             profile={profile} 
             annualAllowance={annualAllowance}
+            leaveTypesConfig={leaveTypesConfig}
             isApplyDialogOpen={isApplyDialogOpen} 
             setIsApplyDialogOpen={setIsApplyDialogOpen} 
           />
