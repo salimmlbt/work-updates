@@ -1,13 +1,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Clock, Coffee, LogIn, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Clock, Coffee, LogIn, ShieldCheck, Volume2, VolumeX } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { parse, isAfter, addMinutes, format } from 'date-fns';
 import type { Profile, Attendance } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   profile: Profile | null;
@@ -17,9 +18,15 @@ export function AttendanceWarning({ profile }: Props) {
   const [warning, setWarning] = useState<'MISSING_CHECK_IN' | 'MISSING_LUNCH_OUT' | 'LATE_LUNCH_RETURN' | null>(null);
   const [attendance, setAttendance] = useState<Attendance | null>(null);
   const [lunchTime, setLunchTime] = useState<{ default: string; friday: string } | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
+    // Initialize audio object
+    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    audioRef.current.loop = false;
+
     if (!profile) return;
 
     const fetchData = async () => {
@@ -48,7 +55,6 @@ export function AttendanceWarning({ profile }: Props) {
 
     fetchData();
 
-    // Sync status in real-time
     const channel = supabase.channel(`guard-attendance-${profile.id}`)
       .on(
         'postgres_changes', 
@@ -72,7 +78,6 @@ export function AttendanceWarning({ profile }: Props) {
     const checkMilestones = () => {
       const now = new Date();
       
-      // 1. Missing Check-In Warning
       if (!attendance?.check_in && profile.work_start_time) {
         try {
           const startTime = parse(profile.work_start_time, 'HH:mm:ss', now);
@@ -83,7 +88,6 @@ export function AttendanceWarning({ profile }: Props) {
         } catch (e) {}
       }
 
-      // 2. Missing Lunch Out Warning
       if (attendance?.check_in && !attendance.lunch_out && !attendance.check_out && lunchTime) {
         const isFriday = now.getDay() === 5;
         const lTimeStr = isFriday ? lunchTime.friday : lunchTime.default;
@@ -98,7 +102,6 @@ export function AttendanceWarning({ profile }: Props) {
         }
       }
 
-      // 3. Late Lunch Return Warning (More than 60 mins)
       if (attendance?.lunch_out && !attendance.lunch_in && !attendance.check_out) {
         const lunchOutTime = new Date(attendance.lunch_out);
         if (isAfter(now, addMinutes(lunchOutTime, 61))) {
@@ -115,6 +118,26 @@ export function AttendanceWarning({ profile }: Props) {
     return () => clearInterval(interval);
   }, [profile, attendance, lunchTime]);
 
+  // Audio Logic
+  useEffect(() => {
+    let soundInterval: NodeJS.Timeout;
+
+    if (warning && !isMuted) {
+      const playSound = () => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(() => {
+             // Browsers might block auto-play until interaction
+          });
+        }
+      };
+
+      playSound();
+      soundInterval = setInterval(playSound, 10000); // Play every 10 seconds
+    }
+
+    return () => clearInterval(soundInterval);
+  }, [warning, isMuted]);
+
   if (!warning) return null;
 
   const warningConfig = {
@@ -124,7 +147,7 @@ export function AttendanceWarning({ profile }: Props) {
       icon: LogIn,
       color: "from-rose-600 to-orange-600",
       glow: "shadow-rose-500/20 ring-rose-500/30",
-      edgeLight: "rgba(244, 63, 94, 0.4)", // Red (Rose-500)
+      edgeLight: "rgba(244, 63, 94, 0.4)",
     },
     MISSING_LUNCH_OUT: {
       title: "Lunch Milestone",
@@ -132,7 +155,7 @@ export function AttendanceWarning({ profile }: Props) {
       icon: Coffee,
       color: "from-amber-600 to-yellow-600",
       glow: "shadow-amber-500/20 ring-amber-500/30",
-      edgeLight: "rgba(245, 158, 11, 0.4)", // Yellow (Amber-500)
+      edgeLight: "rgba(245, 158, 11, 0.4)",
     },
     LATE_LUNCH_RETURN: {
       title: "Break Time Concluded",
@@ -140,7 +163,7 @@ export function AttendanceWarning({ profile }: Props) {
       icon: Clock,
       color: "from-sky-600 to-indigo-600",
       glow: "shadow-sky-500/20 ring-sky-500/30",
-      edgeLight: "rgba(14, 165, 233, 0.4)", // Blue (Sky-500)
+      edgeLight: "rgba(14, 165, 233, 0.4)",
     }
   }[warning];
 
@@ -148,7 +171,6 @@ export function AttendanceWarning({ profile }: Props) {
 
   return (
     <AnimatePresence>
-      {/* 🌌 Cinematic Edge Light Overlay */}
       <motion.div
         key={`edge-light-${warning}`}
         initial={{ opacity: 0 }}
@@ -177,17 +199,14 @@ export function AttendanceWarning({ profile }: Props) {
             WebkitBackdropFilter: 'blur(40px)',
             maskImage: 'linear-gradient(white, white)',
           }}>
-            {/* 💎 Glass Inner Glare */}
             <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-30 pointer-events-none" />
 
-            {/* Animated Background Glow on Hover */}
             <div className={cn(
               "absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none",
               warningConfig.color
             )} />
             
             <div className="flex items-center gap-8 relative z-10">
-              {/* Dynamic Pulsing Icon */}
               <div className={cn(
                 "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-2xl transition-all duration-700 ring-1 group-hover:scale-110 group-hover:rotate-3",
                 "bg-gradient-to-br", warningConfig.color, warningConfig.glow
@@ -205,18 +224,30 @@ export function AttendanceWarning({ profile }: Props) {
               </div>
             </div>
 
-            {/* Live Status Guard Badge */}
-            <div className="hidden sm:flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 border border-white/5 relative z-10 group-hover:bg-white/10 transition-all duration-500">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_10px_#10b981]"></span>
-                </div>
-                <span className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-white transition-colors">
-                  System Guard Active
-                </span>
+            <div className="flex items-center gap-4 relative z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMuted(!isMuted);
+                }}
+                className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+              >
+                {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+              </Button>
+
+              <div className="hidden sm:flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 border border-white/5 group-hover:bg-white/10 transition-all duration-500">
+                  <div className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_10px_#10b981]"></span>
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-white transition-colors">
+                    Guard Active
+                  </span>
+              </div>
             </div>
 
-            {/* Cyber decoration lines */}
             <div className="absolute top-0 right-1/4 w-[1px] h-full bg-gradient-to-b from-white/10 to-transparent opacity-10" />
             <div className="absolute bottom-0 left-1/4 w-[1px] h-full bg-gradient-to-t from-white/10 to-transparent opacity-10" />
           </div>
