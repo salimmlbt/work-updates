@@ -123,7 +123,7 @@ export default function AttendanceDetailClient({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
-              <span className="text-xs text-zinc-400 font-bold uppercase tracking-[0.3em]">Updating Records...</span>
+              <span className="text-sm text-zinc-400 font-medium">Updating Records...</span>
             </div>
           </motion.div>
         )}
@@ -176,7 +176,7 @@ export default function AttendanceDetailClient({
                     </h1>
                   )}
                   <div className="flex items-center gap-3">
-                     <span className="text-sm text-zinc-500 font-medium">Monthly Attendance Statement</span>
+                     <span className="text-sm text-zinc-400 font-medium">Monthly Attendance Statement</span>
                      <Badge variant="outline" className="bg-sky-500/10 text-sky-400 border-sky-500/20 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md">
                       Verified
                      </Badge>
@@ -272,13 +272,16 @@ export default function AttendanceDetailClient({
                     <th className="px-4 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Exit</th>
                     <th className="px-4 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Yield (H)</th>
                     <th className="px-4 py-4 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Overtime</th>
-                    <th className="px-4 py-4 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Audit</th>
-                    <th className="px-8 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-right">Audit Statement</th>
+                    <th className="px-4 py-4 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-center">Status</th>
+                    <th className="px-8 py-5 text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] text-right">Late Reason</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.03]">
                   {monthlyData.map((item) => {
                     const isMissing = !item.check_in;
+                    const isCompleted = item.check_in && item.check_out;
+                    const isPresent = item.check_in && !item.check_out;
+
                     return (
                       <tr 
                         key={item.date} 
@@ -292,7 +295,7 @@ export default function AttendanceDetailClient({
                             <span className={cn("text-sm font-bold", isMissing ? "text-zinc-500" : "text-zinc-200")}>
                               {format(parseISO(item.date), 'MMM d, yyyy')}
                             </span>
-                            <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">{format(parseISO(item.date), 'EEEE')}</span>
+                            <span className="text-xs font-bold text-zinc-600 uppercase tracking-widest mt-0.5">{format(parseISO(item.date), 'EEEE')}</span>
                           </div>
                         </td>
                         <td className="px-4 py-6 text-center text-sm">
@@ -325,10 +328,14 @@ export default function AttendanceDetailClient({
                            <div className="flex justify-center">
                              <Badge variant="outline" className={cn(
                                  "text-[9px] font-bold uppercase tracking-widest border-0 px-3 h-6 gap-1.5",
-                                 item.check_in ? "text-emerald-400 bg-emerald-500/5" : "text-rose-400 bg-rose-500/5"
+                                 isCompleted ? "text-emerald-400 bg-emerald-500/10" : 
+                                 isPresent ? "text-sky-400 bg-sky-500/10" : 
+                                 "text-rose-400 bg-rose-500/5"
                              )}>
-                                 {item.check_in ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                                 {item.check_in ? "Verified" : "Missing"}
+                                 {isCompleted ? <CheckCircle2 className="h-3 w-3" /> : 
+                                  isPresent ? <Clock className="h-3 w-3" /> : 
+                                  <XCircle className="h-3 w-3" />}
+                                 {isCompleted ? "Completed" : isPresent ? "Present" : "Absent"}
                              </Badge>
                            </div>
                         </td>
@@ -336,7 +343,7 @@ export default function AttendanceDetailClient({
                            {item.check_in_reason ? (
                              <div className="inline-flex items-start gap-1.5 max-w-[280px] text-left">
                                 <AlertCircle className="h-3.5 w-3.5 text-amber-500/70 shrink-0 mt-0.5" />
-                                <span className="text-xs text-zinc-400 italic leading-snug">
+                                <span className="text-xs text-amber-400 italic leading-snug">
                                   {item.check_in_reason}
                                 </span>
                             </div>
