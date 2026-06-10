@@ -44,7 +44,8 @@ function TaskStatCard({
   colorClass,
   gradient,
   delay,
-  onClick
+  onClick,
+  gradientFrom
 }: { 
   title: string; 
   value: number; 
@@ -54,9 +55,10 @@ function TaskStatCard({
   gradient: string;
   delay: number;
   onClick: () => void;
+  gradientFrom: string;
 }) {
   return (
-    <GlassCard delay={delay} className="h-full group" onClick={onClick}>
+    <GlassCard delay={delay} className="h-full group" onClick={onClick} gradientFrom={gradientFrom}>
       <div className="p-8 h-full flex flex-col justify-between">
         <div className="flex flex-row items-center justify-between pb-4">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 group-hover:text-white/80 transition-colors">
@@ -384,6 +386,7 @@ export default function DashboardClient({
                   icon={AlertCircle}
                   colorClass="text-sky-400"
                   gradient="bg-sky-400 shadow-[0_0_8px_#38bdf8]"
+                  gradientFrom="rgba(14, 165, 233, 0.15)"
                   delay={100}
                   onClick={() => handleCardNavigation('/tasks?tab=active')}
                 />
@@ -395,6 +398,7 @@ export default function DashboardClient({
                   icon={Eye}
                   colorClass="text-indigo-400"
                   gradient="bg-indigo-400 shadow-[0_0_8px_#818cf8]"
+                  gradientFrom="rgba(129, 140, 248, 0.15)"
                   delay={200}
                   onClick={() => handleCardNavigation('/tasks?tab=under-review')}
                 />
@@ -406,12 +410,13 @@ export default function DashboardClient({
                   icon={CheckCircle2}
                   colorClass="text-emerald-400"
                   gradient="bg-emerald-400 shadow-[0_0_8px_#34d399]"
+                  gradientFrom="rgba(16, 185, 129, 0.15)"
                   delay={300}
                   onClick={() => handleCardNavigation('/tasks?tab=completed')}
                 />
             </div>
 
-            <GlassCard delay={400} className="p-8" onClick={() => profile?.id && handleCardNavigation(`/attendance/${profile.id}`)}>
+            <GlassCard delay={400} className="p-8" onClick={() => profile?.id && handleCardNavigation(`/attendance/${profile.id}`)} gradientFrom="rgba(14, 165, 233, 0.1)">
                 <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-10 gap-6">
                     <div>
                     <h3 className="flex items-center gap-3 text-2xl text-white font-black tracking-tight uppercase">
@@ -454,7 +459,7 @@ export default function DashboardClient({
                 </div>
             </GlassCard>
 
-            <GlassCard delay={450} className="p-8 relative overflow-hidden">
+            <GlassCard delay={450} className="p-8 relative overflow-hidden" gradientFrom="rgba(99, 102, 241, 0.1)">
                 <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                     <BrainCircuit className="h-32 w-32 text-indigo-400" />
                 </div>
@@ -540,7 +545,7 @@ export default function DashboardClient({
           </div>
 
           <div className="lg:col-span-1 space-y-8">
-            <GlassCard delay={500} className="p-8">
+            <GlassCard delay={500} className="p-8" gradientFrom="rgba(245, 158, 11, 0.1)">
                 <div className="mb-10">
                     <h3 className="flex items-center gap-3 text-xl text-white font-black tracking-tight uppercase">
                     <div className="p-2.5 rounded-2xl bg-white/[0.05] border border-white/10 shadow-inner">
@@ -589,7 +594,7 @@ export default function DashboardClient({
                 </div>
             </GlassCard>
 
-            <GlassCard delay={600} className="p-8" onClick={() => handleCardNavigation('/attendance')}>
+            <GlassCard delay={600} className="p-8" onClick={() => handleCardNavigation('/attendance')} gradientFrom="rgba(244, 63, 94, 0.1)">
                 <div className="flex items-start justify-between mb-8">
                     <div>
                     <h3 className="text-xl text-white font-black tracking-tight uppercase">Attendance</h3>

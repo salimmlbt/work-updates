@@ -60,11 +60,11 @@ export function GlassCard({
         }}
       />
       
-      {/* Decorative gradient overlay if provided */}
+      {/* Decorative gradient overlay - Enhanced opacity for separation */}
       {gradientFrom && (
         <div 
-          className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" 
-          style={{ background: `linear-gradient(to bottom right, ${gradientFrom}, transparent)` }} 
+          className="absolute inset-0 opacity-[0.12] pointer-events-none z-0" 
+          style={{ background: `linear-gradient(135deg, ${gradientFrom}, transparent 70%)` }} 
         />
       )}
       
