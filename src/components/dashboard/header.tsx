@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -51,7 +52,7 @@ export default function Header() {
   const { toast } = useToast();
 
   const [showLunchButton, setShowLunchButton] = useState(false);
-  const [lunchTimeSetting, setLunchTimeSetting] = useState<any>({ default: '13:00', friday: '13:00' });
+  const [lunchTimeSetting, setLunchTimeSetting] = useState<any>(null);
   const [lateGracePeriodSetting, setLateGracePeriodSetting] = useState<number>(0);
   const [globalGeofencingEnabled, setGlobalGeofencingEnabled] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -241,6 +242,13 @@ export default function Header() {
     });
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'lunchOut' | 'lunchIn', reason?: string) => {
     setIsAlertOpen(false);
     setIsLateReasonOpen(false);
@@ -253,19 +261,24 @@ export default function Header() {
     }
 
     const firstName = userProfile?.full_name?.split(' ')[0] || '';
-    let audioUri = null;
 
+    // RESPONSIVE TRIGGER: Trigger visual greeting immediately for better UX
     if (action === 'checkIn' || action === 'checkOut') {
       const greeting = action === 'checkIn' ? getGreeting() : 'See you next day';
-      const text = `${greeting}, ${firstName}`;
-      try {
-        const voiceResult = await getVoiceGreeting(text);
-        audioUri = voiceResult.data;
-      } catch (e) {}
-    }
+      setGreetingText(greeting);
+      setGreetingType(action === 'checkIn' ? 'in' : 'out');
+      setShowGreeting(true);
+      setTimeout(() => setShowGreeting(false), 4500);
 
-    if (action === 'checkIn') triggerGreeting(firstName, audioUri);
-    else if (action === 'checkOut') triggerCheckoutGreeting(firstName, audioUri);
+      // Background-load AI Voice Greeting
+      const textForAudio = `${greeting}, ${firstName}`;
+      getVoiceGreeting(textForAudio).then(voiceResult => {
+        if (voiceResult.data) {
+          const audio = new Audio(voiceResult.data);
+          audio.play().catch(err => console.warn("Audio playback context was blocked by browser", err));
+        }
+      }).catch(e => console.error("TTS Generation Failed:", e));
+    }
 
     const optimisticStateMap = {
       checkIn: 'checked-in',
@@ -293,30 +306,6 @@ export default function Header() {
     }
     
     setIsActionPending(false);
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-
-  const triggerGreeting = (name: string, audioUri?: string | null) => {
-    const greeting = getGreeting();
-    setGreetingText(greeting);
-    setGreetingType('in');
-    setShowGreeting(true);
-    if (audioUri) new Audio(audioUri).play().catch(() => {});
-    setTimeout(() => setShowGreeting(false), 4500);
-  };
-
-  const triggerCheckoutGreeting = (name: string, audioUri?: string | null) => {
-    setGreetingText('See you Next Day');
-    setGreetingType('out');
-    setShowGreeting(true);
-    if (audioUri) new Audio(audioUri).play().catch(() => {});
-    setTimeout(() => setShowGreeting(false), 4500);
   };
 
   const handleMainButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
