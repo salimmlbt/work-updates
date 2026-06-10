@@ -262,24 +262,6 @@ export default function Header() {
 
     const firstName = userProfile?.full_name?.split(' ')[0] || '';
 
-    // RESPONSIVE TRIGGER: Trigger visual greeting immediately for better UX
-    if (action === 'checkIn' || action === 'checkOut') {
-      const greeting = action === 'checkIn' ? getGreeting() : 'See you next day';
-      setGreetingText(greeting);
-      setGreetingType(action === 'checkIn' ? 'in' : 'out');
-      setShowGreeting(true);
-      setTimeout(() => setShowGreeting(false), 4500);
-
-      // Background-load AI Voice Greeting
-      const textForAudio = `${greeting}, ${firstName}`;
-      getVoiceGreeting(textForAudio).then(voiceResult => {
-        if (voiceResult.data) {
-          const audio = new Audio(voiceResult.data);
-          audio.play().catch(err => console.warn("Audio playback context was blocked by browser", err));
-        }
-      }).catch(e => console.error("TTS Generation Failed:", e));
-    }
-
     const optimisticStateMap = {
       checkIn: 'checked-in',
       lunchOut: 'on-lunch',
@@ -303,6 +285,24 @@ export default function Header() {
       toast({ title: 'System Error', description: result.error, variant: 'destructive' });
     } else if (result.data) {
       setAttendanceRecord((prev: any) => ({ ...prev, ...result.data }));
+
+      // GREETING TRIGGER: Only show after successful verification
+      if (action === 'checkIn' || action === 'checkOut') {
+        const greeting = action === 'checkIn' ? getGreeting() : 'See you next day';
+        setGreetingText(greeting);
+        setGreetingType(action === 'checkIn' ? 'in' : 'out');
+        setShowGreeting(true);
+        setTimeout(() => setShowGreeting(false), 4500);
+
+        // Background-load AI Voice Greeting
+        const textForAudio = `${greeting}, ${firstName}`;
+        getVoiceGreeting(textForAudio).then(voiceResult => {
+          if (voiceResult.data) {
+            const audio = new Audio(voiceResult.data);
+            audio.play().catch(err => console.warn("Audio playback context was blocked by browser", err));
+          }
+        }).catch(e => console.error("TTS Generation Failed:", e));
+      }
     }
     
     setIsActionPending(false);
