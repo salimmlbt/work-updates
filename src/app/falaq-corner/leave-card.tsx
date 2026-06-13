@@ -60,7 +60,9 @@ export default function LeaveCard({
   onDeleteClick,
 }: Props) {
   const isApproved = leave.status === 'Approved';
-  const duration = differenceInDays(leave.start_date, leave.end_date);
+  const rawDuration = differenceInDays(leave.start_date, leave.end_date);
+  const duration = leave.day_type === 'Half Day' ? rawDuration - 0.5 : rawDuration;
+  
   const applicantName = leave.profiles?.full_name || 'Anonymous User';
   const theme = statusThemes[leave.status as keyof typeof statusThemes] || statusThemes.Pending;
   const IconComponent = statusIcons[leave.status as keyof typeof statusIcons] || Clock;
@@ -134,6 +136,7 @@ export default function LeaveCard({
           {activeTab === 'team-requests' && leave.status === 'Pending' ? (
             <div className="flex items-center gap-2 w-full xs:w-auto">
               <button
+                type="button"
                 onClick={() => onRejectClick(leave.id)}
                 className="flex-1 sm:flex-initial rounded-xl h-10 px-4 border border-rose-500/20 hover:border-rose-500/40 bg-zinc-950/80 text-rose-400 font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:bg-rose-500/5 duration-300"
               >
@@ -141,6 +144,7 @@ export default function LeaveCard({
                 Reject
               </button>
               <button
+                type="button"
                 onClick={() => onApproveClick(leave)}
                 className="flex-1 sm:flex-initial rounded-xl h-10 px-5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-[0_4px_20px_rgba(16,185,129,0.25)] hover:scale-[1.02] active:scale-[0.98] duration-300"
               >
@@ -152,6 +156,7 @@ export default function LeaveCard({
             <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500">
               {(leave.status === 'Pending' || leave.status === 'Approved') && (
                 <button
+                  type="button"
                   onClick={() => onCancelClick(leave.id)}
                   className="rounded-xl h-9 px-3.5 border border-rose-500/10 hover:border-rose-500/25 bg-rose-500/5 text-rose-400 font-black uppercase text-[8.5px] tracking-widest flex items-center gap-1.5 transition-all duration-300 cursor-pointer"
                 >
@@ -162,6 +167,7 @@ export default function LeaveCard({
 
               {leave.status === 'Cancelled' && (
                 <button
+                  type="button"
                   onClick={() => onReopenClick(leave.id)}
                   className="rounded-xl h-9 px-4 border border-sky-500/20 hover:border-sky-500/35 bg-sky-500/5 text-sky-400 font-black uppercase text-[8.5px] tracking-widest flex items-center gap-1.5 transition-all duration-300 cursor-pointer"
                 >
@@ -172,6 +178,7 @@ export default function LeaveCard({
 
               {(leave.status === 'Rejected' || leave.status === 'Cancelled') && (
                 <button
+                  type="button"
                   onClick={() => onDeleteClick(leave.id)}
                   title="Delete Permanently"
                   className="p-2 rounded-xl border border-white/5 hover:border-rose-500/20 bg-white/5 hover:bg-rose-500/5 text-zinc-500 hover:text-rose-400 hover:scale-105 active:scale-95 transition-all cursor-pointer"

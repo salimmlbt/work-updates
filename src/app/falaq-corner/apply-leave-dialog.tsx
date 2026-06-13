@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, FileText, Send, Sparkles, AlertCircle } from 'lucide-react';
+import { X, Calendar, FileText, Send, Sparkles, AlertCircle, Clock } from 'lucide-react';
 import type { Profile, LeaveTypeConfig } from '@/lib/types';
 import { cn, differenceInDays } from './utils';
 import { addDays, format, startOfToday } from 'date-fns';
@@ -20,6 +20,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  const [dayType, setDayType] = useState<'Full Day' | 'Half Day'>('Full Day');
   const [errorMsg, setErrorMsg] = useState('');
 
   const selectedConfig = useMemo(() => 
@@ -36,11 +37,20 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
     const today = startOfToday();
     const leadTime = selectedConfig?.leadTime || 0;
     const maxNotice = selectedConfig?.maxNotice || 365;
-    
-    // Calculate max date starting FROM the lead time offset
-    // This provides a window of 'maxNotice' length starting after 'leadTime'
     return format(addDays(today, leadTime + maxNotice - 1), 'yyyy-MM-dd');
   }, [selectedConfig]);
+
+  const rawDays = useMemo(() => {
+    if (startDate && endDate && new Date(startDate) <= new Date(endDate)) {
+      return differenceInDays(startDate, endDate);
+    }
+    return 0;
+  }, [startDate, endDate]);
+
+  const finalDuration = useMemo(() => {
+    if (rawDays === 0) return 0;
+    return dayType === 'Half Day' ? rawDays - 0.5 : rawDays;
+  }, [rawDays, dayType]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -67,17 +77,14 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
       start_date: startDate,
       end_date: endDate,
       reason: reason.trim(),
-      day_type: 'Full Day'
+      day_type: dayType
     });
 
     setStartDate('');
     setEndDate('');
     setReason('');
+    setDayType('Full Day');
   };
-
-  const calculatedDays = startDate && endDate && new Date(startDate) <= new Date(endDate)
-    ? differenceInDays(startDate, endDate)
-    : 0;
 
   return (
     <AnimatePresence>
@@ -111,6 +118,7 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
                 </p>
               </div>
               <button
+                type="button"
                 onClick={onClose}
                 className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all cursor-pointer hover:rotate-90 duration-300"
               >
@@ -194,6 +202,32 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
               </div>
 
               <div className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">Day Configuration</span>
+                <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setDayType('Full Day')}
+                    className={cn(
+                      "flex-1 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                      dayType === 'Full Day' ? "bg-white text-zinc-950 shadow-xl" : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    Full Day
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDayType('Half Day')}
+                    className={cn(
+                      "flex-1 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                      dayType === 'Half Day' ? "bg-sky-500 text-white shadow-xl" : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    Half Day
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">Justification Statement</span>
                 <div className="relative">
                   <FileText className="absolute left-4 top-4 h-4 w-4 text-zinc-500 pointer-events-none" />
@@ -208,9 +242,16 @@ export default function ApplyLeaveDialog({ isOpen, onClose, onSubmit, currentPro
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                <div>
-                  <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Calculated duration</span>
-                  <p className="text-white font-extrabold text-sm tracking-tight">{calculatedDays} {calculatedDays === 1 ? 'Day Off' : 'Days Off'}</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
+                    <Clock className="h-4 w-4 text-zinc-500" />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Calculated span</span>
+                    <p className="text-white font-extrabold text-sm tracking-tight">
+                      {finalDuration} {finalDuration === 1 ? 'Day' : 'Days'} Off
+                    </p>
+                  </div>
                 </div>
                 <button type="submit" className="rounded-2xl h-12 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-black text-[10px] uppercase tracking-[0.15em] flex items-center gap-2.5 shadow-2xl hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 cursor-pointer">
                   <Send className="h-3.5 w-3.5" />

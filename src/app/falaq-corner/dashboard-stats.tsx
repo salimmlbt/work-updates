@@ -28,10 +28,12 @@ export default function DashboardStats({ leaves, currentProfile, annualAllowance
 
     personalLeaves.forEach(l => {
       const days = differenceInDays(l.start_date, l.end_date);
+      const adjustedDays = l.day_type === 'Half Day' ? days - 0.5 : days;
+
       if (l.status === 'Approved') {
-        approvedDaysCount += days;
+        approvedDaysCount += adjustedDays;
       } else if (l.status === 'Pending') {
-        pendingDaysCount += days;
+        pendingDaysCount += adjustedDays;
       }
     });
 
