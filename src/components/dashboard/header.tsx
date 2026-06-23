@@ -194,11 +194,12 @@ export default function Header() {
 
     const permittedZones: PermittedLocation[] = [...(userProfile?.permitted_locations || [])];
     
-    if (userProfile?.latitude && userProfile?.longitude) {
+    if (userProfile?.latitude !== null && userProfile?.latitude !== undefined && 
+        userProfile?.longitude !== null && userProfile?.longitude !== undefined) {
         permittedZones.push({
             name: 'Assigned Site',
-            latitude: userProfile.latitude,
-            longitude: userProfile.longitude,
+            latitude: Number(userProfile.latitude),
+            longitude: Number(userProfile.longitude),
             radius: userProfile.radius || 100
         });
     }
@@ -219,7 +220,10 @@ export default function Header() {
           let minDistance = Infinity;
 
           for (const zone of permittedZones) {
-              const distance = calculateDistance(userLat, userLng, zone.latitude, zone.longitude);
+              const zoneLat = Number(zone.latitude);
+              const zoneLng = Number(zone.longitude);
+              const distance = calculateDistance(userLat, userLng, zoneLat, zoneLng);
+              
               if (distance <= zone.radius) {
                   isWithinAnyZone = true;
                   break;
@@ -237,7 +241,11 @@ export default function Header() {
           toast({ title: "Location Error", description: "Proximity validation failed. Please enable location access.", variant: "destructive" });
           resolve(false);
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { 
+          enableHighAccuracy: true, 
+          timeout: 15000, 
+          maximumAge: 0 // Force fresh GPS data
+        }
       );
     });
   };
@@ -286,7 +294,6 @@ export default function Header() {
     } else if (result.data) {
       setAttendanceRecord((prev: any) => ({ ...prev, ...result.data }));
 
-      // GREETING TRIGGER: Only show after successful verification
       if (action === 'checkIn' || action === 'checkOut') {
         const greeting = action === 'checkIn' ? getGreeting() : 'See you next day';
         setGreetingText(greeting);
@@ -294,7 +301,6 @@ export default function Header() {
         setShowGreeting(true);
         setTimeout(() => setShowGreeting(false), 4500);
 
-        // Background-load AI Voice Greeting
         const textForAudio = `${greeting}, ${firstName}`;
         getVoiceGreeting(textForAudio).then(voiceResult => {
           if (voiceResult.data) {
@@ -319,7 +325,6 @@ export default function Header() {
       if (userProfile?.work_start_time) {
           const now = new Date();
           const scheduledStart = parse(userProfile.work_start_time, 'HH:mm:ss', now);
-          // Apply Grace Period
           const lateThreshold = addMinutes(scheduledStart, lateGracePeriodSetting);
           
           if (isAfter(now, lateThreshold)) {
