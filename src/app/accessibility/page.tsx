@@ -33,6 +33,7 @@ export default async function AccessibilityPage() {
         { data: checkInDelaySetting },
         { data: lunchOutDelaySetting },
         { data: lunchInDelaySetting },
+        { data: checkoutRedirectSetting },
     ] = await Promise.all([
         supabase.from('app_settings').select('value').eq('key', 'lunch_start_time').single(),
         supabase.from('app_settings').select('value').eq('key', 'annual_leave_allowance').single(),
@@ -46,6 +47,7 @@ export default async function AccessibilityPage() {
         supabase.from('app_settings').select('value').eq('key', 'check_in_warning_delay').maybeSingle(),
         supabase.from('app_settings').select('value').eq('key', 'lunch_out_warning_delay').maybeSingle(),
         supabase.from('app_settings').select('value').eq('key', 'lunch_in_warning_delay').maybeSingle(),
+        supabase.from('app_settings').select('value').eq('key', 'checkout_redirect_url').maybeSingle(),
     ]);
     
     if (industriesError) console.error('Error fetching industries', industriesError);
@@ -67,6 +69,7 @@ export default async function AccessibilityPage() {
     const checkInWarningDelay = (checkInDelaySetting?.value as number | undefined) ?? 15;
     const lunchOutWarningDelay = (lunchOutDelaySetting?.value as number | undefined) ?? 15;
     const lunchInWarningDelay = (lunchInDelaySetting?.value as number | undefined) ?? 15;
+    const checkoutRedirectUrl = (checkoutRedirectSetting?.value as string | undefined) ?? '';
 
   return (
     <div className="p-4 md:p-8 lg:p-10 min-h-screen bg-[#0f0f0f] text-zinc-100">
@@ -113,6 +116,7 @@ export default async function AccessibilityPage() {
                         initialCheckInDelay={checkInWarningDelay}
                         initialLunchOutDelay={lunchOutWarningDelay}
                         initialLunchInDelay={lunchInWarningDelay}
+                        initialCheckoutRedirectUrl={checkoutRedirectUrl}
                     />
                 </CardContent>
             </Card>

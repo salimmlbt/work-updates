@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -55,6 +54,7 @@ export default function Header() {
   const [lunchTimeSetting, setLunchTimeSetting] = useState<any>(null);
   const [lateGracePeriodSetting, setLateGracePeriodSetting] = useState<number>(0);
   const [globalGeofencingEnabled, setGlobalGeofencingEnabled] = useState(false);
+  const [checkoutRedirectUrl, setCheckoutRedirectUrl] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -95,7 +95,7 @@ export default function Header() {
         return;
       }
 
-      const [attendanceRes, settingsRes, graceRes, geofenceRes, profileRes] = await Promise.all([
+      const [attendanceRes, settingsRes, graceRes, geofenceRes, profileRes, redirectRes] = await Promise.all([
         supabase.from('attendance').select('*')
           .eq('user_id', user.id)
           .eq('date', new Date().toISOString().split('T')[0])
@@ -109,7 +109,8 @@ export default function Header() {
         supabase.from('app_settings').select('value')
           .eq('key', 'global_geofencing_enabled')
           .single(),
-        supabase.from('profiles').select('*').eq('id', user.id).single()
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('app_settings').select('value').eq('key', 'checkout_redirect_url').maybeSingle(),
       ]);
 
       if (profileRes.data) {
@@ -126,6 +127,7 @@ export default function Header() {
 
       setGlobalGeofencingEnabled(geofenceRes.data?.value === true);
       setLateGracePeriodSetting((graceRes.data?.value as number) || 0);
+      setCheckoutRedirectUrl((redirectRes.data?.value as string) || '');
 
       const attendanceData = attendanceRes.data;
       if (attendanceData) {
@@ -293,6 +295,10 @@ export default function Header() {
       toast({ title: 'System Error', description: result.error, variant: 'destructive' });
     } else if (result.data) {
       setAttendanceRecord((prev: any) => ({ ...prev, ...result.data }));
+
+      if (action === 'checkOut' && checkoutRedirectUrl) {
+          window.open(checkoutRedirectUrl, '_blank');
+      }
 
       if (action === 'checkIn' || action === 'checkOut') {
         const greeting = action === 'checkIn' ? getGreeting() : 'See you next day';

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { updateSetting } from "@/app/actions";
-import { Loader2, Calendar, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, Calendar, Clock, AlertTriangle, ExternalLink } from "lucide-react";
 
 const setSettingsSchema = z.object({
   lunchTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format. Use HH:MM"),
@@ -19,6 +19,7 @@ const setSettingsSchema = z.object({
   checkInDelay: z.number().min(0, "Min 0").max(120, "Max 120 minutes"),
   lunchOutDelay: z.number().min(0).max(120, "Max 120 minutes"),
   lunchInDelay: z.number().min(0).max(120, "Max 120 minutes"),
+  checkoutRedirectUrl: z.string().url("Please enter a valid URL (starting with http:// or https://)").optional().or(z.literal('')),
 });
 
 type SetSettingsFormData = z.infer<typeof setSettingsSchema>;
@@ -30,6 +31,7 @@ interface SetTimesFormProps {
     initialCheckInDelay: number;
     initialLunchOutDelay: number;
     initialLunchInDelay: number;
+    initialCheckoutRedirectUrl: string;
 }
 
 export function SetTimesForm({ 
@@ -39,6 +41,7 @@ export function SetTimesForm({
   initialCheckInDelay,
   initialLunchOutDelay,
   initialLunchInDelay,
+  initialCheckoutRedirectUrl,
 }: SetTimesFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -78,6 +81,7 @@ export function SetTimesForm({
       checkInDelay: initialCheckInDelay,
       lunchOutDelay: initialLunchOutDelay,
       lunchInDelay: initialLunchInDelay,
+      checkoutRedirectUrl: initialCheckoutRedirectUrl,
     },
   });
 
@@ -95,6 +99,7 @@ export function SetTimesForm({
         updateSetting('check_in_warning_delay', data.checkInDelay),
         updateSetting('lunch_out_warning_delay', data.lunchOutDelay),
         updateSetting('lunch_in_warning_delay', data.lunchInDelay),
+        updateSetting('checkout_redirect_url', data.checkoutRedirectUrl),
       ]);
 
       const error = results.find(r => r.error);
@@ -108,7 +113,7 @@ export function SetTimesForm({
       } else {
         toast({
           title: "Settings Updated",
-          description: "Studio rules and warning protocols have been updated.",
+          description: "Studio rules and workflow automations have been updated.",
         });
       }
     });
@@ -205,21 +210,42 @@ export function SetTimesForm({
         </div>
       </div>
 
-      <div className="space-y-6">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 border-b border-white/5 pb-2">Organization Parameters</h3>
-        
-        <div className="space-y-2 max-w-sm">
-            <Label htmlFor="allowance" className="text-zinc-400 font-bold">Base Annual Allowance (Days)</Label>
-            <div className="relative">
-                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                <Input
-                    id="allowance"
-                    type="number"
-                    className="h-12 bg-white/5 border-white/10 rounded-xl font-black pl-12 text-indigo-400"
-                    {...register("allowance", { valueAsNumber: true })}
-                />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="space-y-8">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 border-b border-white/5 pb-2">Organization Parameters</h3>
+            
+            <div className="space-y-2">
+                <Label htmlFor="allowance" className="text-zinc-400 font-bold">Base Annual Allowance (Days)</Label>
+                <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                    <Input
+                        id="allowance"
+                        type="number"
+                        className="h-12 bg-white/5 border-white/10 rounded-xl font-black pl-12 text-indigo-400"
+                        {...register("allowance", { valueAsNumber: true })}
+                    />
+                </div>
+                {errors.allowance && <p className="text-xs text-rose-500 font-bold">{errors.allowance.message}</p>}
             </div>
-            {errors.allowance && <p className="text-xs text-rose-500 font-bold">{errors.allowance.message}</p>}
+        </div>
+
+        <div className="space-y-8">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400 border-b border-purple-500/10 pb-2">Checkout Automation</h3>
+            
+            <div className="space-y-2">
+                <Label htmlFor="checkoutRedirectUrl" className="text-zinc-400 font-bold">Post-Checkout Website</Label>
+                <div className="relative">
+                    <ExternalLink className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-500/50" />
+                    <Input
+                        id="checkoutRedirectUrl"
+                        placeholder="https://workflow.falaq.com"
+                        className="h-12 bg-white/5 border-white/10 rounded-xl font-medium pl-12 text-zinc-200"
+                        {...register("checkoutRedirectUrl")}
+                    />
+                </div>
+                <p className="text-[10px] text-zinc-500 font-medium px-1">Opened in a new tab immediately after a successful checkout.</p>
+                {errors.checkoutRedirectUrl && <p className="text-xs text-rose-500 font-bold">{errors.checkoutRedirectUrl.message}</p>}
+            </div>
         </div>
       </div>
 
